@@ -1,0 +1,24 @@
+﻿Analyzing koin...                                               
+
+   info - The imported package 'path' isn't a dependency of the importing package - lib\core\database_helper.dart:2:8 - depend_on_referenced_packages
+warning - Unused import: 'package:uuid/uuid.dart' - lib\core\database_helper.dart:5:8 - unused_import
+  error - Classes can only extend other classes - lib\core\providers\category_provider.dart:5:32 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\core\providers\category_provider.dart:6:30 - extra_positional_arguments
+  error - Undefined name 'state' - lib\core\providers\category_provider.dart:12:5 - undefined_identifier
+  error - The function 'StateNotifierProvider' isn't defined - lib\core\providers\category_provider.dart:16:26 - undefined_function
+  error - Classes can only extend other classes - lib\core\providers\transaction_provider.dart:5:35 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\core\providers\transaction_provider.dart:6:33 - extra_positional_arguments
+  error - Undefined name 'state' - lib\core\providers\transaction_provider.dart:12:7 - undefined_identifier
+  error - Undefined name 'state' - lib\core\providers\transaction_provider.dart:14:7 - undefined_identifier
+  error - Undefined name 'state' - lib\core\providers\transaction_provider.dart:16:7 - undefined_identifier
+  error - The function 'StateNotifierProvider' isn't defined - lib\core\providers\transaction_provider.dart:31:29 - undefined_function
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\core\theme.dart:21:9 - deprecated_member_use
+  error - The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.  - lib\core\theme.dart:42:18 - argument_type_not_assignable
+warning - Unused import: 'package:koin/core/providers/category_provider.dart' - lib\features\dashboard\dashboard_screen.dart:9:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:92:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:103:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:147:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:158:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:204:33 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\transactions\add_transaction_screen.dart:138:15 - deprecated_member_use
+
