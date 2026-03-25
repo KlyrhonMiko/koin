@@ -208,6 +208,25 @@ CREATE TABLE transactions (
     return result.map((json) => Account.fromMap(json)).toList();
   }
 
+  Future<int> updateAccount(Account account) async {
+    final db = await instance.database;
+    return await db.update(
+      'accounts',
+      account.toMap(),
+      where: 'id = ?',
+      whereArgs: [account.id],
+    );
+  }
+
+  Future<int> deleteAccount(String id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'accounts',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // Transactions commands
   Future<AppTransaction> insertTransaction(AppTransaction transaction) async {
     final db = await instance.database;

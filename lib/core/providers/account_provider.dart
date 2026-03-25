@@ -19,6 +19,16 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     await DatabaseHelper.instance.insertAccount(account);
     await loadAccounts();
   }
+
+  Future<void> updateAccount(Account account) async {
+    await DatabaseHelper.instance.updateAccount(account);
+    await loadAccounts();
+  }
+
+  Future<void> deleteAccount(String id) async {
+    await DatabaseHelper.instance.deleteAccount(id);
+    await loadAccounts();
+  }
 }
 
 final accountProvider = AsyncNotifierProvider<AccountNotifier, List<Account>>(() {

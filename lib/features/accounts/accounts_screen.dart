@@ -51,6 +51,8 @@ class AccountsScreen extends ConsumerWidget {
                     'Create an account to start tracking',
                     style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 13),
                   ),
+                  const Gap(32),
+                  _buildAddAccountButton(context, ref),
                 ],
               ),
             );
@@ -60,48 +62,7 @@ class AccountsScreen extends ConsumerWidget {
             itemCount: accounts.length + 1,
             itemBuilder: (context, index) {
               if (index == accounts.length) {
-                return GestureDetector(
-                  onTap: () => _showAddAccountSheet(context, ref),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                        width: 1.5,
-                        style: BorderStyle.solid, // Could use a custom painter for dashed, but solid is cleaner for now
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: AppTheme.primaryColor(context),
-                            size: 28,
-                          ),
-                        ),
-                        const Gap(12),
-                        Text(
-                          'Add New Account',
-                          style: TextStyle(
-                            color: AppTheme.primaryColor(context),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ).animate().fade(delay: (index * 60).ms).slideY(begin: 0.08),
-                );
+                return _buildAddAccountButton(context, ref, delay: (index * 60).ms);
               }
               final account = accounts[index];
               final balance = stats.accountBalances[account.id] ?? 0;
@@ -113,6 +74,7 @@ class AccountsScreen extends ConsumerWidget {
                   border: Border.all(color: AppTheme.dividerColor(context)),
                 ),
                 child: ListTile(
+                  onTap: () => _showAccountSheet(context, ref, account: account),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   leading: Container(
@@ -150,11 +112,14 @@ class AccountsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddAccountSheet(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final balanceController = TextEditingController();
-    int selectedIcon = Icons.account_balance_wallet.codePoint;
-    Color selectedColor = AppTheme.primaryColor(context);
+  void _showAccountSheet(BuildContext context, WidgetRef ref, {Account? account}) {
+    final isEditing = account != null;
+    final nameController = TextEditingController(text: account?.name);
+    final balanceController = TextEditingController(
+      text: isEditing ? account.initialBalance.toString() : '',
+    );
+    int selectedIcon = account?.iconCodePoint ?? Icons.account_balance_wallet.codePoint;
+    Color selectedColor = account?.color ?? AppTheme.primaryColor(context);
 
     final colors = [
       AppTheme.primaryColor(context),
@@ -190,9 +155,39 @@ class AccountsScreen extends ConsumerWidget {
                 ),
               ),
               const Gap(20),
-              const Text(
-                'Add Account',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isEditing ? 'Edit Account' : 'Add Account',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                  if (isEditing)
+                    IconButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Account?'),
+                            content: const Text('All transactions associated with this account will be unlinked. This cannot be undone.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                              TextButton(
+                                onPressed: () {
+                                  ref.read(accountProvider.notifier).deleteAccount(account.id);
+                                  Navigator.pop(ctx);
+                                  Navigator.pop(context);
+                                },
+                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    ),
+                ],
               ),
               const Gap(24),
               TextField(
@@ -214,13 +209,69 @@ class AccountsScreen extends ConsumerWidget {
               const Gap(20),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Color', style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 13, fontWeight: FontWeight.w600)),
+                child: Text('Icon', style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              const Gap(12),
+              SizedBox(
+                height: 50,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    Icons.account_balance_wallet,
+                    Icons.account_balance,
+                    Icons.savings,
+                    Icons.payments,
+                    Icons.credit_card,
+                    Icons.wallet,
+                    Icons.money,
+                    Icons.currency_exchange,
+                    Icons.trending_up,
+                    Icons.monetization_on,
+                    Icons.paid,
+                    Icons.local_atm,
+                    Icons.token,
+                    Icons.stars,
+                    Icons.work,
+                    Icons.home,
+                    Icons.shopping_bag,
+                    Icons.directions_car,
+                    Icons.receipt_long,
+                    Icons.pie_chart,
+                  ].map((icon) {
+                    final isSelected = selectedIcon == icon.codePoint;
+                    return GestureDetector(
+                      onTap: () => setState(() => selectedIcon = icon.codePoint),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? selectedColor.withValues(alpha: 0.1) : AppTheme.dividerColor(context).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? selectedColor : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: isSelected ? selectedColor : AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                          size: 24,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const Gap(20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Color', style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w600)),
               ),
               const Gap(12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: colors.map((c) {
-                  final isSelected = selectedColor == c;
+                  final isSelected = selectedColor.value == c.value;
                   return GestureDetector(
                     onTap: () => setState(() => selectedColor = c),
                     child: AnimatedContainer(
@@ -254,14 +305,19 @@ class AccountsScreen extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       if (nameController.text.isNotEmpty) {
-                        final newAccount = Account(
-                          id: const Uuid().v4(),
+                        final updatedAccount = Account(
+                          id: isEditing ? account.id : const Uuid().v4(),
                           name: nameController.text,
                           initialBalance: double.tryParse(balanceController.text) ?? 0.0,
                           iconCodePoint: selectedIcon,
                           colorHex: '#${selectedColor.toARGB32().toRadixString(16).substring(2)}',
                         );
-                        ref.read(accountProvider.notifier).addAccount(newAccount);
+                        
+                        if (isEditing) {
+                          ref.read(accountProvider.notifier).updateAccount(updatedAccount);
+                        } else {
+                          ref.read(accountProvider.notifier).addAccount(updatedAccount);
+                        }
                         Navigator.pop(context);
                       }
                     },
@@ -270,7 +326,10 @@ class AccountsScreen extends ConsumerWidget {
                       shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                    child: Text(
+                      isEditing ? 'Update Account' : 'Create Account',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
                   ),
                 ),
               ),
@@ -278,6 +337,54 @@ class AccountsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showAddAccountSheet(BuildContext context, WidgetRef ref) {
+    _showAccountSheet(context, ref);
+  }
+
+  Widget _buildAddAccountButton(BuildContext context, WidgetRef ref, {Duration? delay}) {
+    return GestureDetector(
+      onTap: () => _showAddAccountSheet(context, ref),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                color: AppTheme.primaryColor(context),
+                size: 28,
+              ),
+            ),
+            const Gap(12),
+            Text(
+              'Add New Account',
+              style: TextStyle(
+                color: AppTheme.primaryColor(context),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ).animate().fade(delay: delay).slideY(begin: 0.08, delay: delay),
     );
   }
 }
