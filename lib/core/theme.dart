@@ -7,7 +7,7 @@ class AppTheme {
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-      systemNavigationBarColor: isDarkMode ? const Color(0xFF0F0F14) : Colors.white,
+      systemNavigationBarColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
       systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
     );
   }
@@ -24,7 +24,7 @@ class AppTheme {
   
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? const Color(0xFF232339) : const Color(0xFFF1F3F5);
+    return isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF1F3F5);
   }
 
   static LinearGradient primaryGradient(BuildContext context) {
@@ -49,12 +49,12 @@ class AppTheme {
   );
 
   static ThemeData getTheme(Color primaryColor, bool isDarkMode) {
-    final Color backgroundColor = isDarkMode ? const Color(0xFF0F0F14) : const Color(0xFFF8F9FA);
-    final Color surfaceColor = isDarkMode ? const Color(0xFF1A1A2E) : Colors.white;
-    final Color surfaceLightColor = isDarkMode ? const Color(0xFF232339) : const Color(0xFFF1F3F5);
-    final Color textColor = isDarkMode ? const Color(0xFFF1F1F6) : const Color(0xFF1A1A1A);
-    final Color textLightColor = isDarkMode ? const Color(0xFF8E8EA0) : const Color(0xFF6B7280);
-    final Color dividerColor = isDarkMode ? const Color(0xFF2A2A3D) : const Color(0xFFE5E7EB);
+    final Color backgroundColor = isDarkMode ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA);
+    final Color surfaceColor = isDarkMode ? const Color(0xFF141414) : Colors.white;
+    final Color surfaceLightColor = isDarkMode ? const Color(0xFF1F1F1F) : const Color(0xFFF1F3F5);
+    final Color textColor = isDarkMode ? const Color(0xFFF5F5F5) : const Color(0xFF1A1A1A);
+    final Color textLightColor = isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final Color dividerColor = isDarkMode ? const Color(0xFF262626) : const Color(0xFFE5E7EB);
     
     const Color errorColor = Color(0xFFFF6B6B);
     const Color secondaryColor = Color(0xFF34D399);
@@ -73,8 +73,8 @@ class AppTheme {
             secondary: secondaryColor,
             surface: surfaceColor,
             error: errorColor,
-            onPrimary: isDarkMode ? const Color(0xFF0F0F14) : Colors.white,
-            onSecondary: const Color(0xFF0F0F14),
+            onPrimary: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
+            onSecondary: const Color(0xFF0A0A0A),
             onSurface: textColor,
             onError: Colors.white,
           )
@@ -126,7 +126,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          foregroundColor: isDarkMode ? const Color(0xFF0F0F14) : Colors.white,
+          foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
@@ -188,7 +188,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
-        foregroundColor: isDarkMode ? const Color(0xFF0F0F14) : Colors.white,
+        foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
         elevation: 8,
         highlightElevation: 12,
         shape: RoundedRectangleBorder(
