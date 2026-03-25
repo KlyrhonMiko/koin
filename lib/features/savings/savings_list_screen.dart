@@ -16,6 +16,7 @@ class SavingsListScreen extends ConsumerWidget {
     final goalsAsync = ref.watch(savingsGoalsProvider);
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('Savings Tracker'),
       ),
@@ -25,7 +26,7 @@ class SavingsListScreen extends ConsumerWidget {
             return _buildEmptyState(context);
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
             itemCount: goals.length + 1,
             itemBuilder: (context, index) {
               if (index == goals.length) {

@@ -18,7 +18,6 @@ class CategoryDetailScreen extends StatefulWidget {
 
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final _nameController = TextEditingController();
-  final _budgetController = TextEditingController();
   late int _selectedIconCodePoint;
   late String _selectedColorHex;
 
@@ -75,7 +74,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     super.initState();
     if (widget.category != null) {
       _nameController.text = widget.category!.name;
-      _budgetController.text = widget.category!.budget?.toString() ?? '';
       _selectedIconCodePoint = widget.category!.iconCodePoint;
       _selectedColorHex = widget.category!.colorHex;
     } else {
@@ -87,7 +85,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _budgetController.dispose();
     super.dispose();
   }
 
@@ -104,7 +101,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       name: _nameController.text.trim(),
       iconCodePoint: _selectedIconCodePoint,
       colorHex: _selectedColorHex,
-      budget: double.tryParse(_budgetController.text.trim()),
+      budget: widget.category?.budget, // Keep existing budget if editing
     );
 
     if (widget.category != null) {
@@ -159,16 +156,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     prefixIcon: Icon(Icons.label_outline),
                   ),
                 ),
-                const Gap(16),
-                TextField(
-                  controller: _budgetController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Monthly Budget (Optional)',
-                    hintText: 'e.g., 500',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                  ),
-                ),
+
                 const Gap(28),
                 Text(
                   'Select Icon',

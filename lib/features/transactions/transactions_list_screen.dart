@@ -17,6 +17,7 @@ class TransactionsListScreen extends ConsumerWidget {
     final currency = settings.currency;
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('Transactions'),
       ),
@@ -59,7 +60,7 @@ class TransactionsListScreen extends ConsumerWidget {
           final dateKeys = grouped.keys.toList();
 
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
             itemCount: dateKeys.length,
             itemBuilder: (context, sectionIndex) {
               final dateKey = dateKeys[sectionIndex];

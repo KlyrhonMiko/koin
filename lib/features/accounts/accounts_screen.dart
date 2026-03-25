@@ -21,6 +21,7 @@ class AccountsScreen extends ConsumerWidget {
     final currency = settings.currency;
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('My Accounts'),
       ),
@@ -55,7 +56,7 @@ class AccountsScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
             itemCount: accounts.length + 1,
             itemBuilder: (context, index) {
               if (index == accounts.length) {

@@ -10,7 +10,6 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/models/account.dart';
-import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
@@ -34,7 +33,9 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settings.currency;
 
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
           color: AppTheme.primaryColor(context),
@@ -96,14 +97,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-        ),
-        label: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add_rounded),
-      ).animate().scale(delay: 500.ms, duration: 400.ms, curve: Curves.easeOutBack),
     );
   }
 
@@ -489,7 +482,7 @@ class DashboardScreen extends ConsumerWidget {
     final categories = ref.watch(categoryProvider);
     final budgetedCategories = categories.where((c) => c.budget != null && c.budget! > 0).toList();
 
-    if (budgetedCategories.isEmpty) return const SizedBox.shrink();
+
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,13 +495,62 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+                ref.read(navigationProvider.notifier).setIndex(3);
+                ref.read(pageControllerProvider).animateToPage(
+                  3,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
               child: const Text('Manage', style: TextStyle(fontSize: 13)),
             ),
           ],
         ),
         const Gap(12),
-        ...budgetedCategories.map((category) {
+        if (budgetedCategories.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.dividerColor(context)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined, size: 40, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
+                const Gap(12),
+                Text(
+                  'No budgets set yet',
+                  style: TextStyle(color: AppTheme.textLightColor(context), fontWeight: FontWeight.w600),
+                ),
+                const Gap(16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                    ref.read(navigationProvider.notifier).setIndex(3);
+                    ref.read(pageControllerProvider).animateToPage(
+                      3,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                    foregroundColor: AppTheme.primaryColor(context),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Set Monthly Budgets'),
+                ),
+              ],
+            ),
+          )
+        else
+          ...budgetedCategories.map((category) {
           final spent = stats.categorySpending[category.id] ?? 0;
           final budget = category.budget!;
           final progress = (spent / budget).clamp(0.0, 1.0);
@@ -600,6 +642,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           );
         }),
+
       ],
     );
   }
