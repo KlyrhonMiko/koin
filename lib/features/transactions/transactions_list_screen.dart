@@ -87,8 +87,8 @@ class TransactionsListScreen extends ConsumerWidget {
                     final isTransfer = tx.type == TransactionType.transfer;
 
                     final color = isTransfer
-                        ? AppTheme.primaryColor(context)
-                        : (isIncome ? const Color(0xFF00D09E) : const Color(0xFFFF6B6B));
+                        ? AppTheme.transferColor(context)
+                        : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
 
                     final icon = isTransfer
                         ? Icons.swap_horiz_rounded

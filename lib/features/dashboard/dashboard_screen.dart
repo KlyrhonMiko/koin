@@ -292,7 +292,7 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Income',
             amount: stats.totalIncome,
             gradient: AppTheme.successGradient,
-            color: const Color(0xFF00D09E),
+            color: AppTheme.incomeColor(context),
             icon: Icons.arrow_downward_rounded,
             currency: currency,
           ),
@@ -304,7 +304,7 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Expense',
             amount: stats.totalExpense,
             gradient: AppTheme.dangerGradient,
-            color: const Color(0xFFFF6B6B),
+            color: AppTheme.expenseColor(context),
             icon: Icons.arrow_upward_rounded,
             currency: currency,
           ),
@@ -449,9 +449,9 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(context, 'Income', const Color(0xFF00D09E), '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
+                _buildLegendItem(context, 'Income', AppTheme.incomeColor(context), '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
                 const Gap(16),
-                _buildLegendItem(context, 'Expense', const Color(0xFFFF6B6B), '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
+                _buildLegendItem(context, 'Expense', AppTheme.expenseColor(context), '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
               ],
             ),
           ),
@@ -547,26 +547,26 @@ class DashboardScreen extends ConsumerWidget {
                         children: [
                           Text(category.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           const Gap(2),
-                          Text(
-                            isOver
-                              ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
-                              : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
-                            style: TextStyle(
-                              color: isOver ? const Color(0xFFFF6B6B) : AppTheme.textLightColor(context),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            Text(
+                              isOver
+                                ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
+                                : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
+                              style: TextStyle(
+                                color: isOver ? AppTheme.expenseColor(context) : AppTheme.textLightColor(context),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
                       Text(
                         '$percent%',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: isOver ? const Color(0xFFFF6B6B) : AppTheme.primaryColor(context),
-                          fontSize: 15,
-                        ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: isOver ? AppTheme.expenseColor(context) : AppTheme.primaryColor(context),
+                            fontSize: 15,
+                          ),
                       ),
                   ],
                 ),
@@ -632,8 +632,8 @@ class DashboardScreen extends ConsumerWidget {
             final isTransfer = tx.type == TransactionType.transfer;
 
             final color = isTransfer
-                ? AppTheme.primaryColor(context)
-                : (isIncome ? const Color(0xFF00D09E) : const Color(0xFFFF6B6B));
+                ? AppTheme.transferColor(context)
+                : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
 
             final icon = isTransfer
                 ? Icons.swap_horiz_rounded

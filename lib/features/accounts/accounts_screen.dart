@@ -24,10 +24,7 @@ class AccountsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My Accounts'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddAccountSheet(context, ref),
-        child: const Icon(Icons.add_rounded),
-      ),
+
       body: accountsAsync.when(
         data: (accounts) {
           if (accounts.isEmpty) {
@@ -59,8 +56,52 @@ class AccountsScreen extends ConsumerWidget {
           }
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: accounts.length,
+            itemCount: accounts.length + 1,
             itemBuilder: (context, index) {
+              if (index == accounts.length) {
+                return GestureDetector(
+                  onTap: () => _showAddAccountSheet(context, ref),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                        width: 1.5,
+                        style: BorderStyle.solid, // Could use a custom painter for dashed, but solid is cleaner for now
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: AppTheme.primaryColor(context),
+                            size: 28,
+                          ),
+                        ),
+                        const Gap(12),
+                        Text(
+                          'Add New Account',
+                          style: TextStyle(
+                            color: AppTheme.primaryColor(context),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fade(delay: (index * 60).ms).slideY(begin: 0.08),
+                );
+              }
               final account = accounts[index];
               final balance = stats.accountBalances[account.id] ?? 0;
               return Container(
