@@ -16,6 +16,7 @@ class SavingsListScreen extends ConsumerWidget {
     final goalsAsync = ref.watch(savingsGoalsProvider);
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('Savings Tracker'),
       ),
@@ -25,9 +26,12 @@ class SavingsListScreen extends ConsumerWidget {
             return _buildEmptyState(context);
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: goals.length,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+            itemCount: goals.length + 1,
             itemBuilder: (context, index) {
+              if (index == goals.length) {
+                return _buildAddGoalButton(context, index);
+              }
               final goal = goals[index];
               return _buildGoalCard(context, goal, index);
             },
@@ -35,14 +39,6 @@ class SavingsListScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-        ),
-        label: const Text('New Goal', style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add_rounded),
       ),
     );
   }
@@ -70,9 +66,61 @@ class SavingsListScreen extends ConsumerWidget {
             'Start by creating your first goal!',
             style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 13),
           ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: _buildAddGoalButton(context, 0),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildAddGoalButton(BuildContext context, int index) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                color: AppTheme.primaryColor(context),
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Add New Goal',
+              style: TextStyle(
+                color: AppTheme.primaryColor(context),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fade(delay: (index * 80).ms).slideY(begin: 0.08);
   }
 
   Widget _buildGoalCard(BuildContext context, SavingsGoal goal, int index) {

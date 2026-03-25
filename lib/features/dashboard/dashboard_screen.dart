@@ -10,7 +10,6 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/models/account.dart';
-import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
@@ -34,7 +33,9 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settings.currency;
 
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
           color: AppTheme.primaryColor(context),
@@ -96,14 +97,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-        ),
-        label: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add_rounded),
-      ).animate().scale(delay: 500.ms, duration: 400.ms, curve: Curves.easeOutBack),
     );
   }
 
@@ -292,7 +285,7 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Income',
             amount: stats.totalIncome,
             gradient: AppTheme.successGradient,
-            color: const Color(0xFF00D09E),
+            color: AppTheme.incomeColor(context),
             icon: Icons.arrow_downward_rounded,
             currency: currency,
           ),
@@ -304,7 +297,7 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Expense',
             amount: stats.totalExpense,
             gradient: AppTheme.dangerGradient,
-            color: const Color(0xFFFF6B6B),
+            color: AppTheme.expenseColor(context),
             icon: Icons.arrow_upward_rounded,
             currency: currency,
           ),
@@ -449,9 +442,9 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(context, 'Income', const Color(0xFF00D09E), '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
+                _buildLegendItem(context, 'Income', AppTheme.incomeColor(context), '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
                 const Gap(16),
-                _buildLegendItem(context, 'Expense', const Color(0xFFFF6B6B), '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
+                _buildLegendItem(context, 'Expense', AppTheme.expenseColor(context), '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
               ],
             ),
           ),
@@ -489,7 +482,7 @@ class DashboardScreen extends ConsumerWidget {
     final categories = ref.watch(categoryProvider);
     final budgetedCategories = categories.where((c) => c.budget != null && c.budget! > 0).toList();
 
-    if (budgetedCategories.isEmpty) return const SizedBox.shrink();
+
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,13 +495,62 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+                ref.read(navigationProvider.notifier).setIndex(3);
+                ref.read(pageControllerProvider).animateToPage(
+                  3,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
               child: const Text('Manage', style: TextStyle(fontSize: 13)),
             ),
           ],
         ),
         const Gap(12),
-        ...budgetedCategories.map((category) {
+        if (budgetedCategories.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.dividerColor(context)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined, size: 40, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
+                const Gap(12),
+                Text(
+                  'No budgets set yet',
+                  style: TextStyle(color: AppTheme.textLightColor(context), fontWeight: FontWeight.w600),
+                ),
+                const Gap(16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                    ref.read(navigationProvider.notifier).setIndex(3);
+                    ref.read(pageControllerProvider).animateToPage(
+                      3,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                    foregroundColor: AppTheme.primaryColor(context),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Set Monthly Budgets'),
+                ),
+              ],
+            ),
+          )
+        else
+          ...budgetedCategories.map((category) {
           final spent = stats.categorySpending[category.id] ?? 0;
           final budget = category.budget!;
           final progress = (spent / budget).clamp(0.0, 1.0);
@@ -547,26 +589,26 @@ class DashboardScreen extends ConsumerWidget {
                         children: [
                           Text(category.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           const Gap(2),
-                          Text(
-                            isOver
-                              ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
-                              : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
-                            style: TextStyle(
-                              color: isOver ? const Color(0xFFFF6B6B) : AppTheme.textLightColor(context),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            Text(
+                              isOver
+                                ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
+                                : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
+                              style: TextStyle(
+                                color: isOver ? AppTheme.expenseColor(context) : AppTheme.textLightColor(context),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
                       Text(
                         '$percent%',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: isOver ? const Color(0xFFFF6B6B) : AppTheme.primaryColor(context),
-                          fontSize: 15,
-                        ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: isOver ? AppTheme.expenseColor(context) : AppTheme.primaryColor(context),
+                            fontSize: 15,
+                          ),
                       ),
                   ],
                 ),
@@ -600,6 +642,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           );
         }),
+
       ],
     );
   }
@@ -632,8 +675,8 @@ class DashboardScreen extends ConsumerWidget {
             final isTransfer = tx.type == TransactionType.transfer;
 
             final color = isTransfer
-                ? AppTheme.primaryColor(context)
-                : (isIncome ? const Color(0xFF00D09E) : const Color(0xFFFF6B6B));
+                ? AppTheme.transferColor(context)
+                : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
 
             final icon = isTransfer
                 ? Icons.swap_horiz_rounded

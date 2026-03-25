@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:gap/gap.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/theme.dart';
+
 import 'package:koin/features/categories/category_detail_screen.dart';
 
 class CategoryManagerScreen extends ConsumerWidget {
@@ -16,6 +19,22 @@ class CategoryManagerScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Categories'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: 'Manage Budgets',
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+              ref.read(navigationProvider.notifier).setIndex(3);
+              ref.read(pageControllerProvider).animateToPage(
+                3,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
+          const Gap(8),
+        ],
       ),
       body: categories.isEmpty
           ? Center(

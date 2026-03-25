@@ -7,7 +7,9 @@ import 'package:koin/features/accounts/accounts_screen.dart';
 import 'package:koin/features/dashboard/dashboard_screen.dart';
 import 'package:koin/features/savings/savings_list_screen.dart';
 import 'package:koin/features/transactions/transactions_list_screen.dart';
+import 'package:koin/features/budgets/budgets_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
+import 'package:koin/features/transactions/add_transaction_screen.dart';
 
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
@@ -33,74 +35,114 @@ class MainLayout extends ConsumerWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: AppTheme.surfaceColor(context),
-        systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: Scaffold(
-        body: PageView(
-          controller: pageController,
-          onPageChanged: onPageChanged,
-          children: const [
-            DashboardScreen(),
-            TransactionsListScreen(),
-            AccountsScreen(),
-            SavingsListScreen(),
-          ],
-        ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            border: Border(
-              top: BorderSide(
-                color: AppTheme.dividerColor(context),
-                width: 1,
-              ),
-            ),
+        extendBody: true,
+        body: MediaQuery.removePadding(
+          context: context,
+          removeBottom: true,
+          child: PageView(
+            controller: pageController,
+            onPageChanged: onPageChanged,
+            children: const [
+              AccountsScreen(),
+              TransactionsListScreen(),
+              DashboardScreen(),
+              BudgetsScreen(),
+              SavingsListScreen(),
+            ],
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(
-                    context,
-                    icon: Icons.dashboard_outlined,
-                    activeIcon: Icons.dashboard_rounded,
-                    label: 'Dashboard',
-                    index: 0,
-                    currentIndex: currentIndex,
-                    onTap: onItemTapped,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.receipt_long_outlined,
-                    activeIcon: Icons.receipt_long_rounded,
-                    label: 'Transactions',
-                    index: 1,
-                    currentIndex: currentIndex,
-                    onTap: onItemTapped,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.account_balance_wallet_outlined,
-                    activeIcon: Icons.account_balance_wallet_rounded,
-                    label: 'Accounts',
-                    index: 2,
-                    currentIndex: currentIndex,
-                    onTap: onItemTapped,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.savings_outlined,
-                    activeIcon: Icons.savings_rounded,
-                    label: 'Savings',
-                    index: 3,
-                    currentIndex: currentIndex,
-                    onTap: onItemTapped,
+        ),
+        floatingActionButton: currentIndex == 2
+            ? FloatingActionButton.extended(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+                ),
+                label: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.add_rounded),
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context).withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
+                border: Border.all(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      context,
+                      icon: Icons.credit_card_outlined,
+                      activeIcon: Icons.credit_card_rounded,
+                      label: 'Accounts',
+                      index: 0,
+                      currentIndex: currentIndex,
+                      onTap: onItemTapped,
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.receipt_long_outlined,
+                      activeIcon: Icons.receipt_long_rounded,
+                      label: 'Activity',
+                      index: 1,
+                      currentIndex: currentIndex,
+                      onTap: onItemTapped,
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.dashboard_outlined,
+                      activeIcon: Icons.dashboard_rounded,
+                      label: 'Home',
+                      index: 2,
+                      currentIndex: currentIndex,
+                      onTap: onItemTapped,
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.account_balance_wallet_outlined,
+                      activeIcon: Icons.account_balance_wallet_rounded,
+                      label: 'Budgets',
+                      index: 3,
+                      currentIndex: currentIndex,
+                      onTap: onItemTapped,
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.savings_outlined,
+                      activeIcon: Icons.savings_rounded,
+                      label: 'Savings',
+                      index: 4,
+                      currentIndex: currentIndex,
+                      onTap: onItemTapped,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -120,7 +162,7 @@ class MainLayout extends ConsumerWidget {
   }) {
     final isActive = index == currentIndex;
     final primaryColor = AppTheme.primaryColor(context);
-    
+
     return GestureDetector(
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
@@ -132,7 +174,9 @@ class MainLayout extends ConsumerWidget {
           vertical: 10,
         ),
         decoration: BoxDecoration(
-          color: isActive ? primaryColor.withValues(alpha: 0.12) : Colors.transparent,
+          color: isActive
+              ? primaryColor.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -140,7 +184,9 @@ class MainLayout extends ConsumerWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? primaryColor : AppTheme.textLightColor(context).withValues(alpha: 0.6),
+              color: isActive
+                  ? primaryColor
+                  : AppTheme.textLightColor(context).withValues(alpha: 0.6),
               size: 22,
             ),
             if (isActive) ...[

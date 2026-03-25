@@ -22,6 +22,10 @@ class AppTheme {
   static Color dividerColor(BuildContext context) => Theme.of(context).dividerColor;
   static Color secondaryColor(BuildContext context) => Theme.of(context).colorScheme.secondary;
   
+  static Color incomeColor(BuildContext context) => const Color(0xFF00D09E);
+  static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
+  static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
+  
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? const Color(0xFF232339) : const Color(0xFFF1F3F5);

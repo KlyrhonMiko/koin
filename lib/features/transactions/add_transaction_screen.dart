@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:koin/core/models/account.dart';
+import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
@@ -132,11 +134,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Color _getTypeColor(BuildContext context) {
     switch (_selectedType) {
       case TransactionType.expense:
-        return const Color(0xFFFF6B6B);
+        return AppTheme.expenseColor(context);
       case TransactionType.income:
-        return const Color(0xFF00D09E);
+        return AppTheme.incomeColor(context);
       case TransactionType.transfer:
-        return AppTheme.primaryColor(context);
+        return AppTheme.transferColor(context);
     }
   }
 
@@ -220,9 +222,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   Widget _buildTypeSelector(BuildContext context, Color activeColor) {
     final types = [
-      ('Expense', TransactionType.expense, const Color(0xFFFF6B6B), Icons.arrow_upward_rounded),
-      ('Income', TransactionType.income, const Color(0xFF00D09E), Icons.arrow_downward_rounded),
-      ('Transfer', TransactionType.transfer, AppTheme.primaryColor(context), Icons.swap_horiz_rounded),
+      ('Expense', TransactionType.expense, AppTheme.expenseColor(context), Icons.arrow_upward_rounded),
+      ('Income', TransactionType.income, AppTheme.incomeColor(context), Icons.arrow_downward_rounded),
+      ('Transfer', TransactionType.transfer, AppTheme.transferColor(context), Icons.swap_horiz_rounded),
     ];
 
     return Container(
@@ -234,7 +236,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tabWidth = (constraints.maxWidth - 8) / 3; // account for padding
+          final tabWidth = constraints.maxWidth / 3;
           return Stack(
             children: [
               // Sliding pill indicator
@@ -397,7 +399,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Form Card — all fields grouped together
   // ═══════════════════════════════════════════════════════
-  Widget _buildFormCard(BuildContext context, List categories) {
+  Widget _buildFormCard(BuildContext context, List<TransactionCategory> categories) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
@@ -503,47 +505,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         child: Row(
                           children: [
                             Expanded(
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  hint: Text(
-                                    'Select category',
-                                    style: TextStyle(
-                                      color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  dropdownColor: AppTheme.surfaceLightColor(context),
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textColor(context), fontSize: 15),
-                                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor(context)),
-                                  borderRadius: BorderRadius.circular(16),
-                                  value: _selectedCategoryId,
-                                  items: categories.map<DropdownMenuItem<String>>((cat) {
-                                    return DropdownMenuItem(
-                                      value: cat.id,
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: cat.color.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Icon(IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons'), color: cat.color, size: 16),
-                                          ),
-                                          const Gap(10),
-                                          Text(cat.name),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _selectedCategoryId = val;
-                                    });
-                                  },
-                                ),
+                              child: _buildPickerTrigger(
+                                context: context,
+                                hint: 'Select category',
+                                selectedName: _categoryById(categories, _selectedCategoryId)?.name,
+                                selectedColor: _categoryById(categories, _selectedCategoryId)?.color,
+                                selectedIconCodePoint: _categoryById(categories, _selectedCategoryId)?.iconCodePoint,
+                                onTap: () => _openCategoryPicker(context, categories),
                               ),
                             ),
                             Container(
@@ -590,46 +558,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         context,
                         icon: Icons.account_balance_wallet_rounded,
                         label: _selectedType == TransactionType.transfer ? 'From' : null,
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            hint: Text(
-                              'Select account',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                                fontWeight: FontWeight.w400,
-                                fontSize: 15,
-                              ),
-                            ),
-                            dropdownColor: AppTheme.surfaceLightColor(context),
-                            style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textColor(context), fontSize: 15),
-                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor(context)),
-                            borderRadius: BorderRadius.circular(16),
-                            value: _selectedAccountId,
-                            items: accounts.map((acc) {
-                              return DropdownMenuItem(
-                                value: acc.id,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: acc.color.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(IconData(acc.iconCodePoint, fontFamily: 'MaterialIcons'), color: acc.color, size: 16),
-                                    ),
-                                    const Gap(10),
-                                    Text(acc.name),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedAccountId = val;
-                              });
-                            },
+                        child: _buildPickerTrigger(
+                          context: context,
+                          hint: 'Select account',
+                          selectedName: _accountById(accounts, _selectedAccountId)?.name,
+                          selectedColor: _accountById(accounts, _selectedAccountId)?.color,
+                          selectedIconCodePoint: _accountById(accounts, _selectedAccountId)?.iconCodePoint,
+                          onTap: () => _openAccountPicker(
+                            context,
+                            accounts,
+                            title: 'Account',
+                            subtitle: _selectedType == TransactionType.transfer
+                                ? 'Choose where the money leaves from'
+                                : 'Choose the account for this transaction',
+                            selectedId: _selectedAccountId,
+                            onSelected: (id) => setState(() => _selectedAccountId = id),
                           ),
                         ),
                       ),
@@ -647,46 +590,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     context,
                                     icon: Icons.account_balance_wallet_rounded,
                                     label: 'To',
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        isExpanded: true,
-                                        hint: Text(
-                                          'Select destination',
-                                          style: TextStyle(
-                                            color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        dropdownColor: AppTheme.surfaceLightColor(context),
-                                        style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textColor(context), fontSize: 15),
-                                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor(context)),
-                                        borderRadius: BorderRadius.circular(16),
-                                        value: _selectedToAccountId,
-                                        items: accounts.map((acc) {
-                                          return DropdownMenuItem(
-                                            value: acc.id,
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets.all(6),
-                                                  decoration: BoxDecoration(
-                                                    color: acc.color.withValues(alpha: 0.12),
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Icon(IconData(acc.iconCodePoint, fontFamily: 'MaterialIcons'), color: acc.color, size: 16),
-                                                ),
-                                                const Gap(10),
-                                                Text(acc.name),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _selectedToAccountId = val;
-                                          });
-                                        },
+                                    child: _buildPickerTrigger(
+                                      context: context,
+                                      hint: 'Select destination',
+                                      selectedName: _accountById(accounts, _selectedToAccountId)?.name,
+                                      selectedColor: _accountById(accounts, _selectedToAccountId)?.color,
+                                      selectedIconCodePoint: _accountById(accounts, _selectedToAccountId)?.iconCodePoint,
+                                      onTap: () => _openAccountPicker(
+                                        context,
+                                        accounts,
+                                        title: 'Destination',
+                                        subtitle: 'Choose where the money arrives',
+                                        selectedId: _selectedToAccountId,
+                                        excludeAccountId: _selectedAccountId,
+                                        onSelected: (id) => setState(() => _selectedToAccountId = id),
                                       ),
                                     ),
                                   ),
@@ -773,6 +690,341 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Divider(height: 1, color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
+    );
+  }
+
+  TransactionCategory? _categoryById(List<TransactionCategory> list, String? id) {
+    if (id == null) return null;
+    for (final c in list) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  Account? _accountById(List<Account> list, String? id) {
+    if (id == null) return null;
+    for (final a in list) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  Widget _buildPickerTrigger({
+    required BuildContext context,
+    required String hint,
+    required String? selectedName,
+    required Color? selectedColor,
+    required int? selectedIconCodePoint,
+    required VoidCallback onTap,
+  }) {
+    final hasSelection = selectedName != null && selectedColor != null && selectedIconCodePoint != null;
+    final name = selectedName;
+    final color = selectedColor;
+    final iconCp = selectedIconCodePoint;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              if (hasSelection && color != null && iconCp != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    IconData(iconCp, fontFamily: 'MaterialIcons'),
+                    color: color,
+                    size: 16,
+                  ),
+                ),
+                const Gap(10),
+              ],
+              Expanded(
+                child: Text(
+                  hasSelection && name != null ? name : hint,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: hasSelection
+                        ? AppTheme.textColor(context)
+                        : AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor(context), size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openCategoryPicker(BuildContext context, List<TransactionCategory> categories) async {
+    final id = await _showPremiumSelectionSheet<String>(
+      context: context,
+      title: 'Category',
+      subtitle: 'Choose a category for this transaction',
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final cat = categories[index];
+        return _PremiumSheetItem(
+          name: cat.name,
+          accentColor: cat.color,
+          iconCodePoint: cat.iconCodePoint,
+          selected: cat.id == _selectedCategoryId,
+          onTap: () => Navigator.pop(context, cat.id),
+        );
+      },
+    );
+    if (id != null && mounted) {
+      setState(() => _selectedCategoryId = id);
+    }
+  }
+
+  Future<void> _openAccountPicker(
+    BuildContext context,
+    List<Account> accounts, {
+    required String title,
+    required String subtitle,
+    required String? selectedId,
+    required void Function(String?) onSelected,
+    String? excludeAccountId,
+  }) async {
+    final filtered = excludeAccountId == null
+        ? accounts
+        : accounts.where((a) => a.id != excludeAccountId).toList();
+    final id = await _showPremiumSelectionSheet<String>(
+      context: context,
+      title: title,
+      subtitle: subtitle,
+      itemCount: filtered.length,
+      emptyMessage: filtered.isEmpty ? 'No other accounts available' : null,
+      itemBuilder: (context, index) {
+        final acc = filtered[index];
+        return _PremiumSheetItem(
+          name: acc.name,
+          accentColor: acc.color,
+          iconCodePoint: acc.iconCodePoint,
+          selected: acc.id == selectedId,
+          onTap: () => Navigator.pop(context, acc.id),
+        );
+      },
+    );
+    if (id != null && mounted) {
+      onSelected(id);
+    }
+  }
+
+  Future<T?> _showPremiumSelectionSheet<T>({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required int itemCount,
+    required Widget Function(BuildContext context, int index) itemBuilder,
+    String? emptyMessage,
+  }) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(top: MediaQuery.of(sheetContext).padding.top + 12),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(sheetContext),
+                  border: Border.all(color: AppTheme.dividerColor(sheetContext)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 32,
+                      offset: const Offset(0, -8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Gap(10),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.dividerColor(sheetContext),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                            color: AppTheme.textColor(sheetContext),
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.35,
+                            color: AppTheme.textLightColor(sheetContext),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (emptyMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                      child: Text(
+                        emptyMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppTheme.textLightColor(sheetContext),
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
+                        itemCount: itemCount,
+                        separatorBuilder: (context, index) => const Gap(8),
+                        itemBuilder: itemBuilder,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PremiumSheetItem extends StatelessWidget {
+  const _PremiumSheetItem({
+    required this.name,
+    required this.accentColor,
+    required this.iconCodePoint,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String name;
+  final Color accentColor;
+  final int iconCodePoint;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = AppTheme.primaryColor(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? primary.withValues(alpha: 0.45) : AppTheme.dividerColor(context).withValues(alpha: 0.65),
+              width: selected ? 1.5 : 1,
+            ),
+            color: selected ? primary.withValues(alpha: 0.08) : AppTheme.surfaceLightColor(context).withValues(alpha: 0.45),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: primary.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  IconData(iconCodePoint, fontFamily: 'MaterialIcons'),
+                  color: accentColor,
+                  size: 22,
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: AppTheme.textColor(context),
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle_rounded, color: primary, size: 26)
+              else
+                SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: Center(
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.textLightColor(context).withValues(alpha: 0.25),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
