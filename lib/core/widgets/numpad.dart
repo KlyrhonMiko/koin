@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:koin/core/theme.dart';
 
 enum NumPadAction {
@@ -14,12 +15,14 @@ class NumPad extends StatefulWidget {
   final Function(String expression, String result) onValueChanged;
   final VoidCallback onDone;
   final String initialValue;
+  final bool compact;
 
   const NumPad({
     super.key,
     required this.onValueChanged,
     required this.onDone,
     this.initialValue = '',
+    this.compact = false,
   });
 
   @override
@@ -38,9 +41,20 @@ class _NumPadState extends State<NumPad> {
   }
 
   void _onPress(String value, NumPadAction action) {
+    HapticFeedback.lightImpact();
     setState(() {
       if (action == NumPadAction.digit) {
-        _expression += value;
+        final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
+        if (lastPart.contains('.')) {
+          final decimalPart = lastPart.split('.').last;
+          if (decimalPart.length >= 2) return;
+        }
+
+        if (_expression == '0') {
+          _expression = value;
+        } else {
+          _expression += value;
+        }
       } else if (action == NumPadAction.decimal) {
         final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
         if (!lastPart.contains('.')) {
@@ -82,6 +96,12 @@ class _NumPadState extends State<NumPad> {
     }
 
     try {
+      final hasOperators = _expression.contains(RegExp(r'[+\-*/]'));
+      if (!hasOperators) {
+        _result = _expression;
+        return;
+      }
+
       final tokens = RegExp(r'(\d+\.?\d*)|([+\-*/])').allMatches(_expression).map((m) => m.group(0)!).toList();
 
       if (tokens.isEmpty) {
@@ -122,38 +142,117 @@ class _NumPadState extends State<NumPad> {
     }
   }
 
-  Widget _buildButton(BuildContext context, String text, NumPadAction action, {Color? color, Color? textColor, IconData? icon, int flex = 1, String? displayText}) {
-    final isOperator = action == NumPadAction.operator;
-    final isDone = action == NumPadAction.done;
+  Widget _buildDigitKey(BuildContext context, String text, {int flex = 1}) {
+    final c = widget.compact;
+    final keyPad = c ? 3.0 : 4.0;
+    final keyRadius = c ? 14.0 : 16.0;
+    final keyHeight = c ? 46.0 : 56.0;
+    final fontSize = c ? 19.0 : 22.0;
 
     return Expanded(
       flex: flex,
       child: Padding(
-        padding: const EdgeInsets.all(4.0),
+        padding: EdgeInsets.all(keyPad),
         child: Material(
-          color: color ?? AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(14),
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(keyRadius),
           child: InkWell(
-            onTap: () => _onPress(text, action),
-            borderRadius: BorderRadius.circular(14),
-            splashColor: (textColor ?? AppTheme.textColor(context)).withValues(alpha: 0.1),
+            onTap: () => _onPress(text, text == '.' ? NumPadAction.decimal : NumPadAction.digit),
+            borderRadius: BorderRadius.circular(keyRadius),
+            splashColor: AppTheme.primaryColor(context).withValues(alpha: 0.08),
+            highlightColor: AppTheme.primaryColor(context).withValues(alpha: 0.04),
             child: Container(
-              height: 56,
+              height: keyHeight,
               alignment: Alignment.center,
-              decoration: isDone
-                  ? BoxDecoration(
-                      gradient: AppTheme.primaryGradient(context),
-                      borderRadius: BorderRadius.circular(14),
-                    )
-                  : null,
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor(context),
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOperatorKey(BuildContext context, String value, String display) {
+    final c = widget.compact;
+    final keyPad = c ? 3.0 : 4.0;
+    final keyRadius = c ? 14.0 : 16.0;
+    final keyHeight = c ? 46.0 : 56.0;
+    final primaryColor = AppTheme.primaryColor(context);
+
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.all(keyPad),
+        child: Material(
+          color: primaryColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(keyRadius),
+          child: InkWell(
+            onTap: () => _onPress(value, NumPadAction.operator),
+            borderRadius: BorderRadius.circular(keyRadius),
+            splashColor: primaryColor.withValues(alpha: 0.15),
+            highlightColor: primaryColor.withValues(alpha: 0.08),
+            child: Container(
+              height: keyHeight,
+              alignment: Alignment.center,
+              child: Text(
+                display,
+                style: TextStyle(
+                  fontSize: c ? 22.0 : 24.0,
+                  fontWeight: FontWeight.w700,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionKey(BuildContext context, {
+    required NumPadAction action,
+    IconData? icon,
+    String? text,
+    Color? color,
+    Color? bgColor,
+    int flex = 1,
+  }) {
+    final c = widget.compact;
+    final keyPad = c ? 3.0 : 4.0;
+    final keyRadius = c ? 14.0 : 16.0;
+    final keyHeight = c ? 46.0 : 56.0;
+    final effectiveColor = color ?? AppTheme.textLightColor(context);
+
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: EdgeInsets.all(keyPad),
+        child: Material(
+          color: bgColor ?? AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(keyRadius),
+          child: InkWell(
+            onTap: () => _onPress(text ?? '', action),
+            borderRadius: BorderRadius.circular(keyRadius),
+            splashColor: effectiveColor.withValues(alpha: 0.12),
+            highlightColor: effectiveColor.withValues(alpha: 0.06),
+            child: Container(
+              height: keyHeight,
+              alignment: Alignment.center,
               child: icon != null
-                  ? Icon(icon, color: textColor ?? AppTheme.textColor(context), size: 22)
+                  ? Icon(icon, color: effectiveColor, size: c ? 20.0 : 22.0)
                   : Text(
-                      displayText ?? text,
+                      text ?? '',
                       style: TextStyle(
-                        fontSize: isOperator ? 24 : 20,
+                        fontSize: c ? 16.0 : 18.0,
                         fontWeight: FontWeight.w700,
-                        color: isDone ? Colors.white : (textColor ?? AppTheme.textColor(context)),
+                        color: effectiveColor,
                       ),
                     ),
             ),
@@ -163,72 +262,136 @@ class _NumPadState extends State<NumPad> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLightColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
-          top: BorderSide(color: AppTheme.dividerColor(context), width: 1),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.dividerColor(context),
-              borderRadius: BorderRadius.circular(2),
+  Widget _buildDoneKey(BuildContext context) {
+    final c = widget.compact;
+    final keyPad = c ? 3.0 : 4.0;
+    final keyRadius = c ? 14.0 : 16.0;
+    final keyHeight = c ? 46.0 : 56.0;
+
+    return Expanded(
+      flex: 3,
+      child: Padding(
+        padding: EdgeInsets.all(keyPad),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(keyRadius),
+          child: InkWell(
+            onTap: () => _onPress('Done', NumPadAction.done),
+            borderRadius: BorderRadius.circular(keyRadius),
+            splashColor: Colors.white.withValues(alpha: 0.2),
+            child: Container(
+              height: keyHeight,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient(context),
+                borderRadius: BorderRadius.circular(keyRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Save',
+                    style: TextStyle(
+                      fontSize: c ? 15.0 : 16.0,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Row(
-            children: [
-              _buildButton(context, '7', NumPadAction.digit),
-              _buildButton(context, '8', NumPadAction.digit),
-              _buildButton(context, '9', NumPadAction.digit),
-              _buildButton(context, '/', NumPadAction.operator, color: AppTheme.primaryColor(context).withValues(alpha: 0.08), textColor: AppTheme.primaryColor(context), displayText: '÷'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildButton(context, '4', NumPadAction.digit),
-              _buildButton(context, '5', NumPadAction.digit),
-              _buildButton(context, '6', NumPadAction.digit),
-              _buildButton(context, '*', NumPadAction.operator, color: AppTheme.primaryColor(context).withValues(alpha: 0.08), textColor: AppTheme.primaryColor(context), displayText: '×'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildButton(context, '1', NumPadAction.digit),
-              _buildButton(context, '2', NumPadAction.digit),
-              _buildButton(context, '3', NumPadAction.digit),
-              _buildButton(context, '-', NumPadAction.operator, color: AppTheme.primaryColor(context).withValues(alpha: 0.08), textColor: AppTheme.primaryColor(context), displayText: '−'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildButton(context, '.', NumPadAction.decimal),
-              _buildButton(context, '0', NumPadAction.digit),
-              _buildButton(context, 'C', NumPadAction.clear, textColor: const Color(0xFFFF6B6B)),
-              _buildButton(context, '+', NumPadAction.operator, color: AppTheme.primaryColor(context).withValues(alpha: 0.08), textColor: AppTheme.primaryColor(context)),
-            ],
-          ),
-          Row(
-            children: [
-              _buildButton(context, '', NumPadAction.backspace, icon: Icons.backspace_outlined, textColor: AppTheme.textLightColor(context), flex: 1),
-              _buildButton(context, 'Done', NumPadAction.done,
-                color: Colors.transparent,
-                textColor: Colors.white,
-                flex: 3,
-              ),
-            ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.compact;
+    return Container(
+      padding: EdgeInsets.fromLTRB(10, c ? 10 : 12, 10, c ? 8 : 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLightColor(context),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(c ? 24 : 28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Row 1: 7 8 9 ÷
+            Row(
+              children: [
+                _buildDigitKey(context, '7'),
+                _buildDigitKey(context, '8'),
+                _buildDigitKey(context, '9'),
+                _buildOperatorKey(context, '/', '÷'),
+              ],
+            ),
+            // Row 2: 4 5 6 ×
+            Row(
+              children: [
+                _buildDigitKey(context, '4'),
+                _buildDigitKey(context, '5'),
+                _buildDigitKey(context, '6'),
+                _buildOperatorKey(context, '*', '×'),
+              ],
+            ),
+            // Row 3: 1 2 3 −
+            Row(
+              children: [
+                _buildDigitKey(context, '1'),
+                _buildDigitKey(context, '2'),
+                _buildDigitKey(context, '3'),
+                _buildOperatorKey(context, '-', '−'),
+              ],
+            ),
+            // Row 4: . 0 C +
+            Row(
+              children: [
+                _buildDigitKey(context, '.'),
+                _buildDigitKey(context, '0'),
+                _buildActionKey(context,
+                  action: NumPadAction.clear,
+                  text: 'C',
+                  color: const Color(0xFFFF6B6B),
+                  bgColor: const Color(0xFFFF6B6B).withValues(alpha: 0.08),
+                ),
+                _buildOperatorKey(context, '+', '+'),
+              ],
+            ),
+            // Row 5: ⌫ [    Save    ]
+            Row(
+              children: [
+                _buildActionKey(context,
+                  action: NumPadAction.backspace,
+                  icon: Icons.backspace_outlined,
+                  color: AppTheme.textLightColor(context),
+                  bgColor: AppTheme.surfaceLightColor(context),
+                ),
+                _buildDoneKey(context),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
