@@ -51,22 +51,6 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
                 _searchQuery = '';
               }),
             ),
-          if (!_showSearch) ...[
-            IconButton(
-              icon: const Icon(Icons.account_balance_wallet_outlined),
-              tooltip: 'Manage Budgets',
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-                ref.read(navigationProvider.notifier).setIndex(4);
-                ref.read(pageControllerProvider).animateToPage(
-                  4,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-            ),
-            const Gap(8),
-          ],
         ],
       ),
       body: categories.isEmpty
