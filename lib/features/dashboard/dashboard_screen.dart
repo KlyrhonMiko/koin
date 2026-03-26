@@ -57,9 +57,30 @@ class DashboardScreen extends ConsumerWidget {
                 const Gap(28),
                 _buildBudgetSection(context, ref, stats, currency).animate().fade(delay: 200.ms).slideY(begin: 0.08),
                 const Gap(28),
-                Text(
-                  'Spending Overview',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Spending Overview',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(navigationProvider.notifier).setIndex(3);
+                        ref.read(pageControllerProvider).animateToPage(
+                          3,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Full Analysis', style: TextStyle(fontSize: 13)),
+                    ),
+                  ],
                 ).animate().fade(delay: 250.ms),
                 const Gap(16),
                 _buildChartSection(context, stats, currency).animate().fade(delay: 300.ms).scale(begin: const Offset(0.97, 0.97)),

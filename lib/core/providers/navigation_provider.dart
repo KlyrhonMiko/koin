@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class NavigationNotifier extends Notifier<int> {
   @override
-  int build() => 2;
+  int build() => 3;
 
   void setIndex(int index) {
     state = index;
@@ -15,7 +15,7 @@ final navigationProvider = NotifierProvider<NavigationNotifier, int>(() {
 });
 
 final pageControllerProvider = Provider<PageController>((ref) {
-  final controller = PageController(initialPage: 2);
+  final controller = PageController(initialPage: 3);
   ref.onDispose(() => controller.dispose());
   return controller;
 });
