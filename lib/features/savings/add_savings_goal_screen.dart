@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/providers/savings_provider.dart';
+import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
 
@@ -102,6 +103,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.goal != null;
+    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -133,10 +135,11 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                   const Gap(16),
                   TextFormField(
                     controller: _amountController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Target Amount',
                       hintText: 'How much do you want to save?',
-                      prefixIcon: Icon(Icons.payments_outlined),
+                      prefixIcon: const Icon(Icons.payments_outlined),
+                      prefixText: '${settings.currency.symbol} ',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {

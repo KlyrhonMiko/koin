@@ -66,9 +66,9 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        ref.read(navigationProvider.notifier).setIndex(3);
+                        ref.read(navigationProvider.notifier).setIndex(1);
                         ref.read(pageControllerProvider).animateToPage(
-                          3,
+                          1,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
@@ -518,9 +518,9 @@ class DashboardScreen extends ConsumerWidget {
             TextButton(
               onPressed: () {
                 Navigator.popUntil(context, (route) => route.isFirst);
-                ref.read(navigationProvider.notifier).setIndex(4);
+                ref.read(navigationProvider.notifier).setIndex(3);
                 ref.read(pageControllerProvider).animateToPage(
-                  4,
+                  3,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
@@ -551,9 +551,9 @@ class DashboardScreen extends ConsumerWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.popUntil(context, (route) => route.isFirst);
-                    ref.read(navigationProvider.notifier).setIndex(4);
+                    ref.read(navigationProvider.notifier).setIndex(3);
                     ref.read(pageControllerProvider).animateToPage(
-                      4,
+                      3,
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     );

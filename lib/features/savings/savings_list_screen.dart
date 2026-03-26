@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/providers/savings_provider.dart';
+import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
@@ -15,6 +16,8 @@ class SavingsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goalsAsync = ref.watch(savingsGoalsProvider);
+    final settings = ref.watch(settingsProvider);
+    final currencyFormat = NumberFormat.simpleCurrency(name: settings.currency.code);
 
     return Scaffold(
       extendBody: true,
@@ -31,13 +34,13 @@ class SavingsListScreen extends ConsumerWidget {
             itemCount: goals.length + 2, // +1 hero, +1 add button
             itemBuilder: (context, index) {
               if (index == 0) {
-                return _buildHeroSummaryCard(context, goals);
+                return _buildHeroSummaryCard(context, goals, currencyFormat);
               }
               if (index == goals.length + 1) {
                 return _buildAddGoalButton(context, index);
               }
               final goal = goals[index - 1];
-              return _buildGoalCard(context, goal, index);
+              return _buildGoalCard(context, goal, index, currencyFormat);
             },
           );
         },
@@ -47,8 +50,7 @@ class SavingsListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroSummaryCard(BuildContext context, List<SavingsGoal> goals) {
-    final currencyFormat = NumberFormat.simpleCurrency();
+  Widget _buildHeroSummaryCard(BuildContext context, List<SavingsGoal> goals, NumberFormat currencyFormat) {
     final totalSaved = goals.fold<double>(0, (sum, g) => sum + g.currentAmount);
     final totalTarget = goals.fold<double>(0, (sum, g) => sum + g.targetAmount);
     final overallProgress = totalTarget > 0 ? (totalSaved / totalTarget).clamp(0.0, 1.0) : 0.0;
@@ -256,8 +258,7 @@ class SavingsListScreen extends ConsumerWidget {
     ).animate().fade(delay: (index * 80).ms).slideY(begin: 0.08);
   }
 
-  Widget _buildGoalCard(BuildContext context, SavingsGoal goal, int index) {
-    final currencyFormat = NumberFormat.simpleCurrency();
+  Widget _buildGoalCard(BuildContext context, SavingsGoal goal, int index, NumberFormat currencyFormat) {
     final progressPercent = (goal.progress * 100).toStringAsFixed(0);
 
     // Pick a color based on goal index for the accent
