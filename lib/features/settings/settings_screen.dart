@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/features/categories/category_manager_screen.dart';
+
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -148,19 +148,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.payments_outlined,
               onTap: () => _showCurrencyPicker(context, ref, settings.currency),
             ),
-            const Gap(10),
-            _buildSettingCard(
-              context,
-              title: 'Categories',
-              subtitle: 'Add, edit, or delete categories',
-              icon: Icons.category_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
-                );
-              },
-            ),
+
             const Gap(28),
             _buildSectionHeader(context, 'About'),
             const Gap(12),

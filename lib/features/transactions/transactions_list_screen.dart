@@ -6,7 +6,6 @@ import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-
 class TransactionsListScreen extends ConsumerWidget {
   const TransactionsListScreen({super.key});
 
@@ -18,8 +17,16 @@ class TransactionsListScreen extends ConsumerWidget {
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Transactions'),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: kToolbarHeight,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(56),
+          child: SizedBox.shrink(),
+        ),
       ),
       body: transactionsAsync.when(
         data: (transactions) {

@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
 import 'package:koin/core/providers/savings_provider.dart';
@@ -144,85 +146,45 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           ),
         ],
       ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppTheme.primaryGradient(context),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _showAddLogSheet,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text('Add Savings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        ),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProgressCard(context, goal),
+            _buildGaugeHeader(context, goal),
             const Gap(24),
-            const Text(
-              'Savings Needed',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
+            _buildSectionHeader(context, 'Savings Needed', Icons.trending_up_rounded),
             const Gap(12),
             _buildCalculationsGrid(context, goal),
             const Gap(24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent Activity',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                TextButton.icon(
-                  onPressed: _showAddLogSheet,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add Savings', style: TextStyle(fontSize: 13)),
-                ),
-              ],
-            ),
-            const Gap(8),
+            _buildSectionHeader(context, 'Recent Activity', Icons.history_rounded),
+            const Gap(12),
             logsAsync.when(
               data: (logs) {
                 if (logs.isEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.dividerColor(context)),
-                    ),
-                    child: Text(
-                      'No activity yet',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppTheme.textLightColor(context)),
-                    ),
-                  );
+                  return _buildEmptyActivity(context);
                 }
-                return Column(
-                  children: logs.map((log) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.dividerColor(context)),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.add_rounded, color: AppTheme.primaryColor(context), size: 18),
-                        ),
-                        title: Text(
-                          currencyFormat.format(log.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                        ),
-                        subtitle: Text(
-                          DateFormat.yMMMd().format(log.date),
-                          style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
+                return _buildActivityTimeline(context, logs, currencyFormat);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Text('Error: $err'),
@@ -233,61 +195,145 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildProgressCard(BuildContext context, SavingsGoal goal) {
-    final currencyFormat = NumberFormat.simpleCurrency();
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Current Progress', style: TextStyle(fontSize: 14, color: AppTheme.textLightColor(context))),
-              Text(
-                '${(goal.progress * 100).toStringAsFixed(1)}%',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.primaryColor(context),
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: goal.progress,
-              minHeight: 12,
-              backgroundColor: AppTheme.dividerColor(context),
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor(context)),
-            ),
-          ),
-          const Gap(20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildGoalStat(context, 'Current', currencyFormat.format(goal.currentAmount)),
-              _buildGoalStat(context, 'Target', currencyFormat.format(goal.targetAmount)),
-              _buildGoalStat(context, 'Remaining', currencyFormat.format(goal.remainingAmount)),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppTheme.primaryColor(context)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+      ],
     );
   }
 
-  Widget _buildGoalStat(BuildContext context, String label, String value) {
+  Widget _buildGaugeHeader(BuildContext context, SavingsGoal goal) {
+    final currencyFormat = NumberFormat.simpleCurrency();
+    final progressPercent = (goal.progress * 100).toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor(context).withValues(alpha: 0.08),
+            AppTheme.primaryColor(context).withValues(alpha: 0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.primaryColor(context).withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        children: [
+          // Radial gauge
+          SizedBox(
+            width: 140,
+            height: 140,
+            child: CustomPaint(
+              painter: _RadialGaugePainter(
+                progress: goal.progress,
+                trackColor: AppTheme.dividerColor(context),
+                progressColor: AppTheme.primaryColor(context),
+                strokeWidth: 10,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$progressPercent%',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primaryColor(context),
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    Text(
+                      'saved',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ).animate().scale(
+            begin: const Offset(0.8, 0.8),
+            end: const Offset(1.0, 1.0),
+            duration: 600.ms,
+            curve: Curves.elasticOut,
+          ),
+          const Gap(20),
+          // Stats row
+          Row(
+            children: [
+              Expanded(child: _buildStatColumn(context, 'Current', currencyFormat.format(goal.currentAmount), AppTheme.incomeColor(context))),
+              Container(width: 1, height: 36, color: AppTheme.dividerColor(context)),
+              Expanded(child: _buildStatColumn(context, 'Target', currencyFormat.format(goal.targetAmount), AppTheme.primaryColor(context))),
+              Container(width: 1, height: 36, color: AppTheme.dividerColor(context)),
+              Expanded(child: _buildStatColumn(context, 'Remaining', currencyFormat.format(goal.remainingAmount), AppTheme.expenseColor(context))),
+            ],
+          ),
+          const Gap(16),
+          // Days remaining bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context).withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.timer_outlined, size: 16, color: AppTheme.textLightColor(context).withValues(alpha: 0.6)),
+                const SizedBox(width: 6),
+                Text(
+                  '${goal.remainingDays} days remaining',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: goal.remainingDays <= 7
+                        ? AppTheme.expenseColor(context)
+                        : AppTheme.textLightColor(context),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '• ends ${DateFormat.yMMMd().format(goal.endDate)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fade(duration: 400.ms).slideY(begin: 0.04);
+  }
+
+  Widget _buildStatColumn(BuildContext context, String label, String value, Color color) {
     return Column(
       children: [
         Text(label, style: TextStyle(fontSize: 11, color: AppTheme.textLightColor(context).withValues(alpha: 0.6))),
         const Gap(4),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        FittedBox(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -302,7 +348,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         const Gap(10),
         Expanded(child: _buildCalculationCard(context, 'Monthly', currencyFormat.format(goal.monthlyNeeded), Icons.calendar_month_rounded)),
       ],
-    );
+    ).animate().fade(delay: 150.ms).slideY(begin: 0.04);
   }
 
   Widget _buildCalculationCard(BuildContext context, String label, String value, IconData icon) {
@@ -312,22 +358,218 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppTheme.dividerColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: AppTheme.primaryColor(context)),
-          const Gap(8),
-          Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textLightColor(context).withValues(alpha: 0.6))),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: AppTheme.primaryColor(context)),
+          ),
+          const Gap(10),
+          Text(label, style: TextStyle(fontSize: 11, color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontWeight: FontWeight.w500)),
           const Gap(4),
           FittedBox(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildEmptyActivity(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.dividerColor(context)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.receipt_long_rounded, size: 32, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
+          const Gap(12),
+          Text(
+            'No activity yet',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textLightColor(context),
+            ),
+          ),
+          const Gap(4),
+          Text(
+            'Tap "Add Savings" to record your first deposit',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fade(delay: 200.ms);
+  }
+
+  Widget _buildActivityTimeline(BuildContext context, List<SavingsLog> logs, NumberFormat currencyFormat) {
+    return Column(
+      children: logs.asMap().entries.map((entry) {
+        final index = entry.key;
+        final log = entry.value;
+        final isLast = index == logs.length - 1;
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Timeline connector
+              SizedBox(
+                width: 32,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.only(top: 18),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor(context),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 1.5,
+                          color: AppTheme.dividerColor(context),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Log card
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.incomeColor(context).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.arrow_upward_rounded, color: AppTheme.incomeColor(context), size: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '+ ${currencyFormat.format(log.amount)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: AppTheme.incomeColor(context),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormat.yMMMd().add_jm().format(log.date),
+                              style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.5), fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ).animate().fade(delay: (index * 60).ms).slideX(begin: 0.04);
+      }).toList(),
+    );
+  }
+}
+
+class _RadialGaugePainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+  final double strokeWidth;
+
+  _RadialGaugePainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // Track
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // Progress arc
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final sweepAngle = 2 * pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadialGaugePainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.progressColor != progressColor ||
+        oldDelegate.trackColor != trackColor;
   }
 }

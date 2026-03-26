@@ -7,9 +7,11 @@ import 'package:koin/features/accounts/accounts_screen.dart';
 import 'package:koin/features/dashboard/dashboard_screen.dart';
 import 'package:koin/features/savings/savings_list_screen.dart';
 import 'package:koin/features/transactions/transactions_list_screen.dart';
+import 'package:koin/features/analysis/analysis_screen.dart';
 import 'package:koin/features/budgets/budgets_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
+import 'package:koin/features/activity/overlay_activity_app_bar.dart';
 
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
@@ -48,19 +50,30 @@ class MainLayout extends ConsumerWidget {
         body: MediaQuery.removePadding(
           context: context,
           removeBottom: true,
-          child: PageView(
-            controller: pageController,
-            onPageChanged: onPageChanged,
-            children: const [
-              AccountsScreen(),
-              TransactionsListScreen(),
-              DashboardScreen(),
-              BudgetsScreen(),
-              SavingsListScreen(),
+          child: Stack(
+            children: [
+              PageView(
+                controller: pageController,
+                onPageChanged: onPageChanged,
+                children: const [
+                  AccountsScreen(),
+                  TransactionsListScreen(),
+                  AnalysisScreen(),
+                  DashboardScreen(),
+                  BudgetsScreen(),
+                  SavingsListScreen(),
+                ],
+              ),
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: OverlayActivityAppBar(),
+              ),
             ],
           ),
         ),
-        floatingActionButton: currentIndex == 2
+        floatingActionButton: currentIndex == 3
             ? FloatingActionButton.extended(
                 onPressed: () => Navigator.push(
                   context,
@@ -101,8 +114,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.credit_card_outlined,
                       activeIcon: Icons.credit_card_rounded,
                       label: 'Accounts',
-                      index: 0,
-                      currentIndex: currentIndex,
+                      isActive: currentIndex == 0,
+                      targetIndex: 0,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -110,8 +123,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.receipt_long_outlined,
                       activeIcon: Icons.receipt_long_rounded,
                       label: 'Activity',
-                      index: 1,
-                      currentIndex: currentIndex,
+                      isActive: currentIndex == 1 || currentIndex == 2,
+                      targetIndex: 1,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -119,8 +132,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.dashboard_outlined,
                       activeIcon: Icons.dashboard_rounded,
                       label: 'Home',
-                      index: 2,
-                      currentIndex: currentIndex,
+                      isActive: currentIndex == 3,
+                      targetIndex: 3,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -128,8 +141,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.account_balance_wallet_outlined,
                       activeIcon: Icons.account_balance_wallet_rounded,
                       label: 'Budgets',
-                      index: 3,
-                      currentIndex: currentIndex,
+                      isActive: currentIndex == 4,
+                      targetIndex: 4,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -137,8 +150,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.savings_outlined,
                       activeIcon: Icons.savings_rounded,
                       label: 'Savings',
-                      index: 4,
-                      currentIndex: currentIndex,
+                      isActive: currentIndex == 5,
+                      targetIndex: 5,
                       onTap: onItemTapped,
                     ),
                   ],
@@ -156,15 +169,14 @@ class MainLayout extends ConsumerWidget {
     required IconData icon,
     required IconData activeIcon,
     required String label,
-    required int index,
-    required int currentIndex,
+    required bool isActive,
+    required int targetIndex,
     required Function(int) onTap,
   }) {
-    final isActive = index == currentIndex;
     final primaryColor = AppTheme.primaryColor(context);
 
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => onTap(targetIndex),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
