@@ -25,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -45,6 +45,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 5) {
       await db.execute('ALTER TABLE categories ADD COLUMN budget REAL');
+    }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE categories ADD COLUMN type TEXT DEFAULT "expense"');
     }
   }
 
@@ -106,6 +109,7 @@ CREATE TABLE categories (
   name $textType,
   iconCodePoint $intType,
   colorHex $textType,
+  type $textType,
   budget REAL
 )
 ''');
@@ -137,13 +141,14 @@ CREATE TABLE transactions (
 
   Future _insertDefaultCategories(Database db) async {
     final defaultCategories = [
-      TransactionCategory(id: 'cat_groceries', name: 'Groceries', iconCodePoint: Icons.shopping_cart.codePoint, colorHex: '#4CAF50'),
-      TransactionCategory(id: 'cat_dining', name: 'Dining', iconCodePoint: Icons.restaurant.codePoint, colorHex: '#FF9800'),
-      TransactionCategory(id: 'cat_transport', name: 'Transport', iconCodePoint: Icons.directions_car.codePoint, colorHex: '#2196F3'),
-      TransactionCategory(id: 'cat_salary', name: 'Salary', iconCodePoint: Icons.attach_money.codePoint, colorHex: '#8BC34A'),
-      TransactionCategory(id: 'cat_entertainment', name: 'Entertainment', iconCodePoint: Icons.movie.codePoint, colorHex: '#9C27B0'),
-      TransactionCategory(id: 'cat_health', name: 'Health', iconCodePoint: Icons.local_hospital.codePoint, colorHex: '#F44336'),
-      TransactionCategory(id: 'cat_others', name: 'Others', iconCodePoint: Icons.category.codePoint, colorHex: '#607D8B'),
+      TransactionCategory(id: 'cat_groceries', name: 'Groceries', iconCodePoint: Icons.shopping_cart.codePoint, colorHex: '#4CAF50', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_dining', name: 'Dining', iconCodePoint: Icons.restaurant.codePoint, colorHex: '#FF9800', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_transport', name: 'Transport', iconCodePoint: Icons.directions_car.codePoint, colorHex: '#2196F3', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_salary', name: 'Salary', iconCodePoint: Icons.attach_money.codePoint, colorHex: '#8BC34A', type: TransactionType.income),
+      TransactionCategory(id: 'cat_entertainment', name: 'Entertainment', iconCodePoint: Icons.movie.codePoint, colorHex: '#9C27B0', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_health', name: 'Health', iconCodePoint: Icons.local_hospital.codePoint, colorHex: '#F44336', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_others', name: 'Others', iconCodePoint: Icons.category.codePoint, colorHex: '#607D8B', type: TransactionType.expense),
+      TransactionCategory(id: 'cat_others_inc', name: 'Other Income', iconCodePoint: Icons.add_circle.codePoint, colorHex: '#00D09E', type: TransactionType.income),
     ];
 
     for (var category in defaultCategories) {
@@ -238,6 +243,16 @@ CREATE TABLE transactions (
     final db = await instance.database;
     final result = await db.query('transactions', orderBy: 'date DESC');
     return result.map((json) => AppTransaction.fromMap(json)).toList();
+  }
+
+  Future<int> updateTransaction(AppTransaction transaction) async {
+    final db = await instance.database;
+    return await db.update(
+      'transactions',
+      transaction.toMap(),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
   }
 
   Future<int> deleteTransaction(String id) async {

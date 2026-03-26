@@ -142,73 +142,81 @@ class SavingsListScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.savings_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.5)),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              'Start Saving Today',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textColor(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Set a goal and track your progress\ntowards your dreams.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 36),
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: AppTheme.primaryGradient(context),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Align(
+            alignment: const Alignment(0, -0.3),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(36),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(context),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-                  ),
-                  icon: const Icon(Icons.add_rounded, color: Colors.white),
-                  label: const Text('Create Your First Goal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
+                    child: Icon(Icons.savings_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
+                  ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
+                  const SizedBox(height: 24),
+                  Text(
+                    'No goals yet',
+                    style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                  ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your first goal to see it here',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
+                  ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
+                  const SizedBox(height: 36),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: AppTheme.primaryGradient(context),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+                        ),
+                        icon: const Icon(Icons.add_rounded, color: Colors.white),
+                        label: const Text('Create Your First Goal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ).animate().slideY(begin: 0.2, delay: 500.ms, duration: 400.ms).fadeIn(),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
-    ).animate().fade(duration: 500.ms).scale(begin: const Offset(0.95, 0.95));
+      ],
+    );
   }
 
   Widget _buildAddGoalButton(BuildContext context, int index) {

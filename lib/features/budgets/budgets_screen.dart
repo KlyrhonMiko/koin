@@ -5,10 +5,12 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
 
@@ -22,8 +24,8 @@ class BudgetsScreen extends ConsumerWidget {
     final stats = ref.watch(dashboardStatsProvider);
     final currency = settings.currency;
 
-    final budgeted = categories.where((c) => c.budget != null && c.budget! > 0).toList();
-    final unbudgeted = categories.where((c) => c.budget == null || c.budget == 0).toList();
+    final budgeted = categories.where((c) => c.type == TransactionType.expense && c.budget != null && c.budget! > 0).toList();
+    final unbudgeted = categories.where((c) => c.type == TransactionType.expense && (c.budget == null || c.budget == 0)).toList();
 
     // Calculate totals
     double totalBudget = 0;
@@ -53,7 +55,7 @@ class BudgetsScreen extends ConsumerWidget {
           const Gap(8),
         ],
       ),
-      body: categories.isEmpty
+      body: categories.where((c) => c.type == TransactionType.expense).isEmpty
           ? _buildEmptyState(context)
           : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -99,7 +101,7 @@ class BudgetsScreen extends ConsumerWidget {
                         index: index,
                       ).animate().fade(delay: (150 + index * 60).ms).slideY(begin: 0.06);
                     }),
-                    const Gap(24),
+                    if (unbudgeted.isNotEmpty) const Gap(24),
                   ],
 
                   // Unbudgeted categories section
@@ -125,71 +127,106 @@ class BudgetsScreen extends ConsumerWidget {
                         ),
                       ).animate().fade(delay: 150.ms),
                     const Gap(12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        ...unbudgeted.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final category = entry.value;
-                          return _buildUnbudgetedChip(context, ref, category, currency)
-                              .animate()
-                              .fade(delay: ((budgeted.isEmpty ? 200 : 350) + index * 50).ms)
-                              .scale(begin: const Offset(0.92, 0.92));
-                        }),
-                        // Manage categories "button" chip
-                        GestureDetector(
-                          onTap: () {
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final maxRowWidth = screenWidth - 40; // 20 padding each side
+                        const spacing = 10.0;
+
+                        double estimateWidth(String text) {
+                          return 92.0 + (text.length * 7.5);
+                        }
+
+                        final pendingItems = <Map<String, dynamic>>[];
+                        for (int i = 0; i < unbudgeted.length; i++) {
+                           pendingItems.add({
+                             'category': unbudgeted[i],
+                             'width': estimateWidth(unbudgeted[i].name),
+                             'isManage': false,
+                             'originalIndex': i,
+                           });
+                        }
+                        pendingItems.add({
+                           'category': null,
+                           'width': estimateWidth('Manage'),
+                           'isManage': true,
+                           'originalIndex': unbudgeted.length,
+                        });
+
+                        final optimallyOrderedItems = <Map<String, dynamic>>[];
+
+                        while (pendingItems.isNotEmpty) {
+                          // Take the first remaining item
+                          final firstItem = pendingItems.removeAt(0);
+                          optimallyOrderedItems.add(firstItem);
+                          double currentX = firstItem['width'] as double;
+
+                          // repeatedly look ahead for the largest item that still fits on this row
+                          bool found = true;
+                          while (found) {
+                            found = false;
+                            int bestIndex = -1;
+                            double bestWidth = -1;
+                            
+                            for (int i = 0; i < pendingItems.length; i++) {
+                              final w = pendingItems[i]['width'] as double;
+                              if (currentX + spacing + w <= maxRowWidth) {
+                                if (w > bestWidth) {
+                                  bestWidth = w;
+                                  bestIndex = i;
+                                }
+                              }
+                            }
+                            
+                            if (bestIndex != -1) {
+                              final fitItem = pendingItems.removeAt(bestIndex);
+                              optimallyOrderedItems.add(fitItem);
+                              currentX += spacing + bestWidth;
+                              found = true;
+                            }
+                          }
+                        }
+
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: 10,
+                          children: optimallyOrderedItems.map((item) {
+                            if (item['isManage'] == true) {
+                              return _buildManageChip(context, budgeted.isEmpty, item['originalIndex']);
+                            } else {
+                              final category = item['category'] as TransactionCategory;
+                              return _buildUnbudgetedChip(context, ref, category, currency)
+                                  .animate()
+                                  .fade(delay: ((budgeted.isEmpty ? 200 : 350) + item['originalIndex'] * 50).ms)
+                                  .scale(begin: const Offset(0.92, 0.92));
+                            }
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+
+                  // If unbudgeted is empty but we have expense categories, show the Manage button
+                  if (unbudgeted.isEmpty && categories.where((c) => c.type == TransactionType.expense).isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
                             );
                           },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surfaceColor(context),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.dividerColor(context)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.settings_outlined,
-                                    size: 16,
-                                    color: AppTheme.primaryColor(context),
-                                  ),
-                                ),
-                                const Gap(10),
-                                const Text(
-                                  'Manage',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const Gap(8),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 18,
-                                  color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                                ),
-                              ],
-                            ),
+                          icon: const Icon(Icons.settings_outlined, size: 16),
+                          label: const Text('Manage Categories'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textLightColor(context),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                        ).animate()
-                            .fade(delay: ((budgeted.isEmpty ? 200 : 350) + unbudgeted.length * 50).ms)
-                            .scale(begin: const Offset(0.92, 0.92)),
-                      ],
+                        ),
+                      ),
                     ),
-                  ],
                 ],
               ),
             ),
@@ -197,56 +234,82 @@ class BudgetsScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 52,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Align(
+            alignment: const Alignment(0, -0.3),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(36),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(context),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.account_balance_wallet_outlined, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
+                  ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
+                  const SizedBox(height: 24),
+                  Text(
+                    'No categories yet',
+                    style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                  ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Create categories first to set budgets',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
+                  ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
+                  const SizedBox(height: 36),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: AppTheme.primaryGradient(context),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const CategoryDetailScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.add_rounded, color: Colors.white),
+                        label: const Text('Create Category', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ).animate().slideY(begin: 0.2, delay: 500.ms, duration: 400.ms).fadeIn(),
+                ],
+              ),
             ),
           ),
-          const Gap(24),
-          Text(
-            'No categories yet',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textLightColor(context),
-            ),
-          ),
-          const Gap(6),
-          Text(
-            'Create categories first to set budgets',
-            style: TextStyle(
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-              fontSize: 13,
-            ),
-          ),
-          const Gap(24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CategoryDetailScreen()),
-              );
-            },
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Create Category'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -521,9 +584,13 @@ class BudgetsScreen extends ConsumerWidget {
               ),
             ),
             const Gap(10),
-            Text(
-              category.name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            Flexible(
+              child: Text(
+                category.name,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             const Gap(8),
             Icon(
@@ -537,25 +604,84 @@ class BudgetsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildManageChip(BuildContext context, bool isBudgetedEmpty, int unbudgetedLength) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.dividerColor(context)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                size: 16,
+                color: AppTheme.primaryColor(context),
+              ),
+            ),
+            const Gap(10),
+            const Flexible(
+              child: Text(
+                'Manage',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Gap(8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    ).animate()
+      .fade(delay: ((isBudgetedEmpty ? 200 : 350) + unbudgetedLength * 50).ms)
+      .scale(begin: const Offset(0.92, 0.92));
+  }
+
   void _showEditBudgetSheet(
     BuildContext context,
     WidgetRef ref,
     TransactionCategory category,
     currency,
   ) {
-    final controller = TextEditingController(
-      text: category.budget != null && category.budget! > 0
-          ? category.budget!.toStringAsFixed(0)
-          : '',
-    );
     final hasBudget = category.budget != null && category.budget! > 0;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
+      builder: (sheetContext) {
+        String currentExpression = category.budget != null && category.budget! > 0
+            ? category.budget!.toStringAsFixed(0)
+            : '';
+        String currentResult = currentExpression;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
         child: Container(
@@ -618,35 +744,34 @@ class BudgetsScreen extends ConsumerWidget {
                 ],
               ),
               const Gap(24),
-              // Amount input
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1,
-                ),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  prefixText: '${currency.symbol} ',
-                  prefixStyle: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
-                    color: AppTheme.textLightColor(context),
-                  ),
-                  hintText: '0',
-                  hintStyle: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
+              // Amount display
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${currency.symbol} ',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                        color: AppTheme.textLightColor(context),
+                      ),
+                    ),
+                    Text(
+                      currentExpression.isEmpty ? '0' : currentExpression,
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                        color: currentExpression.isEmpty
+                            ? AppTheme.textLightColor(context).withValues(alpha: 0.3)
+                            : AppTheme.textColor(context),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Gap(16),
@@ -658,7 +783,12 @@ class BudgetsScreen extends ConsumerWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: GestureDetector(
-                        onTap: () => controller.text = amount.toString(),
+                        onTap: () {
+                          setState(() {
+                            currentExpression = amount.toString();
+                            currentResult = amount.toString();
+                          });
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
@@ -681,26 +811,31 @@ class BudgetsScreen extends ConsumerWidget {
                 ),
               ),
               const Gap(24),
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final value = double.tryParse(controller.text.trim());
-                    _saveBudget(ref, category, value == 0 ? null : value);
-                    Navigator.pop(sheetContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          value != null && value > 0
-                              ? '${category.name} budget updated'
-                              : '${category.name} budget removed',
-                        ),
+              // NumPad
+              NumPad(
+                compact: true,
+                inline: true,
+                initialValue: currentExpression,
+                onValueChanged: (expr, res) {
+                  setState(() {
+                    currentExpression = expr;
+                    currentResult = res;
+                  });
+                },
+                onDone: () {
+                  final value = double.tryParse(currentResult);
+                  _saveBudget(ref, category, (value == null || value == 0) ? null : value);
+                  Navigator.pop(sheetContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        value != null && value > 0
+                            ? '${category.name} budget updated'
+                            : '${category.name} budget removed',
                       ),
-                    );
-                  },
-                  child: const Text('Save Budget'),
-                ),
+                    ),
+                  );
+                },
               ),
               // Remove budget button (only if editing existing)
               if (hasBudget) ...[
@@ -730,7 +865,10 @@ class BudgetsScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
+      );
+          },
+        );
+      },
     );
   }
 
@@ -741,6 +879,7 @@ class BudgetsScreen extends ConsumerWidget {
       name: category.name,
       iconCodePoint: category.iconCodePoint,
       colorHex: category.colorHex,
+      type: category.type,
       budget: budget,
     );
     notifier.editCategory(updatedCategory);

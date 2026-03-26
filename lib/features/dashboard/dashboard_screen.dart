@@ -14,6 +14,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/features/transactions/add_transaction_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -23,6 +24,13 @@ class DashboardScreen extends ConsumerWidget {
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
+  }
+
+  IconData _getGreetingIcon() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return Icons.light_mode_rounded;
+    if (hour < 17) return Icons.wb_sunny_rounded;
+    return Icons.dark_mode_rounded;
   }
 
   @override
@@ -46,72 +54,70 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
-                _buildHeader(context).animate().fade(duration: 400.ms),
+                _buildHeader(context)
+                    .animate()
+                    .fade(duration: 500.ms)
+                    .slideY(begin: -0.1, duration: 500.ms, curve: Curves.easeOutCubic),
                 const Gap(24),
-                _buildBalanceCard(context, stats, currency).animate().fade(duration: 500.ms).slideY(begin: 0.08),
+                _buildBalanceCard(context, stats, currency)
+                    .animate()
+                    .fade(duration: 600.ms, delay: 100.ms)
+                    .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
                 const Gap(20),
-                _buildAccountsList(context, stats, currency).animate().fade(delay: 100.ms).slideY(begin: 0.08),
+                _buildAccountsList(context, stats, currency)
+                    .animate()
+                    .fade(delay: 200.ms, duration: 500.ms)
+                    .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
                 const Gap(20),
-                _buildIncomeExpenseRow(context, stats, currency).animate().fade(delay: 150.ms).slideY(begin: 0.08),
+                _buildIncomeExpenseRow(context, stats, currency)
+                    .animate()
+                    .fade(delay: 300.ms, duration: 500.ms)
+                    .slideY(begin: 0.1, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
                 const Gap(28),
-                _buildBudgetSection(context, ref, stats, currency).animate().fade(delay: 200.ms).slideY(begin: 0.08),
+                _buildBudgetSection(context, ref, stats, currency)
+                    .animate()
+                    .fade(delay: 400.ms, duration: 500.ms)
+                    .slideY(begin: 0.1, delay: 400.ms, duration: 500.ms, curve: Curves.easeOutCubic),
                 const Gap(28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Spending Overview',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        ref.read(navigationProvider.notifier).setIndex(1);
-                        ref.read(pageControllerProvider).animateToPage(
-                          1,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Full Analysis', style: TextStyle(fontSize: 13)),
-                    ),
-                  ],
-                ).animate().fade(delay: 250.ms),
+                _buildSectionHeader(
+                  context,
+                  ref,
+                  title: 'Spending Overview',
+                  buttonLabel: 'Full Analysis',
+                  onTap: () {
+                    ref.read(navigationProvider.notifier).setIndex(1);
+                    ref.read(pageControllerProvider).animateToPage(
+                      1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ).animate().fade(delay: 500.ms, duration: 500.ms),
                 const Gap(16),
-                _buildChartSection(context, stats, currency).animate().fade(delay: 300.ms).scale(begin: const Offset(0.97, 0.97)),
+                _buildChartSection(context, stats, currency)
+                    .animate()
+                    .fade(delay: 550.ms, duration: 600.ms)
+                    .scale(begin: const Offset(0.96, 0.96), delay: 550.ms, duration: 600.ms, curve: Curves.easeOutCubic),
                 const Gap(28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recent Transactions',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        ref.read(navigationProvider.notifier).setIndex(1);
-                        ref.read(pageControllerProvider).animateToPage(
-                          1,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('View All', style: TextStyle(fontSize: 13)),
-                    ),
-                  ],
-                ).animate().fade(delay: 350.ms),
+                _buildSectionHeader(
+                  context,
+                  ref,
+                  title: 'Recent Transactions',
+                  buttonLabel: 'View All',
+                  onTap: () {
+                    ref.read(navigationProvider.notifier).setIndex(1);
+                    ref.read(pageControllerProvider).animateToPage(
+                      1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ).animate().fade(delay: 600.ms, duration: 500.ms),
                 const Gap(12),
-                _buildRecentTransactions(context, transactionsAsync, currency).animate().fade(delay: 400.ms).slideY(begin: 0.08),
+                _buildRecentTransactions(context, ref, transactionsAsync, currency)
+                    .animate()
+                    .fade(delay: 650.ms, duration: 500.ms)
+                    .slideY(begin: 0.08, delay: 650.ms, duration: 500.ms, curve: Curves.easeOutCubic),
                 const Gap(100),
               ],
             ),
@@ -121,31 +127,94 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  // ─── Consistent Section Header ────────────────────────────────────
+  Widget _buildSectionHeader(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    required String buttonLabel,
+    required VoidCallback onTap,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _getGreeting(),
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textColor(context),
+            letterSpacing: -0.3,
+          ),
+        ),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.15),
               ),
             ),
-            const Gap(4),
-            const Text(
-              'Koin Tracker',
+            child: Text(
+              buttonLabel,
               style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.8,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryColor(context),
               ),
             ),
-          ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Header ───────────────────────────────────────────────────────
+  Widget _buildHeader(BuildContext context) {
+    final now = DateTime.now();
+    final dateStr = DateFormat('EEEE, MMM d').format(now);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    _getGreeting(),
+                    style: TextStyle(
+                      color: AppTheme.textColor(context),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const Gap(8),
+                  Icon(
+                    _getGreetingIcon(),
+                    color: AppTheme.primaryColor(context),
+                    size: 24,
+                  ),
+                ],
+              ),
+              const Gap(4),
+              Text(
+                dateStr,
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
         GestureDetector(
           onTap: () => Navigator.push(
@@ -156,16 +225,160 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppTheme.surfaceLightColor(context),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.dividerColor(context)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(Icons.settings_outlined, color: AppTheme.textLightColor(context), size: 22),
+            child: Icon(
+              Icons.settings_outlined,
+              color: AppTheme.textLightColor(context),
+              size: 22,
+            ),
           ),
         ),
       ],
     );
   }
 
+  // ─── Balance Card (Hero) ──────────────────────────────────────────
+  Widget _buildBalanceCard(BuildContext context, DashboardStats stats, Currency currency) {
+    final netChange = stats.totalIncome - stats.totalExpense;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: AppTheme.primaryGradient(context),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
+            blurRadius: 40,
+            spreadRadius: -4,
+            offset: const Offset(0, 20),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Decorative circles overlay for depth
+          Positioned(
+            top: -30,
+            right: -30,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -20,
+            left: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+          ),
+          // Content
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Balance',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Text(
+                      currency.code,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(16),
+              Text(
+                NumberFormat.currency(symbol: currency.symbol).format(stats.currentBalance),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 38,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.5,
+                  height: 1.1,
+                ),
+              ),
+              const Gap(16),
+              // Net change chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: netChange >= 0
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : (isDark ? Colors.red.withValues(alpha: 0.25) : Colors.red.withValues(alpha: 0.2)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      netChange >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const Gap(6),
+                    Text(
+                      '${netChange >= 0 ? '+' : ''}${NumberFormat.compactCurrency(symbol: currency.symbol).format(netChange)} this period',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Accounts Grid ─────────────────────────────────────────────────
   Widget _buildAccountsList(BuildContext context, DashboardStats stats, Currency currency) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
 
@@ -174,20 +387,31 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           'Accounts',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textColor(context),
+            letterSpacing: -0.3,
+          ),
         ),
         const Gap(12),
-        SizedBox(
-          height: 96,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: stats.accounts.length,
-            itemBuilder: (context, index) {
-              final account = stats.accounts[index];
-              final balance = stats.accountBalances[account.id] ?? 0;
-              return _buildAccountCard(context, account, balance, currency);
-            },
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 12.0;
+            final cardWidth = (constraints.maxWidth - spacing) / 2;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: stats.accounts.map((account) {
+                final balance = stats.accountBalances[account.id] ?? 0;
+                return SizedBox(
+                  width: cardWidth,
+                  child: _buildAccountCard(context, account, balance, currency),
+                );
+              }).toList(),
+            );
+          },
         ),
       ],
     );
@@ -195,22 +419,35 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildAccountCard(BuildContext context, Account account, double balance, Currency currency) {
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
+        gradient: LinearGradient(
+          colors: [
+            account.color.withValues(alpha: 0.08),
+            account.color.withValues(alpha: 0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: account.color.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: account.color.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: account.color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
@@ -225,71 +462,23 @@ class DashboardScreen extends ConsumerWidget {
               Expanded(
                 child: Text(
                   account.name,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textLightColor(context)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppTheme.textLightColor(context),
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
+          const Gap(12),
           Text(
             NumberFormat.currency(symbol: currency.symbol).format(balance),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -0.5),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(BuildContext context, DashboardStats stats, Currency currency) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient(context),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-            blurRadius: 30,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total Balance',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  currency.code,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-          Text(
-            NumberFormat.currency(symbol: currency.symbol).format(stats.currentBalance),
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 40,
               fontWeight: FontWeight.w800,
-              letterSpacing: -1.5,
+              fontSize: 17,
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -297,30 +486,49 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  // ─── Income / Expense Row ─────────────────────────────────────────
   Widget _buildIncomeExpenseRow(BuildContext context, DashboardStats stats, Currency currency) {
+    final total = stats.totalIncome + stats.totalExpense;
+    final incomePercent = total > 0 ? (stats.totalIncome / total * 100) : 0.0;
+    final expensePercent = total > 0 ? (stats.totalExpense / total * 100) : 0.0;
+
     return Row(
       children: [
         Expanded(
-          child: _buildSummaryCard(
-            context: context,
-            title: 'Income',
-            amount: stats.totalIncome,
-            gradient: AppTheme.successGradient,
-            color: AppTheme.incomeColor(context),
-            icon: Icons.arrow_downward_rounded,
-            currency: currency,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
+            ),
+            child: _buildSummaryCard(
+              context: context,
+              title: 'Income',
+              amount: stats.totalIncome,
+              gradient: AppTheme.successGradient,
+              color: AppTheme.incomeColor(context),
+              icon: Icons.arrow_downward_rounded,
+              currency: currency,
+              percent: incomePercent,
+            ),
           ),
         ),
         const Gap(12),
         Expanded(
-          child: _buildSummaryCard(
-            context: context,
-            title: 'Expense',
-            amount: stats.totalExpense,
-            gradient: AppTheme.dangerGradient,
-            color: AppTheme.expenseColor(context),
-            icon: Icons.arrow_upward_rounded,
-            currency: currency,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
+            ),
+            child: _buildSummaryCard(
+              context: context,
+              title: 'Expense',
+              amount: stats.totalExpense,
+              gradient: AppTheme.dangerGradient,
+              color: AppTheme.expenseColor(context),
+              icon: Icons.arrow_upward_rounded,
+              currency: currency,
+              percent: expensePercent,
+            ),
           ),
         ),
       ],
@@ -335,50 +543,80 @@ class DashboardScreen extends ConsumerWidget {
     required LinearGradient gradient,
     required IconData icon,
     required Currency currency,
+    required double percent,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppTheme.dividerColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(14),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 18),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${percent.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(14),
+          Text(
+            title,
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const Gap(4),
+          Text(
+            NumberFormat.currency(symbol: currency.symbol).format(amount),
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              overflow: TextOverflow.ellipsis,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 1,
           ),
           const Gap(12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const Gap(2),
-                Text(
-                  NumberFormat.currency(symbol: currency.symbol).format(amount),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    overflow: TextOverflow.ellipsis,
-                    letterSpacing: -0.5,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
+          // Colored accent bar
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ],
@@ -386,6 +624,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  // ─── Chart Section ────────────────────────────────────────────────
   Widget _buildChartSection(BuildContext context, DashboardStats stats, Currency currency) {
     if (stats.totalIncome == 0 && stats.totalExpense == 0) {
       return Container(
@@ -400,18 +639,33 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Icon(Icons.pie_chart_outline, size: 44, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
             const Gap(12),
-            Text('No data for chart yet', style: TextStyle(color: AppTheme.textLightColor(context), fontWeight: FontWeight.w500, fontSize: 14)),
+            Text(
+              'No data for chart yet',
+              style: TextStyle(
+                color: AppTheme.textLightColor(context),
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       );
     }
+
     return Container(
-      height: 220,
-      padding: const EdgeInsets.all(20),
+      height: 230,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppTheme.dividerColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -422,8 +676,8 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 PieChart(
                   PieChartData(
-                    sectionsSpace: 6,
-                    centerSpaceRadius: 50,
+                    sectionsSpace: 5,
+                    centerSpaceRadius: 48,
                     startDegreeOffset: -90,
                     sections: [
                       if (stats.totalIncome > 0)
@@ -431,14 +685,22 @@ class DashboardScreen extends ConsumerWidget {
                           color: AppTheme.secondaryColor(context),
                           value: stats.totalIncome,
                           title: '',
-                          radius: 18,
+                          radius: 22,
+                          borderSide: BorderSide(
+                            color: AppTheme.secondaryColor(context).withValues(alpha: 0.3),
+                            width: 2,
+                          ),
                         ),
                       if (stats.totalExpense > 0)
                         PieChartSectionData(
                           color: AppTheme.errorColor(context),
                           value: stats.totalExpense,
                           title: '',
-                          radius: 18,
+                          radius: 22,
+                          borderSide: BorderSide(
+                            color: AppTheme.errorColor(context).withValues(alpha: 0.3),
+                            width: 2,
+                          ),
                         ),
                     ],
                   ),
@@ -446,26 +708,49 @@ class DashboardScreen extends ConsumerWidget {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Total', style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 11, fontWeight: FontWeight.w500)),
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(context),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const Gap(2),
                     Text(
                       NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalIncome + stats.totalExpense),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.5),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          const Gap(16),
+          const Gap(20),
           Expanded(
             flex: 2,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(context, 'Income', AppTheme.incomeColor(context), '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
-                const Gap(16),
-                _buildLegendItem(context, 'Expense', AppTheme.expenseColor(context), '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%'),
+                _buildLegendItem(
+                  context,
+                  'Income',
+                  AppTheme.incomeColor(context),
+                  '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%',
+                  NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalIncome),
+                ),
+                const Gap(20),
+                _buildLegendItem(
+                  context,
+                  'Expense',
+                  AppTheme.expenseColor(context),
+                  '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%',
+                  NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalExpense),
+                ),
               ],
             ),
           ),
@@ -474,24 +759,46 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLegendItem(BuildContext context, String label, Color color, String percentage) {
+  Widget _buildLegendItem(BuildContext context, String label, Color color, String percentage, String amount) {
     return Row(
       children: [
         Container(
-          width: 10,
-          height: 10,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
         ),
-        const Gap(8),
+        const Gap(10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12, fontWeight: FontWeight.w500)),
-              Text(percentage, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w800)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Gap(2),
+              Text(
+                percentage,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
         ),
@@ -499,55 +806,71 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  // ─── Budget Section ───────────────────────────────────────────────
   Widget _buildBudgetSection(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
     final categories = ref.watch(categoryProvider);
-    final budgetedCategories = categories.where((c) => c.budget != null && c.budget! > 0).toList();
-
-
+    final budgetedCategories = categories.where((c) => c.type == TransactionType.expense && c.budget != null && c.budget! > 0).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Budget Progress',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textColor(context), letterSpacing: -0.3),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-                ref.read(navigationProvider.notifier).setIndex(3);
-                ref.read(pageControllerProvider).animateToPage(
-                  3,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              child: const Text('Manage', style: TextStyle(fontSize: 13)),
-            ),
-          ],
+        _buildSectionHeader(
+          context,
+          ref,
+          title: 'Budget Progress',
+          buttonLabel: 'Manage',
+          onTap: () {
+            Navigator.popUntil(context, (route) => route.isFirst);
+            ref.read(navigationProvider.notifier).setIndex(3);
+            ref.read(pageControllerProvider).animateToPage(
+              3,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
         ),
-        const Gap(12),
+        const Gap(14),
         if (budgetedCategories.isEmpty)
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(color: AppTheme.dividerColor(context)),
             ),
             child: Column(
               children: [
-                Icon(Icons.account_balance_wallet_outlined, size: 40, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
-                const Gap(12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 32,
+                    color: AppTheme.primaryColor(context).withValues(alpha: 0.5),
+                  ),
+                ),
+                const Gap(14),
                 Text(
                   'No budgets set yet',
-                  style: TextStyle(color: AppTheme.textLightColor(context), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
                 ),
-                const Gap(16),
+                const Gap(6),
+                Text(
+                  'Set monthly budgets to track spending',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                    fontSize: 13,
+                  ),
+                ),
+                const Gap(18),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.popUntil(context, (route) => route.isFirst);
@@ -559,116 +882,166 @@ class DashboardScreen extends ConsumerWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                    foregroundColor: AppTheme.primaryColor(context),
+                    backgroundColor: AppTheme.primaryColor(context),
+                    foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Set Monthly Budgets'),
+                  child: const Text('Set Monthly Budgets', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
           )
         else
           ...budgetedCategories.map((category) {
-          final spent = stats.categorySpending[category.id] ?? 0;
-          final budget = category.budget!;
-          final progress = (spent / budget).clamp(0.0, 1.0);
-          final percent = (spent / budget * 100).toStringAsFixed(0);
-          final isOver = spent > budget;
+            final spent = stats.categorySpending[category.id] ?? 0;
+            final budget = category.budget!;
+            final progress = (spent / budget).clamp(0.0, 1.0);
+            final percent = (spent / budget * 100).toStringAsFixed(0);
+            final isOver = spent > budget;
+            final isNearLimit = progress > 0.8 && !isOver;
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.dividerColor(context)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
-                        color: category.color,
-                        size: 18,
-                      ),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isOver
+                      ? AppTheme.errorColor(context).withValues(alpha: 0.3)
+                      : AppTheme.dividerColor(context),
+                ),
+                boxShadow: [
+                  if (isOver)
+                    BoxShadow(
+                      color: AppTheme.errorColor(context).withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    const Gap(12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(category.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          const Gap(2),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: category.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(
+                          IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                          color: category.color,
+                          size: 18,
+                        ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              category.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            const Gap(2),
                             Text(
                               isOver
-                                ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
-                                : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
+                                  ? 'Exceeded by ${NumberFormat.currency(symbol: currency.symbol).format(spent - budget)}'
+                                  : '${NumberFormat.currency(symbol: currency.symbol).format(budget - spent)} remaining',
                               style: TextStyle(
                                 color: isOver ? AppTheme.expenseColor(context) : AppTheme.textLightColor(context),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                      Text(
-                        '$percent%',
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOver
+                              ? AppTheme.expenseColor(context).withValues(alpha: 0.1)
+                              : (isNearLimit
+                                  ? Colors.amber.withValues(alpha: 0.1)
+                                  : AppTheme.primaryColor(context).withValues(alpha: 0.1)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$percent%',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: isOver ? AppTheme.expenseColor(context) : AppTheme.primaryColor(context),
-                            fontSize: 15,
+                            color: isOver
+                                ? AppTheme.expenseColor(context)
+                                : (isNearLimit ? Colors.amber.shade700 : AppTheme.primaryColor(context)),
+                            fontSize: 14,
                           ),
+                        ),
                       ),
-                  ],
-                ),
-                const Gap(14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: AppTheme.dividerColor(context),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isOver ? AppTheme.errorColor(context) : category.color,
+                    ],
+                  ),
+                  const Gap(14),
+                  // Custom gradient progress bar
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppTheme.dividerColor(context),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: isOver
+                              ? AppTheme.dangerGradient
+                              : LinearGradient(
+                                  colors: [
+                                    category.color.withValues(alpha: 0.7),
+                                    category.color,
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            if (isNearLimit)
+                              BoxShadow(
+                                color: Colors.amber.withValues(alpha: 0.3),
+                                blurRadius: 6,
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const Gap(10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      NumberFormat.currency(symbol: currency.symbol).format(spent),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                    Text(
-                      'of ${NumberFormat.currency(symbol: currency.symbol).format(budget)}',
-                      style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
-
+                  const Gap(10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        NumberFormat.currency(symbol: currency.symbol).format(spent),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      Text(
+                        'of ${NumberFormat.currency(symbol: currency.symbol).format(budget)}',
+                        style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
 
-  Widget _buildRecentTransactions(BuildContext context, AsyncValue transactionsAsync, Currency currency) {
+  // ─── Recent Transactions ──────────────────────────────────────────
+  Widget _buildRecentTransactions(BuildContext context, WidgetRef ref, AsyncValue transactionsAsync, Currency currency) {
     return transactionsAsync.when(
       data: (transactions) {
         if (transactions.isEmpty) {
@@ -676,75 +1049,198 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(color: AppTheme.dividerColor(context)),
             ),
             child: Column(
               children: [
-                Icon(Icons.receipt_long_outlined, size: 44, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
-                const Gap(12),
-                Text('No recent transactions', style: TextStyle(color: AppTheme.textLightColor(context), fontWeight: FontWeight.w500, fontSize: 14)),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.receipt_long_outlined,
+                    size: 36,
+                    color: AppTheme.primaryColor(context).withValues(alpha: 0.5),
+                  ),
+                ),
+                const Gap(14),
+                Text(
+                  'No recent transactions',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  'Tap + to add your first transaction',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           );
         }
 
         final recent = transactions.take(10).toList();
-        return Column(
-          children: recent.map<Widget>((tx) {
-            final isIncome = tx.type == TransactionType.income;
-            final isTransfer = tx.type == TransactionType.transfer;
+        final categories = ref.watch(categoryProvider);
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final yesterday = today.subtract(const Duration(days: 1));
 
-            final color = isTransfer
-                ? AppTheme.transferColor(context)
-                : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
+        // Group transactions by date label
+        String getDateLabel(DateTime date) {
+          final d = DateTime(date.year, date.month, date.day);
+          if (d == today) return 'Today';
+          if (d == yesterday) return 'Yesterday';
+          final diff = today.difference(d).inDays;
+          if (diff < 7) return 'This Week';
+          return DateFormat.yMMMd().format(date);
+        }
 
-            final icon = isTransfer
-                ? Icons.swap_horiz_rounded
-                : (isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
+        final List<Widget> items = [];
+        String? lastLabel;
+
+        for (final tx in recent) {
+          final label = getDateLabel(tx.date);
+          if (label != lastLabel) {
+            if (lastLabel != null) items.add(const Gap(8));
+            items.add(
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            );
+            lastLabel = label;
+          }
+
+          final isIncome = tx.type == TransactionType.income;
+          final isTransfer = tx.type == TransactionType.transfer;
+
+          final color = isTransfer
+              ? AppTheme.transferColor(context)
+              : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
+
+          final category = categories.where((c) => c.id == tx.categoryId).firstOrNull;
+          final categoryName = category?.name ?? 'Others';
+          final displayTitle = tx.note.isEmpty ? categoryName : tx.note;
+
+          // Use category icon if available, fallback to type-based icon
+          final IconData txIcon;
+          if (isTransfer) {
+            txIcon = Icons.swap_horiz_rounded;
+          } else if (category != null) {
+            txIcon = IconData(category.iconCodePoint, fontFamily: 'MaterialIcons');
+          } else {
+            txIcon = isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+          }
+
+          final Color iconBgColor = isTransfer
+              ? color.withValues(alpha: 0.12)
+              : (category != null ? category.color.withValues(alpha: 0.12) : color.withValues(alpha: 0.12));
+          final Color iconColor = isTransfer
+              ? color
+              : (category != null ? category.color : color);
+
+          items.add(
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceColor(context),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppTheme.dividerColor(context)),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
-                ),
-                title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    DateFormat.yMMMd().format(tx.date),
-                    style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                ),
-                trailing: Text(
-                  isTransfer
-                    ? NumberFormat.currency(symbol: currency.symbol).format(tx.amount)
-                    : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    letterSpacing: -0.5,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {},
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: iconBgColor,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(txIcon, color: iconColor, size: 20),
+                        ),
+                        const Gap(14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayTitle,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                              ),
+                              const Gap(3),
+                              Text(
+                                isTransfer ? 'Transfer' : categoryName,
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              isTransfer
+                                  ? NumberFormat.currency(symbol: currency.symbol).format(tx.amount)
+                                  : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const Gap(2),
+                            Text(
+                              DateFormat.jm().format(tx.date),
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            );
-          }).toList(),
-        );
+            ),
+          );
+        }
+
+        return Column(children: items);
       },
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+      loading: () => const Center(
+        child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
+      ),
       error: (e, st) => Center(child: Text('Error: $e')),
     );
   }

@@ -2,7 +2,7 @@ enum TransactionType { income, expense, transfer }
 
 class AppTransaction {
   final String id;
-  final String title;
+  final String note;
   final double amount;
   final DateTime date;
   final TransactionType type;
@@ -12,7 +12,7 @@ class AppTransaction {
 
   AppTransaction({
     required this.id,
-    required this.title,
+    this.note = '',
     required this.amount,
     required this.date,
     required this.type,
@@ -24,7 +24,7 @@ class AppTransaction {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'title': title,
+      'title': note, // Keeping 'title' for DB compatibility
       'amount': amount,
       'date': date.toIso8601String(),
       'type': type.name,
@@ -37,7 +37,7 @@ class AppTransaction {
   factory AppTransaction.fromMap(Map<String, dynamic> map) {
     return AppTransaction(
       id: map['id'],
-      title: map['title'],
+      note: map['title'] ?? '', // Mapping 'title' from DB to 'note'
       amount: map['amount'],
       date: DateTime.parse(map['date']),
       type: TransactionType.values.byName(map['type']),
