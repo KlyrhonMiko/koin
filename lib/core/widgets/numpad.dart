@@ -8,6 +8,7 @@ enum NumPadAction {
   decimal,
   backspace,
   clear,
+  equals,
   done,
 }
 
@@ -16,6 +17,7 @@ class NumPad extends StatefulWidget {
   final VoidCallback onDone;
   final String initialValue;
   final bool compact;
+  final bool inline;
 
   const NumPad({
     super.key,
@@ -23,6 +25,7 @@ class NumPad extends StatefulWidget {
     required this.onDone,
     this.initialValue = '',
     this.compact = false,
+    this.inline = false,
   });
 
   @override
@@ -79,6 +82,11 @@ class _NumPadState extends State<NumPad> {
         }
       } else if (action == NumPadAction.clear) {
         _expression = '';
+      } else if (action == NumPadAction.equals) {
+        _calculate();
+        if (_expression.isNotEmpty) {
+          _expression = _result;
+        }
       } else if (action == NumPadAction.done) {
         _expression = _result;
         widget.onDone();
@@ -262,14 +270,50 @@ class _NumPadState extends State<NumPad> {
     );
   }
 
-  Widget _buildDoneKey(BuildContext context) {
+  Widget _buildEqualsKey(BuildContext context) {
+    final c = widget.compact;
+    final keyPad = c ? 3.0 : 4.0;
+    final keyRadius = c ? 14.0 : 16.0;
+    final keyHeight = c ? 51.0 : 56.0;
+    final primaryColor = AppTheme.primaryColor(context);
+
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.all(keyPad),
+        child: Material(
+          color: primaryColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(keyRadius),
+          child: InkWell(
+            onTap: () => _onPress('=', NumPadAction.equals),
+            borderRadius: BorderRadius.circular(keyRadius),
+            splashColor: primaryColor.withValues(alpha: 0.15),
+            highlightColor: primaryColor.withValues(alpha: 0.08),
+            child: Container(
+              height: keyHeight,
+              alignment: Alignment.center,
+              child: Text(
+                '=',
+                style: TextStyle(
+                  fontSize: c ? 23.0 : 24.0,
+                  fontWeight: FontWeight.w700,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDoneKey(BuildContext context, {int flex = 3}) {
     final c = widget.compact;
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
     final keyHeight = c ? 51.0 : 56.0;
 
     return Expanded(
-      flex: 3,
+      flex: flex,
       child: Padding(
         padding: EdgeInsets.all(keyPad),
         child: Material(
@@ -320,11 +364,13 @@ class _NumPadState extends State<NumPad> {
   Widget build(BuildContext context) {
     final c = widget.compact;
     return Container(
-      padding: EdgeInsets.fromLTRB(10, c ? 10 : 12, 10, c ? 8 : 12),
+      padding: EdgeInsets.fromLTRB(10, c ? 10 : 12, 10, widget.inline ? (c ? 10 : 12) : (c ? 8 : 12)),
       decoration: BoxDecoration(
         color: AppTheme.surfaceLightColor(context),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(c ? 24 : 28)),
-        boxShadow: [
+        borderRadius: widget.inline 
+            ? BorderRadius.circular(c ? 24 : 28)
+            : BorderRadius.vertical(top: Radius.circular(c ? 24 : 28)),
+        boxShadow: widget.inline ? null : [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 20,
@@ -378,7 +424,7 @@ class _NumPadState extends State<NumPad> {
                 _buildOperatorKey(context, '+', '+'),
               ],
             ),
-            // Row 5: ⌫ [    Save    ]
+            // Row 5: ⌫ = [  Save  ]
             Row(
               children: [
                 _buildActionKey(context,
@@ -387,7 +433,8 @@ class _NumPadState extends State<NumPad> {
                   color: AppTheme.textLightColor(context),
                   bgColor: AppTheme.surfaceLightColor(context),
                 ),
-                _buildDoneKey(context),
+                _buildEqualsKey(context),
+                _buildDoneKey(context, flex: 2),
               ],
             ),
           ],

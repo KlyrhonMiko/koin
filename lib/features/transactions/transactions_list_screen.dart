@@ -37,9 +37,10 @@ class TransactionsListScreen extends ConsumerWidget {
                 slivers: [
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(
+                    child: Align(
+                      alignment: const Alignment(0, -0.3), // Shifted up further from -0.2 to -0.3
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min, // Keep column compact
                         children: [
                           Container(
                             padding: const EdgeInsets.all(36),

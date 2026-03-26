@@ -39,43 +39,65 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
           color: AppTheme.primaryColor(context),
           backgroundColor: AppTheme.surfaceColor(context),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-            child: transactionsAsync.when(
-              data: (transactions) {
-                if (transactions.isEmpty) {
-                  return _buildEmptyState(context);
-                }
-                
-                final now = DateTime.now();
-                
-                // Filter transactions based on selection (Expense only)
-                List<AppTransaction> filteredTransactions = transactions.where((t) => t.type == TransactionType.expense).toList();
-                
-                if (_selectedFilterIndex == 0) {
-                  // This Week
-                  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-                  final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-                  filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(startOfWeekDate.subtract(const Duration(days: 1)))).toList();
-                } else if (_selectedFilterIndex == 1) {
-                  // This Month
-                  filteredTransactions = filteredTransactions.where((t) {
-                    return t.date.year == now.year && t.date.month == now.month;
-                  }).toList();
-                }
+          child: transactionsAsync.when(
+            data: (transactions) {
+              if (transactions.isEmpty) {
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Align(
+                        alignment: const Alignment(0, -0.3),
+                        child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses to see your analysis', Icons.insights_rounded),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              
+              final now = DateTime.now();
+              
+              // Filter transactions based on selection (Expense only)
+              List<AppTransaction> filteredTransactions = transactions.where((t) => t.type == TransactionType.expense).toList();
+              
+              if (_selectedFilterIndex == 0) {
+                // This Week
+                final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+                final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+                filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(startOfWeekDate.subtract(const Duration(days: 1)))).toList();
+              } else if (_selectedFilterIndex == 1) {
+                // This Month
+                filteredTransactions = filteredTransactions.where((t) {
+                  return t.date.year == now.year && t.date.month == now.month;
+                }).toList();
+              }
 
-                if (filteredTransactions.isEmpty) {
-                   return Column(
-                     children: [
-                       _buildFilterTabs(context),
-                       const Gap(40),
-                       _buildEmptyState(context),
-                     ],
-                   );
-                }
+              if (filteredTransactions.isEmpty) {
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildFilterTabs(context),
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Align(
+                        alignment: const Alignment(0, -0.3),
+                        child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses for this period to see your analysis', Icons.insights_rounded),
+                      ),
+                    ),
+                  ],
+                );
+              }
 
-                return Column(
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildFilterTabs(context).animate().fade(duration: 400.ms),
@@ -96,11 +118,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     const Gap(16),
                     _buildTopCategoriesList(context, filteredTransactions, categories, currency).animate().fade(delay: 450.ms).slideY(begin: 0.1),
                   ],
-                );
-              },
-              loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-              error: (e, st) => Center(child: Text('Error: $e')),
-            ),
+                ),
+              );
+            },
+            loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+            error: (e, st) => Center(child: Text('Error: $e')),
           ),
         ),
       ),
@@ -520,31 +542,37 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.insights_rounded, size: 64, color: AppTheme.textLightColor(context).withValues(alpha: 0.3)),
-          const Gap(20),
-          Text(
-            'No expense data yet',
-            style: TextStyle(color: AppTheme.textColor(context), fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: -0.5),
+  Widget _buildEmptyStateContent(BuildContext context, String title, String subtitle, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min, // Keep column compact
+      children: [
+        Container(
+          padding: const EdgeInsets.all(36),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
           ),
-          const Gap(8),
-          Text(
-            'Add some expenses to see your analysis',
-            style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.8), fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+          child: Icon(icon, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
+        ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
+        const SizedBox(height: 24),
+        Text(
+          title,
+          style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+        ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
+          textAlign: TextAlign.center,
+        ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
+      ],
     );
   }
 }

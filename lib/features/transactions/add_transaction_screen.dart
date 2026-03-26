@@ -17,8 +17,9 @@ import 'package:koin/features/categories/category_manager_screen.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
+  final TransactionType? initialType;
 
-  const AddTransactionScreen({super.key, this.editingTransaction});
+  const AddTransactionScreen({super.key, this.editingTransaction, this.initialType});
 
   @override
   ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -48,6 +49,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   @override
   void initState() {
     super.initState();
+    if (widget.initialType != null) {
+      _selectedType = widget.initialType!;
+    }
     _noteFocusNode.addListener(() {
       if (mounted) setState(() {});
     });
@@ -83,7 +87,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_initializedColors && widget.editingTransaction != null) {
+    if (!_initializedColors) {
       _initializedColors = true;
       final color = _getTypeColor(context);
       _prevColor = color;
@@ -322,18 +326,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   child: _buildFormSection(context, categories, animatedColor),
                 ),
               ),
-              if (MediaQuery.of(context).viewInsets.bottom == 0)
-                NumPad(
-                  compact: true,
-                  initialValue: _currentExpression,
-                  onValueChanged: (expression, result) {
-                    setState(() {
-                      _currentExpression = expression;
-                      _amountController.text = result;
-                    });
-                  },
-                  onDone: () => _saveTransaction(),
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.fastOutSlowIn,
+                child: MediaQuery.of(context).viewInsets.bottom == 0
+                    ? NumPad(
+                        key: const ValueKey('numpad'),
+                        compact: true,
+                        initialValue: _currentExpression,
+                        onValueChanged: (expression, result) {
+                          setState(() {
+                            _currentExpression = expression;
+                            _amountController.text = result;
+                          });
+                        },
+                        onDone: () => _saveTransaction(),
+                      )
+                    : const SizedBox(key: ValueKey('empty'), width: double.infinity, height: 0),
+              ),
             ],
           ),
         );
@@ -553,39 +563,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Hero Amount
   // ═══════════════════════════════════════════════════════
   Widget _buildHeroAmount(BuildContext context, dynamic currency, Color typeColor) {
-    final hasAmount = _amountController.text.isNotEmpty && _amountController.text != '0';
-    final hasExpression =
-        _currentExpression.isNotEmpty && _currentExpression.contains(RegExp(r'[+\-*/]'));
+    final hasAmount = _currentExpression.isNotEmpty && _currentExpression != '0';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          // Expression preview
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-            child: hasExpression
-                ? Container(
-                    key: ValueKey(_currentExpression),
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: typeColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _currentExpression,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: typeColor.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(key: ValueKey('empty_expr')),
-          ),
           // Currency label
           Text(
             currency.code,
@@ -616,8 +599,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 transitionBuilder: (child, anim) =>
                     FadeTransition(opacity: anim, child: child),
                 child: Text(
-                  _amountController.text.isEmpty ? '0' : _amountController.text,
-                  key: ValueKey(_amountController.text),
+                  _currentExpression.isEmpty ? '0' : _currentExpression,
+                  key: ValueKey(_currentExpression),
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w800,

@@ -61,13 +61,38 @@ class MainLayout extends ConsumerWidget {
             ],
           ),
         ),
-        floatingActionButton: currentIndex == 2
+        floatingActionButton: currentIndex != 4
             ? FloatingActionButton.extended(
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
                 ),
-                label: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.centerLeft,
+                      child: ClipRect(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 250),
+                          opacity: currentIndex == 2 ? 0.0 : 1.0,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: currentIndex == 2 ? 0.0 : 1.0,
+                            child: const Text(' Transaction', 
+                              style: TextStyle(fontWeight: FontWeight.bold), 
+                              maxLines: 1, 
+                              softWrap: false,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 icon: const Icon(Icons.add_rounded),
               )
             : null,

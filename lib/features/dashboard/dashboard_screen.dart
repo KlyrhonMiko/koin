@@ -14,6 +14,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/features/transactions/add_transaction_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -25,11 +26,11 @@ class DashboardScreen extends ConsumerWidget {
     return 'Good Evening';
   }
 
-  String _getGreetingEmoji() {
+  IconData _getGreetingIcon() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return '☀️';
-    if (hour < 17) return '🌤️';
-    return '🌙';
+    if (hour < 12) return Icons.light_mode_rounded;
+    if (hour < 17) return Icons.wb_sunny_rounded;
+    return Icons.dark_mode_rounded;
   }
 
   @override
@@ -184,15 +185,22 @@ class DashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    '${_getGreeting()} ${_getGreetingEmoji()}',
+                    _getGreeting(),
                     style: TextStyle(
                       color: AppTheme.textColor(context),
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
+                  ),
+                  const Gap(8),
+                  Icon(
+                    _getGreetingIcon(),
+                    color: AppTheme.primaryColor(context),
+                    size: 24,
                   ),
                 ],
               ),
@@ -487,28 +495,40 @@ class DashboardScreen extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildSummaryCard(
-            context: context,
-            title: 'Income',
-            amount: stats.totalIncome,
-            gradient: AppTheme.successGradient,
-            color: AppTheme.incomeColor(context),
-            icon: Icons.arrow_downward_rounded,
-            currency: currency,
-            percent: incomePercent,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
+            ),
+            child: _buildSummaryCard(
+              context: context,
+              title: 'Income',
+              amount: stats.totalIncome,
+              gradient: AppTheme.successGradient,
+              color: AppTheme.incomeColor(context),
+              icon: Icons.arrow_downward_rounded,
+              currency: currency,
+              percent: incomePercent,
+            ),
           ),
         ),
         const Gap(12),
         Expanded(
-          child: _buildSummaryCard(
-            context: context,
-            title: 'Expense',
-            amount: stats.totalExpense,
-            gradient: AppTheme.dangerGradient,
-            color: AppTheme.expenseColor(context),
-            icon: Icons.arrow_upward_rounded,
-            currency: currency,
-            percent: expensePercent,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
+            ),
+            child: _buildSummaryCard(
+              context: context,
+              title: 'Expense',
+              amount: stats.totalExpense,
+              gradient: AppTheme.dangerGradient,
+              color: AppTheme.expenseColor(context),
+              icon: Icons.arrow_upward_rounded,
+              currency: currency,
+              percent: expensePercent,
+            ),
           ),
         ),
       ],

@@ -30,32 +30,77 @@ class AccountsScreen extends ConsumerWidget {
       body: accountsAsync.when(
         data: (accounts) {
           if (accounts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      shape: BoxShape.circle,
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Align(
+                    alignment: const Alignment(0, -0.3),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(36),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceColor(context),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                                  blurRadius: 40,
+                                  spreadRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Icon(Icons.account_balance_wallet_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
+                          ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No accounts yet',
+                            style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                          ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add your first account to see it here',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
+                          ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
+                          const SizedBox(height: 36),
+                          SizedBox(
+                            width: double.infinity,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: AppTheme.primaryGradient(context),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showAddAccountSheet(context, ref),
+                                icon: const Icon(Icons.add_rounded, color: Colors.white),
+                                label: const Text('Add Your First Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                            ),
+                          ).animate().slideY(begin: 0.2, delay: 500.ms, duration: 400.ms).fadeIn(),
+                        ],
+                      ),
                     ),
-                    child: Icon(Icons.account_balance_wallet_outlined, size: 48, color: AppTheme.textLightColor(context).withValues(alpha: 0.4)),
                   ),
-                  const Gap(20),
-                  Text(
-                    'No accounts yet',
-                    style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const Gap(6),
-                  Text(
-                    'Create an account to start tracking',
-                    style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 13),
-                  ),
-                  const Gap(32),
-                  _buildAddAccountButton(context, ref),
-                ],
-              ),
+                ),
+              ],
             );
           }
           return ListView.builder(
@@ -148,7 +193,7 @@ class AccountsScreen extends ConsumerWidget {
     final balanceController = TextEditingController(
       text: isEditing ? account.initialBalance.toString() : '',
     );
-    int selectedIcon = account?.iconCodePoint ?? Icons.account_balance_wallet.codePoint;
+    int selectedIcon = account?.iconCodePoint ?? Icons.account_balance_wallet_rounded.codePoint;
     Color selectedColor = account?.color ?? AppTheme.primaryColor(context);
 
     final colors = [
@@ -241,26 +286,26 @@ class AccountsScreen extends ConsumerWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    Icons.account_balance_wallet,
-                    Icons.account_balance,
-                    Icons.savings,
-                    Icons.payments,
-                    Icons.credit_card,
-                    Icons.wallet,
-                    Icons.money,
-                    Icons.currency_exchange,
-                    Icons.trending_up,
-                    Icons.monetization_on,
-                    Icons.paid,
-                    Icons.local_atm,
-                    Icons.token,
-                    Icons.stars,
-                    Icons.work,
-                    Icons.home,
-                    Icons.shopping_bag,
-                    Icons.directions_car,
-                    Icons.receipt_long,
-                    Icons.pie_chart,
+                    Icons.account_balance_wallet_rounded,
+                    Icons.account_balance_rounded,
+                    Icons.savings_rounded,
+                    Icons.payments_rounded,
+                    Icons.credit_card_rounded,
+                    Icons.wallet_rounded,
+                    Icons.money_rounded,
+                    Icons.currency_exchange_rounded,
+                    Icons.trending_up_rounded,
+                    Icons.monetization_on_rounded,
+                    Icons.paid_rounded,
+                    Icons.local_atm_rounded,
+                    Icons.request_quote_rounded,
+                    Icons.account_tree_rounded,
+                    Icons.business_center_rounded,
+                    Icons.storefront_rounded,
+                    Icons.currency_bitcoin_rounded,
+                    Icons.currency_pound_rounded,
+                    Icons.currency_yen_rounded,
+                    Icons.currency_franc_rounded,
                   ].map((icon) {
                     final isSelected = selectedIcon == icon.codePoint;
                     return GestureDetector(
