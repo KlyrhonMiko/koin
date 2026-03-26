@@ -5,7 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/navigation_provider.dart';
+
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 
