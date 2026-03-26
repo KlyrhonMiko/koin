@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
 import 'package:koin/core/providers/savings_provider.dart';
+import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
 
@@ -67,9 +68,10 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             const Gap(24),
             TextField(
               controller: _amountController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixIcon: Icon(Icons.payments_outlined),
+                prefixIcon: const Icon(Icons.payments_outlined),
+                prefixText: '${ref.read(settingsProvider).currency.symbol} ',
               ),
               keyboardType: TextInputType.number,
               autofocus: true,
@@ -115,7 +117,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
 
     final logsAsync = ref.watch(savingsLogsProvider(goal.id));
-    final currencyFormat = NumberFormat.simpleCurrency();
+    final settings = ref.watch(settingsProvider);
+    final currencyFormat = NumberFormat.simpleCurrency(name: settings.currency.code);
 
     return Scaffold(
       appBar: AppBar(
@@ -171,11 +174,11 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildGaugeHeader(context, goal),
+            _buildGaugeHeader(context, goal, currencyFormat),
             const Gap(24),
             _buildSectionHeader(context, 'Savings Needed', Icons.trending_up_rounded),
             const Gap(12),
-            _buildCalculationsGrid(context, goal),
+            _buildCalculationsGrid(context, goal, currencyFormat),
             const Gap(24),
             _buildSectionHeader(context, 'Recent Activity', Icons.history_rounded),
             const Gap(12),
@@ -208,8 +211,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildGaugeHeader(BuildContext context, SavingsGoal goal) {
-    final currencyFormat = NumberFormat.simpleCurrency();
+  Widget _buildGaugeHeader(BuildContext context, SavingsGoal goal, NumberFormat currencyFormat) {
     final progressPercent = (goal.progress * 100).toStringAsFixed(1);
 
     return Container(
@@ -338,8 +340,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildCalculationsGrid(BuildContext context, SavingsGoal goal) {
-    final currencyFormat = NumberFormat.simpleCurrency();
+  Widget _buildCalculationsGrid(BuildContext context, SavingsGoal goal, NumberFormat currencyFormat) {
     return Row(
       children: [
         Expanded(child: _buildCalculationCard(context, 'Daily', currencyFormat.format(goal.dailyNeeded), Icons.today_rounded)),
