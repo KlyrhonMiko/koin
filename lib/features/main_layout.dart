@@ -6,12 +6,10 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/accounts/accounts_screen.dart';
 import 'package:koin/features/dashboard/dashboard_screen.dart';
 import 'package:koin/features/savings/savings_list_screen.dart';
-import 'package:koin/features/transactions/transactions_list_screen.dart';
-import 'package:koin/features/analysis/analysis_screen.dart';
+import 'package:koin/features/activity/activity_screen.dart';
 import 'package:koin/features/budgets/budgets_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
-import 'package:koin/features/activity/overlay_activity_app_bar.dart';
 
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
@@ -50,30 +48,20 @@ class MainLayout extends ConsumerWidget {
         body: MediaQuery.removePadding(
           context: context,
           removeBottom: true,
-          child: Stack(
-            children: [
-              PageView(
-                controller: pageController,
-                onPageChanged: onPageChanged,
-                children: const [
-                  AccountsScreen(),
-                  TransactionsListScreen(),
-                  AnalysisScreen(),
-                  DashboardScreen(),
-                  BudgetsScreen(),
-                  SavingsListScreen(),
-                ],
-              ),
-              const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: OverlayActivityAppBar(),
-              ),
+          child: PageView(
+            physics: const NeverScrollableScrollPhysics(),
+            controller: pageController,
+            onPageChanged: onPageChanged,
+            children: const [
+              AccountsScreen(),
+              ActivityScreen(),
+              DashboardScreen(),
+              BudgetsScreen(),
+              SavingsListScreen(),
             ],
           ),
         ),
-        floatingActionButton: currentIndex == 3
+        floatingActionButton: currentIndex == 2
             ? FloatingActionButton.extended(
                 onPressed: () => Navigator.push(
                   context,
@@ -123,7 +111,7 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.receipt_long_outlined,
                       activeIcon: Icons.receipt_long_rounded,
                       label: 'Activity',
-                      isActive: currentIndex == 1 || currentIndex == 2,
+                      isActive: currentIndex == 1,
                       targetIndex: 1,
                       onTap: onItemTapped,
                     ),
@@ -132,8 +120,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.dashboard_outlined,
                       activeIcon: Icons.dashboard_rounded,
                       label: 'Home',
-                      isActive: currentIndex == 3,
-                      targetIndex: 3,
+                      isActive: currentIndex == 2,
+                      targetIndex: 2,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -141,8 +129,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.account_balance_wallet_outlined,
                       activeIcon: Icons.account_balance_wallet_rounded,
                       label: 'Budgets',
-                      isActive: currentIndex == 4,
-                      targetIndex: 4,
+                      isActive: currentIndex == 3,
+                      targetIndex: 3,
                       onTap: onItemTapped,
                     ),
                     _buildNavItem(
@@ -150,8 +138,8 @@ class MainLayout extends ConsumerWidget {
                       icon: Icons.savings_outlined,
                       activeIcon: Icons.savings_rounded,
                       label: 'Savings',
-                      isActive: currentIndex == 5,
-                      targetIndex: 5,
+                      isActive: currentIndex == 4,
+                      targetIndex: 4,
                       onTap: onItemTapped,
                     ),
                   ],
