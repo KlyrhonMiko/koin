@@ -254,15 +254,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
                   borderRadius: BorderRadius.circular(20),
                   child: Row(
                     children: [
-                      // Color accent bar
-                      Container(
-                        width: 4,
-                        height: 72,
-                        color: category.color,
-                      ),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                          padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
                           child: Row(
                             children: [
                               // Glowing icon
