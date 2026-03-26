@@ -146,8 +146,8 @@ class _NumPadState extends State<NumPad> {
     final c = widget.compact;
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
-    final keyHeight = c ? 46.0 : 56.0;
-    final fontSize = c ? 19.0 : 22.0;
+    final keyHeight = c ? 51.0 : 56.0;
+    final fontSize = c ? 20.5 : 22.0;
 
     return Expanded(
       flex: flex,
@@ -184,7 +184,7 @@ class _NumPadState extends State<NumPad> {
     final c = widget.compact;
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
-    final keyHeight = c ? 46.0 : 56.0;
+    final keyHeight = c ? 51.0 : 56.0;
     final primaryColor = AppTheme.primaryColor(context);
 
     return Expanded(
@@ -204,7 +204,7 @@ class _NumPadState extends State<NumPad> {
               child: Text(
                 display,
                 style: TextStyle(
-                  fontSize: c ? 22.0 : 24.0,
+                  fontSize: c ? 23.0 : 24.0,
                   fontWeight: FontWeight.w700,
                   color: primaryColor,
                 ),
@@ -227,7 +227,7 @@ class _NumPadState extends State<NumPad> {
     final c = widget.compact;
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
-    final keyHeight = c ? 46.0 : 56.0;
+    final keyHeight = c ? 51.0 : 56.0;
     final effectiveColor = color ?? AppTheme.textLightColor(context);
 
     return Expanded(
@@ -246,11 +246,11 @@ class _NumPadState extends State<NumPad> {
               height: keyHeight,
               alignment: Alignment.center,
               child: icon != null
-                  ? Icon(icon, color: effectiveColor, size: c ? 20.0 : 22.0)
+                  ? Icon(icon, color: effectiveColor, size: c ? 21.0 : 22.0)
                   : Text(
                       text ?? '',
                       style: TextStyle(
-                        fontSize: c ? 16.0 : 18.0,
+                        fontSize: c ? 17.0 : 18.0,
                         fontWeight: FontWeight.w700,
                         color: effectiveColor,
                       ),
@@ -266,7 +266,7 @@ class _NumPadState extends State<NumPad> {
     final c = widget.compact;
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
-    final keyHeight = c ? 46.0 : 56.0;
+    final keyHeight = c ? 51.0 : 56.0;
 
     return Expanded(
       flex: 3,
@@ -301,7 +301,7 @@ class _NumPadState extends State<NumPad> {
                   Text(
                     'Save',
                     style: TextStyle(
-                      fontSize: c ? 15.0 : 16.0,
+                      fontSize: c ? 15.5 : 16.0,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                       letterSpacing: 0.3,

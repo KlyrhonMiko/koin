@@ -20,6 +20,11 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     await loadTransactions();
   }
 
+  Future<void> updateTransaction(AppTransaction transaction) async {
+    await DatabaseHelper.instance.updateTransaction(transaction);
+    await loadTransactions();
+  }
+
   Future<void> deleteTransaction(String id) async {
     await DatabaseHelper.instance.deleteTransaction(id);
     await loadTransactions();

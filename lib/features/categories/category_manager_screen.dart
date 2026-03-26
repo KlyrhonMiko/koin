@@ -1,13 +1,16 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/category_provider.dart';
 
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
 
 import 'package:koin/features/categories/category_detail_screen.dart';
 
@@ -18,9 +21,23 @@ class CategoryManagerScreen extends ConsumerStatefulWidget {
   ConsumerState<CategoryManagerScreen> createState() => _CategoryManagerScreenState();
 }
 
-class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
+class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
+    with SingleTickerProviderStateMixin {
   String _searchQuery = '';
   bool _showSearch = false;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,34 +45,220 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
-    final filtered = _searchQuery.isEmpty
-        ? categories
-        : categories.where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    final filtered = categories.where((c) {
+      final matchesSearch = _searchQuery.isEmpty || 
+          c.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesSearch;
+    }).toList();
+
+    final expenseCategories = filtered.where((c) => c.type == TransactionType.expense).toList();
+    final incomeCategories = filtered.where((c) => c.type == TransactionType.income).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: _showSearch
-            ? _buildSearchField(context)
-            : const Text('Manage Categories'),
-        actions: [
-          if (!_showSearch && categories.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.search_rounded, size: 22),
-              onPressed: () => setState(() => _showSearch = true),
+      backgroundColor: AppTheme.backgroundColor(context),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  expenseCategories.isEmpty
+                      ? _buildEmptyState(context, TransactionType.expense)
+                      : _buildCategoryList(context, expenseCategories, currency, TransactionType.expense),
+                  incomeCategories.isEmpty
+                      ? _buildEmptyState(context, TransactionType.income)
+                      : _buildCategoryList(context, incomeCategories, currency, TransactionType.income),
+                ],
+              ),
             ),
-          if (_showSearch)
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 22),
-              onPressed: () => setState(() {
-                _showSearch = false;
-                _searchQuery = '';
-              }),
-            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 15, color: AppTheme.textColor(context)),
+                ),
+              ),
+              Expanded(
+                child: _showSearch
+                    ? _buildSearchField(context)
+                    : Center(
+                        child: Text(
+                          'Manage Categories',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: AppTheme.textColor(context),
+                          ),
+                        ),
+                      ),
+              ),
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Icon(
+                    _showSearch ? Icons.close_rounded : Icons.search_rounded,
+                    size: 18,
+                    color: AppTheme.textColor(context),
+                  ),
+                ),
+                onPressed: () => setState(() {
+                  if (_showSearch) {
+                    _showSearch = false;
+                    _searchQuery = '';
+                  } else {
+                    _showSearch = true;
+                  }
+                }),
+              ),
+            ],
+          ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _buildSegmentedControl(context),
+          ).animate().fade(delay: 100.ms).scale(begin: const Offset(0.95, 0.95)),
         ],
       ),
-      body: categories.isEmpty
-          ? _buildEmptyState(context)
-          : _buildCategoryList(context, filtered, currency),
+    );
+  }
+
+  Widget _buildSegmentedControl(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _tabController.animation!,
+      builder: (context, child) {
+        return Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final tabWidth = constraints.maxWidth / 2;
+                  final animationValue = _tabController.animation!.value;
+                  
+                  return Stack(
+                    children: [
+                      // Real-time tracking Indicator
+                      Positioned(
+                        top: 4,
+                        bottom: 4,
+                        left: 4 + (tabWidth - 4) * animationValue,
+                        width: tabWidth - 4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.backgroundColor(context),
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height: 3,
+                              width: 32,
+                              margin: const EdgeInsets.only(bottom: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(2),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.primaryColor(context).withValues(alpha: 0.6),
+                                    AppTheme.primaryColor(context),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _tabController.animateTo(0),
+                              child: Center(
+                                child: Text(
+                                  'Expenses',
+                                  style: TextStyle(
+                                    fontWeight: _tabController.index == 0 ? FontWeight.w700 : FontWeight.w600,
+                                    color: _tabController.index == 0 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontSize: 14,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _tabController.animateTo(1),
+                              child: Center(
+                                child: Text(
+                                  'Income',
+                                  style: TextStyle(
+                                    fontWeight: _tabController.index == 1 ? FontWeight.w700 : FontWeight.w600,
+                                    color: _tabController.index == 1 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontSize: 14,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -84,7 +287,8 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, TransactionType type) {
+    final isExpense = type == TransactionType.expense;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -96,21 +300,21 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
+                  color: (isExpense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.08),
                   blurRadius: 40,
                   spreadRadius: 8,
                 ),
               ],
             ),
             child: Icon(
-              Icons.category_outlined,
+              isExpense ? Icons.category_outlined : Icons.add_chart_rounded,
               size: 52,
               color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
             ),
           ),
           const Gap(28),
           Text(
-            'No categories yet',
+            isExpense ? 'No expense categories' : 'No income categories',
             style: TextStyle(
               color: AppTheme.textColor(context),
               fontSize: 18,
@@ -119,7 +323,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
           ),
           const Gap(8),
           Text(
-            'Create your first category to get started',
+            'Create your first ${isExpense ? 'expense' : 'income'} category',
             style: TextStyle(
               color: AppTheme.textLightColor(context),
               fontSize: 14,
@@ -129,10 +333,10 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: AppTheme.primaryGradient(context),
+              gradient: isExpense ? AppTheme.dangerGradient : AppTheme.successGradient,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                  color: (isExpense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -142,11 +346,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CategoryDetailScreen()),
+                  MaterialPageRoute(builder: (context) => CategoryDetailScreen(category: null)),
                 );
               },
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Create Category'),
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: Text('Create ${isExpense ? 'Expense' : 'Income'}', style: const TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -160,7 +364,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
     ).animate().fade(duration: 400.ms).scale(begin: const Offset(0.95, 0.95));
   }
 
-  Widget _buildCategoryList(BuildContext context, List<TransactionCategory> categories, currency) {
+  Widget _buildCategoryList(BuildContext context, List<TransactionCategory> categories, currency, TransactionType type) {
     final fmt = NumberFormat.currency(symbol: currency.symbol);
 
     return ListView(
@@ -194,6 +398,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
             key: Key(category.id),
             direction: DismissDirection.endToStart,
             confirmDismiss: (_) => _confirmDelete(context, category),
+            onDismissed: (_) {
+              ref.read(categoryProvider.notifier).deleteCategory(category.id);
+            },
             background: Container(
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 24),
@@ -276,7 +483,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
                                         letterSpacing: -0.2,
                                       ),
                                     ),
-                                    if (category.budget != null && category.budget! > 0) ...[
+                                    if (category.type == TransactionType.expense && category.budget != null && category.budget! > 0) ...[
                                       const Gap(4),
                                       Text(
                                         'Budget: ${fmt.format(category.budget)}',
@@ -331,22 +538,22 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
+                    color: (type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.add_rounded,
                     size: 18,
-                    color: AppTheme.primaryColor(context),
+                    color: type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
                   ),
                 ),
                 const Gap(10),
                 Text(
-                  'Add Category',
+                  'Add ${type == TransactionType.expense ? 'Expense' : 'Income'} Category',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: AppTheme.primaryColor(context),
+                    color: type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
                   ),
                 ),
               ],
@@ -358,28 +565,14 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen> {
   }
 
   Future<bool?> _confirmDelete(BuildContext context, TransactionCategory category) {
-    return showDialog<bool>(
+    return PremiumConfirmationSheet.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(categoryProvider.notifier).deleteCategory(category.id);
-              Navigator.pop(context, true);
-            },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppTheme.expenseColor(context)),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete Category?',
+      description: 'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmColor: AppTheme.expenseColor(context),
+      icon: Icons.delete_forever_rounded,
+      isDanger: true,
     );
   }
 }

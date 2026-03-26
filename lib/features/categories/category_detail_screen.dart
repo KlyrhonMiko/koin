@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
@@ -21,6 +22,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final _nameController = TextEditingController();
   late int _selectedIconCodePoint;
   late String _selectedColorHex;
+  late TransactionType _selectedType;
 
   final List<int> _availableIcons = [
     Icons.shopping_cart.codePoint,
@@ -77,9 +79,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       _nameController.text = widget.category!.name;
       _selectedIconCodePoint = widget.category!.iconCodePoint;
       _selectedColorHex = widget.category!.colorHex;
+      _selectedType = widget.category!.type;
     } else {
       _selectedIconCodePoint = Icons.category.codePoint;
       _selectedColorHex = '#00D09E';
+      _selectedType = TransactionType.expense;
     }
     _nameController.addListener(() => setState(() {}));
   }
@@ -103,7 +107,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       name: _nameController.text.trim(),
       iconCodePoint: _selectedIconCodePoint,
       colorHex: _selectedColorHex,
-      budget: widget.category?.budget,
+      type: _selectedType,
+      budget: _selectedType == TransactionType.expense ? widget.category?.budget : null,
     );
 
     if (widget.category != null) {
@@ -154,6 +159,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     prefixIcon: Icon(Icons.label_outline),
                   ),
                 ).animate().fade(delay: 100.ms),
+
+                const Gap(28),
+
+                // Type selector
+                _buildSectionLabel(context, 'Category Type'),
+                const Gap(10),
+                _buildTypeSelector(context).animate().fade(delay: 120.ms),
 
                 const Gap(28),
 
@@ -371,6 +383,78 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTypeSelector(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.dividerColor(context)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTypeOption(
+              context,
+              'Expense',
+              TransactionType.expense,
+              AppTheme.expenseColor(context),
+              Icons.arrow_upward_rounded,
+            ),
+          ),
+          Expanded(
+            child: _buildTypeOption(
+              context,
+              'Income',
+              TransactionType.income,
+              AppTheme.incomeColor(context),
+              Icons.arrow_downward_rounded,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeOption(
+    BuildContext context,
+    String label,
+    TransactionType type,
+    Color color,
+    IconData icon,
+  ) {
+    final isSelected = _selectedType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = type),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppTheme.textLightColor(context),
+            ),
+            const Gap(6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.textLightColor(context),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

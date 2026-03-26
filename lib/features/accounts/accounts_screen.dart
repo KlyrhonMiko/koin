@@ -8,6 +8,7 @@ import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
 import 'package:intl/intl.dart';
 
 class AccountsScreen extends ConsumerWidget {
@@ -66,43 +67,72 @@ class AccountsScreen extends ConsumerWidget {
               }
               final account = accounts[index];
               final balance = stats.accountBalances[account.id] ?? 0;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.dividerColor(context)),
+              return Dismissible(
+                key: Key(account.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorColor(context).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 24),
+                  child: Icon(Icons.delete_rounded, color: AppTheme.errorColor(context)),
                 ),
-                child: ListTile(
-                  onTap: () => _showAccountSheet(context, ref, account: account),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: account.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      IconData(account.iconCodePoint, fontFamily: 'MaterialIcons'),
-                      color: account.color,
-                      size: 22,
-                    ),
+                confirmDismiss: (direction) async {
+                  final confirmed = await PremiumConfirmationSheet.show(
+                    context: context,
+                    title: 'Delete Account?',
+                    description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
+                    confirmLabel: 'Delete',
+                    confirmColor: AppTheme.errorColor(context),
+                    icon: Icons.delete_forever_rounded,
+                    isDanger: true,
+                  );
+                  return confirmed ?? false;
+                },
+                onDismissed: (_) {
+                  ref.read(accountProvider.notifier).deleteAccount(account.id);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
                   ),
-                  title: Text(account.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Initial: ${currency.symbol}${account.initialBalance.toStringAsFixed(2)}',
-                      style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
+                  child: ListTile(
+                    onTap: () => _showAccountSheet(context, ref, account: account),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    leading: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: account.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        IconData(account.iconCodePoint, fontFamily: 'MaterialIcons'),
+                        color: account.color,
+                        size: 22,
+                      ),
                     ),
-                  ),
-                  trailing: Text(
-                    NumberFormat.currency(symbol: currency.symbol).format(balance),
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    title: Text(account.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Initial: ${currency.symbol}${account.initialBalance.toStringAsFixed(2)}',
+                        style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
+                      ),
+                    ),
+                    trailing: Text(
+                      NumberFormat.currency(symbol: currency.symbol).format(balance),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    ),
                   ),
                 ),
-              ).animate().fade(delay: (index * 60).ms).slideY(begin: 0.08);
+              ).animate().fade(delay: (index * 60).ms).slideX(begin: 0.05);
             },
           );
         },
@@ -164,26 +194,20 @@ class AccountsScreen extends ConsumerWidget {
                   ),
                   if (isEditing)
                     IconButton(
-                      onPressed: () {
-                        showDialog(
+                      onPressed: () async {
+                        final confirmed = await PremiumConfirmationSheet.show(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete Account?'),
-                            content: const Text('All transactions associated with this account will be unlinked. This cannot be undone.'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                              TextButton(
-                                onPressed: () {
-                                  ref.read(accountProvider.notifier).deleteAccount(account.id);
-                                  Navigator.pop(ctx);
-                                  Navigator.pop(context);
-                                },
-                                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
+                          title: 'Delete Account?',
+                          description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
+                          confirmLabel: 'Delete',
+                          confirmColor: AppTheme.expenseColor(context),
+                          icon: Icons.delete_forever_rounded,
+                          isDanger: true,
                         );
+                        if (confirmed == true && context.mounted) {
+                          ref.read(accountProvider.notifier).deleteAccount(account.id);
+                          Navigator.pop(context);
+                        }
                       },
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                     ),

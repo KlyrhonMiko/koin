@@ -9,6 +9,7 @@ import 'package:koin/core/models/savings_log.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
 import 'package:uuid/uuid.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
@@ -127,19 +128,14 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B)),
             onPressed: () async {
-              final confirmed = await showDialog<bool>(
+              final confirmed = await PremiumConfirmationSheet.show(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Goal'),
-                  content: const Text('Are you sure you want to delete this savings goal?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Delete', style: TextStyle(color: Color(0xFFFF6B6B))),
-                    ),
-                  ],
-                ),
+                title: 'Delete Goal?',
+                description: 'Are you sure you want to delete this savings goal? This action cannot be undone.',
+                confirmLabel: 'Delete',
+                confirmColor: AppTheme.expenseColor(context),
+                icon: Icons.delete_forever_rounded,
+                isDanger: true,
               );
               if (confirmed == true && mounted) {
                 await ref.read(savingsGoalsProvider.notifier).deleteGoal(goal.id);

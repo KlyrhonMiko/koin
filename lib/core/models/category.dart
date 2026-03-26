@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/models/transaction.dart';
 
 class TransactionCategory {
   final String id;
@@ -7,11 +8,14 @@ class TransactionCategory {
   final String colorHex;
   final double? budget;
 
+  final TransactionType type;
+
   TransactionCategory({
     required this.id,
     required this.name,
     required this.iconCodePoint,
     required this.colorHex,
+    required this.type,
     this.budget,
   });
 
@@ -21,6 +25,7 @@ class TransactionCategory {
       'name': name,
       'iconCodePoint': iconCodePoint,
       'colorHex': colorHex,
+      'type': type.name,
       'budget': budget,
     };
   }
@@ -31,6 +36,9 @@ class TransactionCategory {
       name: map['name'],
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
+      type: map['type'] != null 
+          ? TransactionType.values.byName(map['type']) 
+          : TransactionType.expense,
       budget: map['budget']?.toDouble(),
     );
   }
