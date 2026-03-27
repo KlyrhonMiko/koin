@@ -483,10 +483,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                                         letterSpacing: -0.2,
                                       ),
                                     ),
-                                    if (category.type == TransactionType.expense && category.budget != null && category.budget! > 0) ...[
+                                    if (category.type == TransactionType.expense && ((category.budget != null && category.budget! > 0) || (category.isPercentBudget && category.budgetPercent != null && category.budgetPercent! > 0))) ...[
                                       const Gap(4),
                                       Text(
-                                        'Budget: ${fmt.format(category.budget)}',
+                                        category.isPercentBudget
+                                            ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
+                                            : 'Budget: ${fmt.format(category.budget)}',
                                         style: TextStyle(
                                           color: AppTheme.textLightColor(context),
                                           fontSize: 12,

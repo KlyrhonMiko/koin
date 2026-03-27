@@ -41,8 +41,8 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                 controller: _tabController,
                 physics: const BouncingScrollPhysics(),
                 children: const [
-                  TransactionsListScreen(),
                   AnalysisScreen(),
+                  TransactionsListScreen(),
                 ],
               ),
             ),
@@ -145,7 +145,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                               onTap: () => _tabController.animateTo(0),
                               child: Center(
                                 child: Text(
-                                  'Transactions',
+                                  'Analysis',
                                   style: TextStyle(
                                     fontWeight: _tabController.index == 0 ? FontWeight.w700 : FontWeight.w600,
                                     color: _tabController.index == 0 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
@@ -162,7 +162,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                               onTap: () => _tabController.animateTo(1),
                               child: Center(
                                 child: Text(
-                                  'Analysis',
+                                  'Transactions',
                                   style: TextStyle(
                                     fontWeight: _tabController.index == 1 ? FontWeight.w700 : FontWeight.w600,
                                     color: _tabController.index == 1 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/features/main_layout.dart';
+import 'package:koin/features/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class MyApp extends ConsumerWidget {
       title: 'Koin',
       theme: AppTheme.getTheme(settings.themeColor, settings.isDarkMode),
       debugShowCheckedModeBanner: false,
-      home: const MainLayout(),
+      home: const SplashScreen(),
     );
   }
 }

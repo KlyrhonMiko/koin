@@ -809,7 +809,7 @@ class DashboardScreen extends ConsumerWidget {
   // ─── Budget Section ───────────────────────────────────────────────
   Widget _buildBudgetSection(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
     final categories = ref.watch(categoryProvider);
-    final budgetedCategories = categories.where((c) => c.type == TransactionType.expense && c.budget != null && c.budget! > 0).toList();
+    final budgetedCategories = categories.where((c) => c.type == TransactionType.expense && ((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -896,9 +896,11 @@ class DashboardScreen extends ConsumerWidget {
         else
           ...budgetedCategories.map((category) {
             final spent = stats.categorySpending[category.id] ?? 0;
-            final budget = category.budget!;
-            final progress = (spent / budget).clamp(0.0, 1.0);
-            final percent = (spent / budget * 100).toStringAsFixed(0);
+            final budget = (category.isPercentBudget && category.budgetPercent != null && category.budgetPercent! > 0)
+                ? stats.totalIncome * category.budgetPercent! / 100
+                : (category.budget ?? 0.0);
+            final progress = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+            final percent = budget > 0 ? (spent / budget * 100).toStringAsFixed(0) : '0';
             final isOver = spent > budget;
             final isNearLimit = progress > 0.8 && !isOver;
 
