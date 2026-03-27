@@ -6,6 +6,7 @@ class Account {
   final int iconCodePoint;
   final String colorHex;
   final double initialBalance;
+  final bool excludeFromTotal;
 
   Account({
     required this.id,
@@ -13,6 +14,7 @@ class Account {
     required this.iconCodePoint,
     required this.colorHex,
     this.initialBalance = 0.0,
+    this.excludeFromTotal = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -22,6 +24,7 @@ class Account {
       'iconCodePoint': iconCodePoint,
       'colorHex': colorHex,
       'initialBalance': initialBalance,
+      'excludeFromTotal': excludeFromTotal ? 1 : 0,
     };
   }
 
@@ -32,6 +35,7 @@ class Account {
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
       initialBalance: map['initialBalance'] ?? 0.0,
+      excludeFromTotal: map['excludeFromTotal'] == 1,
     );
   }
 

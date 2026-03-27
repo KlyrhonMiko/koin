@@ -172,9 +172,35 @@ class AccountsScreen extends ConsumerWidget {
                         style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
                       ),
                     ),
-                    trailing: Text(
-                      NumberFormat.currency(symbol: currency.symbol).format(balance),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          NumberFormat.currency(symbol: currency.symbol).format(balance),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                        ),
+                        if (account.excludeFromTotal)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.textLightColor(context).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'EXCLUDED',
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -196,6 +222,7 @@ class AccountsScreen extends ConsumerWidget {
     );
     int selectedIcon = account?.iconCodePoint ?? Icons.account_balance_wallet_rounded.codePoint;
     Color selectedColor = account?.color ?? AppTheme.primaryColor(context);
+    bool excludeFromTotal = account?.excludeFromTotal ?? false;
 
     final colors = [
       AppTheme.primaryColor(context),
@@ -365,6 +392,23 @@ class AccountsScreen extends ConsumerWidget {
                   );
                 }).toList(),
               ),
+              const Gap(24),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.1)),
+                ),
+                child: SwitchListTile(
+                  title: const Text('Exclude from Total Balance', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Hide this account\'s balance from the dashboard total', style: TextStyle(fontSize: 12)),
+                  value: excludeFromTotal,
+                  onChanged: (value) => setState(() => excludeFromTotal = value),
+                  activeThumbColor: AppTheme.primaryColor(context),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
               const Gap(28),
               SizedBox(
                 width: double.infinity,
@@ -382,6 +426,7 @@ class AccountsScreen extends ConsumerWidget {
                           initialBalance: double.tryParse(balanceController.text) ?? 0.0,
                           iconCodePoint: selectedIcon,
                           colorHex: '#${selectedColor.toARGB32().toRadixString(16).substring(2)}',
+                          excludeFromTotal: excludeFromTotal,
                         );
                         
                         if (isEditing) {

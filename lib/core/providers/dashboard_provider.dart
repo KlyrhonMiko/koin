@@ -43,27 +43,40 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
         data: (accounts) {
           double income = 0;
           double expense = 0;
-          double totalInitialBalances = 0;
           Map<String, double> balances = {};
           Map<String, double> catSpending = {};
 
+          final includedAccountIds = accounts.where((a) => !a.excludeFromTotal).map((a) => a.id).toSet();
+
           for (var a in accounts) {
-            totalInitialBalances += a.initialBalance;
             balances[a.id] = a.initialBalance;
           }
 
           for (var t in transactions) {
+            final isSourceIncluded = includedAccountIds.contains(t.accountId);
+            final isDestIncluded = t.toAccountId != null && includedAccountIds.contains(t.toAccountId);
+
             if (t.type == TransactionType.income) {
-              income += t.amount;
+              if (isSourceIncluded) income += t.amount;
               balances[t.accountId] = (balances[t.accountId] ?? 0) + t.amount;
             } else if (t.type == TransactionType.expense) {
-              expense += t.amount;
+              if (isSourceIncluded) {
+                expense += t.amount;
+                // track category spending only for included accounts
+                catSpending[t.categoryId] = (catSpending[t.categoryId] ?? 0) + t.amount;
+              }
               balances[t.accountId] = (balances[t.accountId] ?? 0) - t.amount;
-              
-              // track category spending
-              catSpending[t.categoryId] = (catSpending[t.categoryId] ?? 0) + t.amount;
             } else if (t.type == TransactionType.transfer) {
-              // Transfers decrease source and increase destination
+              // Internal transfer between included/excluded accounts
+              if (isSourceIncluded && !isDestIncluded) {
+                // Moving money Out of included pool
+                expense += t.amount;
+              } else if (!isSourceIncluded && isDestIncluded) {
+                // Moving money Into included pool
+                income += t.amount;
+              }
+              // Both included or both excluded -> no net change to total income/expense
+              
               balances[t.accountId] = (balances[t.accountId] ?? 0) - t.amount;
               if (t.toAccountId != null) {
                 balances[t.toAccountId!] = (balances[t.toAccountId!] ?? 0) + t.amount;
@@ -71,10 +84,17 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
             }
           }
 
+          double currentBalance = 0;
+          for (var a in accounts) {
+            if (!a.excludeFromTotal) {
+              currentBalance += balances[a.id] ?? 0;
+            }
+          }
+
           return DashboardStats(
             totalIncome: income,
             totalExpense: expense,
-            currentBalance: (totalInitialBalances + income - expense),
+            currentBalance: currentBalance,
             accounts: accounts,
             accountBalances: balances,
             categorySpending: catSpending,
