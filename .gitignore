@@ -48,13 +48,13 @@ app.*.map.json
 /android/app/release
 
 # Android related
-**/android/.gradle
+**/android/.gradle/
 **/android/captures/
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
-**/android/gradlew
-**/android/gradlew.bat
-**/android/gradle-wrapper.jar
+**/android/**/gradlew
+**/android/**/gradlew.bat
+**/android/**/gradle-wrapper.jar
 **/android/key.properties
 **/*.keystore
 **/*.jks
@@ -79,6 +79,10 @@ app.*.map.json
 **/ios/Flutter/app.zip
 **/ios/Flutter/flutter_assets/
 **/ios/Flutter/Flutter.podspec
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/flutter_lldb_helper.py
+**/ios/Flutter/flutter_lldbinit
 **/ios/Runner.xcworkspace/
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
