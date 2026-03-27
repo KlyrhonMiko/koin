@@ -118,9 +118,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     }
 
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Category "${category.name}" saved')),
-    );
   }
 
   @override

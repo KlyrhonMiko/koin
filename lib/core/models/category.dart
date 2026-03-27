@@ -7,6 +7,8 @@ class TransactionCategory {
   final int iconCodePoint;
   final String colorHex;
   final double? budget;
+  final double? budgetPercent;
+  final bool isPercentBudget;
 
   final TransactionType type;
 
@@ -17,6 +19,8 @@ class TransactionCategory {
     required this.colorHex,
     required this.type,
     this.budget,
+    this.budgetPercent,
+    this.isPercentBudget = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -27,6 +31,8 @@ class TransactionCategory {
       'colorHex': colorHex,
       'type': type.name,
       'budget': budget,
+      'budgetPercent': budgetPercent,
+      'isPercentBudget': isPercentBudget ? 1 : 0,
     };
   }
 
@@ -40,6 +46,8 @@ class TransactionCategory {
           ? TransactionType.values.byName(map['type']) 
           : TransactionType.expense,
       budget: map['budget']?.toDouble(),
+      budgetPercent: map['budgetPercent']?.toDouble(),
+      isPercentBudget: map['isPercentBudget'] == 1,
     );
   }
 

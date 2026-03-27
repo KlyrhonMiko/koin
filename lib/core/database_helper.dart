@@ -25,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -48,6 +48,10 @@ class DatabaseHelper {
     }
     if (oldVersion < 6) {
       await db.execute('ALTER TABLE categories ADD COLUMN type TEXT DEFAULT "expense"');
+    }
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE categories ADD COLUMN budgetPercent REAL');
+      await db.execute('ALTER TABLE categories ADD COLUMN isPercentBudget INTEGER DEFAULT 0');
     }
   }
 
@@ -110,7 +114,9 @@ CREATE TABLE categories (
   iconCodePoint $intType,
   colorHex $textType,
   type $textType,
-  budget REAL
+  budget REAL,
+  budgetPercent REAL,
+  isPercentBudget INTEGER DEFAULT 0
 )
 ''');
 
