@@ -16,6 +16,8 @@ import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
+import 'package:koin/core/widgets/account_sheet.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -41,87 +43,89 @@ class DashboardScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
-    return Scaffold(
-      extendBody: true,
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
-          color: AppTheme.primaryColor(context),
-          backgroundColor: AppTheme.surfaceColor(context),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(context)
-                    .animate()
-                    .fade(duration: 500.ms)
-                    .slideY(begin: -0.1, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(24),
-                _buildBalanceCard(context, stats, currency)
-                    .animate()
-                    .fade(duration: 600.ms, delay: 100.ms)
-                    .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
-                const Gap(20),
-                _buildAccountsList(context, stats, currency)
-                    .animate()
-                    .fade(delay: 200.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(20),
-                _buildIncomeExpenseRow(context, stats, currency)
-                    .animate()
-                    .fade(delay: 300.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildBudgetSection(context, ref, stats, currency)
-                    .animate()
-                    .fade(delay: 400.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 400.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildSectionHeader(
-                  context,
-                  ref,
-                  title: 'Spending Overview',
-                  buttonLabel: 'Full Analysis',
-                  onTap: () {
-                    ref.read(navigationProvider.notifier).setIndex(1);
-                    ref.read(pageControllerProvider).animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ).animate().fade(delay: 500.ms, duration: 500.ms),
-                const Gap(16),
-                _buildChartSection(context, stats, currency)
-                    .animate()
-                    .fade(delay: 550.ms, duration: 600.ms)
-                    .scale(begin: const Offset(0.96, 0.96), delay: 550.ms, duration: 600.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildSectionHeader(
-                  context,
-                  ref,
-                  title: 'Recent Transactions',
-                  buttonLabel: 'View All',
-                  onTap: () {
-                    ref.read(navigationProvider.notifier).setIndex(1);
-                    ref.read(pageControllerProvider).animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ).animate().fade(delay: 600.ms, duration: 500.ms),
-                const Gap(12),
-                _buildRecentTransactions(context, ref, transactionsAsync, currency)
-                    .animate()
-                    .fade(delay: 650.ms, duration: 500.ms)
-                    .slideY(begin: 0.08, delay: 650.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(100),
-              ],
-            ),
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator(
+        onRefresh: () {
+          HapticService.light();
+          return ref.read(transactionProvider.notifier).loadTransactions();
+        },
+        color: AppTheme.primaryColor(context),
+        backgroundColor: AppTheme.surfaceColor(context),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context)
+                  .animate()
+                  .fade(duration: 500.ms)
+                  .slideY(begin: -0.1, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(24),
+              _buildBalanceCard(context, stats, currency)
+                  .animate()
+                  .fade(duration: 600.ms, delay: 100.ms)
+                  .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
+              const Gap(20),
+              _buildAccountsList(context, ref, stats, currency)
+                  .animate()
+                  .fade(delay: 200.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(20),
+              _buildIncomeExpenseRow(context, stats, currency)
+                  .animate()
+                  .fade(delay: 300.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildBudgetSection(context, ref, stats, currency)
+                  .animate()
+                  .fade(delay: 400.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 400.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildSectionHeader(
+                context,
+                ref,
+                title: 'Spending Overview',
+                buttonLabel: 'Full Analysis',
+                onTap: () {
+                  ref.read(navigationProvider.notifier).setIndex(1);
+                  HapticService.light();
+                  ref.read(pageControllerProvider).animateToPage(
+                    1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              ).animate().fade(delay: 500.ms, duration: 500.ms),
+              const Gap(16),
+              _buildChartSection(context, stats, currency)
+                  .animate()
+                  .fade(delay: 550.ms, duration: 600.ms)
+                  .scale(begin: const Offset(0.96, 0.96), delay: 550.ms, duration: 600.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildSectionHeader(
+                context,
+                ref,
+                title: 'Recent Transactions',
+                buttonLabel: 'View All',
+                onTap: () {
+                  ref.read(navigationProvider.notifier).setIndex(1);
+                  HapticService.light();
+                  ref.read(pageControllerProvider).animateToPage(
+                    1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              ).animate().fade(delay: 600.ms, duration: 500.ms),
+              const Gap(12),
+              _buildRecentTransactions(context, ref, transactionsAsync, currency)
+                  .animate()
+                  .fade(delay: 650.ms, duration: 500.ms)
+                  .slideY(begin: 0.08, delay: 650.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(100),
+            ],
           ),
         ),
       ),
@@ -149,7 +153,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         GestureDetector(
-          onTap: onTap,
+          onTap: () {
+            HapticService.light();
+            onTap();
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
@@ -218,10 +225,13 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+          onTap: () {
+            HapticService.light();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+          },
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -380,7 +390,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   // ─── Accounts Grid ─────────────────────────────────────────────────
-  Widget _buildAccountsList(BuildContext context, DashboardStats stats, Currency currency) {
+  Widget _buildAccountsList(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -404,13 +414,23 @@ class DashboardScreen extends ConsumerWidget {
             return Wrap(
               spacing: spacing,
               runSpacing: spacing,
-              children: stats.accounts.map((account) {
-                final balance = stats.accountBalances[account.id] ?? 0;
-                return SizedBox(
-                  width: cardWidth,
-                  child: _buildAccountCard(context, account, balance, currency),
-                );
-              }).toList(),
+              children: [
+                ...stats.accounts.map((account) {
+                  final balance = stats.accountBalances[account.id] ?? 0;
+                  return SizedBox(
+                    width: cardWidth,
+                    child: GestureDetector(
+                      onTap: () => HapticService.light(),
+                      child: _buildAccountCard(context, account, balance, currency),
+                    ),
+                  );
+                }),
+                if (stats.accounts.length % 2 != 0)
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildAddAccountCard(context, ref),
+                  ),
+              ],
             );
           },
         ),
@@ -487,6 +507,59 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildAddAccountCard(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () {
+        HapticService.medium();
+        AccountSheet.show(context, ref);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                color: AppTheme.primaryColor(context),
+                size: 20,
+              ),
+            ),
+            const Gap(10),
+            Text(
+              'Add Account',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: AppTheme.primaryColor(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Income / Expense Row ─────────────────────────────────────────
   Widget _buildIncomeExpenseRow(BuildContext context, DashboardStats stats, Currency currency) {
     final total = stats.totalIncome + stats.totalExpense;
@@ -497,10 +570,13 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
-            ),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
+              );
+            },
             child: _buildSummaryCard(
               context: context,
               title: 'Income',
@@ -516,10 +592,13 @@ class DashboardScreen extends ConsumerWidget {
         const Gap(12),
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
-            ),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
+              );
+            },
             child: _buildSummaryCard(
               context: context,
               title: 'Expense',
@@ -677,6 +756,18 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 PieChart(
                   PieChartData(
+                    pieTouchData: PieTouchData(
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                        if (!event.isInterestedForInteractions ||
+                            pieTouchResponse == null ||
+                            pieTouchResponse.touchedSection == null) {
+                          return;
+                        }
+                        if (event is FlTapDownEvent || event is FlPanStartEvent) {
+                          HapticService.light();
+                        }
+                      },
+                    ),
                     sectionsSpace: 5,
                     centerSpaceRadius: 48,
                     startDegreeOffset: -90,
@@ -809,7 +900,7 @@ class DashboardScreen extends ConsumerWidget {
 
   // ─── Budget Section ───────────────────────────────────────────────
   Widget _buildBudgetSection(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
-    final categories = ref.watch(categoryProvider);
+    final categories = ref.watch(categoriesProvider).value ?? [];
     final budgetedCategories = categories.where((c) => c.type == TransactionType.expense && ((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
 
     return Column(
@@ -874,6 +965,7 @@ class DashboardScreen extends ConsumerWidget {
                 const Gap(18),
                 ElevatedButton(
                   onPressed: () {
+                    HapticService.medium();
                     Navigator.popUntil(context, (route) => route.isFirst);
                     ref.read(navigationProvider.notifier).setIndex(3);
                     ref.read(pageControllerProvider).animateToPage(
@@ -1092,7 +1184,7 @@ class DashboardScreen extends ConsumerWidget {
         }
 
         final recent = transactions.take(10).toList();
-        final categories = ref.watch(categoryProvider);
+        final categories = ref.watch(categoriesProvider).value ?? [];
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         final yesterday = today.subtract(const Duration(days: 1));
@@ -1171,7 +1263,9 @@ class DashboardScreen extends ConsumerWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () {},
+                  onTap: () {
+                    HapticService.light();
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     child: Row(

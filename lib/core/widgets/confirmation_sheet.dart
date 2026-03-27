@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
-class PremiumConfirmationSheet extends StatelessWidget {
-  const PremiumConfirmationSheet({
+class ConfirmationSheet extends StatelessWidget {
+  const ConfirmationSheet({
     super.key,
     required this.title,
     required this.description,
@@ -33,12 +33,12 @@ class PremiumConfirmationSheet extends StatelessWidget {
     required IconData icon,
     bool isDanger = false,
   }) {
-    HapticFeedback.mediumImpact();
+    HapticService.medium();
     return showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => PremiumConfirmationSheet(
+      builder: (context) => ConfirmationSheet(
         title: title,
         description: description,
         confirmLabel: confirmLabel,
@@ -133,7 +133,10 @@ class PremiumConfirmationSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: () => Navigator.pop(context, false),
+                  onPressed: () {
+                    HapticService.light();
+                    Navigator.pop(context, false);
+                  },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -166,7 +169,7 @@ class PremiumConfirmationSheet extends StatelessWidget {
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      HapticFeedback.lightImpact();
+                      HapticService.medium();
                       Navigator.pop(context, true);
                     },
                     style: ElevatedButton.styleFrom(

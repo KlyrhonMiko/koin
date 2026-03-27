@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/transactions/transactions_list_screen.dart';
 import 'package:koin/features/analysis/analysis_screen.dart';
 
@@ -29,25 +30,22 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor(context),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const BouncingScrollPhysics(),
-                children: const [
-                  AnalysisScreen(),
-                  TransactionsListScreen(),
-                ],
-              ),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              physics: const BouncingScrollPhysics(),
+              children: const [
+                AnalysisScreen(),
+                TransactionsListScreen(),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -142,7 +140,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                           Expanded(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () => _tabController.animateTo(0),
+                              onTap: () {
+                                HapticService.selection();
+                                _tabController.animateTo(0);
+                              },
                               child: Center(
                                 child: Text(
                                   'Analysis',
@@ -159,7 +160,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                           Expanded(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () => _tabController.animateTo(1),
+                              onTap: () {
+                                HapticService.selection();
+                                _tabController.animateTo(1);
+                              },
                               child: Center(
                                 child: Text(
                                   'Transactions',

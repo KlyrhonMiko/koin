@@ -8,6 +8,8 @@ class Account {
   final double initialBalance;
   final bool excludeFromTotal;
 
+  final int position;
+
   Account({
     required this.id,
     required this.name,
@@ -15,7 +17,28 @@ class Account {
     required this.colorHex,
     this.initialBalance = 0.0,
     this.excludeFromTotal = false,
+    this.position = 0,
   });
+
+  Account copyWith({
+    String? id,
+    String? name,
+    int? iconCodePoint,
+    String? colorHex,
+    double? initialBalance,
+    bool? excludeFromTotal,
+    int? position,
+  }) {
+    return Account(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      iconCodePoint: iconCodePoint ?? this.iconCodePoint,
+      colorHex: colorHex ?? this.colorHex,
+      initialBalance: initialBalance ?? this.initialBalance,
+      excludeFromTotal: excludeFromTotal ?? this.excludeFromTotal,
+      position: position ?? this.position,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -25,6 +48,7 @@ class Account {
       'colorHex': colorHex,
       'initialBalance': initialBalance,
       'excludeFromTotal': excludeFromTotal ? 1 : 0,
+      'position': position,
     };
   }
 
@@ -36,6 +60,7 @@ class Account {
       colorHex: map['colorHex'],
       initialBalance: map['initialBalance'] ?? 0.0,
       excludeFromTotal: map['excludeFromTotal'] == 1,
+      position: map['position'] ?? 0,
     );
   }
 

@@ -11,237 +11,281 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
+import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categories = ref.watch(categoryProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
     final settings = ref.watch(settingsProvider);
     final stats = ref.watch(dashboardStatsProvider);
     final currency = settings.currency;
 
-    final totalIncome = stats.totalIncome;
+    return categoriesAsync.when(
+      data: (categories) {
+        final totalIncome = stats.totalIncome;
 
-    // Resolve percentage-based budgets to actual amounts
-    double resolvedBudget(TransactionCategory c) {
-      if (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0) {
-        return totalIncome * c.budgetPercent! / 100;
-      }
-      return c.budget ?? 0;
-    }
+        // Resolve percentage-based budgets to actual amounts
+        double resolvedBudget(TransactionCategory c) {
+          if (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0) {
+            return totalIncome * c.budgetPercent! / 100;
+          }
+          return c.budget ?? 0;
+        }
 
-    final budgeted = categories.where((c) => c.type == TransactionType.expense && ((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
-    final unbudgeted = categories.where((c) => c.type == TransactionType.expense && !((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
+        final budgeted = categories.where((c) => c.type == TransactionType.expense && ((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
+        final unbudgeted = categories.where((c) => c.type == TransactionType.expense && !((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
 
-    // Calculate totals
-    double totalBudget = 0;
-    double totalSpent = 0;
-    for (var cat in budgeted) {
-      totalBudget += resolvedBudget(cat);
-      totalSpent += stats.categorySpending[cat.id] ?? 0;
-    }
-    final overallProgress = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
-    final overallPercent = totalBudget > 0 ? (totalSpent / totalBudget * 100).toStringAsFixed(0) : '0';
+        // Calculate totals
+        double totalBudget = 0;
+        double totalSpent = 0;
+        for (var cat in budgeted) {
+          totalBudget += resolvedBudget(cat);
+          totalSpent += stats.categorySpending[cat.id] ?? 0;
+        }
+        final overallProgress = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
+        final overallPercent = totalBudget > 0 ? (totalSpent / totalBudget * 100).toStringAsFixed(0) : '0';
 
-    return Scaffold(
-      extendBody: true,
-      appBar: AppBar(
-        title: const Text('Budgets'),
-        actions: [
+        return Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: categories.where((c) => c.type == TransactionType.expense).isEmpty
+                  ? _buildEmptyState(context)
+                  : RefreshIndicator(
+                      onRefresh: () {
+                        HapticService.light();
+                        return ref.read(transactionProvider.notifier).loadTransactions();
+                      },
+                      color: AppTheme.primaryColor(context),
+                      backgroundColor: AppTheme.surfaceColor(context),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Summary card
+                            if (budgeted.isNotEmpty)
+                              _buildSummaryCard(
+                                context,
+                                totalBudget: totalBudget,
+                                totalSpent: totalSpent,
+                                progress: overallProgress,
+                                percent: overallPercent,
+                                currency: currency,
+                              ).animate().fade(duration: 400.ms).slideY(begin: 0.08),
+
+                          if (budgeted.isNotEmpty) const Gap(28),
+
+                          // Active budgets section
+                          if (budgeted.isNotEmpty) ...[
+                            Text(
+                              'Active Budgets',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textColor(context),
+                                letterSpacing: -0.3,
+                              ),
+                            ).animate().fade(delay: 100.ms),
+                            const Gap(12),
+                            ...budgeted.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final category = entry.value;
+                              final spent = stats.categorySpending[category.id] ?? 0;
+                              return _buildBudgetCard(
+                                context,
+                                ref,
+                                category: category,
+                                spent: spent,
+                                currency: currency,
+                                index: index,
+                                resolvedBudget: resolvedBudget(category),
+                                totalIncome: totalIncome,
+                              ).animate().fade(delay: (150 + index * 60).ms).slideY(begin: 0.06);
+                            }),
+                            if (unbudgeted.isNotEmpty) const Gap(24),
+                          ],
+
+                          // Unbudgeted categories section
+                          if (unbudgeted.isNotEmpty) ...[
+                            Text(
+                              budgeted.isEmpty ? 'Set Monthly Budgets' : 'Add More Budgets',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textColor(context),
+                                letterSpacing: -0.3,
+                              ),
+                            ).animate().fade(delay: budgeted.isEmpty ? 100.ms : 300.ms),
+                            if (budgeted.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  'Tap a category to set a spending limit',
+                                  style: TextStyle(
+                                    color: AppTheme.textLightColor(context),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ).animate().fade(delay: 150.ms),
+                            const Gap(12),
+                            Builder(
+                              builder: (context) {
+                                final screenWidth = MediaQuery.of(context).size.width;
+                                final maxRowWidth = screenWidth - 40; // 20 padding each side
+                                const spacing = 10.0;
+
+                                double estimateWidth(String text) {
+                                  return 92.0 + (text.length * 7.5);
+                                }
+
+                                final pendingItems = <Map<String, dynamic>>[];
+                                for (int i = 0; i < unbudgeted.length; i++) {
+                                   pendingItems.add({
+                                     'category': unbudgeted[i],
+                                     'width': estimateWidth(unbudgeted[i].name),
+                                     'isManage': false,
+                                     'originalIndex': i,
+                                   });
+                                }
+                                pendingItems.add({
+                                   'category': null,
+                                   'width': estimateWidth('Manage'),
+                                   'isManage': true,
+                                   'originalIndex': unbudgeted.length,
+                                });
+
+                                final optimallyOrderedItems = <Map<String, dynamic>>[];
+
+                                while (pendingItems.isNotEmpty) {
+                                  // Take the first remaining item
+                                  final firstItem = pendingItems.removeAt(0);
+                                  optimallyOrderedItems.add(firstItem);
+                                  double currentX = firstItem['width'] as double;
+
+                                  // repeatedly look ahead for the largest item that still fits on this row
+                                  bool found = true;
+                                  while (found) {
+                                    found = false;
+                                    int bestIndex = -1;
+                                    double bestWidth = -1;
+                                    
+                                    for (int i = 0; i < pendingItems.length; i++) {
+                                      final w = pendingItems[i]['width'] as double;
+                                      if (currentX + spacing + w <= maxRowWidth) {
+                                        if (w > bestWidth) {
+                                          bestWidth = w;
+                                          bestIndex = i;
+                                        }
+                                      }
+                                    }
+                                    
+                                    if (bestIndex != -1) {
+                                      final fitItem = pendingItems.removeAt(bestIndex);
+                                      optimallyOrderedItems.add(fitItem);
+                                      currentX += spacing + bestWidth;
+                                      found = true;
+                                    }
+                                  }
+                                }
+
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: 10,
+                                  children: optimallyOrderedItems.map((item) {
+                                    if (item['isManage'] == true) {
+                                      return _buildManageChip(context, budgeted.isEmpty, item['originalIndex']);
+                                    } else {
+                                      final category = item['category'] as TransactionCategory;
+                                      return _buildUnbudgetedChip(context, ref, category, currency, totalIncome)
+                                          .animate()
+                                          .fade(delay: ((budgeted.isEmpty ? 200 : 350) + item['originalIndex'] * 50).ms)
+                                          .scale(begin: const Offset(0.92, 0.92));
+                                    }
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                          ],
+
+                          // If unbudgeted is empty but we have expense categories, show the Manage button
+                          if (unbudgeted.isEmpty && categories.where((c) => c.type == TransactionType.expense).isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Center(
+                                child: TextButton.icon(
+                                  onPressed: () {
+                                    HapticService.light();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.settings_outlined, size: 16),
+                                  label: const Text('Manage Categories'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppTheme.textLightColor(context),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+              ),
+            ],
+          );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 12,
+        bottom: 16,
+        left: 20,
+        right: 20,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor(context),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Budgets',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: AppTheme.textColor(context),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.category_outlined),
             tooltip: 'Manage Categories',
             onPressed: () {
+              HapticService.light();
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
               );
             },
           ),
-          const Gap(8),
         ],
       ),
-      body: categories.where((c) => c.type == TransactionType.expense).isEmpty
-          ? _buildEmptyState(context)
-          : SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Summary card
-                  if (budgeted.isNotEmpty)
-                    _buildSummaryCard(
-                      context,
-                      totalBudget: totalBudget,
-                      totalSpent: totalSpent,
-                      progress: overallProgress,
-                      percent: overallPercent,
-                      currency: currency,
-                    ).animate().fade(duration: 400.ms).slideY(begin: 0.08),
-
-                  if (budgeted.isNotEmpty) const Gap(28),
-
-                  // Active budgets section
-                  if (budgeted.isNotEmpty) ...[
-                    Text(
-                      'Active Budgets',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textColor(context),
-                        letterSpacing: -0.3,
-                      ),
-                    ).animate().fade(delay: 100.ms),
-                    const Gap(12),
-                    ...budgeted.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final category = entry.value;
-                      final spent = stats.categorySpending[category.id] ?? 0;
-                      return _buildBudgetCard(
-                        context,
-                        ref,
-                        category: category,
-                        spent: spent,
-                        currency: currency,
-                        index: index,
-                        resolvedBudget: resolvedBudget(category),
-                        totalIncome: totalIncome,
-                      ).animate().fade(delay: (150 + index * 60).ms).slideY(begin: 0.06);
-                    }),
-                    if (unbudgeted.isNotEmpty) const Gap(24),
-                  ],
-
-                  // Unbudgeted categories section
-                  if (unbudgeted.isNotEmpty) ...[
-                    Text(
-                      budgeted.isEmpty ? 'Set Monthly Budgets' : 'Add More Budgets',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textColor(context),
-                        letterSpacing: -0.3,
-                      ),
-                    ).animate().fade(delay: budgeted.isEmpty ? 100.ms : 300.ms),
-                    if (budgeted.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          'Tap a category to set a spending limit',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ).animate().fade(delay: 150.ms),
-                    const Gap(12),
-                    Builder(
-                      builder: (context) {
-                        final screenWidth = MediaQuery.of(context).size.width;
-                        final maxRowWidth = screenWidth - 40; // 20 padding each side
-                        const spacing = 10.0;
-
-                        double estimateWidth(String text) {
-                          return 92.0 + (text.length * 7.5);
-                        }
-
-                        final pendingItems = <Map<String, dynamic>>[];
-                        for (int i = 0; i < unbudgeted.length; i++) {
-                           pendingItems.add({
-                             'category': unbudgeted[i],
-                             'width': estimateWidth(unbudgeted[i].name),
-                             'isManage': false,
-                             'originalIndex': i,
-                           });
-                        }
-                        pendingItems.add({
-                           'category': null,
-                           'width': estimateWidth('Manage'),
-                           'isManage': true,
-                           'originalIndex': unbudgeted.length,
-                        });
-
-                        final optimallyOrderedItems = <Map<String, dynamic>>[];
-
-                        while (pendingItems.isNotEmpty) {
-                          // Take the first remaining item
-                          final firstItem = pendingItems.removeAt(0);
-                          optimallyOrderedItems.add(firstItem);
-                          double currentX = firstItem['width'] as double;
-
-                          // repeatedly look ahead for the largest item that still fits on this row
-                          bool found = true;
-                          while (found) {
-                            found = false;
-                            int bestIndex = -1;
-                            double bestWidth = -1;
-                            
-                            for (int i = 0; i < pendingItems.length; i++) {
-                              final w = pendingItems[i]['width'] as double;
-                              if (currentX + spacing + w <= maxRowWidth) {
-                                if (w > bestWidth) {
-                                  bestWidth = w;
-                                  bestIndex = i;
-                                }
-                              }
-                            }
-                            
-                            if (bestIndex != -1) {
-                              final fitItem = pendingItems.removeAt(bestIndex);
-                              optimallyOrderedItems.add(fitItem);
-                              currentX += spacing + bestWidth;
-                              found = true;
-                            }
-                          }
-                        }
-
-                        return Wrap(
-                          spacing: spacing,
-                          runSpacing: 10,
-                          children: optimallyOrderedItems.map((item) {
-                            if (item['isManage'] == true) {
-                              return _buildManageChip(context, budgeted.isEmpty, item['originalIndex']);
-                            } else {
-                              final category = item['category'] as TransactionCategory;
-                              return _buildUnbudgetedChip(context, ref, category, currency, totalIncome)
-                                  .animate()
-                                  .fade(delay: ((budgeted.isEmpty ? 200 : 350) + item['originalIndex'] * 50).ms)
-                                  .scale(begin: const Offset(0.92, 0.92));
-                            }
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ],
-
-                  // If unbudgeted is empty but we have expense categories, show the Manage button
-                  if (unbudgeted.isEmpty && categories.where((c) => c.type == TransactionType.expense).isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Center(
-                        child: TextButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.settings_outlined, size: 16),
-                          label: const Text('Manage Categories'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.textLightColor(context),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
     );
   }
 
@@ -301,6 +345,7 @@ class BudgetsScreen extends ConsumerWidget {
                       ),
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          HapticService.medium();
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const CategoryDetailScreen()),
@@ -463,7 +508,10 @@ class BudgetsScreen extends ConsumerWidget {
     final isPercent = category.isPercentBudget;
 
     return GestureDetector(
-      onTap: () => _showEditBudgetSheet(context, ref, category, currency, totalIncome),
+      onTap: () {
+        HapticService.light();
+        _showEditBudgetSheet(context, ref, category, currency, totalIncome);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(18),
@@ -601,7 +649,10 @@ class BudgetsScreen extends ConsumerWidget {
     double totalIncome,
   ) {
     return GestureDetector(
-      onTap: () => _showEditBudgetSheet(context, ref, category, currency, totalIncome),
+      onTap: () {
+        HapticService.light();
+        _showEditBudgetSheet(context, ref, category, currency, totalIncome);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -648,6 +699,7 @@ class BudgetsScreen extends ConsumerWidget {
   Widget _buildManageChip(BuildContext context, bool isBudgetedEmpty, int unbudgetedLength) {
     return GestureDetector(
       onTap: () {
+        HapticService.light();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
@@ -710,6 +762,7 @@ class BudgetsScreen extends ConsumerWidget {
   ) {
     final hasBudget = (category.budget != null && category.budget! > 0) || (category.isPercentBudget && category.budgetPercent != null && category.budgetPercent! > 0);
 
+    HapticService.light();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -813,6 +866,7 @@ class BudgetsScreen extends ConsumerWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
+                          HapticService.selection();
                           if (isPercentMode) {
                             setState(() {
                               isPercentMode = false;
@@ -847,6 +901,7 @@ class BudgetsScreen extends ConsumerWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
+                          HapticService.selection();
                           if (!isPercentMode) {
                             setState(() {
                               isPercentMode = true;
@@ -980,6 +1035,7 @@ class BudgetsScreen extends ConsumerWidget {
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
                               onTap: () {
+                                HapticService.light();
                                 setState(() {
                                   currentExpression = pct.toString();
                                   currentResult = pct.toString();
@@ -1017,6 +1073,7 @@ class BudgetsScreen extends ConsumerWidget {
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
                               onTap: () {
+                                HapticService.light();
                                 setState(() {
                                   currentExpression = amount.toString();
                                   currentResult = amount.toString();
@@ -1084,6 +1141,7 @@ class BudgetsScreen extends ConsumerWidget {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
+                      HapticService.heavy();
                       _saveBudget(
                         ref,
                         category,
@@ -1122,7 +1180,8 @@ class BudgetsScreen extends ConsumerWidget {
     double? budgetPercent,
     required bool isPercentBudget,
   }) {
-    final notifier = ref.read(categoryProvider.notifier);
+    HapticService.success();
+    final notifier = ref.read(categoriesProvider.notifier);
     final updatedCategory = TransactionCategory(
       id: category.id,
       name: category.name,

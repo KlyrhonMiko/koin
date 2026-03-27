@@ -9,6 +9,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class SavingsListScreen extends ConsumerWidget {
   const SavingsListScreen({super.key});
@@ -19,33 +20,62 @@ class SavingsListScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(name: settings.currency.code);
 
-    return Scaffold(
-      extendBody: true,
-      appBar: AppBar(
-        title: const Text('Savings Tracker'),
-      ),
-      body: goalsAsync.when(
-        data: (goals) {
-          if (goals.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-            itemCount: goals.length + 2, // +1 hero, +1 add button
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildHeroSummaryCard(context, goals, currencyFormat);
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: goalsAsync.when(
+            data: (goals) {
+              if (goals.isEmpty) {
+                return _buildEmptyState(context);
               }
-              if (index == goals.length + 1) {
-                return _buildAddGoalButton(context, index);
-              }
-              final goal = goals[index - 1];
-              return _buildGoalCard(context, goal, index, currencyFormat);
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                itemCount: goals.length + 2, // +1 hero, +1 add button
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildHeroSummaryCard(context, goals, currencyFormat);
+                  }
+                  if (index == goals.length + 1) {
+                    return _buildAddGoalButton(context, index);
+                  }
+                  final goal = goals[index - 1];
+                  return _buildGoalCard(context, goal, index, currencyFormat);
+                },
+              );
             },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 12,
+        bottom: 16,
+        left: 20,
+        right: 20,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor(context),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Savings Tracker',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: AppTheme.textColor(context),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -196,10 +226,13 @@ class SavingsListScreen extends ConsumerWidget {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-                        ),
+                        onPressed: () {
+                          HapticService.medium();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+                          );
+                        },
                         icon: const Icon(Icons.add_rounded, color: Colors.white),
                         label: const Text('Create Your First Goal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                         style: ElevatedButton.styleFrom(
@@ -221,10 +254,13 @@ class SavingsListScreen extends ConsumerWidget {
 
   Widget _buildAddGoalButton(BuildContext context, int index) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-      ),
+      onTap: () {
+        HapticService.medium();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.symmetric(vertical: 18),
@@ -288,10 +324,13 @@ class SavingsListScreen extends ConsumerWidget {
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SavingsDetailsScreen(goal: goal)),
-        ),
+        onTap: () {
+          HapticService.light();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SavingsDetailsScreen(goal: goal)),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(18),
