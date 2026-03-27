@@ -17,6 +17,7 @@ import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/widgets/account_sheet.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -45,7 +46,10 @@ class DashboardScreen extends ConsumerWidget {
     return SafeArea(
       bottom: false,
       child: RefreshIndicator(
-        onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
+        onRefresh: () {
+          HapticService.light();
+          return ref.read(transactionProvider.notifier).loadTransactions();
+        },
         color: AppTheme.primaryColor(context),
         backgroundColor: AppTheme.surfaceColor(context),
         child: SingleChildScrollView(
@@ -86,6 +90,7 @@ class DashboardScreen extends ConsumerWidget {
                 buttonLabel: 'Full Analysis',
                 onTap: () {
                   ref.read(navigationProvider.notifier).setIndex(1);
+                  HapticService.light();
                   ref.read(pageControllerProvider).animateToPage(
                     1,
                     duration: const Duration(milliseconds: 300),
@@ -106,6 +111,7 @@ class DashboardScreen extends ConsumerWidget {
                 buttonLabel: 'View All',
                 onTap: () {
                   ref.read(navigationProvider.notifier).setIndex(1);
+                  HapticService.light();
                   ref.read(pageControllerProvider).animateToPage(
                     1,
                     duration: const Duration(milliseconds: 300),
@@ -147,7 +153,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         GestureDetector(
-          onTap: onTap,
+          onTap: () {
+            HapticService.light();
+            onTap();
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
@@ -216,10 +225,13 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+          onTap: () {
+            HapticService.light();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+          },
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -407,7 +419,10 @@ class DashboardScreen extends ConsumerWidget {
                   final balance = stats.accountBalances[account.id] ?? 0;
                   return SizedBox(
                     width: cardWidth,
-                    child: _buildAccountCard(context, account, balance, currency),
+                    child: GestureDetector(
+                      onTap: () => HapticService.light(),
+                      child: _buildAccountCard(context, account, balance, currency),
+                    ),
                   );
                 }),
                 if (stats.accounts.length % 2 != 0)
@@ -494,7 +509,10 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildAddAccountCard(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => AccountSheet.show(context, ref),
+      onTap: () {
+        HapticService.medium();
+        AccountSheet.show(context, ref);
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -552,10 +570,13 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
-            ),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.income)),
+              );
+            },
             child: _buildSummaryCard(
               context: context,
               title: 'Income',
@@ -571,10 +592,13 @@ class DashboardScreen extends ConsumerWidget {
         const Gap(12),
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
-            ),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddTransactionScreen(initialType: TransactionType.expense)),
+              );
+            },
             child: _buildSummaryCard(
               context: context,
               title: 'Expense',
@@ -732,6 +756,18 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 PieChart(
                   PieChartData(
+                    pieTouchData: PieTouchData(
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                        if (!event.isInterestedForInteractions ||
+                            pieTouchResponse == null ||
+                            pieTouchResponse.touchedSection == null) {
+                          return;
+                        }
+                        if (event is FlTapDownEvent || event is FlPanStartEvent) {
+                          HapticService.light();
+                        }
+                      },
+                    ),
                     sectionsSpace: 5,
                     centerSpaceRadius: 48,
                     startDegreeOffset: -90,
@@ -864,7 +900,7 @@ class DashboardScreen extends ConsumerWidget {
 
   // ─── Budget Section ───────────────────────────────────────────────
   Widget _buildBudgetSection(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
-    final categories = ref.watch(categoryProvider);
+    final categories = ref.watch(categoriesProvider).value ?? [];
     final budgetedCategories = categories.where((c) => c.type == TransactionType.expense && ((c.budget != null && c.budget! > 0) || (c.isPercentBudget && c.budgetPercent != null && c.budgetPercent! > 0))).toList();
 
     return Column(
@@ -929,6 +965,7 @@ class DashboardScreen extends ConsumerWidget {
                 const Gap(18),
                 ElevatedButton(
                   onPressed: () {
+                    HapticService.medium();
                     Navigator.popUntil(context, (route) => route.isFirst);
                     ref.read(navigationProvider.notifier).setIndex(3);
                     ref.read(pageControllerProvider).animateToPage(
@@ -1147,7 +1184,7 @@ class DashboardScreen extends ConsumerWidget {
         }
 
         final recent = transactions.take(10).toList();
-        final categories = ref.watch(categoryProvider);
+        final categories = ref.watch(categoriesProvider).value ?? [];
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         final yesterday = today.subtract(const Duration(days: 1));
@@ -1226,7 +1263,9 @@ class DashboardScreen extends ConsumerWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () {},
+                  onTap: () {
+                    HapticService.light();
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     child: Row(

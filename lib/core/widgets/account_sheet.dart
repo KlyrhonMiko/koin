@@ -5,7 +5,8 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class AccountSheet {
   static void show(BuildContext context, WidgetRef ref, {Account? account}) {
@@ -63,7 +64,8 @@ class AccountSheet {
                     if (isEditing)
                       IconButton(
                         onPressed: () async {
-                          final confirmed = await PremiumConfirmationSheet.show(
+                          HapticService.medium();
+                          final confirmed = await ConfirmationSheet.show(
                             context: context,
                             title: 'Delete Account?',
                             description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
@@ -132,7 +134,10 @@ class AccountSheet {
                     ].map((icon) {
                       final isSelected = selectedIcon == icon.codePoint;
                       return GestureDetector(
-                        onTap: () => setState(() => selectedIcon = icon.codePoint),
+                        onTap: () {
+                          HapticService.light();
+                          setState(() => selectedIcon = icon.codePoint);
+                        },
                         child: Container(
                           margin: const EdgeInsets.only(right: 12),
                           padding: const EdgeInsets.all(10),
@@ -165,7 +170,10 @@ class AccountSheet {
                   children: colors.map((c) {
                     final isSelected = selectedColor.toARGB32() == c.toARGB32();
                     return GestureDetector(
-                      onTap: () => setState(() => selectedColor = c),
+                      onTap: () {
+                        HapticService.light();
+                        setState(() => selectedColor = c);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: 36,
@@ -197,7 +205,10 @@ class AccountSheet {
                     title: const Text('Exclude from Total Balance', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     subtitle: const Text('Hide this account\'s balance from the dashboard total', style: TextStyle(fontSize: 12)),
                     value: excludeFromTotal,
-                    onChanged: (value) => setState(() => excludeFromTotal = value),
+                    onChanged: (value) {
+                      HapticService.light();
+                      setState(() => excludeFromTotal = value);
+                    },
                     activeThumbColor: AppTheme.primaryColor(context),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -214,6 +225,7 @@ class AccountSheet {
                     child: ElevatedButton(
                       onPressed: () {
                         if (nameController.text.isNotEmpty) {
+                          HapticService.success();
                           final updatedAccount = Account(
                             id: isEditing ? account.id : const Uuid().v4(),
                             name: nameController.text,
@@ -230,6 +242,8 @@ class AccountSheet {
                             ref.read(accountProvider.notifier).addAccount(updatedAccount);
                           }
                           Navigator.pop(context);
+                        } else {
+                          HapticService.error();
                         }
                       },
                       style: ElevatedButton.styleFrom(

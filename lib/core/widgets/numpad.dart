@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 enum NumPadAction {
   digit,
@@ -44,7 +44,9 @@ class _NumPadState extends State<NumPad> {
   }
 
   void _onPress(String value, NumPadAction action) {
-    HapticFeedback.lightImpact();
+    if (action != NumPadAction.done) {
+      HapticService.light();
+    }
     setState(() {
       if (action == NumPadAction.digit) {
         final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
@@ -320,7 +322,10 @@ class _NumPadState extends State<NumPad> {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(keyRadius),
           child: InkWell(
-            onTap: () => _onPress('Done', NumPadAction.done),
+            onTap: () {
+              HapticService.success();
+              _onPress('Done', NumPadAction.done);
+            },
             borderRadius: BorderRadius.circular(keyRadius),
             splashColor: Colors.white.withValues(alpha: 0.2),
             child: Container(

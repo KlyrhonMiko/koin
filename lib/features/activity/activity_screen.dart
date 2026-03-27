@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/transactions/transactions_list_screen.dart';
 import 'package:koin/features/analysis/analysis_screen.dart';
 
@@ -139,7 +140,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                           Expanded(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () => _tabController.animateTo(0),
+                              onTap: () {
+                                HapticService.selection();
+                                _tabController.animateTo(0);
+                              },
                               child: Center(
                                 child: Text(
                                   'Analysis',
@@ -156,7 +160,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                           Expanded(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () => _tabController.animateTo(1),
+                              onTap: () {
+                                HapticService.selection();
+                                _tabController.animateTo(1);
+                              },
                               child: Center(
                                 child: Text(
                                   'Transactions',

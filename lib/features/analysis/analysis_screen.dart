@@ -12,6 +12,7 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/utils/icon_utils.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -26,7 +27,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     final transactionsAsync = ref.watch(transactionProvider);
-    final categories = ref.watch(categoryProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final categories = categoriesAsync.value ?? [];
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
@@ -34,7 +36,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       top: false,
       bottom: false,
       child: RefreshIndicator(
-        onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
+      onRefresh: () {
+        HapticService.light();
+        return ref.read(transactionProvider.notifier).loadTransactions();
+      },
         color: AppTheme.primaryColor(context),
         backgroundColor: AppTheme.surfaceColor(context),
         child: transactionsAsync.when(
@@ -149,7 +154,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final primaryColor = AppTheme.primaryColor(context);
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedFilterIndex = index),
+      onTap: () {
+        HapticService.selection();
+        setState(() => _selectedFilterIndex = index);
+      },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
@@ -379,7 +387,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               sectionsSpace: 6,
               centerSpaceRadius: 75,
               sections: sections,
-              pieTouchData: PieTouchData(enabled: false),
+              pieTouchData: PieTouchData(
+                touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                  if (!event.isInterestedForInteractions ||
+                      pieTouchResponse == null ||
+                      pieTouchResponse.touchedSection == null) {
+                    return;
+                  }
+                  if (event is FlTapDownEvent || event is FlPanStartEvent) {
+                    HapticService.light();
+                  }
+                },
+              ),
             ),
           ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
           Column(

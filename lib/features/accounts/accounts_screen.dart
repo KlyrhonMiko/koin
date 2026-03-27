@@ -6,10 +6,11 @@ import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/widgets/account_sheet.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -102,7 +103,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                     ],
                                   ),
                                   child: ElevatedButton.icon(
-                                    onPressed: () => AccountSheet.show(context, ref),
+                                    onPressed: () {
+                                      HapticService.medium();
+                                      AccountSheet.show(context, ref);
+                                    },
                                     icon: const Icon(Icons.add_rounded, color: Colors.white),
                                     label: const Text('Add Your First Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                                     style: ElevatedButton.styleFrom(
@@ -126,6 +130,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 itemCount: accounts.length,
                 footer: _buildAddAccountButton(context, ref, delay: (accounts.length * 60).ms),
                 onReorder: (oldIndex, newIndex) {
+                  HapticService.medium();
                   ref.read(accountProvider.notifier).reorderAccounts(oldIndex, newIndex);
                 },
                 proxyDecorator: (child, index, animation) {
@@ -168,7 +173,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                           child: Icon(Icons.delete_rounded, color: AppTheme.errorColor(context)),
                         ),
                         confirmDismiss: (direction) async {
-                          final confirmed = await PremiumConfirmationSheet.show(
+                          HapticService.medium();
+                          final confirmed = await ConfirmationSheet.show(
                             context: context,
                             title: 'Delete Account?',
                             description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
@@ -180,6 +186,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                           return confirmed ?? false;
                         },
                         onDismissed: (_) {
+                          HapticService.heavy();
                           ref.read(accountProvider.notifier).deleteAccount(account.id);
                         },
                         child: Container(
@@ -189,7 +196,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                             border: Border.all(color: AppTheme.dividerColor(context)),
                           ),
                           child: ListTile(
-                            onTap: () => AccountSheet.show(context, ref, account: account),
+                            onTap: () {
+                              HapticService.light();
+                              AccountSheet.show(context, ref, account: account);
+                            },
                             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                             leading: Container(
@@ -246,11 +256,14 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                   ],
                                 ),
                                 const Gap(8),
-                                ReorderableDragStartListener(
-                                  index: index,
-                                  child: Icon(
-                                    Icons.drag_indicator_rounded,
-                                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                                 Listener(
+                                  onPointerDown: (_) => HapticService.light(),
+                                  child: ReorderableDragStartListener(
+                                    index: index,
+                                    child: Icon(
+                                      Icons.drag_indicator_rounded,
+                                      color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -302,7 +315,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   Widget _buildAddAccountButton(BuildContext context, WidgetRef ref, {Duration? delay}) {
     return GestureDetector(
-      onTap: () => AccountSheet.show(context, ref),
+      onTap: () {
+        HapticService.medium();
+        AccountSheet.show(context, ref);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(vertical: 24),

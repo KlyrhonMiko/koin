@@ -8,8 +8,9 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class TransactionsListScreen extends ConsumerWidget {
   const TransactionsListScreen({super.key});
@@ -17,13 +18,16 @@ class TransactionsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(transactionProvider);
-    final categories = ref.watch(categoryProvider);
+    final categories = ref.watch(categoriesProvider).value ?? [];
     final accountsAsync = ref.watch(accountProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
+      onRefresh: () {
+        HapticService.light();
+        return ref.read(transactionProvider.notifier).loadTransactions();
+      },
       color: AppTheme.primaryColor(context),
       backgroundColor: AppTheme.surfaceColor(context),
       child: transactionsAsync.when(
@@ -184,7 +188,8 @@ class TransactionsListScreen extends ConsumerWidget {
                         ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
                       },
                       confirmDismiss: (direction) async {
-                        final result = await PremiumConfirmationSheet.show(
+                        HapticService.medium();
+                        final result = await ConfirmationSheet.show(
                           context: context,
                           title: 'Delete Transaction?',
                           description: 'This transaction will be permanently removed. This action cannot be undone.',
@@ -212,6 +217,7 @@ class TransactionsListScreen extends ConsumerWidget {
                         ),
                         child: ListTile(
                           onTap: () {
+                            HapticService.light();
                             Navigator.push(
                               context,
                               MaterialPageRoute(

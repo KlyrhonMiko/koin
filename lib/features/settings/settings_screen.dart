@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 
 class SettingsScreen extends ConsumerWidget {
@@ -23,34 +24,37 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // App Branding
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient(context),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+            GestureDetector(
+              onTap: () => HapticService.light(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient(context),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.monetization_on_rounded, color: Colors.white, size: 32),
                     ),
-                    child: const Icon(Icons.monetization_on_rounded, color: Colors.white, size: 32),
-                  ),
-                  const Gap(12),
-                  const Text(
-                    'Koin',
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                  ),
-                  const Gap(4),
-                  Text(
-                    'Personal Finance Tracker',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500),
-                  ),
-                ],
+                    const Gap(12),
+                    const Text(
+                      'Koin',
+                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                    ),
+                    const Gap(4),
+                    Text(
+                      'Personal Finance Tracker',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
             ),
             const Gap(32),
@@ -82,7 +86,10 @@ class SettingsScreen extends ConsumerWidget {
                     trailing: Switch.adaptive(
                       value: settings.isDarkMode,
                       activeTrackColor: AppTheme.primaryColor(context),
-                      onChanged: (val) => ref.read(settingsProvider.notifier).toggleDarkMode(),
+                      onChanged: (val) {
+                        HapticService.medium();
+                        ref.read(settingsProvider.notifier).toggleDarkMode();
+                      },
                     ),
                   ),
                   Divider(height: 1, indent: 60, color: AppTheme.dividerColor(context)),
@@ -103,7 +110,10 @@ class SettingsScreen extends ConsumerWidget {
                               final color = AppTheme.accentColors[index];
                               final isSelected = settings.themeColor.toARGB32() == color.toARGB32();
                               return GestureDetector(
-                                onTap: () => ref.read(settingsProvider.notifier).setThemeColor(color),
+                                onTap: () {
+                                  HapticService.light();
+                                  ref.read(settingsProvider.notifier).setThemeColor(color);
+                                },
                                 child: Container(
                                   width: 45,
                                   height: 45,
@@ -191,7 +201,10 @@ class SettingsScreen extends ConsumerWidget {
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       child: ListTile(
-        onTap: onTap,
+        onTap: () {
+          HapticService.light();
+          onTap?.call();
+        },
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         leading: Container(
@@ -222,6 +235,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref, Currency currentCurrency) {
+    HapticService.light();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -266,6 +280,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     child: ListTile(
                       onTap: () {
+                        HapticService.light();
                         ref.read(settingsProvider.notifier).setCurrency(currency);
                         Navigator.pop(context);
                       },

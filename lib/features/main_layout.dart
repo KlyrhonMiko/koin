@@ -12,6 +12,8 @@ import 'package:koin/features/budgets/budgets_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 
+import 'package:koin/core/utils/haptic_utils.dart';
+
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
 
@@ -22,7 +24,7 @@ class MainLayout extends ConsumerWidget {
 
     void onItemTapped(int index) {
       if (currentIndex == index) return;
-      HapticFeedback.selectionClick();
+      HapticService.selection();
       ref.read(navigationProvider.notifier).setIndex(index);
     }
 
@@ -62,10 +64,13 @@ class MainLayout extends ConsumerWidget {
         ),
         floatingActionButton: currentIndex != 4
             ? FloatingActionButton.extended(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-                ),
+                onPressed: () {
+                  HapticService.medium();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+                  );
+                },
                 label: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

@@ -9,8 +9,9 @@ import 'package:koin/core/models/savings_log.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:uuid/uuid.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -35,14 +36,33 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       date: DateTime.now(),
     );
 
+    final wasCompleted = widget.goal.progress >= 1.0;
     await ref.read(savingsGoalsProvider.notifier).addLog(log);
+    
+    // Fanfare logic: if it wasn't completed but now it is
+    final currentAmountAfter = widget.goal.currentAmount + amount;
+    final isNowCompleted = currentAmountAfter >= widget.goal.targetAmount;
+
     _amountController.clear();
+    
+    if (!wasCompleted && isNowCompleted) {
+      // Triple pulse fanfare
+      HapticService.success();
+      await Future.delayed(const Duration(milliseconds: 150));
+      HapticService.medium();
+      await Future.delayed(const Duration(milliseconds: 100));
+      HapticService.heavy();
+    } else {
+      HapticService.success();
+    }
+    
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
   void _showAddLogSheet() {
+    HapticService.light();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -123,12 +143,20 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            HapticService.light();
+            Navigator.pop(context);
+          },
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        ),
         title: Text(goal.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B)),
             onPressed: () async {
-              final confirmed = await PremiumConfirmationSheet.show(
+              HapticService.medium();
+              final confirmed = await ConfirmationSheet.show(
                 context: context,
                 title: 'Delete Goal?',
                 description: 'Are you sure you want to delete this savings goal? This action cannot be undone.',
@@ -160,7 +188,10 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           ],
         ),
         child: FloatingActionButton.extended(
-          onPressed: _showAddLogSheet,
+          onPressed: () {
+            HapticService.medium();
+            _showAddLogSheet();
+          },
           backgroundColor: Colors.transparent,
           elevation: 0,
           icon: const Icon(Icons.add_rounded, color: Colors.white),

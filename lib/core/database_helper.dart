@@ -25,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -58,6 +58,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 9) {
       await db.execute('ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 10) {
+      await db.execute('ALTER TABLE categories ADD COLUMN position INTEGER DEFAULT 0');
     }
   }
 
@@ -124,7 +127,8 @@ CREATE TABLE categories (
   type $textType,
   budget REAL,
   budgetPercent REAL,
-  isPercentBudget INTEGER DEFAULT 0
+  isPercentBudget INTEGER DEFAULT 0,
+  position INTEGER DEFAULT 0
 )
 ''');
 
@@ -191,7 +195,7 @@ CREATE TABLE transactions (
 
   Future<List<TransactionCategory>> getCategories() async {
     final db = await instance.database;
-    final result = await db.query('categories');
+    final result = await db.query('categories', orderBy: 'position ASC');
     return result.map((json) => TransactionCategory.fromMap(json)).toList();
   }
 
@@ -212,6 +216,22 @@ CREATE TABLE transactions (
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> updateCategoryPositions(List<TransactionCategory> categories) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (var category in categories) {
+        batch.update(
+          'categories',
+          {'position': category.position},
+          where: 'id = ?',
+          whereArgs: [category.id],
+        );
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   // Accounts commands

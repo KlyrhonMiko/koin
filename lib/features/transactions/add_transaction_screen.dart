@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +14,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
@@ -116,20 +116,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         (!isTransfer && _selectedCategoryId == null) ||
         _selectedAccountId == null ||
         (isTransfer && _selectedToAccountId == null)) {
-      HapticFeedback.heavyImpact();
+      HapticService.error();
       _showErrorSnackbar('Please fill all required fields');
       return;
     }
 
     if (isTransfer && _selectedAccountId == _selectedToAccountId) {
-      HapticFeedback.heavyImpact();
+      HapticService.error();
       _showErrorSnackbar('Source and destination must be different');
       return;
     }
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      HapticFeedback.heavyImpact();
+      HapticService.error();
       _showErrorSnackbar('Enter a valid amount');
       return;
     }
@@ -150,6 +150,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     } else {
       ref.read(transactionProvider.notifier).addTransaction(newTransaction);
     }
+    HapticService.success();
     Navigator.pop(context);
   }
 
@@ -175,6 +176,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Date picker
   // ═══════════════════════════════════════════════════════
   Future<void> _pickDate() async {
+    HapticService.light();
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -211,6 +213,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Time picker
   // ═══════════════════════════════════════════════════════
   Future<void> _pickTime() async {
+    HapticService.light();
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_selectedDate),
@@ -258,6 +261,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   void _onTypeChanged(TransactionType newType, List<TransactionCategory> categories) {
     final oldColor = _getTypeColor(context);
+    HapticService.selection();
     setState(() {
       _selectedType = newType;
       if (_selectedCategoryId != null) {
@@ -304,7 +308,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    final categories = ref.watch(categoryProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final categories = categoriesAsync.value ?? [];
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
     final typeColor = _getTypeColor(context);
@@ -378,7 +383,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               children: [
                 // Back button
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    HapticService.light();
+                    Navigator.pop(context);
+                  },
                   icon: Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
@@ -482,7 +490,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Type Selector
   // ═══════════════════════════════════════════════════════
   Widget _buildTypeSelector(BuildContext context, Color activeColor) {
-    final categories = ref.read(categoryProvider);
+    final categories = ref.read(categoriesProvider).value ?? [];
     final types = [
       ('Expense', TransactionType.expense, AppTheme.expenseColor(context), Icons.arrow_upward_rounded),
       ('Income', TransactionType.income, AppTheme.incomeColor(context), Icons.arrow_downward_rounded),
@@ -675,6 +683,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   child: TextField(
                     controller: _noteController,
                     focusNode: _noteFocusNode,
+                    onTap: () {
+                      HapticService.light();
+                    },
                     onTapOutside: (_) => _noteFocusNode.unfocus(),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
@@ -747,6 +758,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                               child: IconButton(
                                 tooltip: 'Manage categories',
                                 onPressed: () {
+                                  HapticService.light();
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -886,7 +898,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticService.light();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1171,7 +1186,10 @@ class _PremiumSheetItem extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+        HapticService.selection();
+        onTap();
+      },
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

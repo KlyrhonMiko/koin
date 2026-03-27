@@ -7,6 +7,7 @@ import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:uuid/uuid.dart';
 
 class AddSavingsGoalScreen extends ConsumerStatefulWidget {
@@ -96,7 +97,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
         ref.read(savingsGoalsProvider.notifier).updateGoal(goal);
       }
 
+      HapticService.success();
       Navigator.pop(context);
+    } else {
+      HapticService.error();
     }
   }
 
@@ -107,6 +111,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            HapticService.light();
+            Navigator.pop(context);
+          },
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        ),
         title: Text(isEditing ? 'Edit Goal' : 'New Savings Goal'),
       ),
       body: SingleChildScrollView(
@@ -163,7 +174,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => _selectDate(context, true),
+                          onTap: () {
+                            HapticService.light();
+                            _selectDate(context, true);
+                          },
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Start Date',
@@ -180,7 +194,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                       const Gap(12),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => _selectDate(context, false),
+                          onTap: () {
+                            HapticService.light();
+                            _selectDate(context, false);
+                          },
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'End Date',

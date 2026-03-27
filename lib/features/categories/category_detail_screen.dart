@@ -9,11 +9,13 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/icon_utils.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
+  final TransactionType? initialType;
 
-  const CategoryDetailScreen({super.key, this.category});
+  const CategoryDetailScreen({super.key, this.category, this.initialType});
 
   @override
   State<CategoryDetailScreen> createState() => _CategoryDetailScreenState();
@@ -84,7 +86,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     } else {
       _selectedIconCodePoint = Icons.category.codePoint;
       _selectedColorHex = '#00D09E';
-      _selectedType = TransactionType.expense;
+      _selectedType = widget.initialType ?? TransactionType.expense;
     }
     _nameController.addListener(() => setState(() {}));
   }
@@ -97,6 +99,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   void _save(WidgetRef ref) {
     if (_nameController.text.trim().isEmpty) {
+      HapticService.error();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a category name')),
       );
@@ -113,11 +116,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
 
     if (widget.category != null) {
-      ref.read(categoryProvider.notifier).editCategory(category);
+      ref.read(categoriesProvider.notifier).editCategory(category);
     } else {
-      ref.read(categoryProvider.notifier).addCategory(category);
+      ref.read(categoriesProvider.notifier).addCategory(category);
     }
 
+    HapticService.success();
     Navigator.pop(context);
   }
 
@@ -132,6 +136,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       builder: (context, ref, _) {
         return Scaffold(
           appBar: AppBar(
+            leading: IconButton(
+              onPressed: () {
+                HapticService.light();
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            ),
             title: Text(widget.category != null ? 'Edit Category' : 'New Category'),
           ),
           body: SingleChildScrollView(
@@ -356,7 +367,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           final iconCode = _availableIcons[index];
           final isSelected = _selectedIconCodePoint == iconCode;
           return GestureDetector(
-            onTap: () => setState(() => _selectedIconCodePoint = iconCode),
+            onTap: () {
+              HapticService.light();
+              setState(() => _selectedIconCodePoint = iconCode);
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
@@ -427,7 +441,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   ) {
     final isSelected = _selectedType == type;
     return GestureDetector(
-      onTap: () => setState(() => _selectedType = type),
+      onTap: () {
+        HapticService.selection();
+        setState(() => _selectedType = type);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
@@ -479,7 +496,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           final color = Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
           final isSelected = _selectedColorHex == colorHex;
           return GestureDetector(
-            onTap: () => setState(() => _selectedColorHex = colorHex),
+            onTap: () {
+              HapticService.light();
+              setState(() => _selectedColorHex = colorHex);
+            },
             child: AnimatedScale(
               scale: isSelected ? 1.1 : 1.0,
               duration: const Duration(milliseconds: 200),

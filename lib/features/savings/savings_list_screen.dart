@@ -9,6 +9,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 class SavingsListScreen extends ConsumerWidget {
   const SavingsListScreen({super.key});
@@ -225,10 +226,13 @@ class SavingsListScreen extends ConsumerWidget {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-                        ),
+                        onPressed: () {
+                          HapticService.medium();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+                          );
+                        },
                         icon: const Icon(Icons.add_rounded, color: Colors.white),
                         label: const Text('Create Your First Goal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                         style: ElevatedButton.styleFrom(
@@ -250,10 +254,13 @@ class SavingsListScreen extends ConsumerWidget {
 
   Widget _buildAddGoalButton(BuildContext context, int index) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
-      ),
+      onTap: () {
+        HapticService.medium();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddSavingsGoalScreen()),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.symmetric(vertical: 18),
@@ -317,10 +324,13 @@ class SavingsListScreen extends ConsumerWidget {
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SavingsDetailsScreen(goal: goal)),
-        ),
+        onTap: () {
+          HapticService.light();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SavingsDetailsScreen(goal: goal)),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(18),
