@@ -27,7 +27,7 @@ class SavingsLog {
     return SavingsLog(
       id: map['id'],
       goalId: map['goalId'],
-      amount: map['amount'],
+      amount: (map['amount'] as num).toDouble(),
       date: DateTime.parse(map['date']),
       note: map['note'],
     );
