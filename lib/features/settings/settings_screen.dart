@@ -94,16 +94,20 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   Divider(height: 1, indent: 60, color: AppTheme.dividerColor(context)),
                   Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Theme Color', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Text('Theme Color', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                        ),
                         const Gap(16),
                         SizedBox(
-                          height: 45,
+                          height: 80,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                             itemCount: AppTheme.accentColors.length,
                             separatorBuilder: (context, index) => const Gap(12),
                             itemBuilder: (context, index) {

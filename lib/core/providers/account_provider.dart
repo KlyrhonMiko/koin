@@ -19,13 +19,39 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
   Future<void> addAccount(Account account) async {
     final currentAccounts = state.value ?? [];
     final accountWithPosition = account.copyWith(position: currentAccounts.length);
-    await DatabaseHelper.instance.insertAccount(accountWithPosition);
-    await loadAccounts();
+    
+    // Save previous state for rollback
+    final previousState = state;
+    
+    // Optimistic update
+    state = AsyncValue.data([...currentAccounts, accountWithPosition]);
+    
+    try {
+      await DatabaseHelper.instance.insertAccount(accountWithPosition);
+      // Optional: reload if you want to be 100% sure, but optimistic should be enough
+    } catch (e, st) {
+      state = previousState;
+      dev.log('Error adding account', error: e, stackTrace: st);
+    }
   }
 
   Future<void> updateAccount(Account account) async {
-    await DatabaseHelper.instance.updateAccount(account);
-    await loadAccounts();
+    if (!state.hasValue) return;
+    
+    final previousState = state;
+    final currentAccounts = state.value!;
+    
+    // Optimistic update
+    state = AsyncValue.data(
+      currentAccounts.map((a) => a.id == account.id ? account : a).toList(),
+    );
+    
+    try {
+      await DatabaseHelper.instance.updateAccount(account);
+    } catch (e, st) {
+      state = previousState;
+      dev.log('Error updating account', error: e, stackTrace: st);
+    }
   }
 
   Future<void> deleteAccount(String id) async {

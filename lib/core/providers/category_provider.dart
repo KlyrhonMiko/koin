@@ -20,13 +20,34 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
   Future<void> addCategory(TransactionCategory category) async {
     final currentCategories = state.value ?? [];
     final categoryWithPosition = category.copyWith(position: currentCategories.length);
-    await DatabaseHelper.instance.insertCategory(categoryWithPosition);
-    await _loadCategories();
+    
+    final previousState = state;
+    state = AsyncValue.data([...currentCategories, categoryWithPosition]);
+    
+    try {
+      await DatabaseHelper.instance.insertCategory(categoryWithPosition);
+    } catch (e, st) {
+      state = previousState;
+      dev.log('Error adding category', error: e, stackTrace: st);
+    }
   }
 
   Future<void> editCategory(TransactionCategory category) async {
-    await DatabaseHelper.instance.updateCategory(category);
-    await _loadCategories();
+    if (!state.hasValue) return;
+
+    final previousState = state;
+    final currentCategories = state.value!;
+    
+    state = AsyncValue.data(
+      currentCategories.map((c) => c.id == category.id ? category : c).toList(),
+    );
+    
+    try {
+      await DatabaseHelper.instance.updateCategory(category);
+    } catch (e, st) {
+      state = previousState;
+      dev.log('Error updating category', error: e, stackTrace: st);
+    }
   }
 
   Future<void> deleteCategory(String id) async {
