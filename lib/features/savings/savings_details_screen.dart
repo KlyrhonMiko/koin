@@ -114,7 +114,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     final goal = goalsAsync.when(
       data: (goals) => goals.firstWhere((g) => g.id == widget.goal.id, orElse: () => widget.goal),
       loading: () => widget.goal,
-      error: (_, __) => widget.goal,
+      error: (error, stack) => widget.goal,
     );
 
     final logsAsync = ref.watch(savingsLogsProvider(goal.id));
@@ -139,7 +139,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               );
               if (confirmed == true && mounted) {
                 await ref.read(savingsGoalsProvider.notifier).deleteGoal(goal.id);
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               }
             },
           ),

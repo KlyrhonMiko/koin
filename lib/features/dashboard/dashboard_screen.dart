@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:koin/core/models/currency.dart';
@@ -453,7 +454,7 @@ class DashboardScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  IconData(account.iconCodePoint, fontFamily: 'MaterialIcons'),
+                  IconUtils.getIcon(account.iconCodePoint),
                   color: account.color,
                   size: 14,
                 ),
@@ -936,7 +937,7 @@ class DashboardScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(13),
                         ),
                         child: Icon(
-                          IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                          IconUtils.getIcon(category.iconCodePoint),
                           color: category.color,
                           size: 18,
                         ),
@@ -1146,7 +1147,7 @@ class DashboardScreen extends ConsumerWidget {
           if (isTransfer) {
             txIcon = Icons.swap_horiz_rounded;
           } else if (category != null) {
-            txIcon = IconData(category.iconCodePoint, fontFamily: 'MaterialIcons');
+            txIcon = IconUtils.getIcon(category.iconCodePoint);
           } else {
             txIcon = isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
           }

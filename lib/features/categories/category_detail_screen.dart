@@ -8,6 +8,7 @@ import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
@@ -250,7 +251,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: Icon(
-                  IconData(_selectedIconCodePoint, fontFamily: 'MaterialIcons'),
+                  IconUtils.getIcon(_selectedIconCodePoint),
                   key: ValueKey(_selectedIconCodePoint),
                   color: selectedColor,
                   size: 28,
@@ -372,7 +373,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 scale: isSelected ? 1.1 : 1.0,
                 duration: const Duration(milliseconds: 200),
                 child: Icon(
-                  IconData(iconCode, fontFamily: 'MaterialIcons'),
+                  IconUtils.getIcon(iconCode),
                   color: isSelected ? selectedColor : AppTheme.textLightColor(context),
                   size: 22,
                 ),

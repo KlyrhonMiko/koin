@@ -81,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
                     title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     trailing: Switch.adaptive(
                       value: settings.isDarkMode,
-                      activeColor: AppTheme.primaryColor(context),
+                      activeTrackColor: AppTheme.primaryColor(context),
                       onChanged: (val) => ref.read(settingsProvider.notifier).toggleDarkMode(),
                     ),
                   ),
@@ -101,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
                             separatorBuilder: (context, index) => const Gap(12),
                             itemBuilder: (context, index) {
                               final color = AppTheme.accentColors[index];
-                              final isSelected = settings.themeColor.value == color.value;
+                              final isSelected = settings.themeColor.toARGB32() == color.toARGB32();
                               return GestureDetector(
                                 onTap: () => ref.read(settingsProvider.notifier).setThemeColor(color),
                                 child: Container(

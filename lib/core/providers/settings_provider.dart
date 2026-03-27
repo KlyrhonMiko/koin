@@ -42,7 +42,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     
     final currencyCode = prefs.getString(_currencyCodeKey);
     final themeColorValue = prefs.getInt(_themeColorKey);
-    final isDarkMode = prefs.getBool(_isDarkModeKey) ?? true;
+    final isDarkMode = prefs.getBool(_isDarkModeKey) ?? false;
     
     final currency = Currency.supportedCurrencies.firstWhere(
       (c) => c.code == currencyCode,
