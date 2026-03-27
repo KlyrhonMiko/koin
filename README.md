@@ -9,11 +9,13 @@ Koin is a sophisticated personal finance tracker built with Flutter, designed to
 ## ✨ Key Features
 
 - **💰 Multi-Account Management**: Effortlessly track and manage multiple accounts, including cash, bank accounts, and savings.
-- **📊 Dynamic Dashboard**: Gain insights with beautiful, interactive charts and summaries of your spending habits and income.
+- **📊 Dynamic & Interactive Dashboard**: Gain insights with beautiful, interactive charts and real-time summaries. Tap income/expense cards for quick transaction entry.
+- **✨ Premium Visual Experience**: Enjoy a sophisticated, highly animated splash screen with professional glow and particle effects.
+- **🔍 Smart Financial Analysis**: Dedicated analysis view featuring expense breakdowns, category rankings, and flexible time-frame filtering (Week/Month/All Time).
+- **🚀 Activity-First Approach**: The app defaults to the Analysis view, putting your financial health center stage for immediate awareness.
 - **🎯 Savings Tracker**: Set, visualize, and achieve your financial goals with a dedicated tracking system.
 - **📂 Categorized Transactions**: Organize your expenses and income with customizable categories for better clarity.
 - **🎨 Personalized Themes**: Switch between Dark and Light modes and choose from a set of vibrant accent colors to make the app yours.
-- **🌐 Global Support**: Select your preferred currency and manage your finances in a format that works for you.
 - **🔒 Private & Secure**: Your data stays on your device using local SQLite storage for maximum privacy.
 
 ## 🛠️ Tech Stack
@@ -23,12 +25,12 @@ Koin is a sophisticated personal finance tracker built with Flutter, designed to
 - **Database**: [SQLite](https://pub.dev/packages/sqflite) via `sqflite`
 - **Charts**: [fl_chart](https://pub.dev/packages/fl_chart)
 - **Animations**: [flutter_animate](https://pub.dev/packages/flutter_animate)
-- **Typography**: [Google Fonts (Outfit)](https://fonts.google.com/specimen/Outfit)
-- **Icons**: [Font Awesome Flutter](https://pub.dev/packages/font_awesome_flutter)
+- **Design**: [Google Fonts (Outfit)](https://fonts.google.com/specimen/Outfit), Custom Glassmorphic & Neumorphic UI
+- **Utilities**: `gap`, `shared_preferences`, `intl`, `uuid`, `path_provider`
 
 ## 📸 Preview
 
-*Coming soon! Stay tuned for screenshots showing off the beautiful UI.*
+*Stay tuned for high-resolution screenshots showing off the beautiful UI.*
 
 ## 🚀 Getting Started
 
@@ -59,18 +61,21 @@ Koin is a sophisticated personal finance tracker built with Flutter, designed to
 
 ```text
 lib/
-├── core/             # Core utilities, themes, and shared widgets
+├── core/             # Core utilities, themes, and shared providers
 │   ├── models/       # Shared data models
 │   ├── providers/    # Global Riverpod providers
-│   └── widgets/      # Common UI components
+│   └── theme.dart    # Central theme configuration
 ├── features/         # Feature-specific modules
 │   ├── accounts/     # Account management logic and UI
-│   ├── categories/   # Category-related features
-│   ├── dashboard/    # Main overview and charts
+│   ├── activity/     # Activity hub (Analysis & Transactions)
+│   ├── analysis/     # Financial analysis and charts
+│   ├── budgets/      # Budgeting and limits
+│   ├── categories/   # Category management
+│   ├── dashboard/    # Main overview and interactive cards
 │   ├── savings/      # Savings goals tracker
 │   ├── settings/     # App configurations and preferences
-│   └── transactions/ # Transaction history and management
-└── main.dart         # Entry point and theme configuration
+│   └── transactions/ # Transaction history and creation
+└── main.dart         # Entry point and global configuration
 ```
 
 ## 🤝 Contributing
