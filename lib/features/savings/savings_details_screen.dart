@@ -12,6 +12,8 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/numpad.dart';
+
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -62,62 +64,142 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   }
 
   void _showAddLogSheet() {
+    String currentExpression = '';
+    String evaluatedResult = '0';
+    _amountController.text = '0';
+    
     HapticService.light();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Gap(20),
-            const Text('Add Savings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-            const Gap(24),
-            TextField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixIcon: const Icon(Icons.payments_outlined),
-                prefixText: '${ref.read(settingsProvider).currency.symbol} ',
-              ),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-            const Gap(24),
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: AppTheme.primaryGradient(context),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final settings = ref.read(settingsProvider);
+          final hasAmount = currentExpression.isNotEmpty && currentExpression != '0';
+          final primaryColor = AppTheme.primaryColor(context);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, -4),
                 ),
-                child: ElevatedButton(
-                  onPressed: _addLog,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Gap(12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.dividerColor(context),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: const Text('Add Savings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
-              ),
+                const Gap(24),
+                const Text(
+                  'Add Savings',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                ),
+                const Gap(32),
+                
+                // Hero Amount Display
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Text(
+                        settings.currency.code,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: primaryColor.withValues(alpha: 0.5),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const Gap(4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '${settings.currency.symbol} ',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: primaryColor.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          Text(
+                            currentExpression.isEmpty ? '0' : currentExpression,
+                            style: TextStyle(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w800,
+                              color: hasAmount ? primaryColor : primaryColor.withValues(alpha: 0.3),
+                              letterSpacing: -1.5,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (currentExpression.contains(RegExp(r'[+\-*/]')))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '= ${settings.currency.symbol}$evaluatedResult',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      const Gap(12),
+                      Container(
+                        width: 48,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: primaryColor.withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const Gap(32),
+                
+                NumPad(
+                  compact: true,
+                  initialValue: currentExpression,
+                  onValueChanged: (expression, result) {
+                    setModalState(() {
+                      currentExpression = expression;
+                      evaluatedResult = result;
+                      _amountController.text = result;
+                    });
+                  },
+                  onDone: () {
+                    if (double.tryParse(_amountController.text) != null && 
+                        double.parse(_amountController.text) > 0) {
+                      _addLog();
+                    } else {
+                      HapticService.error();
+                    }
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

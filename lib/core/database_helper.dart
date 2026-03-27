@@ -54,10 +54,18 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE categories ADD COLUMN isPercentBudget INTEGER DEFAULT 0');
     }
     if (oldVersion < 8) {
-      await db.execute('ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0');
+      try {
+        await db.execute('ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist if table was created in version 2-7
+      }
     }
     if (oldVersion < 9) {
-      await db.execute('ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0');
+      try {
+        await db.execute('ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist if table was created in version 2-8
+      }
     }
     if (oldVersion < 10) {
       await db.execute('ALTER TABLE categories ADD COLUMN position INTEGER DEFAULT 0');

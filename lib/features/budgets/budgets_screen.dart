@@ -15,6 +15,7 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
 
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});
@@ -799,7 +800,7 @@ class BudgetsScreen extends ConsumerWidget {
             color: AppTheme.surfaceColor(context),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -814,169 +815,209 @@ class BudgetsScreen extends ConsumerWidget {
               ),
               const Gap(20),
               // Category header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      IconUtils.getIcon(category.iconCodePoint),
-                      color: category.color,
-                      size: 24,
-                    ),
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const Gap(2),
-                        Text(
-                          hasBudget ? 'Edit monthly budget' : 'Set monthly budget',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(20),
-              // Fixed / % of Income toggle
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.all(4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticService.selection();
-                          if (isPercentMode) {
-                            setState(() {
-                              isPercentMode = false;
-                              currentExpression = '';
-                              currentResult = '';
-                            });
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: !isPercentMode
-                                ? AppTheme.primaryColor(context)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Fixed Amount',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: !isPercentMode
-                                  ? Colors.white
-                                  : AppTheme.textLightColor(context),
-                            ),
-                          ),
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        IconUtils.getIcon(category.iconCodePoint),
+                        color: category.color,
+                        size: 24,
                       ),
                     ),
+                    const Gap(16),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticService.selection();
-                          if (!isPercentMode) {
-                            setState(() {
-                              isPercentMode = true;
-                              currentExpression = '';
-                              currentResult = '';
-                            });
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isPercentMode
-                                ? AppTheme.primaryColor(context)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '% of Income',
-                            style: TextStyle(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category.name,
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: isPercentMode
-                                  ? Colors.white
-                                  : AppTheme.textLightColor(context),
+                              fontSize: 18,
                             ),
                           ),
-                        ),
+                          const Gap(2),
+                          Text(
+                            hasBudget ? 'Edit monthly budget' : 'Set monthly budget',
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    if (hasBudget)
+                      IconButton(
+                        onPressed: () async {
+                          HapticService.selection();
+                          final confirmed = await ConfirmationSheet.show(
+                            context: context,
+                            title: 'Remove Budget?',
+                            description: 'Are you sure you want to remove the monthly budget for ${category.name}?',
+                            confirmLabel: 'Remove',
+                            confirmColor: AppTheme.expenseColor(context),
+                            icon: Icons.delete_sweep_rounded,
+                            isDanger: true,
+                          );
+
+                          if (confirmed == true) {
+                            HapticService.heavy();
+                            _saveBudget(
+                              ref,
+                              category,
+                              budget: null,
+                              budgetPercent: null,
+                              isPercentBudget: false,
+                            );
+                            if (context.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                          }
+                        },
+                        icon: Icon(Icons.delete_outline_rounded, color: AppTheme.expenseColor(context)),
+                        tooltip: 'Remove Budget',
+                      ),
                   ],
                 ),
               ),
               const Gap(20),
+              // Fixed / % of Income toggle
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLightColor(context),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticService.selection();
+                            if (isPercentMode) {
+                              setState(() {
+                                isPercentMode = false;
+                                currentExpression = '';
+                                currentResult = '';
+                              });
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: !isPercentMode
+                                  ? AppTheme.primaryColor(context)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Fixed Amount',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: !isPercentMode
+                                    ? Colors.white
+                                    : AppTheme.textLightColor(context),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticService.selection();
+                            if (!isPercentMode) {
+                              setState(() {
+                                isPercentMode = true;
+                                currentExpression = '';
+                                currentResult = '';
+                              });
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isPercentMode
+                                  ? AppTheme.primaryColor(context)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '% of Income',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: isPercentMode
+                                    ? Colors.white
+                                    : AppTheme.textLightColor(context),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Gap(20),
               // Amount / Percentage display
-              Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isPercentMode ? '' : '${currency.symbol} ',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                        color: AppTheme.textLightColor(context),
-                      ),
-                    ),
-                    Text(
-                      currentExpression.isEmpty ? '0' : currentExpression,
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                        color: currentExpression.isEmpty
-                            ? AppTheme.textLightColor(context).withValues(alpha: 0.3)
-                            : AppTheme.textColor(context),
-                      ),
-                    ),
-                    if (isPercentMode)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        '%',
+                        isPercentMode ? '' : '${currency.symbol} ',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1,
+                          color: AppTheme.textLightColor(context),
+                        ),
+                      ),
+                      Text(
+                        currentExpression.isEmpty ? '0' : currentExpression,
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1,
                           color: currentExpression.isEmpty
                               ? AppTheme.textLightColor(context).withValues(alpha: 0.3)
-                              : AppTheme.textLightColor(context),
+                              : AppTheme.textColor(context),
                         ),
                       ),
-                  ],
+                      if (isPercentMode)
+                        Text(
+                          '%',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                            color: currentExpression.isEmpty
+                                ? AppTheme.textLightColor(context).withValues(alpha: 0.3)
+                                : AppTheme.textLightColor(context),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               // Resolved amount preview (percentage mode)
@@ -985,7 +1026,7 @@ class BudgetsScreen extends ConsumerWidget {
                   duration: const Duration(milliseconds: 200),
                   child: resolvedAmount != null
                       ? Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
@@ -1011,7 +1052,7 @@ class BudgetsScreen extends ConsumerWidget {
                         )
                       : totalIncome <= 0
                           ? Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                               child: Text(
                                 'No income recorded yet — budget will update when income is tracked',
                                 textAlign: TextAlign.center,
@@ -1028,6 +1069,7 @@ class BudgetsScreen extends ConsumerWidget {
               // Quick presets
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: isPercentMode
                       ? [5, 10, 15, 20, 25, 30].map((pct) {
@@ -1104,7 +1146,6 @@ class BudgetsScreen extends ConsumerWidget {
               // NumPad
               NumPad(
                 compact: true,
-                inline: true,
                 initialValue: currentExpression,
                 onValueChanged: (expr, res) {
                   setState(() {
@@ -1134,34 +1175,6 @@ class BudgetsScreen extends ConsumerWidget {
                   Navigator.pop(sheetContext);
                 },
               ),
-              // Remove budget button (only if editing existing)
-              if (hasBudget) ...[
-                const Gap(8),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      HapticService.heavy();
-                      _saveBudget(
-                        ref,
-                        category,
-                        budget: null,
-                        budgetPercent: null,
-                        isPercentBudget: false,
-                      );
-                      Navigator.pop(sheetContext);
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.expenseColor(context),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text(
-                      'Remove Budget',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
               const Gap(8),
             ],
           ),

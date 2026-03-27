@@ -328,7 +328,7 @@ class _AccountSheetContentState extends State<_AccountSheetContent> {
                   gradient: AppTheme.primaryGradient(context),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameController.text.isNotEmpty) {
                       HapticService.success();
                       final updatedAccount = Account(
@@ -342,11 +342,14 @@ class _AccountSheetContentState extends State<_AccountSheetContent> {
                       );
 
                       if (isEditing) {
-                        widget.ref.read(accountProvider.notifier).updateAccount(updatedAccount);
+                        await widget.ref.read(accountProvider.notifier).updateAccount(updatedAccount);
                       } else {
-                        widget.ref.read(accountProvider.notifier).addAccount(updatedAccount);
+                        await widget.ref.read(accountProvider.notifier).addAccount(updatedAccount);
                       }
-                      Navigator.pop(context);
+                      
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
                     } else {
                       HapticService.error();
                     }
