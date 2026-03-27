@@ -10,7 +10,7 @@ Koin is a sophisticated personal finance tracker built with Flutter, designed to
 
 Get the latest version of Koin directly from the [GitHub Releases](https://github.com/KlyrhonMiko/koin/releases) page.
 
-[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/KlyrhonMiko/koin/releases/download/v1.0.0/koin.apk)
+[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/KlyrhonMiko/koin/releases/download/v1.1.0/koin.apk)
 
 > [!TIP]
 > **For Android users:** Download the `koin.apk` file, open it on your device, and follow the prompts to install. You may need to enable "Install from Unknown Sources" in your settings.
