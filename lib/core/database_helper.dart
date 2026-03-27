@@ -25,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -55,6 +55,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 8) {
       await db.execute('ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 9) {
+      await db.execute('ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0');
     }
   }
 
@@ -100,7 +103,8 @@ CREATE TABLE accounts (
   iconCodePoint $intType,
   colorHex $textType,
   initialBalance $realType,
-  excludeFromTotal INTEGER DEFAULT 0
+  excludeFromTotal INTEGER DEFAULT 0,
+  position INTEGER DEFAULT 0
 )
 ''');
   }
@@ -168,9 +172,9 @@ CREATE TABLE transactions (
 
   Future _insertDefaultAccounts(Database db) async {
     final defaultAccounts = [
-      Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments.codePoint, colorHex: '#4CAF50'),
-      Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance.codePoint, colorHex: '#2196F3'),
-      Account(id: 'savings_account', name: 'Savings', iconCodePoint: Icons.savings.codePoint, colorHex: '#FF9800'),
+      Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments.codePoint, colorHex: '#4CAF50', position: 0),
+      Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance.codePoint, colorHex: '#2196F3', position: 1),
+      Account(id: 'savings_account', name: 'Savings', iconCodePoint: Icons.savings.codePoint, colorHex: '#FF9800', position: 2),
     ];
 
     for (var account in defaultAccounts) {
@@ -219,7 +223,7 @@ CREATE TABLE transactions (
 
   Future<List<Account>> getAccounts() async {
     final db = await instance.database;
-    final result = await db.query('accounts');
+    final result = await db.query('accounts', orderBy: 'position ASC');
     return result.map((json) => Account.fromMap(json)).toList();
   }
 
@@ -240,6 +244,22 @@ CREATE TABLE transactions (
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> updateAccountPositions(List<Account> accounts) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (var account in accounts) {
+        batch.update(
+          'accounts',
+          {'position': account.position},
+          where: 'id = ?',
+          whereArgs: [account.id],
+        );
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   // Transactions commands

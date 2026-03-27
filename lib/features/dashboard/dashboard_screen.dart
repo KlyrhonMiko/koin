@@ -42,87 +42,84 @@ class DashboardScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
-    return Scaffold(
-      extendBody: true,
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
-          color: AppTheme.primaryColor(context),
-          backgroundColor: AppTheme.surfaceColor(context),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(context)
-                    .animate()
-                    .fade(duration: 500.ms)
-                    .slideY(begin: -0.1, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(24),
-                _buildBalanceCard(context, stats, currency)
-                    .animate()
-                    .fade(duration: 600.ms, delay: 100.ms)
-                    .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
-                const Gap(20),
-                _buildAccountsList(context, ref, stats, currency)
-                    .animate()
-                    .fade(delay: 200.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(20),
-                _buildIncomeExpenseRow(context, stats, currency)
-                    .animate()
-                    .fade(delay: 300.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildBudgetSection(context, ref, stats, currency)
-                    .animate()
-                    .fade(delay: 400.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, delay: 400.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildSectionHeader(
-                  context,
-                  ref,
-                  title: 'Spending Overview',
-                  buttonLabel: 'Full Analysis',
-                  onTap: () {
-                    ref.read(navigationProvider.notifier).setIndex(1);
-                    ref.read(pageControllerProvider).animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ).animate().fade(delay: 500.ms, duration: 500.ms),
-                const Gap(16),
-                _buildChartSection(context, stats, currency)
-                    .animate()
-                    .fade(delay: 550.ms, duration: 600.ms)
-                    .scale(begin: const Offset(0.96, 0.96), delay: 550.ms, duration: 600.ms, curve: Curves.easeOutCubic),
-                const Gap(28),
-                _buildSectionHeader(
-                  context,
-                  ref,
-                  title: 'Recent Transactions',
-                  buttonLabel: 'View All',
-                  onTap: () {
-                    ref.read(navigationProvider.notifier).setIndex(1);
-                    ref.read(pageControllerProvider).animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ).animate().fade(delay: 600.ms, duration: 500.ms),
-                const Gap(12),
-                _buildRecentTransactions(context, ref, transactionsAsync, currency)
-                    .animate()
-                    .fade(delay: 650.ms, duration: 500.ms)
-                    .slideY(begin: 0.08, delay: 650.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                const Gap(100),
-              ],
-            ),
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator(
+        onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
+        color: AppTheme.primaryColor(context),
+        backgroundColor: AppTheme.surfaceColor(context),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context)
+                  .animate()
+                  .fade(duration: 500.ms)
+                  .slideY(begin: -0.1, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(24),
+              _buildBalanceCard(context, stats, currency)
+                  .animate()
+                  .fade(duration: 600.ms, delay: 100.ms)
+                  .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
+              const Gap(20),
+              _buildAccountsList(context, ref, stats, currency)
+                  .animate()
+                  .fade(delay: 200.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(20),
+              _buildIncomeExpenseRow(context, stats, currency)
+                  .animate()
+                  .fade(delay: 300.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildBudgetSection(context, ref, stats, currency)
+                  .animate()
+                  .fade(delay: 400.ms, duration: 500.ms)
+                  .slideY(begin: 0.1, delay: 400.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildSectionHeader(
+                context,
+                ref,
+                title: 'Spending Overview',
+                buttonLabel: 'Full Analysis',
+                onTap: () {
+                  ref.read(navigationProvider.notifier).setIndex(1);
+                  ref.read(pageControllerProvider).animateToPage(
+                    1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              ).animate().fade(delay: 500.ms, duration: 500.ms),
+              const Gap(16),
+              _buildChartSection(context, stats, currency)
+                  .animate()
+                  .fade(delay: 550.ms, duration: 600.ms)
+                  .scale(begin: const Offset(0.96, 0.96), delay: 550.ms, duration: 600.ms, curve: Curves.easeOutCubic),
+              const Gap(28),
+              _buildSectionHeader(
+                context,
+                ref,
+                title: 'Recent Transactions',
+                buttonLabel: 'View All',
+                onTap: () {
+                  ref.read(navigationProvider.notifier).setIndex(1);
+                  ref.read(pageControllerProvider).animateToPage(
+                    1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              ).animate().fade(delay: 600.ms, duration: 500.ms),
+              const Gap(12),
+              _buildRecentTransactions(context, ref, transactionsAsync, currency)
+                  .animate()
+                  .fade(delay: 650.ms, duration: 500.ms)
+                  .slideY(begin: 0.08, delay: 650.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+              const Gap(100),
+            ],
           ),
         ),
       ),

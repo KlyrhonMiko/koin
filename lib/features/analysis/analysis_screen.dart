@@ -30,101 +30,97 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
-          color: AppTheme.primaryColor(context),
-          backgroundColor: AppTheme.surfaceColor(context),
-          child: transactionsAsync.when(
-            data: (transactions) {
-              if (transactions.isEmpty) {
-                return CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Align(
-                        alignment: const Alignment(0, -0.3),
-                        child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses to see your analysis', Icons.insights_rounded),
-                      ),
-                    ),
-                  ],
-                );
-              }
-              
-              final now = DateTime.now();
-              
-              // Filter transactions based on selection (Expense only)
-              List<AppTransaction> filteredTransactions = transactions.where((t) => t.type == TransactionType.expense).toList();
-              
-              if (_selectedFilterIndex == 0) {
-                // This Week
-                final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-                final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-                filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(startOfWeekDate.subtract(const Duration(days: 1)))).toList();
-              } else if (_selectedFilterIndex == 1) {
-                // This Month
-                filteredTransactions = filteredTransactions.where((t) {
-                  return t.date.year == now.year && t.date.month == now.month;
-                }).toList();
-              }
-
-              if (filteredTransactions.isEmpty) {
-                return CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                      sliver: SliverToBoxAdapter(
-                        child: _buildFilterTabs(context),
-                      ),
-                    ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Align(
-                        alignment: const Alignment(0, -0.3),
-                        child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses for this period to see your analysis', Icons.insights_rounded),
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              return SingleChildScrollView(
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: RefreshIndicator(
+        onRefresh: () => ref.read(transactionProvider.notifier).loadTransactions(),
+        color: AppTheme.primaryColor(context),
+        backgroundColor: AppTheme.surfaceColor(context),
+        child: transactionsAsync.when(
+          data: (transactions) {
+            if (transactions.isEmpty) {
+              return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildFilterTabs(context).animate().fade(duration: 400.ms),
-                    const Gap(24),
-                    _buildSummaryCard(context, filteredTransactions, currency).animate().fade(delay: 100.ms).slideY(begin: 0.1),
-                    const Gap(28),
-                    Text(
-                      'Expense Breakdown',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textColor(context), letterSpacing: -0.3),
-                    ).animate().fade(delay: 200.ms),
-                    const Gap(16),
-                    _buildPieChartSection(context, filteredTransactions, categories, currency).animate().fade(delay: 300.ms).scale(begin: const Offset(0.97, 0.97)),
-                    const Gap(28),
-                    Text(
-                      'Category Spending',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textColor(context), letterSpacing: -0.3),
-                    ).animate().fade(delay: 400.ms),
-                    const Gap(16),
-                    _buildTopCategoriesList(context, filteredTransactions, categories, currency).animate().fade(delay: 450.ms).slideY(begin: 0.1),
-                  ],
-                ),
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Align(
+                      alignment: const Alignment(0, -0.3),
+                      child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses to see your analysis', Icons.insights_rounded),
+                    ),
+                  ),
+                ],
               );
-            },
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-            error: (e, st) => Center(child: Text('Error: $e')),
-          ),
+            }
+            
+            final now = DateTime.now();
+            
+            // Filter transactions based on selection (Expense only)
+            List<AppTransaction> filteredTransactions = transactions.where((t) => t.type == TransactionType.expense).toList();
+            
+            if (_selectedFilterIndex == 0) {
+              // This Week
+              final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+              final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+              filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(startOfWeekDate.subtract(const Duration(days: 1)))).toList();
+            } else if (_selectedFilterIndex == 1) {
+              // This Month
+              filteredTransactions = filteredTransactions.where((t) {
+                return t.date.year == now.year && t.date.month == now.month;
+              }).toList();
+            }
+
+            if (filteredTransactions.isEmpty) {
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildFilterTabs(context),
+                    ),
+                  ),
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Align(
+                      alignment: const Alignment(0, -0.3),
+                      child: _buildEmptyStateContent(context, 'No expense data yet', 'Add some expenses for this period to see your analysis', Icons.insights_rounded),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildFilterTabs(context).animate().fade(duration: 400.ms),
+                  const Gap(24),
+                  _buildSummaryCard(context, filteredTransactions, currency).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                  const Gap(28),
+                  Text(
+                    'Expense Breakdown',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textColor(context), letterSpacing: -0.3),
+                  ).animate().fade(delay: 200.ms),
+                  const Gap(16),
+                  _buildPieChartSection(context, filteredTransactions, categories, currency).animate().fade(delay: 300.ms).scale(begin: const Offset(0.97, 0.97)),
+                  const Gap(28),
+                  Text(
+                    'Category Spending',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textColor(context), letterSpacing: -0.3),
+                  ).animate().fade(delay: 400.ms),
+                  const Gap(16),
+                  _buildTopCategoriesList(context, filteredTransactions, categories, currency).animate().fade(delay: 450.ms).slideY(begin: 0.1),
+                ],
+              ),
+            );
+          },
+          loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+          error: (e, st) => Center(child: Text('Error: $e')),
         ),
       ),
     );

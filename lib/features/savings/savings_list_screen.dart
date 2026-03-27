@@ -19,33 +19,62 @@ class SavingsListScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(name: settings.currency.code);
 
-    return Scaffold(
-      extendBody: true,
-      appBar: AppBar(
-        title: const Text('Savings Tracker'),
-      ),
-      body: goalsAsync.when(
-        data: (goals) {
-          if (goals.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-            itemCount: goals.length + 2, // +1 hero, +1 add button
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildHeroSummaryCard(context, goals, currencyFormat);
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: goalsAsync.when(
+            data: (goals) {
+              if (goals.isEmpty) {
+                return _buildEmptyState(context);
               }
-              if (index == goals.length + 1) {
-                return _buildAddGoalButton(context, index);
-              }
-              final goal = goals[index - 1];
-              return _buildGoalCard(context, goal, index, currencyFormat);
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                itemCount: goals.length + 2, // +1 hero, +1 add button
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildHeroSummaryCard(context, goals, currencyFormat);
+                  }
+                  if (index == goals.length + 1) {
+                    return _buildAddGoalButton(context, index);
+                  }
+                  final goal = goals[index - 1];
+                  return _buildGoalCard(context, goal, index, currencyFormat);
+                },
+              );
             },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 12,
+        bottom: 16,
+        left: 20,
+        right: 20,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor(context),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Savings Tracker',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: AppTheme.textColor(context),
+            ),
+          ),
+        ],
       ),
     );
   }

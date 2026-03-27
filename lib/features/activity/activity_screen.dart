@@ -29,25 +29,22 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor(context),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const BouncingScrollPhysics(),
-                children: const [
-                  AnalysisScreen(),
-                  TransactionsListScreen(),
-                ],
-              ),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              physics: const BouncingScrollPhysics(),
+              children: const [
+                AnalysisScreen(),
+                TransactionsListScreen(),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

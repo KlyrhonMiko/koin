@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,19 +18,12 @@ class MainLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(navigationProvider);
-    final pageController = ref.watch(pageControllerProvider);
     final isDarkMode = ref.watch(settingsProvider).isDarkMode;
 
-    void onPageChanged(int index) {
-      ref.read(navigationProvider.notifier).setIndex(index);
-    }
-
     void onItemTapped(int index) {
-      pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (currentIndex == index) return;
+      HapticFeedback.selectionClick();
+      ref.read(navigationProvider.notifier).setIndex(index);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -45,20 +39,25 @@ class MainLayout extends ConsumerWidget {
       ),
       child: Scaffold(
         extendBody: true,
-        body: MediaQuery.removePadding(
-          context: context,
-          removeBottom: true,
-          child: PageView(
-            physics: const NeverScrollableScrollPhysics(),
-            controller: pageController,
-            onPageChanged: onPageChanged,
-            children: const [
-              AccountsScreen(),
-              ActivityScreen(),
-              DashboardScreen(),
-              BudgetsScreen(),
-              SavingsListScreen(),
-            ],
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.02),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<int>(currentIndex),
+            child: _getPage(currentIndex),
           ),
         ),
         floatingActionButton: currentIndex != 4
@@ -103,25 +102,28 @@ class MainLayout extends ConsumerWidget {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context).withValues(alpha: 0.94),
+                color: AppTheme.surfaceColor(context).withValues(alpha: isDarkMode ? 0.7 : 0.85),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.4 : 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
                   ),
                 ],
                 border: Border.all(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                  color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.08 : 0.05),
                   width: 1,
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
+              clipBehavior: Clip.antiAlias,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
                     _buildNavItem(
                       context,
                       icon: Icons.credit_card_outlined,
@@ -168,6 +170,7 @@ class MainLayout extends ConsumerWidget {
                       onTap: onItemTapped,
                     ),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -175,6 +178,17 @@ class MainLayout extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0: return const AccountsScreen();
+      case 1: return const ActivityScreen();
+      case 2: return const DashboardScreen();
+      case 3: return const BudgetsScreen();
+      case 4: return const SavingsListScreen();
+      default: return const DashboardScreen();
+    }
   }
 
   Widget _buildNavItem(
@@ -187,45 +201,112 @@ class MainLayout extends ConsumerWidget {
     required Function(int) onTap,
   }) {
     final primaryColor = AppTheme.primaryColor(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => onTap(targetIndex),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isActive ? 18 : 12,
+          horizontal: isActive ? 16 : 12,
           vertical: 10,
         ),
         decoration: BoxDecoration(
           color: isActive
-              ? primaryColor.withValues(alpha: 0.12)
+              ? primaryColor.withValues(alpha: isDarkMode ? 0.15 : 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isActive ? [
+            BoxShadow(
+              color: primaryColor.withValues(alpha: isDarkMode ? 0.2 : 0.15),
+              blurRadius: 12,
+              spreadRadius: -2,
+            )
+          ] : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive
-                  ? primaryColor
-                  : AppTheme.textLightColor(context).withValues(alpha: 0.6),
-              size: 22,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: isActive ? 1.0 : 0.0),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutBack,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: 0.9 + (value * 0.1),
+                  child: Icon(
+                    isActive ? activeIcon : icon,
+                    color: Color.lerp(
+                      AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                      primaryColor,
+                      value,
+                    ),
+                    size: 22,
+                  ),
+                );
+              },
             ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+            AnimatedClipRect(
+              open: isActive,
+              horizontalAnimation: true,
+              verticalAnimation: false,
+              alignment: Alignment.centerLeft,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
-            ],
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class AnimatedClipRect extends StatelessWidget {
+  final Widget child;
+  final bool open;
+  final bool horizontalAnimation;
+  final bool verticalAnimation;
+  final Alignment alignment;
+  final Duration duration;
+  final Curve curve;
+
+  const AnimatedClipRect({
+    super.key,
+    required this.child,
+    required this.open,
+    this.horizontalAnimation = true,
+    this.verticalAnimation = true,
+    this.alignment = Alignment.center,
+    this.duration = const Duration(milliseconds: 500),
+    this.curve = Curves.linear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: duration,
+      curve: curve,
+      alignment: alignment,
+      child: ClipRect(
+        child: Align(
+          alignment: alignment,
+          heightFactor: verticalAnimation ? (open ? 1.0 : 0.0) : 1.0,
+          widthFactor: horizontalAnimation ? (open ? 1.0 : 0.0) : 1.0,
+          child: open ? child : const SizedBox.shrink(),
         ),
       ),
     );

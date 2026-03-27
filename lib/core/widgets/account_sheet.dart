@@ -221,6 +221,7 @@ class AccountSheet {
                             iconCodePoint: selectedIcon,
                             colorHex: '#${selectedColor.toARGB32().toRadixString(16).substring(2)}',
                             excludeFromTotal: excludeFromTotal,
+                            position: isEditing ? account.position : ref.read(accountProvider).value?.length ?? 0,
                           );
 
                           if (isEditing) {
