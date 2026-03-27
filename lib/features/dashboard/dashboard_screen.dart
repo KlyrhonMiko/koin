@@ -16,6 +16,7 @@ import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
+import 'package:koin/core/widgets/account_sheet.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -65,7 +66,7 @@ class DashboardScreen extends ConsumerWidget {
                     .fade(duration: 600.ms, delay: 100.ms)
                     .slideY(begin: 0.12, duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
                 const Gap(20),
-                _buildAccountsList(context, stats, currency)
+                _buildAccountsList(context, ref, stats, currency)
                     .animate()
                     .fade(delay: 200.ms, duration: 500.ms)
                     .slideY(begin: 0.1, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutCubic),
@@ -380,7 +381,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   // ─── Accounts Grid ─────────────────────────────────────────────────
-  Widget _buildAccountsList(BuildContext context, DashboardStats stats, Currency currency) {
+  Widget _buildAccountsList(BuildContext context, WidgetRef ref, DashboardStats stats, Currency currency) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -404,13 +405,20 @@ class DashboardScreen extends ConsumerWidget {
             return Wrap(
               spacing: spacing,
               runSpacing: spacing,
-              children: stats.accounts.map((account) {
-                final balance = stats.accountBalances[account.id] ?? 0;
-                return SizedBox(
-                  width: cardWidth,
-                  child: _buildAccountCard(context, account, balance, currency),
-                );
-              }).toList(),
+              children: [
+                ...stats.accounts.map((account) {
+                  final balance = stats.accountBalances[account.id] ?? 0;
+                  return SizedBox(
+                    width: cardWidth,
+                    child: _buildAccountCard(context, account, balance, currency),
+                  );
+                }),
+                if (stats.accounts.length % 2 != 0)
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildAddAccountCard(context, ref),
+                  ),
+              ],
             );
           },
         ),
@@ -483,6 +491,56 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAddAccountCard(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => AccountSheet.show(context, ref),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                color: AppTheme.primaryColor(context),
+                size: 20,
+              ),
+            ),
+            const Gap(10),
+            Text(
+              'Add Account',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: AppTheme.primaryColor(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
