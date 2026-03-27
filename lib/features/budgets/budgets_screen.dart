@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +11,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
 
 class BudgetsScreen extends ConsumerWidget {
@@ -484,7 +484,7 @@ class BudgetsScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                    IconUtils.getIcon(category.iconCodePoint),
                     color: category.color,
                     size: 20,
                   ),
@@ -619,7 +619,7 @@ class BudgetsScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                IconUtils.getIcon(category.iconCodePoint),
                 color: category.color,
                 size: 16,
               ),
@@ -770,7 +770,7 @@ class BudgetsScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
-                      IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                      IconUtils.getIcon(category.iconCodePoint),
                       color: category.color,
                       size: 24,
                     ),
@@ -943,7 +943,7 @@ class BudgetsScreen extends ConsumerWidget {
                                 Icon(Icons.info_outline_rounded, size: 16, color: category.color.withValues(alpha: 0.7)),
                                 const Gap(8),
                                 Text(
-                                  '${currentResult}% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
+                                  '$currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,

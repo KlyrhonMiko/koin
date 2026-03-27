@@ -93,8 +93,11 @@ class TransactionsListScreen extends ConsumerWidget {
 
                 double dailyTotal = 0;
                 for (var tx in txList) {
-                  if (tx.type == TransactionType.income) dailyTotal += tx.amount;
-                  else if (tx.type == TransactionType.expense) dailyTotal -= tx.amount;
+                  if (tx.type == TransactionType.income) {
+                    dailyTotal += tx.amount;
+                  } else if (tx.type == TransactionType.expense) {
+                    dailyTotal -= tx.amount;
+                  }
                 }
 
                 String formattedTotal = NumberFormat.currency(symbol: currency.symbol).format(dailyTotal.abs());

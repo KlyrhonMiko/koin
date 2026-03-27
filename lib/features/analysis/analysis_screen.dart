@@ -11,6 +11,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/currency.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -357,7 +358,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                title: '${((entry.value / totalSpent) * 100).toStringAsFixed(0)}%',
                radius: 45,
                titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-               badgeWidget: _buildLegendIcon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), category.color),
+               badgeWidget: _buildLegendIcon(IconUtils.getIcon(category.iconCodePoint), category.color),
                badgePositionPercentageOffset: 1.15,
              ));
         }
@@ -474,7 +475,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
-                  IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                   IconUtils.getIcon(category.iconCodePoint),
                   color: category.color,
                   size: 24,
                 ),

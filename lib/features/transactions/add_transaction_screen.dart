@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/category.dart';
@@ -902,7 +903,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 ),
                 child: Icon(
                   hasSelection
-                      ? IconData(selectedIconCodePoint, fontFamily: 'MaterialIcons')
+                      ? IconUtils.getIcon(selectedIconCodePoint)
                       : fallbackIcon,
                   size: 17,
                   color: hasSelection ? selectedColor : AppTheme.textLightColor(context),
@@ -1206,7 +1207,7 @@ class _PremiumSheetItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  IconData(iconCodePoint, fontFamily: 'MaterialIcons'),
+                  IconUtils.getIcon(iconCodePoint),
                   color: accentColor,
                   size: 22,
                 ),

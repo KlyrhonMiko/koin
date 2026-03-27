@@ -12,6 +12,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
 
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
 
 class CategoryManagerScreen extends ConsumerStatefulWidget {
@@ -465,7 +466,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                                   ],
                                 ),
                                 child: Icon(
-                                  IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                                  IconUtils.getIcon(category.iconCodePoint),
                                   color: category.color,
                                   size: 22,
                                 ),

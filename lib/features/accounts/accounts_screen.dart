@@ -9,6 +9,7 @@ import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/premium_confirmation_sheet.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:intl/intl.dart';
 
 class AccountsScreen extends ConsumerWidget {
@@ -158,7 +159,7 @@ class AccountsScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        IconData(account.iconCodePoint, fontFamily: 'MaterialIcons'),
+                        IconUtils.getIcon(account.iconCodePoint),
                         color: account.color,
                         size: 22,
                       ),
@@ -341,7 +342,7 @@ class AccountsScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: colors.map((c) {
-                  final isSelected = selectedColor.value == c.value;
+                  final isSelected = selectedColor.toARGB32() == c.toARGB32();
                   return GestureDetector(
                     onTap: () => setState(() => selectedColor = c),
                     child: AnimatedContainer(
