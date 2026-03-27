@@ -239,9 +239,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Row(
+      child: Row(
           children: [
             // Animated icon preview with glow
             AnimatedContainer(
@@ -330,7 +328,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             ),
           ],
         ),
-      ),
+
     );
   }
 

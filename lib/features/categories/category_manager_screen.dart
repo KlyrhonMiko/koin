@@ -28,21 +28,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
   String _searchQuery = '';
   bool _showSearch = false;
   late TabController _tabController;
-  bool _showEntranceAnimations = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
-    // Only show entrance animations once
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        setState(() {
-          _showEntranceAnimations = false;
-        });
-      }
-    });
   }
 
   @override
@@ -79,12 +69,18 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   return TabBarView(
                     controller: _tabController,
                     children: [
-                      expenseCategories.isEmpty
-                          ? _buildEmptyState(context, TransactionType.expense)
-                          : _buildCategoryList(context, expenseCategories, currency, TransactionType.expense),
-                      incomeCategories.isEmpty
-                          ? _buildEmptyState(context, TransactionType.income)
-                          : _buildCategoryList(context, incomeCategories, currency, TransactionType.income),
+                      CategoryList(
+                        key: const PageStorageKey('expense_list'),
+                        categories: expenseCategories,
+                        type: TransactionType.expense,
+                        currency: currency,
+                      ),
+                      CategoryList(
+                        key: const PageStorageKey('income_list'),
+                        categories: incomeCategories,
+                        type: TransactionType.income,
+                        currency: currency,
+                      ),
                     ],
                   );
                 },
@@ -395,16 +391,57 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
     ).animate().fade(duration: 400.ms).scale(begin: const Offset(0.95, 0.95));
   }
 
-  Widget _buildCategoryList(BuildContext context, List<TransactionCategory> categories, currency, TransactionType type) {
-    final fmt = NumberFormat.currency(symbol: currency.symbol);
+  Future<bool?> _confirmDelete(BuildContext context, TransactionCategory category) {
+    return ConfirmationSheet.show(
+      context: context,
+      title: 'Delete Category?',
+      description: 'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmColor: AppTheme.expenseColor(context),
+      icon: Icons.delete_forever_rounded,
+      isDanger: true,
+    );
+  }
+}
+
+class CategoryList extends ConsumerStatefulWidget {
+  final List<TransactionCategory> categories;
+  final TransactionType type;
+  final dynamic currency;
+
+  const CategoryList({
+    super.key,
+    required this.categories,
+    required this.type,
+    required this.currency,
+  });
+
+  @override
+  ConsumerState<CategoryList> createState() => _CategoryListState();
+}
+
+class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    
+    if (widget.categories.isEmpty) {
+      return context.findAncestorStateOfType<_CategoryManagerScreenState>()!
+          ._buildEmptyState(context, widget.type);
+    }
+
+    final fmt = NumberFormat.currency(symbol: widget.currency.symbol);
 
     return ReorderableListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       physics: const BouncingScrollPhysics(),
-      itemCount: categories.length,
+      itemCount: widget.categories.length,
       onReorder: (oldIndex, newIndex) {
         HapticService.medium();
-        ref.read(categoriesProvider.notifier).reorderCategories(oldIndex, newIndex, type);
+        ref.read(categoriesProvider.notifier).reorderCategories(oldIndex, newIndex, widget.type);
       },
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
@@ -431,7 +468,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
         child: Row(
           children: [
             Text(
-              '${categories.length} ${categories.length == 1 ? 'Category' : 'Categories'}',
+              '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -441,7 +478,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
             ),
           ],
         ),
-      ).animate(autoPlay: _showEntranceAnimations, key: ValueKey('header_${type.name}')).fade(duration: 300.ms),
+      ).animate(key: ValueKey('header_${widget.type.name}')).fade(duration: 300.ms),
       footer: Column(
         children: [
           const Gap(6),
@@ -450,7 +487,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
               HapticService.medium();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => CategoryDetailScreen(initialType: type)),
+                MaterialPageRoute(builder: (context) => CategoryDetailScreen(initialType: widget.type)),
               );
             },
             child: Container(
@@ -468,39 +505,40 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: (type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.12),
+                      color: (widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.add_rounded,
                       size: 18,
-                      color: type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
+                      color: widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
                     ),
                   ),
                   const Gap(10),
                   Text(
-                    'Add ${type == TransactionType.expense ? 'Expense' : 'Income'} Category',
+                    'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
+                      color: widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
                     ),
                   ),
                 ],
               ),
             ),
-          ).animate(autoPlay: _showEntranceAnimations, key: ValueKey('footer_${type.name}')).fade(delay: 100.ms),
+          ).animate(key: ValueKey('footer_${widget.type.name}')).fade(delay: 100.ms),
         ],
       ),
       itemBuilder: (context, index) {
-        final category = categories[index];
+        final category = widget.categories[index];
 
         return Dismissible(
             key: Key('dismiss_${category.id}'),
             direction: DismissDirection.endToStart,
             confirmDismiss: (_) {
               HapticService.medium();
-              return _confirmDelete(context, category);
+              return context.findAncestorStateOfType<_CategoryManagerScreenState>()!
+                  ._confirmDelete(context, category);
             },
             onDismissed: (_) {
               HapticService.heavy();
@@ -640,20 +678,8 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 ),
             ),
           ),
-        ).animate(autoPlay: _showEntranceAnimations, key: ValueKey(category.id)).fade(delay: (index * 50).ms).slideX(begin: 0.04);
+        ).animate(key: ValueKey(category.id)).fade(delay: (index * 50).ms).slideX(begin: 0.04);
       },
-    );
-  }
-
-  Future<bool?> _confirmDelete(BuildContext context, TransactionCategory category) {
-    return ConfirmationSheet.show(
-      context: context,
-      title: 'Delete Category?',
-      description: 'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
-      confirmLabel: 'Delete',
-      confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_forever_rounded,
-      isDanger: true,
     );
   }
 }

@@ -58,7 +58,7 @@ class Account {
       name: map['name'],
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
-      initialBalance: map['initialBalance'] ?? 0.0,
+      initialBalance: (map['initialBalance'] as num?)?.toDouble() ?? 0.0,
       excludeFromTotal: map['excludeFromTotal'] == 1,
       position: map['position'] ?? 0,
     );

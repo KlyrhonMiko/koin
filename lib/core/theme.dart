@@ -259,5 +259,13 @@ class AppTheme {
     Color(0xFF8B5CF6), // Purple
     Color(0xFFEF4444), // Red
     Color(0xFF06B6D4), // Cyan
+    Color(0xFF10B981), // Emerald
+    Color(0xFFF43F5E), // Rose
+    Color(0xFF7C3AED), // Violet
+    Color(0xFFFB923C), // Orange
+    Color(0xFF0EA5E9), // Sky
+    Color(0xFF84CC16), // Lime
+    Color(0xFFD946EF), // Fuchsia
+    Color(0xFF475569), // Slate
   ];
 }

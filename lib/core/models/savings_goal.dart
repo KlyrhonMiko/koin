@@ -33,8 +33,8 @@ class SavingsGoal {
     return SavingsGoal(
       id: map['id'],
       name: map['name'],
-      targetAmount: map['targetAmount'],
-      currentAmount: map['currentAmount'],
+      targetAmount: (map['targetAmount'] as num).toDouble(),
+      currentAmount: (map['currentAmount'] as num).toDouble(),
       startDate: DateTime.parse(map['startDate']),
       endDate: DateTime.parse(map['endDate']),
       notes: map['notes'],

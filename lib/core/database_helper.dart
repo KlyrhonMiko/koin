@@ -176,9 +176,9 @@ CREATE TABLE transactions (
 
   Future _insertDefaultAccounts(Database db) async {
     final defaultAccounts = [
-      Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments.codePoint, colorHex: '#4CAF50', position: 0),
-      Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance.codePoint, colorHex: '#2196F3', position: 1),
-      Account(id: 'savings_account', name: 'Savings', iconCodePoint: Icons.savings.codePoint, colorHex: '#FF9800', position: 2),
+      Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments_rounded.codePoint, colorHex: '#00D09E', position: 0),
+      Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance_rounded.codePoint, colorHex: '#3B82F6', position: 1),
+      Account(id: 'savings_account', name: 'Savings', iconCodePoint: Icons.savings_rounded.codePoint, colorHex: '#F59E0B', position: 2),
     ];
 
     for (var account in defaultAccounts) {

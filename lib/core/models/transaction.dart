@@ -38,7 +38,7 @@ class AppTransaction {
     return AppTransaction(
       id: map['id'],
       note: map['title'] ?? '', // Mapping 'title' from DB to 'note'
-      amount: map['amount'],
+      amount: (map['amount'] as num).toDouble(),
       date: DateTime.parse(map['date']),
       type: TransactionType.values.byName(map['type']),
       categoryId: map['categoryId'],
