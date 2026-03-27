@@ -25,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -52,6 +52,9 @@ class DatabaseHelper {
     if (oldVersion < 7) {
       await db.execute('ALTER TABLE categories ADD COLUMN budgetPercent REAL');
       await db.execute('ALTER TABLE categories ADD COLUMN isPercentBudget INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 8) {
+      await db.execute('ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0');
     }
   }
 
@@ -96,7 +99,8 @@ CREATE TABLE accounts (
   name $textType,
   iconCodePoint $intType,
   colorHex $textType,
-  initialBalance $realType
+  initialBalance $realType,
+  excludeFromTotal INTEGER DEFAULT 0
 )
 ''');
   }
