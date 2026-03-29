@@ -6,6 +6,7 @@ import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -382,5 +383,32 @@ CREATE TABLE transactions (
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  Future<String> getDatabaseFilePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, 'koin.db');
+  }
+
+  Future<bool> restoreDatabase(String backupPath) async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'koin.db');
+      
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      
+      final sourceFile = File(backupPath);
+      await sourceFile.copy(path);
+      
+      // Test initialization
+      await database;
+      return true;
+    } catch (e) {
+      debugPrint("Error restoring database: \$e");
+      return false;
+    }
   }
 }
