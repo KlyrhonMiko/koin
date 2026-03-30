@@ -81,6 +81,14 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> toggleDarkMode() async {
     await setDarkMode(!state.isDarkMode);
   }
+
+  Future<void> resetSettings() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.remove(_currencyCodeKey);
+    await prefs.remove(_themeColorKey);
+    await prefs.remove(_isDarkModeKey);
+    ref.invalidateSelf();
+  }
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {

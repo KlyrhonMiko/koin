@@ -6,6 +6,7 @@ import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -25,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -69,6 +70,14 @@ class DatabaseHelper {
     }
     if (oldVersion < 10) {
       await db.execute('ALTER TABLE categories ADD COLUMN position INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 11) {
+      await db.execute('''
+CREATE TABLE app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+)
+''');
     }
   }
 
@@ -140,6 +149,13 @@ CREATE TABLE categories (
 )
 ''');
 
+    await db.execute('''
+CREATE TABLE app_settings (
+  key $idType,
+  value $textType
+)
+''');
+
     await _createAccountsTable(db);
 
     await db.execute('''
@@ -165,7 +181,7 @@ CREATE TABLE transactions (
     await _insertDefaultAccounts(db);
   }
 
-  Future _insertDefaultCategories(Database db) async {
+  Future _insertDefaultCategories(DatabaseExecutor db) async {
     final defaultCategories = [
       TransactionCategory(id: 'cat_groceries', name: 'Groceries', iconCodePoint: Icons.shopping_cart.codePoint, colorHex: '#4CAF50', type: TransactionType.expense),
       TransactionCategory(id: 'cat_dining', name: 'Dining', iconCodePoint: Icons.restaurant.codePoint, colorHex: '#FF9800', type: TransactionType.expense),
@@ -182,7 +198,7 @@ CREATE TABLE transactions (
     }
   }
 
-  Future _insertDefaultAccounts(Database db) async {
+  Future _insertDefaultAccounts(DatabaseExecutor db) async {
     final defaultAccounts = [
       Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments_rounded.codePoint, colorHex: '#00D09E', position: 0),
       Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance_rounded.codePoint, colorHex: '#3B82F6', position: 1),
@@ -192,6 +208,39 @@ CREATE TABLE transactions (
     for (var account in defaultAccounts) {
       await db.insert('accounts', account.toMap());
     }
+  }
+
+  // Data Deletion Commands
+  Future<void> deleteAllTransactions() async {
+    final db = await instance.database;
+    await db.delete('transactions');
+  }
+
+  Future<void> deleteAllData() async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.delete('transactions');
+      await txn.delete('savings_logs');
+      await txn.delete('savings_goals');
+      await txn.delete('categories');
+      await txn.delete('accounts');
+      
+      // Re-insert defaults
+      await _insertDefaultCategories(txn);
+      await _insertDefaultAccounts(txn);
+    });
+  }
+
+  Future<void> resetDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'koin.db');
+    await deleteDatabase(path);
+    // Initialize again
+    await database;
   }
 
   // Categories commands
@@ -368,6 +417,38 @@ CREATE TABLE transactions (
     return log;
   }
 
+  Future<void> deleteSavingsLog(SavingsLog log) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'savings_logs',
+        where: 'id = ?',
+        whereArgs: [log.id],
+      );
+      await txn.execute(
+        'UPDATE savings_goals SET currentAmount = currentAmount - ? WHERE id = ?',
+        [log.amount, log.goalId],
+      );
+    });
+  }
+
+  Future<void> updateSavingsLog(SavingsLog oldLog, SavingsLog newLog) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'savings_logs',
+        newLog.toMap(),
+        where: 'id = ?',
+        whereArgs: [newLog.id],
+      );
+      final difference = newLog.amount - oldLog.amount;
+      await txn.execute(
+        'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
+        [difference, newLog.goalId],
+      );
+    });
+  }
+
   Future<List<SavingsLog>> getSavingsLogs(String goalId) async {
     final db = await instance.database;
     final result = await db.query(
@@ -379,8 +460,69 @@ CREATE TABLE transactions (
     return result.map((json) => SavingsLog.fromMap(json)).toList();
   }
 
+  // Settings commands
+  Future<void> saveSettingsToDb(Map<String, String> settings) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.delete('app_settings');
+      for (var entry in settings.entries) {
+        await txn.insert('app_settings', {'key': entry.key, 'value': entry.value});
+      }
+    });
+  }
+
+  Future<Map<String, String>> loadSettingsFromDb() async {
+    final db = await instance.database;
+    try {
+      final result = await db.query('app_settings');
+      return {for (var row in result) row['key'] as String: row['value'] as String};
+    } catch (e) {
+      return {};
+    }
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  Future<String> getDatabaseFilePath() async {
+    if (_database != null) {
+      await _database!.rawQuery('PRAGMA wal_checkpoint(FULL)');
+    }
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, 'koin.db');
+  }
+
+  Future<bool> restoreDatabase(String backupPath) async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'koin.db');
+      
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      
+      // Delete any existing WAL and SHM files to prevent corruption of the restored DB
+      final walFile = File('$path-wal');
+      final shmFile = File('$path-shm');
+      if (await walFile.exists()) {
+        await walFile.delete();
+      }
+      if (await shmFile.exists()) {
+        await shmFile.delete();
+      }
+      
+      final sourceFile = File(backupPath);
+      await sourceFile.copy(path);
+      
+      // Test initialization
+      await database;
+      return true;
+    } catch (e) {
+      debugPrint("Error restoring database: \$e");
+      return false;
+    }
   }
 }

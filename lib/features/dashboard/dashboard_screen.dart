@@ -562,9 +562,6 @@ class DashboardScreen extends ConsumerWidget {
 
   // ─── Income / Expense Row ─────────────────────────────────────────
   Widget _buildIncomeExpenseRow(BuildContext context, DashboardStats stats, Currency currency) {
-    final total = stats.totalIncome + stats.totalExpense;
-    final incomePercent = total > 0 ? (stats.totalIncome / total * 100) : 0.0;
-    final expensePercent = total > 0 ? (stats.totalExpense / total * 100) : 0.0;
 
     return Row(
       children: [
@@ -585,7 +582,6 @@ class DashboardScreen extends ConsumerWidget {
               color: AppTheme.incomeColor(context),
               icon: Icons.arrow_downward_rounded,
               currency: currency,
-              percent: incomePercent,
             ),
           ),
         ),
@@ -607,7 +603,6 @@ class DashboardScreen extends ConsumerWidget {
               color: AppTheme.expenseColor(context),
               icon: Icons.arrow_upward_rounded,
               currency: currency,
-              percent: expensePercent,
             ),
           ),
         ),
@@ -623,7 +618,6 @@ class DashboardScreen extends ConsumerWidget {
     required LinearGradient gradient,
     required IconData icon,
     required Currency currency,
-    required double percent,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -651,22 +645,6 @@ class DashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: Colors.white, size: 18),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${percent.toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                ),
               ),
             ],
           ),
@@ -801,7 +779,7 @@ class DashboardScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Total',
+                      'Net',
                       style: TextStyle(
                         color: AppTheme.textLightColor(context),
                         fontSize: 11,
@@ -809,13 +787,22 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     const Gap(2),
-                    Text(
-                      NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalIncome + stats.totalExpense),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        letterSpacing: -0.5,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final net = stats.totalIncome - stats.totalExpense;
+                        final formattedAmount = NumberFormat.compact().format(net.abs());
+                        return Text(
+                          '${net < 0 ? '−' : ''}${currency.symbol}$formattedAmount',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5, // Slightly smaller to avoid crowding
+                            letterSpacing: -0.5,
+                            color: net >= 0 
+                                ? AppTheme.incomeColor(context) 
+                                : AppTheme.expenseColor(context),
+                          ),
+                        );
+                      }
                     ),
                   ],
                 ),
@@ -832,7 +819,6 @@ class DashboardScreen extends ConsumerWidget {
                   context,
                   'Income',
                   AppTheme.incomeColor(context),
-                  '${((stats.totalIncome / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%',
                   NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalIncome),
                 ),
                 const Gap(20),
@@ -840,7 +826,6 @@ class DashboardScreen extends ConsumerWidget {
                   context,
                   'Expense',
                   AppTheme.expenseColor(context),
-                  '${((stats.totalExpense / (stats.totalIncome + stats.totalExpense)) * 100).toStringAsFixed(0)}%',
                   NumberFormat.compactCurrency(symbol: currency.symbol).format(stats.totalExpense),
                 ),
               ],
@@ -851,7 +836,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLegendItem(BuildContext context, String label, Color color, String percentage, String amount) {
+  Widget _buildLegendItem(BuildContext context, String label, Color color, String amount) {
     return Row(
       children: [
         Container(
@@ -882,13 +867,13 @@ class DashboardScreen extends ConsumerWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const Gap(2),
               Text(
-                percentage,
+                amount,
                 style: TextStyle(
                   color: color,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
