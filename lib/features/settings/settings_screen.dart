@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:koin/core/database_helper.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/providers/transaction_provider.dart';
+import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/core/providers/savings_provider.dart';
+import 'package:file_saver/file_saver.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -225,7 +229,7 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Backup Data',
               subtitle: 'Export your data to a safe place',
               icon: Icons.upload_file_rounded,
-              onTap: () => _handleBackup(context),
+              onTap: () => _handleBackup(context, ref),
             ),
             const Gap(12),
             _buildSettingCard(
@@ -233,7 +237,36 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Restore Data',
               subtitle: 'Import data from a backup file',
               icon: Icons.download_rounded,
-              onTap: () => _handleRestore(context),
+              onTap: () => _handleRestore(context, ref),
+            ),
+            const Gap(28),
+            _buildSectionHeader(context, 'Danger Zone'),
+            const Gap(12),
+            _buildSettingCard(
+              context,
+              title: 'Delete All Records',
+              subtitle: 'Clear all your transaction history',
+              icon: Icons.delete_sweep_rounded,
+              isDestructive: true,
+              onTap: () => _handleDeleteAllTransactions(context, ref),
+            ),
+            const Gap(12),
+            _buildSettingCard(
+              context,
+              title: 'Delete All Data',
+              subtitle: 'Clear all transactions, savings, and goals',
+              icon: Icons.delete_forever_rounded,
+              isDestructive: true,
+              onTap: () => _handleDeleteAllData(context, ref),
+            ),
+            const Gap(12),
+            _buildSettingCard(
+              context,
+              title: 'Factory Reset',
+              subtitle: 'Reset app to its initial state',
+              icon: Icons.restore_rounded,
+              isDestructive: true,
+              onTap: () => _handleFactoryReset(context, ref),
             ),
             const Gap(28),
             _buildSectionHeader(context, 'About'),
@@ -268,6 +301,7 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
     required IconData icon,
+    bool isDestructive = false,
     VoidCallback? onTap,
   }) {
     return Container(
@@ -286,10 +320,10 @@ class SettingsScreen extends ConsumerWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
+            color: (isDestructive ? Colors.red : AppTheme.primaryColor(context)).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: AppTheme.primaryColor(context), size: 20),
+          child: Icon(icon, color: isDestructive ? Colors.red : AppTheme.primaryColor(context), size: 20),
         ),
         title: Text(
           title,
@@ -314,12 +348,12 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleBackup(BuildContext context) async {
+  Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Backup Data',
       message:
-          'Are you sure you want to backup your database? This will create a backup file on your device.',
+          'Are you sure you want to backup your database? This will save the backup file directly to your device.',
       confirmText: 'Backup',
       icon: Icons.upload_file_rounded,
     );
@@ -327,43 +361,36 @@ class SettingsScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
+      // Save current SharedPreferences to Database
+      final prefs = ref.read(sharedPreferencesProvider);
+      final settings = {
+        if (prefs.getString('currency_code') != null) 'currency_code': prefs.getString('currency_code')!,
+        if (prefs.getInt('theme_color') != null) 'theme_color': prefs.getInt('theme_color')!.toString(),
+        if (prefs.getBool('is_dark_mode') != null) 'is_dark_mode': prefs.getBool('is_dark_mode')!.toString(),
+      };
+      await DatabaseHelper.instance.saveSettingsToDb(settings);
+
       final dbPath = await DatabaseHelper.instance.getDatabaseFilePath();
       final file = File(dbPath);
       if (await file.exists()) {
-        File? backupFile;
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final fileName = 'koin_backup_$timestamp.db';
+        final dateStr = DateFormat('yyyy_MM_dd').format(DateTime.now());
+        final fileName = 'koin_backup_$dateStr';
 
-        if (Platform.isAndroid) {
-          final downloadDir = Directory('/storage/emulated/0/Download');
-          if (await downloadDir.exists()) {
-            backupFile = File(p.join(downloadDir.path, fileName));
-          } else {
-            final appDocDir = await getExternalStorageDirectory();
-            if (appDocDir != null) {
-              backupFile = File(p.join(appDocDir.path, fileName));
-            }
-          }
-        } else if (Platform.isIOS) {
-          final appDocDir = await getApplicationDocumentsDirectory();
-          backupFile = File(p.join(appDocDir.path, fileName));
-        } else {
-          String? outputFile = await FilePicker.platform.saveFile(
-            dialogTitle: 'Save Database Backup',
-            fileName: fileName,
+        // Read DB file bytes
+        final bytes = await file.readAsBytes();
+
+        // Prompt user for save location
+        final savedPath = await FileSaver.instance.saveAs(
+          name: fileName,
+          bytes: bytes,
+          fileExtension: 'db',
+          mimeType: MimeType.other,
+        );
+
+        if (context.mounted && savedPath != null && savedPath.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Backup saved successfully: $savedPath')),
           );
-          if (outputFile != null) {
-            backupFile = File(outputFile);
-          }
-        }
-
-        if (backupFile != null) {
-          await file.copy(backupFile.path);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Saved to: ${backupFile.path}')),
-            );
-          }
         }
       } else {
         if (context.mounted) {
@@ -381,7 +408,7 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _handleRestore(BuildContext context) async {
+  Future<void> _handleRestore(BuildContext context, WidgetRef ref) async {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Restore Data',
@@ -400,24 +427,117 @@ class SettingsScreen extends ConsumerWidget {
         final path = result.files.single.path!;
         final success = await DatabaseHelper.instance.restoreDatabase(path);
         
-        if (context.mounted) {
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Data restored successfully! Please restart the app.'),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to restore data.')),
-            );
+        if (success) {
+          // Restore settings from db to SharedPreferences
+          final settingsFromDb = await DatabaseHelper.instance.loadSettingsFromDb();
+          final prefs = ref.read(sharedPreferencesProvider);
+          if (settingsFromDb.containsKey('currency_code')) {
+             await prefs.setString('currency_code', settingsFromDb['currency_code']!);
           }
+          if (settingsFromDb.containsKey('theme_color') && settingsFromDb['theme_color']!.isNotEmpty) {
+             await prefs.setInt('theme_color', int.parse(settingsFromDb['theme_color']!));
+          }
+          if (settingsFromDb.containsKey('is_dark_mode')) {
+             await prefs.setBool('is_dark_mode', settingsFromDb['is_dark_mode'] == 'true');
+          }
+
+          if (!context.mounted) return;
+
+          ref.invalidate(settingsProvider);
+          ref.invalidate(transactionProvider);
+          ref.invalidate(accountProvider);
+          ref.invalidate(categoriesProvider);
+          ref.invalidate(savingsGoalsProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data restored successfully!'),
+            ),
+          );
+        } else {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to restore data.')),
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error restoring data: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAllTransactions(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _showConfirmationBottomSheet(
+      context,
+      title: 'Delete All Records',
+      message: 'Are you sure you want to delete all your transaction records? This action cannot be undone.',
+      confirmText: 'Delete',
+      icon: Icons.delete_sweep_rounded,
+      isDestructive: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await DatabaseHelper.instance.deleteAllTransactions();
+      ref.invalidate(transactionProvider);
+      ref.invalidate(accountProvider);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All transactions deleted.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAllData(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _showConfirmationBottomSheet(
+      context,
+      title: 'Delete All Data',
+      message: 'This will delete all transactions, savings logs, and custom accounts/categories. Defaults will be restored. Are you sure?',
+      confirmText: 'Delete Data',
+      icon: Icons.delete_forever_rounded,
+      isDestructive: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await DatabaseHelper.instance.deleteAllData();
+      ref.invalidate(transactionProvider);
+      ref.invalidate(accountProvider);
+      ref.invalidate(categoriesProvider);
+      ref.invalidate(savingsGoalsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All data deleted.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleFactoryReset(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _showConfirmationBottomSheet(
+      context,
+      title: 'Factory Reset',
+      message: 'This will completely wipe out your database and settings, restoring the app directly back to its initial state. Are you absolutely certain?',
+      confirmText: 'Factory Reset',
+      icon: Icons.restore_rounded,
+      isDestructive: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await DatabaseHelper.instance.resetDatabase();
+      await ref.read(settingsProvider.notifier).resetSettings();
+      ref.invalidate(transactionProvider);
+      ref.invalidate(accountProvider);
+      ref.invalidate(categoriesProvider);
+      ref.invalidate(savingsGoalsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App has been reset to factory defaults.')),
         );
       }
     }

@@ -27,46 +27,55 @@ class SavingsDetailsScreen extends ConsumerStatefulWidget {
 class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   final _amountController = TextEditingController();
 
-  Future<void> _addLog() async {
+  Future<void> _saveLog({SavingsLog? existingLog}) async {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
 
-    final log = SavingsLog(
-      id: const Uuid().v4(),
-      goalId: widget.goal.id,
-      amount: amount,
-      date: DateTime.now(),
-    );
+    if (existingLog != null) {
+      final newLog = SavingsLog(
+        id: existingLog.id,
+        goalId: existingLog.goalId,
+        amount: amount,
+        date: existingLog.date,
+      );
+      await ref.read(savingsGoalsProvider.notifier).updateLog(existingLog, newLog);
+      HapticService.success();
+    } else {
+      final log = SavingsLog(
+        id: const Uuid().v4(),
+        goalId: widget.goal.id,
+        amount: amount,
+        date: DateTime.now(),
+      );
 
-    final wasCompleted = widget.goal.progress >= 1.0;
-    await ref.read(savingsGoalsProvider.notifier).addLog(log);
-    
-    // Fanfare logic: if it wasn't completed but now it is
-    final currentAmountAfter = widget.goal.currentAmount + amount;
-    final isNowCompleted = currentAmountAfter >= widget.goal.targetAmount;
+      final wasCompleted = widget.goal.progress >= 1.0;
+      await ref.read(savingsGoalsProvider.notifier).addLog(log);
+      
+      final currentAmountAfter = widget.goal.currentAmount + amount;
+      final isNowCompleted = currentAmountAfter >= widget.goal.targetAmount;
+
+      if (!wasCompleted && isNowCompleted) {
+        HapticService.success();
+        await Future.delayed(const Duration(milliseconds: 150));
+        HapticService.medium();
+        await Future.delayed(const Duration(milliseconds: 100));
+        HapticService.heavy();
+      } else {
+        HapticService.success();
+      }
+    }
 
     _amountController.clear();
-    
-    if (!wasCompleted && isNowCompleted) {
-      // Triple pulse fanfare
-      HapticService.success();
-      await Future.delayed(const Duration(milliseconds: 150));
-      HapticService.medium();
-      await Future.delayed(const Duration(milliseconds: 100));
-      HapticService.heavy();
-    } else {
-      HapticService.success();
-    }
-    
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
-  void _showAddLogSheet() {
-    String currentExpression = '';
-    String evaluatedResult = '0';
-    _amountController.text = '0';
+
+  void _showAddLogSheet({SavingsLog? log}) {
+    String currentExpression = log != null ? log.amount.toString().replaceFirst(RegExp(r'\.0$'), '') : '';
+    String evaluatedResult = log != null ? log.amount.toString() : '0';
+    _amountController.text = evaluatedResult;
     
     HapticService.light();
     showModalBottomSheet(
@@ -104,9 +113,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   ),
                 ),
                 const Gap(24),
-                const Text(
-                  'Add Savings',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                Text(
+                  log != null ? 'Edit Savings' : 'Add Savings',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5),
                 ),
                 const Gap(32),
                 
@@ -190,7 +199,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   onDone: () {
                     if (double.tryParse(_amountController.text) != null && 
                         double.parse(_amountController.text) > 0) {
-                      _addLog();
+                      _saveLog(existingLog: log);
                     } else {
                       HapticService.error();
                     }
@@ -583,46 +592,86 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               const SizedBox(width: 8),
               // Log card
               Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.dividerColor(context)),
+                child: Dismissible(
+                  key: Key(log.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.expenseColor(context).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    child: Icon(Icons.delete_outline_rounded, color: AppTheme.expenseColor(context)),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
+                  confirmDismiss: (direction) async {
+                    HapticService.medium();
+                    final confirmed = await ConfirmationSheet.show(
+                      context: context,
+                      title: 'Delete Entry?',
+                      description: 'Are you sure you want to delete this savings entry?',
+                      confirmLabel: 'Delete',
+                      confirmColor: AppTheme.expenseColor(context),
+                      icon: Icons.delete_forever_rounded,
+                      isDanger: true,
+                    );
+                    return confirmed ?? false;
+                  },
+                  onDismissed: (_) {
+                    ref.read(savingsGoalsProvider.notifier).deleteLog(log);
+                  },
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticService.light();
+                        _showAddLogSheet(log: log);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: AppTheme.incomeColor(context).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          color: AppTheme.surfaceColor(context),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppTheme.dividerColor(context)),
                         ),
-                        child: Icon(Icons.arrow_upward_rounded, color: AppTheme.incomeColor(context), size: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              '+ ${currencyFormat.format(log.amount)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                color: AppTheme.incomeColor(context),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.incomeColor(context).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
                               ),
+                              child: Icon(Icons.arrow_upward_rounded, color: AppTheme.incomeColor(context), size: 16),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormat.yMMMd().add_jm().format(log.date),
-                              style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.5), fontSize: 11),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '+ ${currencyFormat.format(log.amount)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: AppTheme.incomeColor(context),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    DateFormat.yMMMd().add_jm().format(log.date),
+                                    style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.5), fontSize: 11),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

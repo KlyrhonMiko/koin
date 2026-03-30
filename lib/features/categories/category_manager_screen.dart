@@ -421,6 +421,21 @@ class CategoryList extends ConsumerStatefulWidget {
 }
 
 class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepAliveClientMixin {
+  bool _showEntranceAnimations = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only show entrance animations once
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        setState(() {
+          _showEntranceAnimations = false;
+        });
+      }
+    });
+  }
+
   @override
   bool get wantKeepAlive => true;
 
@@ -478,7 +493,10 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
             ),
           ],
         ),
-      ).animate(key: ValueKey('header_${widget.type.name}')).fade(duration: 300.ms),
+    ).animate(
+      key: ValueKey('header_${widget.type.name}'),
+      autoPlay: _showEntranceAnimations,
+    ).fade(duration: 300.ms),
       footer: Column(
         children: [
           const Gap(6),
@@ -526,7 +544,10 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
                 ],
               ),
             ),
-          ).animate(key: ValueKey('footer_${widget.type.name}')).fade(delay: 100.ms),
+          ).animate(
+            key: ValueKey('footer_${widget.type.name}'),
+            autoPlay: _showEntranceAnimations,
+          ).fade(delay: 100.ms),
         ],
       ),
       itemBuilder: (context, index) {
@@ -678,7 +699,10 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
                 ),
             ),
           ),
-        ).animate(key: ValueKey(category.id)).fade(delay: (index * 50).ms).slideX(begin: 0.04);
+        ).animate(
+          key: ValueKey(category.id),
+          autoPlay: _showEntranceAnimations,
+        ).fade(delay: (index * 50).ms).slideX(begin: 0.04);
       },
     );
   }

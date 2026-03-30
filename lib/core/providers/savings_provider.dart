@@ -33,6 +33,19 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
 
   Future<void> addLog(SavingsLog log) async {
     await DatabaseHelper.instance.insertSavingsLog(log);
+    ref.invalidate(savingsLogsProvider(log.goalId));
+    await loadGoals();
+  }
+
+  Future<void> updateLog(SavingsLog oldLog, SavingsLog newLog) async {
+    await DatabaseHelper.instance.updateSavingsLog(oldLog, newLog);
+    ref.invalidate(savingsLogsProvider(newLog.goalId));
+    await loadGoals();
+  }
+
+  Future<void> deleteLog(SavingsLog log) async {
+    await DatabaseHelper.instance.deleteSavingsLog(log);
+    ref.invalidate(savingsLogsProvider(log.goalId));
     await loadGoals();
   }
 }
