@@ -62,61 +62,121 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(36),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceColor(context),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                                      blurRadius: 40,
-                                      spreadRadius: 10,
+                                    padding: const EdgeInsets.all(36),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceColor(context),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.primaryColor(
+                                            context,
+                                          ).withValues(alpha: 0.1),
+                                          blurRadius: 40,
+                                          spreadRadius: 10,
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: Icon(Icons.account_balance_wallet_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
-                              ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
+                                    child: Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      size: 56,
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.6),
+                                    ),
+                                  )
+                                  .animate()
+                                  .scale(
+                                    delay: 200.ms,
+                                    curve: Curves.easeOutBack,
+                                    duration: 600.ms,
+                                  )
+                                  .fadeIn(),
                               const SizedBox(height: 24),
                               Text(
-                                'No accounts yet',
-                                style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
-                              ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
+                                    'No accounts yet',
+                                    style: TextStyle(
+                                      color: AppTheme.textColor(context),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  )
+                                  .animate()
+                                  .slideY(
+                                    begin: 0.2,
+                                    delay: 300.ms,
+                                    duration: 400.ms,
+                                  )
+                                  .fadeIn(),
                               const SizedBox(height: 8),
                               Text(
-                                'Add your first account to see it here',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
-                              ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
+                                    'Add your first account to see it here',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: AppTheme.textLightColor(context),
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                  .animate()
+                                  .slideY(
+                                    begin: 0.2,
+                                    delay: 400.ms,
+                                    duration: 400.ms,
+                                  )
+                                  .fadeIn(),
                               const SizedBox(height: 36),
                               SizedBox(
-                                width: double.infinity,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    gradient: AppTheme.primaryGradient(context),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 6),
+                                    width: double.infinity,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        gradient: AppTheme.primaryGradient(
+                                          context,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppTheme.primaryColor(
+                                              context,
+                                            ).withValues(alpha: 0.3),
+                                            blurRadius: 16,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      HapticService.medium();
-                                      AccountSheet.show(context, ref);
-                                    },
-                                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                                    label: const Text('Add Your First Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
-                                      shadowColor: Colors.transparent,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          HapticService.medium();
+                                          AccountSheet.show(context, ref);
+                                        },
+                                        icon: const Icon(
+                                          Icons.add_rounded,
+                                          color: Colors.white,
+                                        ),
+                                        label: const Text(
+                                          'Add Your First Account',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ).animate().slideY(begin: 0.2, delay: 500.ms, duration: 400.ms).fadeIn(),
+                                  )
+                                  .animate()
+                                  .slideY(
+                                    begin: 0.2,
+                                    delay: 500.ms,
+                                    duration: 400.ms,
+                                  )
+                                  .fadeIn(),
                             ],
                           ),
                         ),
@@ -128,24 +188,31 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               return ReorderableListView.builder(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                 itemCount: accounts.length,
-                footer: _buildAddAccountButton(context, ref, delay: (accounts.length * 60).ms),
+                footer: _buildAddAccountButton(context, ref),
                 onReorder: (oldIndex, newIndex) {
                   HapticService.medium();
-                  ref.read(accountProvider.notifier).reorderAccounts(oldIndex, newIndex);
+                  ref
+                      .read(accountProvider.notifier)
+                      .reorderAccounts(oldIndex, newIndex);
                 },
                 proxyDecorator: (child, index, animation) {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (context, child) {
-                      final elevation = Curves.easeOut.transform(animation.value) * 16;
-                      final scale = 1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
+                      final elevation =
+                          Curves.easeOut.transform(animation.value) * 16;
+                      final scale =
+                          1.0 +
+                          (Curves.easeOut.transform(animation.value) * 0.03);
                       return Transform.scale(
                         scale: scale,
                         child: Material(
                           elevation: elevation,
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
-                          shadowColor: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                          shadowColor: AppTheme.primaryColor(
+                            context,
+                          ).withValues(alpha: 0.3),
                           child: child,
                         ),
                       );
@@ -156,6 +223,161 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 itemBuilder: (context, index) {
                   final account = accounts[index];
                   final balance = stats.accountBalances[account.id] ?? 0;
+
+                  Widget accountItem = Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(context),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor(
+                            context,
+                          ).withValues(alpha: 0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: AppTheme.dividerColor(
+                          context,
+                        ).withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        onTap: () {
+                          HapticService.light();
+                          AccountSheet.show(context, ref, account: account);
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: account.excludeFromTotal ? 0.5 : 1.0,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 18,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: account.color.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: account.color.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      IconUtils.getIcon(account.iconCodePoint),
+                                      color: account.color,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                                const Gap(16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            account.name,
+                                            style: TextStyle(
+                                              color: AppTheme.textColor(
+                                                context,
+                                              ),
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                              letterSpacing: -0.2,
+                                            ),
+                                          ),
+                                          if (account.excludeFromTotal) ...[
+                                            const Gap(6),
+                                            Icon(
+                                              Icons.visibility_off_rounded,
+                                              size: 14,
+                                              color: AppTheme.textLightColor(
+                                                context,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    TweenAnimationBuilder<double>(
+                                      tween: Tween<double>(
+                                        begin: 0,
+                                        end: balance,
+                                      ),
+                                      duration: const Duration(
+                                        milliseconds: 1000,
+                                      ),
+                                      curve: Curves.easeOutCirc,
+                                      builder: (context, value, child) {
+                                        return Text(
+                                          NumberFormat.currency(
+                                            symbol: currency.symbol,
+                                          ).format(value),
+                                          style: TextStyle(
+                                            color: AppTheme.textColor(context),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 17,
+                                            letterSpacing: -0.4,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const Gap(12),
+                                Listener(
+                                  onPointerDown: (_) => HapticService.light(),
+                                  child: ReorderableDragStartListener(
+                                    index: index,
+                                    child: Icon(
+                                      Icons.drag_indicator_rounded,
+                                      color: AppTheme.textLightColor(
+                                        context,
+                                      ).withValues(alpha: 0.2),
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+
+                  if (_showEntranceAnimations) {
+                    accountItem = accountItem
+                        .animate()
+                        .fade(delay: (index * 60).ms, duration: 400.ms)
+                        .slideY(
+                          begin: 0.1,
+                          duration: 400.ms,
+                          curve: Curves.easeOutCubic,
+                        );
+                  }
+
                   return KeyedSubtree(
                     key: ValueKey(account.id),
                     child: Padding(
@@ -165,19 +387,25 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         direction: DismissDirection.endToStart,
                         background: Container(
                           decoration: BoxDecoration(
-                            color: AppTheme.errorColor(context).withValues(alpha: 0.15),
+                            color: AppTheme.errorColor(
+                              context,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
-                          child: Icon(Icons.delete_rounded, color: AppTheme.errorColor(context)),
+                          child: Icon(
+                            Icons.delete_rounded,
+                            color: AppTheme.errorColor(context),
+                          ),
                         ),
                         confirmDismiss: (direction) async {
                           HapticService.medium();
                           final confirmed = await ConfirmationSheet.show(
                             context: context,
                             title: 'Delete Account?',
-                            description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
+                            description:
+                                'All transactions associated with this account will be unlinked. This cannot be undone.',
                             confirmLabel: 'Delete',
                             confirmColor: AppTheme.errorColor(context),
                             icon: Icons.delete_forever_rounded,
@@ -187,90 +415,12 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         },
                         onDismissed: (_) {
                           HapticService.heavy();
-                          ref.read(accountProvider.notifier).deleteAccount(account.id);
+                          ref
+                              .read(accountProvider.notifier)
+                              .deleteAccount(account.id);
                         },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppTheme.dividerColor(context)),
-                          ),
-                          child: ListTile(
-                            onTap: () {
-                              HapticService.light();
-                              AccountSheet.show(context, ref, account: account);
-                            },
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            leading: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: account.color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Icon(
-                                IconUtils.getIcon(account.iconCodePoint),
-                                color: account.color,
-                                size: 22,
-                              ),
-                            ),
-                            title: Text(account.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'Initial: ${currency.symbol}${account.initialBalance.toStringAsFixed(2)}',
-                                style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
-                              ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      NumberFormat.currency(symbol: currency.symbol).format(balance),
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                                    ),
-                                    if (account.excludeFromTotal)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.textLightColor(context).withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            'EXCLUDED',
-                                            style: TextStyle(
-                                              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const Gap(8),
-                                 Listener(
-                                  onPointerDown: (_) => HapticService.light(),
-                                  child: ReorderableDragStartListener(
-                                    index: index,
-                                    child: Icon(
-                                      Icons.drag_indicator_rounded,
-                                      color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ).animate(autoPlay: _showEntranceAnimations).fade(delay: (index * 60).ms).slideX(begin: 0.05),
+                        child: accountItem,
+                      ),
                     ),
                   );
                 },
@@ -285,78 +435,95 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Container(
+    return Padding(
       padding: EdgeInsets.only(
-        top: MediaQuery.paddingOf(context).top + 12,
-        bottom: 16,
-        left: 20,
-        right: 20,
-      ),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor(context),
+        top: MediaQuery.paddingOf(context).top + 16,
+        bottom: 24,
+        left: 24,
+        right: 24,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'My Accounts',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              color: AppTheme.textColor(context),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PORTFOLIO',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  'My Accounts',
+                  style: TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
             ),
           ),
-          // Optionally add an icon or button here
         ],
       ),
     );
   }
 
-  Widget _buildAddAccountButton(BuildContext context, WidgetRef ref, {Duration? delay}) {
-    return GestureDetector(
+  Widget _buildAddAccountButton(BuildContext context, WidgetRef ref) {
+    final button = GestureDetector(
       onTap: () {
         HapticService.medium();
         AccountSheet.show(context, ref);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-            width: 1.5,
+            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+            width: 1,
+            strokeAlign: BorderSide.strokeAlignInside,
           ),
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.add_rounded,
-                color: AppTheme.primaryColor(context),
-                size: 28,
-              ),
+            Icon(
+              Icons.add_rounded,
+              color: AppTheme.textLightColor(context),
+              size: 20,
             ),
-            const Gap(12),
+            const Gap(10),
             Text(
               'Add New Account',
               style: TextStyle(
-                color: AppTheme.primaryColor(context),
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+                color: AppTheme.textLightColor(context),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
           ],
         ),
-      ).animate().fade(delay: delay).slideY(begin: 0.08, delay: delay),
+      ),
     );
+
+    if (_showEntranceAnimations) {
+      return button
+          .animate()
+          .fade(delay: 300.ms, duration: 400.ms)
+          .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
+    }
+    return button;
   }
 }
