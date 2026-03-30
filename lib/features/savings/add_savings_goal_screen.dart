@@ -104,10 +104,21 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     }
   }
 
+  int get _totalDays => _endDate.difference(_startDate).inDays;
+
+  String _getDailyEstimate() {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0 || _totalDays <= 0) return '—';
+    final settings = ref.read(settingsProvider);
+    final fmt = NumberFormat.simpleCurrency(name: settings.currency.code);
+    return fmt.format(amount / _totalDays);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.goal != null;
     final settings = ref.watch(settingsProvider);
+    final primaryColor = AppTheme.primaryColor(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,9 +139,8 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Section 1: Goal Details
-              _buildSectionCard(
+              _buildSection(
                 context,
-                icon: Icons.star_rounded,
                 title: 'Goal Details',
                 delay: 0,
                 children: [
@@ -143,7 +153,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     ),
                     validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
                   ),
-                  const Gap(16),
+                  const Gap(14),
                   TextFormField(
                     controller: _amountController,
                     decoration: InputDecoration(
@@ -153,6 +163,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                       prefixText: '${settings.currency.symbol} ',
                     ),
                     keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Please enter an amount';
                       if (double.tryParse(value) == null) return 'Please enter a valid number';
@@ -161,75 +172,96 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                   ),
                 ],
               ),
-              const Gap(16),
+              const Gap(14),
 
               // Section 2: Timeline
-              _buildSectionCard(
+              _buildSection(
                 context,
-                icon: Icons.calendar_month_rounded,
                 title: 'Timeline',
                 delay: 80,
                 children: [
                   Row(
                     children: [
                       Expanded(
-                        child: GestureDetector(
+                        child: _buildDateSelector(
+                          context,
+                          label: 'Start',
+                          date: _startDate,
+                          icon: Icons.play_arrow_rounded,
                           onTap: () {
                             HapticService.light();
                             _selectDate(context, true);
                           },
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Start Date',
-                              prefixIcon: Icon(Icons.calendar_today_rounded),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            ),
-                            child: Text(
-                              DateFormat.yMMMd().format(_startDate),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                            ),
-                          ),
+                        ),
+                      ),
+                      const Gap(12),
+                      // Connector arrow
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 18,
+                          color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
                         ),
                       ),
                       const Gap(12),
                       Expanded(
-                        child: GestureDetector(
+                        child: _buildDateSelector(
+                          context,
+                          label: 'End',
+                          date: _endDate,
+                          icon: Icons.flag_rounded,
                           onTap: () {
                             HapticService.light();
                             _selectDate(context, false);
                           },
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'End Date',
-                              prefixIcon: Icon(Icons.event_rounded),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            ),
-                            child: Text(
-                              DateFormat.yMMMd().format(_endDate),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                            ),
-                          ),
                         ),
                       ),
                     ],
                   ),
-                  const Gap(12),
+                  const Gap(14),
+                  // Duration + estimate pill
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor(context).withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppTheme.surfaceLightColor(context),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.primaryColor(context).withValues(alpha: 0.7)),
-                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 15,
+                          color: primaryColor.withValues(alpha: 0.6),
+                        ),
+                        const Gap(8),
                         Text(
-                          '${_endDate.difference(_startDate).inDays} days to reach your goal',
+                          '$_totalDays days',
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryColor(context).withValues(alpha: 0.8),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textColor(context),
+                          ),
+                        ),
+                        const Gap(8),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            '${_getDailyEstimate()}/day to reach goal',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -237,12 +269,11 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                   ),
                 ],
               ),
-              const Gap(16),
+              const Gap(14),
 
               // Section 3: Notes
-              _buildSectionCard(
+              _buildSection(
                 context,
-                icon: Icons.notes_rounded,
                 title: 'Notes',
                 subtitle: 'Optional',
                 delay: 160,
@@ -266,8 +297,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                   gradient: AppTheme.primaryGradient(context),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                      color: primaryColor.withValues(alpha: 0.25),
                       blurRadius: 20,
+                      spreadRadius: -2,
                       offset: const Offset(0, 8),
                     ),
                   ],
@@ -284,7 +316,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 ),
-              ).animate().fade(delay: 240.ms).slideY(begin: 0.06),
+              ).animate().fade(delay: 240.ms, duration: 400.ms).slideY(begin: 0.06, curve: Curves.easeOutCubic),
             ],
           ),
         ),
@@ -292,9 +324,53 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     );
   }
 
-  Widget _buildSectionCard(
+  Widget _buildDateSelector(
     BuildContext context, {
+    required String label,
+    required DateTime date,
     required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLightColor(context),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.dividerColor(context)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 13, color: AppTheme.textLightColor(context).withValues(alpha: 0.5)),
+                const Gap(6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(6),
+            Text(
+              DateFormat.yMMMd().format(date),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(
+    BuildContext context, {
     required String title,
     String? subtitle,
     required int delay,
@@ -305,40 +381,53 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
+          // Section header — clean text only, no icon container
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, size: 16, color: AppTheme.primaryColor(context)),
-              ),
-              const SizedBox(width: 10),
               Text(
                 title,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textColor(context),
+                  letterSpacing: -0.3,
+                ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 12, color: AppTheme.textLightColor(context).withValues(alpha: 0.5)),
+                const Gap(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLightColor(context),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    ),
+                  ),
                 ),
               ],
             ],
           ),
-          const Gap(16),
+          const Gap(18),
           ...children,
         ],
       ),
-    ).animate().fade(delay: delay.ms).slideY(begin: 0.06);
+    ).animate().fade(delay: delay.ms, duration: 400.ms).slideY(begin: 0.06, curve: Curves.easeOutCubic);
   }
 }

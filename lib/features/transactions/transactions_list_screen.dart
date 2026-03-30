@@ -44,29 +44,22 @@ class TransactionsListScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min, // Keep column compact
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(36),
+                          padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
+                            color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                                blurRadius: 40,
-                                spreadRadius: 10,
-                              ),
-                            ],
                           ),
-                          child: Icon(Icons.receipt_long_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
+                          child: Icon(Icons.receipt_long_rounded, size: 48, color: AppTheme.primaryColor(context).withValues(alpha: 0.4)),
                         ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         Text(
-                          'No transactions yet',
-                          style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                          'No recent activity',
+                          style: TextStyle(color: AppTheme.textColor(context), fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5),
                         ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
-                          'Add your first transaction to see it here',
-                          style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 14),
+                          'Transactions will appear here once added',
+                          style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 13),
                         ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
                       ],
                     ),
@@ -105,175 +98,202 @@ class TransactionsListScreen extends ConsumerWidget {
               if (dailyTotal > 0) formattedTotal = '+$formattedTotal';
               if (dailyTotal < 0) formattedTotal = '-$formattedTotal';
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (sectionIndex > 0) const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              return Padding(
+                padding: EdgeInsets.only(bottom: sectionIndex == dateKeys.length - 1 ? 0 : 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Day Header
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.dividerColor(context)),
-                          ),
-                          child: Text(
-                            dateKey,
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+                                width: 1,
+                              ),
                             ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                dateKey.toUpperCase(),
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context).withValues(alpha: 0.8),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (dailyTotal != 0)
+                                Text(
+                                  formattedTotal,
+                                  style: TextStyle(
+                                    color: dailyTotal > 0 ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        if (dailyTotal != 0)
-                          Text(
-                            formattedTotal,
-                            style: TextStyle(
-                              color: dailyTotal > 0 ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
+                        // List of Transactions within the Day
+                        ...txList.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final tx = entry.value;
+                          final isIncome = tx.type == TransactionType.income;
+                          final isTransfer = tx.type == TransactionType.transfer;
+
+                          final color = isTransfer
+                              ? AppTheme.transferColor(context)
+                              : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
+
+                          final icon = isTransfer
+                              ? Icons.swap_horiz_rounded
+                              : (isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
+
+                          final categoryName = categories
+                              .where((c) => c.id == tx.categoryId)
+                              .map((c) => c.name)
+                              .firstOrNull ?? 'Others';
+
+                          final accountName = accountsAsync.when(
+                            data: (accounts) => accounts.where((a) => a.id == tx.accountId).map((a) => a.name).firstOrNull ?? 'Account',
+                            loading: () => '...',
+                            error: (error, stack) => 'Error',
+                          );
+
+                          final displayTitle = tx.note.isEmpty ? categoryName : tx.note;
+                          final displaySubtitle = tx.note.isEmpty ? accountName : '$categoryName • $accountName';
+
+                          final listItem = Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticService.light();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddTransactionScreen(editingTransaction: tx),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: color.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(icon, color: color, size: 20),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(displayTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            displaySubtitle,
+                                            style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12, fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          isTransfer
+                                            ? NumberFormat.currency(symbol: currency.symbol).format(tx.amount)
+                                            : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
+                                          style: TextStyle(
+                                            color: color,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          DateFormat.jm().format(tx.date),
+                                          style: TextStyle(
+                                            color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          );
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Dismissible(
+                                key: Key(tx.id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  color: AppTheme.errorColor(context),
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 24),
+                                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                                ),
+                                onDismissed: (_) {
+                                  ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
+                                },
+                                confirmDismiss: (direction) async {
+                                  HapticService.medium();
+                                  final result = await ConfirmationSheet.show(
+                                    context: context,
+                                    title: 'Delete Transaction?',
+                                    description: 'This transaction will be permanently removed. This action cannot be undone.',
+                                    confirmLabel: 'Delete',
+                                    confirmColor: AppTheme.errorColor(context),
+                                    icon: Icons.delete_forever_rounded,
+                                    isDanger: true,
+                                  );
+                                  return result ?? false;
+                                },
+                                child: listItem,
+                              ).animate().fade(delay: (i * 40).ms).slideX(begin: 0.05),
+                              
+                              if (i < txList.length - 1)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 64, right: 20),
+                                  child: Container(height: 1, color: AppTheme.dividerColor(context).withValues(alpha: 0.4)),
+                                ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
-                  ...txList.asMap().entries.map((entry) {
-                    final tx = entry.value;
-                    final isIncome = tx.type == TransactionType.income;
-                    final isTransfer = tx.type == TransactionType.transfer;
-
-                    final color = isTransfer
-                        ? AppTheme.transferColor(context)
-                        : (isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context));
-
-                    final icon = isTransfer
-                        ? Icons.swap_horiz_rounded
-                        : (isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
-
-                    final categoryName = categories
-                        .where((c) => c.id == tx.categoryId)
-                        .map((c) => c.name)
-                        .firstOrNull ?? 'Others';
-
-                    final accountName = accountsAsync.when(
-                      data: (accounts) => accounts.where((a) => a.id == tx.accountId).map((a) => a.name).firstOrNull ?? 'Account',
-                      loading: () => '...',
-                      error: (error, stack) => 'Error',
-                    );
-
-                    final displayTitle = tx.note.isEmpty ? categoryName : tx.note;
-                    final displaySubtitle = tx.note.isEmpty ? accountName : '$categoryName • $accountName';
-
-                    return Dismissible(
-                      key: Key(tx.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 24),
-                        child: const Icon(Icons.delete_rounded, color: Color(0xFFFF6B6B)),
-                      ),
-                      onDismissed: (_) {
-                        ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
-                      },
-                      confirmDismiss: (direction) async {
-                        HapticService.medium();
-                        final result = await ConfirmationSheet.show(
-                          context: context,
-                          title: 'Delete Transaction?',
-                          description: 'This transaction will be permanently removed. This action cannot be undone.',
-                          confirmLabel: 'Delete',
-                          confirmColor: AppTheme.errorColor(context),
-                          icon: Icons.delete_forever_rounded,
-                          isDanger: true,
-                        );
-                        return result ?? false;
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              color.withValues(alpha: 0.05),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                        child: ListTile(
-                          onTap: () {
-                            HapticService.light();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddTransactionScreen(editingTransaction: tx),
-                              ),
-                            );
-                          },
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          leading: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(icon, color: color, size: 22),
-                          ),
-                          title: Text(displayTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: -0.3)),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              displaySubtitle,
-                              style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 13, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                isTransfer
-                                  ? NumberFormat.currency(symbol: currency.symbol).format(tx.amount)
-                                  : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat.jm().format(tx.date),
-                                style: TextStyle(
-                                  color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ).animate().fade(delay: (entry.key * 40).ms).slideX(begin: 0.05);
-                  }),
-                ],
+                ),
               );
             },
           );

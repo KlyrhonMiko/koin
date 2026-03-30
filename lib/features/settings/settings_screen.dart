@@ -23,18 +23,58 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // App Branding
-            GestureDetector(
-              onTap: () => HapticService.light(),
-              child: Container(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Gap(16),
+              // Inline header
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticService.light();
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.dividerColor(context),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: AppTheme.textColor(context),
+                      ),
+                    ),
+                  ),
+                  const Gap(16),
+                  Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      color: AppTheme.textColor(context),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(24),
+
+              // App Branding Card
+              Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 28,
+                  horizontal: 24,
+                ),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient(context),
                   borderRadius: BorderRadius.circular(24),
@@ -42,15 +82,15 @@ class SettingsScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.monetization_on_rounded,
                         color: Colors.white,
-                        size: 32,
+                        size: 28,
                       ),
                     ),
                     const Gap(12),
@@ -58,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
                       'Koin',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                       ),
@@ -67,52 +107,66 @@ class SettingsScreen extends ConsumerWidget {
                     Text(
                       'Personal Finance Tracker',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withValues(alpha: 0.65),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Gap(12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'v1.2.0',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const Gap(32),
-            _buildSectionHeader(context, 'Appearance'),
-            const Gap(12),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.dividerColor(context)),
-              ),
-              child: Column(
+              const Gap(32),
+
+              // ── Appearance ──
+              _buildSectionHeader(context, 'Appearance'),
+              const Gap(12),
+              _buildGroupedCard(
+                context,
                 children: [
+                  // Dark Mode toggle
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
-                      vertical: 4,
+                      vertical: 2,
                     ),
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor(
-                          context,
-                        ).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        settings.isDarkMode
-                            ? Icons.dark_mode_rounded
-                            : Icons.light_mode_rounded,
-                        color: AppTheme.primaryColor(context),
-                        size: 20,
-                      ),
+                    leading: _buildIconBox(
+                      context,
+                      settings.isDarkMode
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
                     ),
                     title: const Text(
                       'Dark Mode',
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
+                      ),
+                    ),
+                    subtitle: Text(
+                      settings.isDarkMode ? 'On' : 'Off',
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(context),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     trailing: Switch.adaptive(
@@ -124,29 +178,27 @@ class SettingsScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                  Divider(
-                    height: 1,
-                    indent: 60,
-                    color: AppTheme.dividerColor(context),
-                  ),
+                  _buildInlineDivider(context),
+                  // Theme Color picker
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.only(top: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
                             'Theme Color',
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                               fontSize: 15,
+                              color: AppTheme.textColor(context),
                             ),
                           ),
                         ),
-                        const Gap(16),
+                        const Gap(2),
                         SizedBox(
-                          height: 80,
+                          height: 72,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(
@@ -154,7 +206,7 @@ class SettingsScreen extends ConsumerWidget {
                               vertical: 16,
                             ),
                             itemCount: AppTheme.accentColors.length,
-                            separatorBuilder: (context, index) => const Gap(12),
+                            separatorBuilder: (context, index) => const Gap(10),
                             itemBuilder: (context, index) {
                               final color = AppTheme.accentColors[index];
                               final isSelected =
@@ -167,35 +219,47 @@ class SettingsScreen extends ConsumerWidget {
                                       .read(settingsProvider.notifier)
                                       .setThemeColor(color);
                                 },
-                                child: Container(
-                                  width: 45,
-                                  height: 45,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? AppTheme.textColor(context)
-                                          : Colors.transparent,
-                                      width: 2.5,
-                                    ),
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: AppTheme.surfaceColor(
+                                              context,
+                                            ),
+                                            width: 3,
+                                          )
+                                        : null,
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
                                               color: color.withValues(
-                                                alpha: 0.4,
+                                                alpha: 0.5,
                                               ),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 4),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 3),
                                             ),
                                           ]
                                         : null,
                                   ),
                                   child: isSelected
-                                      ? const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 22,
+                                      ? Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: color,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         )
                                       : null,
                                 ),
@@ -208,95 +272,150 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
-            const Gap(28),
-            _buildSectionHeader(context, 'Preferences'),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Currency',
-              subtitle:
-                  '${settings.currency.name} (${settings.currency.symbol})',
-              icon: Icons.payments_outlined,
-              onTap: () => _showCurrencyPicker(context, ref, settings.currency),
-            ),
+              const Gap(28),
 
-            const Gap(28),
-            _buildSectionHeader(context, 'Data Management'),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Backup Data',
-              subtitle: 'Export your data to a safe place',
-              icon: Icons.upload_file_rounded,
-              onTap: () => _handleBackup(context, ref),
-            ),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Restore Data',
-              subtitle: 'Import data from a backup file',
-              icon: Icons.download_rounded,
-              onTap: () => _handleRestore(context, ref),
-            ),
-            const Gap(28),
-            _buildSectionHeader(context, 'Danger Zone'),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Delete All Records',
-              subtitle: 'Clear all your transaction history',
-              icon: Icons.delete_sweep_rounded,
-              isDestructive: true,
-              onTap: () => _handleDeleteAllTransactions(context, ref),
-            ),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Delete All Data',
-              subtitle: 'Clear all transactions, savings, and goals',
-              icon: Icons.delete_forever_rounded,
-              isDestructive: true,
-              onTap: () => _handleDeleteAllData(context, ref),
-            ),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Factory Reset',
-              subtitle: 'Reset app to its initial state',
-              icon: Icons.restore_rounded,
-              isDestructive: true,
-              onTap: () => _handleFactoryReset(context, ref),
-            ),
-            const Gap(28),
-            _buildSectionHeader(context, 'About'),
-            const Gap(12),
-            _buildSettingCard(
-              context,
-              title: 'Version',
-              subtitle: '1.2.0',
-              icon: Icons.info_outline_rounded,
-            ),
-            const Gap(40),
-          ],
+              // ── Preferences ──
+              _buildSectionHeader(context, 'Preferences'),
+              const Gap(12),
+              _buildGroupedCard(
+                context,
+                children: [
+                  _buildSettingTile(
+                    context,
+                    title: 'Currency',
+                    subtitle:
+                        '${settings.currency.name} (${settings.currency.symbol})',
+                    icon: Icons.payments_outlined,
+                    onTap: () =>
+                        _showCurrencyPicker(context, ref, settings.currency),
+                  ),
+                ],
+              ),
+              const Gap(28),
+
+              // ── Data Management ──
+              _buildSectionHeader(context, 'Data Management'),
+              const Gap(12),
+              _buildGroupedCard(
+                context,
+                children: [
+                  _buildSettingTile(
+                    context,
+                    title: 'Backup Data',
+                    subtitle: 'Export your data to a safe place',
+                    icon: Icons.upload_file_rounded,
+                    onTap: () => _handleBackup(context, ref),
+                  ),
+                  _buildInlineDivider(context),
+                  _buildSettingTile(
+                    context,
+                    title: 'Restore Data',
+                    subtitle: 'Import data from a backup file',
+                    icon: Icons.download_rounded,
+                    onTap: () => _handleRestore(context, ref),
+                  ),
+                ],
+              ),
+              const Gap(28),
+
+              // ── Danger Zone ──
+              _buildSectionHeader(context, 'Danger Zone'),
+              const Gap(12),
+              _buildGroupedCard(
+                context,
+                children: [
+                  _buildSettingTile(
+                    context,
+                    title: 'Delete All Records',
+                    subtitle: 'Clear all your transaction history',
+                    icon: Icons.delete_sweep_rounded,
+                    isDestructive: true,
+                    onTap: () => _handleDeleteAllTransactions(context, ref),
+                  ),
+                  _buildInlineDivider(context),
+                  _buildSettingTile(
+                    context,
+                    title: 'Delete All Data',
+                    subtitle: 'Clear all transactions, savings, and goals',
+                    icon: Icons.delete_forever_rounded,
+                    isDestructive: true,
+                    onTap: () => _handleDeleteAllData(context, ref),
+                  ),
+                  _buildInlineDivider(context),
+                  _buildSettingTile(
+                    context,
+                    title: 'Factory Reset',
+                    subtitle: 'Reset app to its initial state',
+                    icon: Icons.restore_rounded,
+                    isDestructive: true,
+                    onTap: () => _handleFactoryReset(context, ref),
+                  ),
+                ],
+              ),
+              const Gap(28),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ── Helper Widgets ──
+
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.textLightColor(context),
-        letterSpacing: 0.5,
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textLightColor(context),
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
 
-  Widget _buildSettingCard(
+  Widget _buildGroupedCard(
+    BuildContext context, {
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.dividerColor(context)),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildInlineDivider(BuildContext context) {
+    return Divider(
+      height: 1,
+      indent: 64,
+      color: AppTheme.dividerColor(context),
+    );
+  }
+
+  Widget _buildIconBox(
+    BuildContext context,
+    IconData icon, {
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? Colors.red : AppTheme.primaryColor(context);
+    return Container(
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  Widget _buildSettingTile(
     BuildContext context, {
     required String title,
     required String subtitle,
@@ -304,47 +423,36 @@ class SettingsScreen extends ConsumerWidget {
     bool isDestructive = false,
     VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.dividerColor(context)),
+    return ListTile(
+      onTap: () {
+        HapticService.light();
+        onTap?.call();
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      leading: _buildIconBox(context, icon, isDestructive: isDestructive),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: isDestructive ? Colors.red : null,
+        ),
       ),
-      child: ListTile(
-        onTap: () {
-          HapticService.light();
-          onTap?.call();
-        },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: (isDestructive ? Colors.red : AppTheme.primaryColor(context)).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: isDestructive ? Colors.red : AppTheme.primaryColor(context), size: 20),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: AppTheme.textLightColor(context),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: AppTheme.textLightColor(context),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: onTap != null
-            ? Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textLightColor(context),
-                size: 20,
-              )
-            : null,
       ),
+      trailing: onTap != null
+          ? Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textLightColor(context),
+              size: 20,
+            )
+          : null,
     );
   }
 
@@ -364,9 +472,12 @@ class SettingsScreen extends ConsumerWidget {
       // Save current SharedPreferences to Database
       final prefs = ref.read(sharedPreferencesProvider);
       final settings = {
-        if (prefs.getString('currency_code') != null) 'currency_code': prefs.getString('currency_code')!,
-        if (prefs.getInt('theme_color') != null) 'theme_color': prefs.getInt('theme_color')!.toString(),
-        if (prefs.getBool('is_dark_mode') != null) 'is_dark_mode': prefs.getBool('is_dark_mode')!.toString(),
+        if (prefs.getString('currency_code') != null)
+          'currency_code': prefs.getString('currency_code')!,
+        if (prefs.getInt('theme_color') != null)
+          'theme_color': prefs.getInt('theme_color')!.toString(),
+        if (prefs.getBool('is_dark_mode') != null)
+          'is_dark_mode': prefs.getBool('is_dark_mode')!.toString(),
       };
       await DatabaseHelper.instance.saveSettingsToDb(settings);
 
@@ -401,9 +512,9 @@ class SettingsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating backup: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error creating backup: $e')));
       }
     }
   }
@@ -426,19 +537,30 @@ class SettingsScreen extends ConsumerWidget {
       if (result != null && result.files.single.path != null) {
         final path = result.files.single.path!;
         final success = await DatabaseHelper.instance.restoreDatabase(path);
-        
+
         if (success) {
           // Restore settings from db to SharedPreferences
-          final settingsFromDb = await DatabaseHelper.instance.loadSettingsFromDb();
+          final settingsFromDb = await DatabaseHelper.instance
+              .loadSettingsFromDb();
           final prefs = ref.read(sharedPreferencesProvider);
           if (settingsFromDb.containsKey('currency_code')) {
-             await prefs.setString('currency_code', settingsFromDb['currency_code']!);
+            await prefs.setString(
+              'currency_code',
+              settingsFromDb['currency_code']!,
+            );
           }
-          if (settingsFromDb.containsKey('theme_color') && settingsFromDb['theme_color']!.isNotEmpty) {
-             await prefs.setInt('theme_color', int.parse(settingsFromDb['theme_color']!));
+          if (settingsFromDb.containsKey('theme_color') &&
+              settingsFromDb['theme_color']!.isNotEmpty) {
+            await prefs.setInt(
+              'theme_color',
+              int.parse(settingsFromDb['theme_color']!),
+            );
           }
           if (settingsFromDb.containsKey('is_dark_mode')) {
-             await prefs.setBool('is_dark_mode', settingsFromDb['is_dark_mode'] == 'true');
+            await prefs.setBool(
+              'is_dark_mode',
+              settingsFromDb['is_dark_mode'] == 'true',
+            );
           }
 
           if (!context.mounted) return;
@@ -449,9 +571,7 @@ class SettingsScreen extends ConsumerWidget {
           ref.invalidate(categoriesProvider);
           ref.invalidate(savingsGoalsProvider);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Data restored successfully!'),
-            ),
+            const SnackBar(content: Text('Data restored successfully!')),
           );
         } else {
           if (!context.mounted) return;
@@ -462,18 +582,22 @@ class SettingsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error restoring data: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error restoring data: $e')));
       }
     }
   }
 
-  Future<void> _handleDeleteAllTransactions(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleDeleteAllTransactions(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Delete All Records',
-      message: 'Are you sure you want to delete all your transaction records? This action cannot be undone.',
+      message:
+          'Are you sure you want to delete all your transaction records? This action cannot be undone.',
       confirmText: 'Delete',
       icon: Icons.delete_sweep_rounded,
       isDestructive: true,
@@ -483,7 +607,7 @@ class SettingsScreen extends ConsumerWidget {
       await DatabaseHelper.instance.deleteAllTransactions();
       ref.invalidate(transactionProvider);
       ref.invalidate(accountProvider);
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('All transactions deleted.')),
@@ -496,7 +620,8 @@ class SettingsScreen extends ConsumerWidget {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Delete All Data',
-      message: 'This will delete all transactions, savings logs, and custom accounts/categories. Defaults will be restored. Are you sure?',
+      message:
+          'This will delete all transactions, savings logs, and custom accounts/categories. Defaults will be restored. Are you sure?',
       confirmText: 'Delete Data',
       icon: Icons.delete_forever_rounded,
       isDestructive: true,
@@ -510,9 +635,9 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(savingsGoalsProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All data deleted.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('All data deleted.')));
       }
     }
   }
@@ -521,7 +646,8 @@ class SettingsScreen extends ConsumerWidget {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Factory Reset',
-      message: 'This will completely wipe out your database and settings, restoring the app directly back to its initial state. Are you absolutely certain?',
+      message:
+          'This will completely wipe out your database and settings, restoring the app directly back to its initial state. Are you absolutely certain?',
       confirmText: 'Factory Reset',
       icon: Icons.restore_rounded,
       isDestructive: true,
@@ -537,7 +663,9 @@ class SettingsScreen extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App has been reset to factory defaults.')),
+          const SnackBar(
+            content: Text('App has been reset to factory defaults.'),
+          ),
         );
       }
     }
@@ -576,13 +704,18 @@ class SettingsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: (isDestructive ? Colors.red : AppTheme.primaryColor(context))
-                    .withValues(alpha: 0.1),
+                color:
+                    (isDestructive
+                            ? Colors.red
+                            : AppTheme.primaryColor(context))
+                        .withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isDestructive ? Colors.red : AppTheme.primaryColor(context),
+                color: isDestructive
+                    ? Colors.red
+                    : AppTheme.primaryColor(context),
                 size: 32,
               ),
             ),

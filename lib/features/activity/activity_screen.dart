@@ -13,7 +13,8 @@ class ActivityScreen extends StatefulWidget {
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProviderStateMixin {
+class _ActivityScreenState extends State<ActivityScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -39,10 +40,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
             child: TabBarView(
               controller: _tabController,
               physics: const BouncingScrollPhysics(),
-              children: const [
-                AnalysisScreen(),
-                TransactionsListScreen(),
-              ],
+              children: const [AnalysisScreen(), TransactionsListScreen()],
             ),
           ),
         ],
@@ -54,23 +52,32 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Activity',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  color: AppTheme.textColor(context),
-                ),
-              ),
-            ],
+          Text(
+            'TIMELINE',
+            style: TextStyle(
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
           ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+          const SizedBox(height: 4),
+          Text(
+            'Activity & Flow',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: AppTheme.textColor(context),
+            ),
+          ).animate().fade(duration: 400.ms, delay: 100.ms).slideY(begin: -0.2),
           const SizedBox(height: 20),
-          _buildSegmentedControl(context).animate().fade(delay: 100.ms).scale(begin: const Offset(0.95, 0.95)),
+          _buildSegmentedControl(context)
+              .animate()
+              .fade(delay: 100.ms)
+              .scale(begin: const Offset(0.95, 0.95)),
         ],
       ),
     );
@@ -85,7 +92,9 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context).withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(26),
@@ -95,7 +104,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                 builder: (context, constraints) {
                   final tabWidth = constraints.maxWidth / 2;
                   final animationValue = _tabController.animation!.value;
-                  
+
                   return Stack(
                     children: [
                       // Real-time tracking Indicator
@@ -126,7 +135,9 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                                 borderRadius: BorderRadius.circular(2),
                                 gradient: LinearGradient(
                                   colors: [
-                                    AppTheme.primaryColor(context).withValues(alpha: 0.6),
+                                    AppTheme.primaryColor(
+                                      context,
+                                    ).withValues(alpha: 0.6),
                                     AppTheme.primaryColor(context),
                                   ],
                                 ),
@@ -148,8 +159,12 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                                 child: Text(
                                   'Analysis',
                                   style: TextStyle(
-                                    fontWeight: _tabController.index == 0 ? FontWeight.w700 : FontWeight.w600,
-                                    color: _tabController.index == 0 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontWeight: _tabController.index == 0
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: _tabController.index == 0
+                                        ? AppTheme.primaryColor(context)
+                                        : AppTheme.textLightColor(context),
                                     fontSize: 14,
                                     letterSpacing: -0.2,
                                   ),
@@ -168,8 +183,12 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                                 child: Text(
                                   'Transactions',
                                   style: TextStyle(
-                                    fontWeight: _tabController.index == 1 ? FontWeight.w700 : FontWeight.w600,
-                                    color: _tabController.index == 1 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontWeight: _tabController.index == 1
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: _tabController.index == 1
+                                        ? AppTheme.primaryColor(context)
+                                        : AppTheme.textLightColor(context),
                                     fontSize: 14,
                                     letterSpacing: -0.2,
                                   ),
