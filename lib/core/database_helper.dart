@@ -224,10 +224,6 @@ CREATE TABLE transactions (
       await txn.delete('savings_goals');
       await txn.delete('categories');
       await txn.delete('accounts');
-      
-      // Re-insert defaults
-      await _insertDefaultCategories(txn);
-      await _insertDefaultAccounts(txn);
     });
   }
 

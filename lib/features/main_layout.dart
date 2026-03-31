@@ -20,7 +20,7 @@ class MainLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(navigationProvider);
-    final isDarkMode = ref.watch(settingsProvider).isDarkMode;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     void onItemTapped(int index) {
       if (currentIndex == index) return;
@@ -42,17 +42,19 @@ class MainLayout extends ConsumerWidget {
       child: Scaffold(
         extendBody: true,
         body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 350),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
           transitionBuilder: (Widget child, Animation<double> animation) {
             return FadeTransition(
               opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, 0.02),
-                  end: Offset.zero,
-                ).animate(animation),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.97, end: 1.0).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
                 child: child,
               ),
             );
@@ -62,44 +64,58 @@ class MainLayout extends ConsumerWidget {
             child: _getPage(currentIndex),
           ),
         ),
-        floatingActionButton: currentIndex != 4
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  HapticService.medium();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-                  );
-                },
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment.centerLeft,
-                      child: ClipRect(
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 250),
-                          opacity: currentIndex == 2 ? 0.0 : 1.0,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: currentIndex == 2 ? 0.0 : 1.0,
-                            child: const Text(' Transaction', 
-                              style: TextStyle(fontWeight: FontWeight.bold), 
-                              maxLines: 1, 
-                              softWrap: false,
-                            ),
+        floatingActionButton: AnimatedSlide(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
+          offset: currentIndex != 4 ? Offset.zero : const Offset(0, 2),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutBack,
+            scale: currentIndex != 4 ? 1.0 : 0.0,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                HapticService.medium();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AddTransactionScreen(),
+                  ),
+                );
+              },
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Add',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.centerLeft,
+                    child: ClipRect(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        opacity: currentIndex == 2 ? 0.0 : 1.0,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: currentIndex == 2 ? 0.0 : 1.0,
+                          child: const Text(
+                            ' Transaction',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            softWrap: false,
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-                icon: const Icon(Icons.add_rounded),
-              )
-            : null,
+                  ),
+                ],
+              ),
+              icon: const Icon(Icons.add_rounded),
+            ),
+          ),
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         bottomNavigationBar: SafeArea(
           child: Padding(
@@ -107,17 +123,23 @@ class MainLayout extends ConsumerWidget {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context).withValues(alpha: isDarkMode ? 0.7 : 0.85),
+                color: AppTheme.surfaceColor(
+                  context,
+                ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDarkMode ? 0.4 : 0.08),
+                    color: Colors.black.withValues(
+                      alpha: isDarkMode ? 0.4 : 0.08,
+                    ),
                     blurRadius: 24,
                     offset: const Offset(0, 10),
                   ),
                 ],
                 border: Border.all(
-                  color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.08 : 0.05),
+                  color: (isDarkMode ? Colors.white : Colors.black).withValues(
+                    alpha: isDarkMode ? 0.08 : 0.05,
+                  ),
                   width: 1,
                 ),
               ),
@@ -129,52 +151,52 @@ class MainLayout extends ConsumerWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                    _buildNavItem(
-                      context,
-                      icon: Icons.credit_card_outlined,
-                      activeIcon: Icons.credit_card_rounded,
-                      label: 'Accounts',
-                      isActive: currentIndex == 0,
-                      targetIndex: 0,
-                      onTap: onItemTapped,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.receipt_long_outlined,
-                      activeIcon: Icons.receipt_long_rounded,
-                      label: 'Activity',
-                      isActive: currentIndex == 1,
-                      targetIndex: 1,
-                      onTap: onItemTapped,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.dashboard_outlined,
-                      activeIcon: Icons.dashboard_rounded,
-                      label: 'Home',
-                      isActive: currentIndex == 2,
-                      targetIndex: 2,
-                      onTap: onItemTapped,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.account_balance_wallet_outlined,
-                      activeIcon: Icons.account_balance_wallet_rounded,
-                      label: 'Budgets',
-                      isActive: currentIndex == 3,
-                      targetIndex: 3,
-                      onTap: onItemTapped,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.savings_outlined,
-                      activeIcon: Icons.savings_rounded,
-                      label: 'Savings',
-                      isActive: currentIndex == 4,
-                      targetIndex: 4,
-                      onTap: onItemTapped,
-                    ),
-                  ],
+                      _buildNavItem(
+                        context,
+                        icon: Icons.credit_card_outlined,
+                        activeIcon: Icons.credit_card_rounded,
+                        label: 'Accounts',
+                        isActive: currentIndex == 0,
+                        targetIndex: 0,
+                        onTap: onItemTapped,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long_rounded,
+                        label: 'Activity',
+                        isActive: currentIndex == 1,
+                        targetIndex: 1,
+                        onTap: onItemTapped,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.dashboard_outlined,
+                        activeIcon: Icons.dashboard_rounded,
+                        label: 'Home',
+                        isActive: currentIndex == 2,
+                        targetIndex: 2,
+                        onTap: onItemTapped,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.account_balance_wallet_outlined,
+                        activeIcon: Icons.account_balance_wallet_rounded,
+                        label: 'Budgets',
+                        isActive: currentIndex == 3,
+                        targetIndex: 3,
+                        onTap: onItemTapped,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.savings_outlined,
+                        activeIcon: Icons.savings_rounded,
+                        label: 'Savings',
+                        isActive: currentIndex == 4,
+                        targetIndex: 4,
+                        onTap: onItemTapped,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -187,12 +209,18 @@ class MainLayout extends ConsumerWidget {
 
   Widget _getPage(int index) {
     switch (index) {
-      case 0: return const AccountsScreen();
-      case 1: return const ActivityScreen();
-      case 2: return const DashboardScreen();
-      case 3: return const BudgetsScreen();
-      case 4: return const SavingsListScreen();
-      default: return const DashboardScreen();
+      case 0:
+        return const AccountsScreen();
+      case 1:
+        return const ActivityScreen();
+      case 2:
+        return const DashboardScreen();
+      case 3:
+        return const BudgetsScreen();
+      case 4:
+        return const SavingsListScreen();
+      default:
+        return const DashboardScreen();
     }
   }
 
@@ -223,13 +251,17 @@ class MainLayout extends ConsumerWidget {
               ? primaryColor.withValues(alpha: isDarkMode ? 0.15 : 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: isActive ? [
-            BoxShadow(
-              color: primaryColor.withValues(alpha: isDarkMode ? 0.2 : 0.15),
-              blurRadius: 12,
-              spreadRadius: -2,
-            )
-          ] : null,
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withValues(
+                      alpha: isDarkMode ? 0.2 : 0.15,
+                    ),
+                    blurRadius: 12,
+                    spreadRadius: -2,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -627,16 +627,23 @@ class BudgetsScreen extends ConsumerWidget {
           ),
           const Gap(20),
           // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress.toDouble(),
-              minHeight: 8,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isOver ? const Color(0xFFFF8A80) : Colors.white,
-              ),
-            ),
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: progress.toDouble()),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedProgress, _) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: animatedProgress,
+                  minHeight: 8,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isOver ? const Color(0xFFFF8A80) : Colors.white,
+                  ),
+                ),
+              );
+            },
           ),
           const Gap(14),
           Row(

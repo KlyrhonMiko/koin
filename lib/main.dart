@@ -29,7 +29,9 @@ class MyApp extends ConsumerWidget {
     
     return MaterialApp(
       title: 'Koin',
-      theme: AppTheme.getTheme(settings.themeColor, settings.isDarkMode),
+      themeMode: settings.themeMode,
+      theme: AppTheme.getTheme(settings.themeColor, false),
+      darkTheme: AppTheme.getTheme(settings.themeColor, true),
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
     );

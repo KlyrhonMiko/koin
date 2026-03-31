@@ -66,7 +66,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 'No expense data yet',
                 'Add some expenses to see your analysis',
                 Icons.insights_rounded,
-                currency,
               );
             }
 
@@ -740,12 +739,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     String title,
     String subtitle,
     IconData icon,
-    Currency currency,
   ) {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        _buildImmersiveHeader(context, 0, currency),
         SliverFillRemaining(
           hasScrollBody: false,
           child: Align(

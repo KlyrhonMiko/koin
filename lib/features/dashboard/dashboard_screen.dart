@@ -560,9 +560,8 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return _PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -817,41 +816,49 @@ class DashboardScreen extends ConsumerWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                PieChart(
-                  PieChartData(
-                    pieTouchData: PieTouchData(
-                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                        if (!event.isInterestedForInteractions ||
-                            pieTouchResponse == null ||
-                            pieTouchResponse.touchedSection == null) {
-                          return;
-                        }
-                        if (event is FlTapDownEvent ||
-                            event is FlPanStartEvent) {
-                          HapticService.light();
-                        }
-                      },
-                    ),
-                    sectionsSpace: 4,
-                    centerSpaceRadius: 65,
-                    startDegreeOffset: -90,
-                    sections: [
-                      if (stats.totalIncome > 0)
-                        PieChartSectionData(
-                          color: AppTheme.secondaryColor(context),
-                          value: stats.totalIncome,
-                          title: '',
-                          radius: 16,
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 16),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, radius, _) {
+                    return PieChart(
+                      PieChartData(
+                        pieTouchData: PieTouchData(
+                          touchCallback:
+                              (FlTouchEvent event, pieTouchResponse) {
+                                if (!event.isInterestedForInteractions ||
+                                    pieTouchResponse == null ||
+                                    pieTouchResponse.touchedSection == null) {
+                                  return;
+                                }
+                                if (event is FlTapDownEvent ||
+                                    event is FlPanStartEvent) {
+                                  HapticService.light();
+                                }
+                              },
                         ),
-                      if (stats.totalExpense > 0)
-                        PieChartSectionData(
-                          color: AppTheme.errorColor(context),
-                          value: stats.totalExpense,
-                          title: '',
-                          radius: 16,
-                        ),
-                    ],
-                  ),
+                        sectionsSpace: 4,
+                        centerSpaceRadius: 65,
+                        startDegreeOffset: -90,
+                        sections: [
+                          if (stats.totalIncome > 0)
+                            PieChartSectionData(
+                              color: AppTheme.secondaryColor(context),
+                              value: stats.totalIncome,
+                              title: '',
+                              radius: radius,
+                            ),
+                          if (stats.totalExpense > 0)
+                            PieChartSectionData(
+                              color: AppTheme.errorColor(context),
+                              value: stats.totalExpense,
+                              title: '',
+                              radius: radius,
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1499,6 +1506,57 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
       error: (e, st) => Center(child: Text('Error: $e')),
+    );
+  }
+}
+
+/// A widget that scales down on press for tactile feedback.
+class _PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _PressableScale({required this.child, required this.onTap});
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.93,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(scale: _scaleAnim, child: widget.child),
     );
   }
 }
