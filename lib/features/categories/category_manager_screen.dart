@@ -482,11 +482,6 @@ class CategoryList extends ConsumerStatefulWidget {
 class _CategoryListState extends ConsumerState<CategoryList>
     with AutomaticKeepAliveClientMixin {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   bool get wantKeepAlive => true;
 
   @override

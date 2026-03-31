@@ -113,6 +113,7 @@ class SavingsListScreen extends ConsumerWidget {
     return Container(
           margin: const EdgeInsets.only(bottom: 24),
           padding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: AppTheme.primaryGradient(context),
             borderRadius: BorderRadius.circular(28),

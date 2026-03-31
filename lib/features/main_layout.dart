@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/features/accounts/accounts_screen.dart';
 import 'package:koin/features/dashboard/dashboard_screen.dart';
 import 'package:koin/features/savings/savings_list_screen.dart';
