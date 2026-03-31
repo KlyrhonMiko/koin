@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
@@ -15,6 +16,7 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -34,9 +36,8 @@ class SettingsScreen extends ConsumerWidget {
               // Inline header
               Row(
                 children: [
-                  GestureDetector(
+                  PressableScale(
                     onTap: () {
-                      HapticService.light();
                       Navigator.of(context).pop();
                     },
                     child: Container(
@@ -217,7 +218,7 @@ class SettingsScreen extends ConsumerWidget {
                               final isSelected =
                                   settings.themeColor.toARGB32() ==
                                   color.toARGB32();
-                              return GestureDetector(
+                              return PressableScale(
                                 onTap: () {
                                   HapticService.light();
                                   ref
@@ -690,83 +691,114 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const Gap(24),
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color:
-                    (isDestructive
-                            ? Colors.red
-                            : AppTheme.primaryColor(context))
-                        .withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isDestructive
-                    ? Colors.red
-                    : AppTheme.primaryColor(context),
-                size: 32,
-              ),
-            ),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        (isDestructive
+                                ? Colors.red
+                                : AppTheme.primaryColor(context))
+                            .withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDestructive
+                        ? Colors.red
+                        : AppTheme.primaryColor(context),
+                    size: 32,
+                  ),
+                )
+                .animate()
+                .scale(
+                  begin: const Offset(0.5, 0.5),
+                  duration: 400.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .fadeIn(duration: 300.ms),
             const Gap(20),
             Text(
-              title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 100.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.15,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
+                ),
             const Gap(12),
             Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppTheme.textLightColor(context),
-                height: 1.5,
-              ),
-            ),
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textLightColor(context),
+                    height: 1.5,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 180.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.15,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
+                ),
             const Gap(32),
             Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(context),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontWeight: FontWeight.w700,
+                    const Gap(16),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: isDestructive
+                              ? Colors.red
+                              : AppTheme.primaryColor(context),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          confirmText,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                )
+                .animate()
+                .fadeIn(delay: 260.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.2,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
                 ),
-                const Gap(16),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: isDestructive
-                          ? Colors.red
-                          : AppTheme.primaryColor(context),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      confirmText,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
             const Gap(8),
           ],
         ),

@@ -64,12 +64,12 @@ class MainLayout extends ConsumerWidget {
           ),
         ),
         floatingActionButton: AnimatedSlide(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutBack,
           offset: currentIndex != 4 ? Offset.zero : const Offset(0, 2),
           child: AnimatedScale(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutBack,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.elasticOut,
             scale: currentIndex != 4 ? 1.0 : 0.0,
             child: FloatingActionButton.extended(
               onPressed: () {
@@ -267,8 +267,8 @@ class MainLayout extends ConsumerWidget {
           children: [
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: isActive ? 1.0 : 0.0),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.elasticOut,
               builder: (context, value, child) {
                 return Transform.scale(
                   scale: 0.9 + (value * 0.1),

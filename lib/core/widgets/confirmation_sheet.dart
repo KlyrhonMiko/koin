@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -53,7 +54,12 @@ class ConfirmationSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 12, 24, MediaQuery.of(context).padding.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        12,
+        24,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -81,119 +87,139 @@ class ConfirmationSheet extends StatelessWidget {
 
           // Icon with glow
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: confirmColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: confirmColor.withValues(alpha: 0.15),
-                  blurRadius: 40,
-                  spreadRadius: 5,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: confirmColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: confirmColor.withValues(alpha: 0.15),
+                      blurRadius: 40,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              size: 42,
-              color: confirmColor,
-            ),
-          ),
+                child: Icon(icon, size: 42, color: confirmColor),
+              )
+              .animate()
+              .scale(
+                begin: const Offset(0.5, 0.5),
+                duration: 400.ms,
+                curve: Curves.easeOutBack,
+              )
+              .fadeIn(duration: 300.ms),
           const Gap(24),
 
           // Text content
           Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textColor(context),
-              letterSpacing: -0.5,
-            ),
-          ),
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textColor(context),
+                  letterSpacing: -0.5,
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 100.ms, duration: 300.ms)
+              .slideY(
+                begin: 0.15,
+                duration: 300.ms,
+                curve: Curves.easeOutCubic,
+              ),
           const Gap(12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppTheme.textLightColor(context),
-                height: 1.5,
-                fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textLightColor(context),
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 180.ms, duration: 300.ms)
+              .slideY(
+                begin: 0.15,
+                duration: 300.ms,
+                curve: Curves.easeOutCubic,
               ),
-            ),
-          ),
           const Gap(40),
 
           // Actions
           Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    HapticService.light();
-                    Navigator.pop(context, false);
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    cancelLabel,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textLightColor(context),
-                    ),
-                  ),
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                flex: 2,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: confirmColor.withValues(alpha: 0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        HapticService.light();
+                        Navigator.pop(context, false);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
-                    ],
+                      child: Text(
+                        cancelLabel,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textLightColor(context),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      HapticService.medium();
-                      Navigator.pop(context, true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: confirmColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
+                  const Gap(12),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: confirmColor.withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                    ),
-                    child: Text(
-                      confirmLabel,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          HapticService.medium();
+                          Navigator.pop(context, true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: confirmColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: Text(
+                          confirmLabel,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
+                ],
+              )
+              .animate()
+              .fadeIn(delay: 260.ms, duration: 300.ms)
+              .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
         ],
       ),
     );

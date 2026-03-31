@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+enum HapticLevel { light, medium, heavy, selection, success, error }
+
 /// Centralized service for haptic feedback across the application.
 /// Provides different levels of feedback for various user interactions.
 class HapticService {
@@ -25,7 +27,7 @@ class HapticService {
 
   /// Feedback for successful completion of an action.
   static Future<void> success() async {
-    // Combination of impacts to simulate success if needed, 
+    // Combination of impacts to simulate success if needed,
     // but selectionClick is often used for positive confirmation.
     await HapticFeedback.mediumImpact();
   }

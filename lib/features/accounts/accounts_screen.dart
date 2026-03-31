@@ -11,6 +11,8 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/widgets/account_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/animated_counter.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -224,143 +226,125 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   final account = accounts[index];
                   final balance = stats.accountBalances[account.id] ?? 0;
 
-                  Widget accountItem = Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.04),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        onTap: () {
-                          HapticService.light();
-                          AccountSheet.show(context, ref, account: account);
-                        },
+                  Widget accountItem = PressableScale(
+                    onTap: () {
+                      HapticService.light();
+                      AccountSheet.show(context, ref, account: account);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(context),
                         borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: account.excludeFromTotal ? 0.5 : 1.0,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: account.color.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: account.color.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      IconUtils.getIcon(account.iconCodePoint),
-                                      color: account.color,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                                const Gap(16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            account.name,
-                                            style: TextStyle(
-                                              color: AppTheme.textColor(
-                                                context,
-                                              ),
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
-                                              letterSpacing: -0.2,
-                                            ),
-                                          ),
-                                          if (account.excludeFromTotal) ...[
-                                            const Gap(6),
-                                            Icon(
-                                              Icons.visibility_off_rounded,
-                                              size: 14,
-                                              color: AppTheme.textLightColor(
-                                                context,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.04),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: AppTheme.dividerColor(
+                            context,
+                          ).withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Opacity(
+                        opacity: account.excludeFromTotal ? 0.5 : 1.0,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 18,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: account.color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: account.color.withValues(alpha: 0.2),
+                                    width: 1,
                                   ),
                                 ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                child: Center(
+                                  child: Icon(
+                                    IconUtils.getIcon(account.iconCodePoint),
+                                    color: account.color,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                              const Gap(16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    TweenAnimationBuilder<double>(
-                                      tween: Tween<double>(
-                                        begin: 0,
-                                        end: balance,
-                                      ),
-                                      duration: const Duration(
-                                        milliseconds: 1000,
-                                      ),
-                                      curve: Curves.easeOutCirc,
-                                      builder: (context, value, child) {
-                                        return Text(
-                                          NumberFormat.currency(
-                                            symbol: currency.symbol,
-                                          ).format(value),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          account.name,
                                           style: TextStyle(
                                             color: AppTheme.textColor(context),
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 17,
-                                            letterSpacing: -0.4,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            letterSpacing: -0.2,
                                           ),
-                                        );
-                                      },
+                                        ),
+                                        if (account.excludeFromTotal) ...[
+                                          const Gap(6),
+                                          Icon(
+                                            Icons.visibility_off_rounded,
+                                            size: 14,
+                                            color: AppTheme.textLightColor(
+                                              context,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ],
                                 ),
-                                const Gap(12),
-                                Listener(
-                                  onPointerDown: (_) => HapticService.light(),
-                                  child: ReorderableDragStartListener(
-                                    index: index,
-                                    child: Icon(
-                                      Icons.drag_indicator_rounded,
-                                      color: AppTheme.textLightColor(
-                                        context,
-                                      ).withValues(alpha: 0.2),
-                                      size: 22,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  AnimatedCounter(
+                                    value: balance,
+                                    formatter: (v) => NumberFormat.currency(
+                                      symbol: currency.symbol,
+                                    ).format(v),
+                                    duration: const Duration(
+                                      milliseconds: 1200,
+                                    ),
+                                    style: TextStyle(
+                                      color: AppTheme.textColor(context),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 17,
+                                      letterSpacing: -0.4,
                                     ),
                                   ),
+                                ],
+                              ),
+                              const Gap(12),
+                              Listener(
+                                onPointerDown: (_) => HapticService.light(),
+                                child: ReorderableDragStartListener(
+                                  index: index,
+                                  child: Icon(
+                                    Icons.drag_indicator_rounded,
+                                    color: AppTheme.textLightColor(
+                                      context,
+                                    ).withValues(alpha: 0.2),
+                                    size: 22,
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -385,6 +369,11 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       child: Dismissible(
                         key: Key('dismiss_${account.id}'),
                         direction: DismissDirection.endToStart,
+                        onUpdate: (details) {
+                          if (details.reached && !details.previousReached) {
+                            HapticService.selection();
+                          }
+                        },
                         background: Container(
                           decoration: BoxDecoration(
                             color: AppTheme.errorColor(
@@ -435,6 +424,11 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final stats = ref.watch(dashboardStatsProvider);
+    final settings = ref.watch(settingsProvider);
+    final currency = settings.currency;
+    final fmt = NumberFormat.currency(symbol: currency.symbol);
+
     return Padding(
       padding: EdgeInsets.only(
         top: MediaQuery.paddingOf(context).top + 16,
@@ -461,13 +455,16 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                 ),
                 const Gap(4),
-                Text(
-                  'My Accounts',
+                AnimatedCounter(
+                  value: stats.currentBalance,
+                  formatter: (v) => fmt.format(v),
+                  duration: const Duration(milliseconds: 1400),
+                  curve: Curves.easeOutCubic,
                   style: TextStyle(
                     color: AppTheme.textColor(context),
-                    fontSize: 24,
+                    fontSize: 34,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    letterSpacing: -1.2,
                   ),
                 ),
               ],
@@ -479,7 +476,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   }
 
   Widget _buildAddAccountButton(BuildContext context, WidgetRef ref) {
-    final button = GestureDetector(
+    final button = PressableScale(
       onTap: () {
         HapticService.medium();
         AccountSheet.show(context, ref);

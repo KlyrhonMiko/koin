@@ -12,6 +12,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
@@ -34,6 +35,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        HapticService.selection();
+      }
+    });
   }
 
   @override
@@ -554,7 +560,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
       footer: Column(
         children: [
           const Gap(6),
-          GestureDetector(
+          PressableScale(
                 onTap: () {
                   HapticService.medium();
                   Navigator.push(
@@ -623,6 +629,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
         return Dismissible(
               key: Key('dismiss_${category.id}'),
               direction: DismissDirection.endToStart,
+              onUpdate: (details) {
+                if (details.reached && !details.previousReached) {
+                  HapticService.selection();
+                }
+              },
               confirmDismiss: (_) {
                 HapticService.medium();
                 return context
@@ -663,7 +674,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ],
                 ),
               ),
-              child: GestureDetector(
+              child: PressableScale(
                 onTap: () {
                   HapticService.light();
                   Navigator.push(

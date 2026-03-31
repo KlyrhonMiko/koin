@@ -21,6 +21,11 @@ class _ActivityScreenState extends State<ActivityScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        HapticService.selection();
+      }
+    });
   }
 
   @override
