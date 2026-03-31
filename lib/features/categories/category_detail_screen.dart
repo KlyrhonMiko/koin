@@ -10,6 +10,7 @@ import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
@@ -100,9 +101,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   void _save(WidgetRef ref) {
     if (_nameController.text.trim().isEmpty) {
       HapticService.error();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a category name')),
-      );
+      KoinSnackBar.error(context, 'Please enter a category name');
       return;
     }
 
@@ -112,7 +111,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       iconCodePoint: _selectedIconCodePoint,
       colorHex: _selectedColorHex,
       type: _selectedType,
-      budget: _selectedType == TransactionType.expense ? widget.category?.budget : null,
+      budget: _selectedType == TransactionType.expense
+          ? widget.category?.budget
+          : null,
     );
 
     if (widget.category != null) {
@@ -127,7 +128,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF')));
+    final selectedColor = Color(
+      int.parse(_selectedColorHex.replaceFirst('#', '0xFF')),
+    );
     final previewName = _nameController.text.trim().isNotEmpty
         ? _nameController.text.trim()
         : 'Category Name';
@@ -143,7 +146,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               },
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
             ),
-            title: Text(widget.category != null ? 'Edit Category' : 'New Category'),
+            title: Text(
+              widget.category != null ? 'Edit Category' : 'New Category',
+            ),
           ),
           body: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -152,8 +157,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Live preview card
-                _buildPreviewCard(context, selectedColor, previewName)
-                    .animate().fade(duration: 400.ms).slideY(begin: 0.05),
+                _buildPreviewCard(
+                  context,
+                  selectedColor,
+                  previewName,
+                ).animate().fade(duration: 400.ms).slideY(begin: 0.05),
 
                 const Gap(28),
 
@@ -181,16 +189,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 // Icon picker
                 _buildSectionLabel(context, 'Icon'),
                 const Gap(12),
-                _buildIconGrid(context, selectedColor)
-                    .animate().fade(delay: 150.ms),
+                _buildIconGrid(
+                  context,
+                  selectedColor,
+                ).animate().fade(delay: 150.ms),
 
                 const Gap(28),
 
                 // Color picker
                 _buildSectionLabel(context, 'Color'),
                 const Gap(12),
-                _buildColorGrid(context)
-                    .animate().fade(delay: 200.ms),
+                _buildColorGrid(context).animate().fade(delay: 200.ms),
 
                 const Gap(36),
 
@@ -203,7 +212,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       gradient: AppTheme.primaryGradient(context),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                          color: AppTheme.primaryColor(
+                            context,
+                          ).withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -217,8 +228,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 18),
                       ),
                       child: Text(
-                        widget.category != null ? 'Update Category' : 'Create Category',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                        widget.category != null
+                            ? 'Update Category'
+                            : 'Create Category',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -231,7 +248,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
-  Widget _buildPreviewCard(BuildContext context, Color selectedColor, String previewName) {
+  Widget _buildPreviewCard(
+    BuildContext context,
+    Color selectedColor,
+    String previewName,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -240,95 +261,95 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       child: Row(
-          children: [
-            // Animated icon preview with glow
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: selectedColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: selectedColor.withValues(alpha: 0.2),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Icon(
-                  IconUtils.getIcon(_selectedIconCodePoint),
-                  key: ValueKey(_selectedIconCodePoint),
-                  color: selectedColor,
-                  size: 28,
+        children: [
+          // Animated icon preview with glow
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: selectedColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: selectedColor.withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  spreadRadius: 2,
                 ),
-              ),
+              ],
             ),
-            const Gap(16),
-            // Name and label
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Preview',
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const Gap(4),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      previewName,
-                      key: ValueKey(previewName),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 17,
-                        letterSpacing: -0.3,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (widget.category?.budget != null && widget.category!.budget! > 0) ...[
-                    const Gap(4),
-                    Text(
-                      'Has active budget',
-                      style: TextStyle(
-                        color: AppTheme.primaryColor(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            // Color dot
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Icon(
+                IconUtils.getIcon(_selectedIconCodePoint),
+                key: ValueKey(_selectedIconCodePoint),
                 color: selectedColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: selectedColor.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                  ),
-                ],
+                size: 28,
               ),
             ),
-          ],
-        ),
-
+          ),
+          const Gap(16),
+          // Name and label
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Preview',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const Gap(4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Text(
+                    previewName,
+                    key: ValueKey(previewName),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      letterSpacing: -0.3,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.category?.budget != null &&
+                    widget.category!.budget! > 0) ...[
+                  const Gap(4),
+                  Text(
+                    'Has active budget',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Color dot
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: selectedColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: selectedColor.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -376,7 +397,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     ? selectedColor.withValues(alpha: 0.12)
                     : AppTheme.surfaceLightColor(context),
                 border: Border.all(
-                  color: isSelected ? selectedColor : AppTheme.dividerColor(context),
+                  color: isSelected
+                      ? selectedColor
+                      : AppTheme.dividerColor(context),
                   width: isSelected ? 2 : 1,
                 ),
                 borderRadius: BorderRadius.circular(14),
@@ -386,7 +409,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 duration: const Duration(milliseconds: 200),
                 child: Icon(
                   IconUtils.getIcon(iconCode),
-                  color: isSelected ? selectedColor : AppTheme.textLightColor(context),
+                  color: isSelected
+                      ? selectedColor
+                      : AppTheme.textLightColor(context),
                   size: 22,
                 ),
               ),
@@ -455,13 +480,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : AppTheme.textLightColor(context),
+              color: isSelected
+                  ? Colors.white
+                  : AppTheme.textLightColor(context),
             ),
             const Gap(6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textLightColor(context),
+                color: isSelected
+                    ? Colors.white
+                    : AppTheme.textLightColor(context),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -516,12 +545,16 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                             color: color.withValues(alpha: 0.45),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ]
                       : null,
                 ),
                 child: isSelected
-                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      )
                     : null,
               ),
             ),

@@ -15,15 +15,21 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
   final TransactionType? initialType;
 
-  const AddTransactionScreen({super.key, this.editingTransaction, this.initialType});
+  const AddTransactionScreen({
+    super.key,
+    this.editingTransaction,
+    this.initialType,
+  });
 
   @override
-  ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  ConsumerState<AddTransactionScreen> createState() =>
+      _AddTransactionScreenState();
 }
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
@@ -155,21 +161,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
-          const Gap(10),
-          Expanded(
-            child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-      backgroundColor: AppTheme.errorColor(context),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    ));
+    KoinSnackBar.error(context, message);
   }
 
   // ═══════════════════════════════════════════════════════
@@ -186,11 +178,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: _getTypeColor(context),
-                  onPrimary: Colors.white,
-                  surface: AppTheme.surfaceColor(context),
-                  onSurface: AppTheme.textColor(context),
-                ),
+              primary: _getTypeColor(context),
+              onPrimary: Colors.white,
+              surface: AppTheme.surfaceColor(context),
+              onSurface: AppTheme.textColor(context),
+            ),
           ),
           child: child!,
         );
@@ -221,11 +213,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: _getTypeColor(context),
-                  onPrimary: Colors.white,
-                  surface: AppTheme.surfaceColor(context),
-                  onSurface: AppTheme.textColor(context),
-                ),
+              primary: _getTypeColor(context),
+              onPrimary: Colors.white,
+              surface: AppTheme.surfaceColor(context),
+              onSurface: AppTheme.textColor(context),
+            ),
           ),
           child: child!,
         );
@@ -259,14 +251,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
   }
 
-  void _onTypeChanged(TransactionType newType, List<TransactionCategory> categories) {
+  void _onTypeChanged(
+    TransactionType newType,
+    List<TransactionCategory> categories,
+  ) {
     final oldColor = _getTypeColor(context);
     HapticService.selection();
     setState(() {
       _selectedType = newType;
       if (_selectedCategoryId != null) {
         final cat = _categoryById(categories, _selectedCategoryId);
-        if (cat != null && cat.type != _selectedType && _selectedType != TransactionType.transfer) {
+        if (cat != null &&
+            cat.type != _selectedType &&
+            _selectedType != TransactionType.transfer) {
           _selectedCategoryId = null;
         }
       }
@@ -287,7 +284,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
   }
 
-  TransactionCategory? _categoryById(List<TransactionCategory> list, String? id) {
+  TransactionCategory? _categoryById(
+    List<TransactionCategory> list,
+    String? id,
+  ) {
     if (id == null) return null;
     for (final c in list) {
       if (c.id == id) return c;
@@ -319,7 +319,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       animation: _colorAnimController,
       builder: (context, child) {
         final animatedColor =
-            Color.lerp(_prevColor, _currentColor, _colorAnimController.value) ?? typeColor;
+            Color.lerp(_prevColor, _currentColor, _colorAnimController.value) ??
+            typeColor;
 
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor(context),
@@ -348,7 +349,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         },
                         onDone: () => _saveTransaction(),
                       )
-                    : const SizedBox(key: ValueKey('empty'), width: double.infinity, height: 0),
+                    : const SizedBox(
+                        key: ValueKey('empty'),
+                        width: double.infinity,
+                        height: 0,
+                      ),
               ),
             ],
           ),
@@ -360,7 +365,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Immersive Header
   // ═══════════════════════════════════════════════════════
-  Widget _buildHeader(BuildContext context, Color typeColor, dynamic currency, bool isDark) {
+  Widget _buildHeader(
+    BuildContext context,
+    Color typeColor,
+    dynamic currency,
+    bool isDark,
+  ) {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -390,14 +400,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   icon: Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                      color: AppTheme.surfaceColor(
+                        context,
+                      ).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(11),
                       border: Border.all(
-                        color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                        color: AppTheme.dividerColor(
+                          context,
+                        ).withValues(alpha: 0.5),
                       ),
                     ),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 15, color: AppTheme.textColor(context)),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 15,
+                      color: AppTheme.textColor(context),
+                    ),
                   ),
                 ),
                 const Spacer(),
@@ -409,19 +426,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     GestureDetector(
                       onTap: _pickTime,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                          color: AppTheme.surfaceColor(
+                            context,
+                          ).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                            color: AppTheme.dividerColor(
+                              context,
+                            ).withValues(alpha: 0.5),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.access_time_rounded,
-                                size: 13, color: AppTheme.textLightColor(context)),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 13,
+                              color: AppTheme.textLightColor(context),
+                            ),
                             const Gap(5),
                             Text(
                               DateFormat('h:mm a').format(_selectedDate),
@@ -440,19 +467,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     GestureDetector(
                       onTap: _pickDate,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                          color: AppTheme.surfaceColor(
+                            context,
+                          ).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                            color: AppTheme.dividerColor(
+                              context,
+                            ).withValues(alpha: 0.5),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.calendar_today_rounded,
-                                size: 13, color: AppTheme.textLightColor(context)),
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              size: 13,
+                              color: AppTheme.textLightColor(context),
+                            ),
                             const Gap(5),
                             Text(
                               DateFormat('MMM d').format(_selectedDate),
@@ -492,9 +529,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget _buildTypeSelector(BuildContext context, Color activeColor) {
     final categories = ref.read(categoriesProvider).value ?? [];
     final types = [
-      ('Expense', TransactionType.expense, AppTheme.expenseColor(context), Icons.arrow_upward_rounded),
-      ('Income', TransactionType.income, AppTheme.incomeColor(context), Icons.arrow_downward_rounded),
-      ('Transfer', TransactionType.transfer, AppTheme.transferColor(context), Icons.swap_horiz_rounded),
+      (
+        'Expense',
+        TransactionType.expense,
+        AppTheme.expenseColor(context),
+        Icons.arrow_upward_rounded,
+      ),
+      (
+        'Income',
+        TransactionType.income,
+        AppTheme.incomeColor(context),
+        Icons.arrow_downward_rounded,
+      ),
+      (
+        'Transfer',
+        TransactionType.transfer,
+        AppTheme.transferColor(context),
+        Icons.swap_horiz_rounded,
+      ),
     ];
 
     return Container(
@@ -502,7 +554,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context).withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.6)),
+        border: Border.all(
+          color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
+        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -543,13 +597,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(t.$4, size: 15,
-                                color: isSelected ? Colors.white : AppTheme.textLightColor(context)),
+                            Icon(
+                              t.$4,
+                              size: 15,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textLightColor(context),
+                            ),
                             const Gap(5),
                             Text(
                               t.$1,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : AppTheme.textLightColor(context),
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.textLightColor(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -571,8 +632,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Hero Amount
   // ═══════════════════════════════════════════════════════
-  Widget _buildHeroAmount(BuildContext context, dynamic currency, Color typeColor) {
-    final hasAmount = _currentExpression.isNotEmpty && _currentExpression != '0';
+  Widget _buildHeroAmount(
+    BuildContext context,
+    dynamic currency,
+    Color typeColor,
+  ) {
+    final hasAmount =
+        _currentExpression.isNotEmpty && _currentExpression != '0';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -613,7 +679,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w800,
-                    color: hasAmount ? typeColor : typeColor.withValues(alpha: 0.35),
+                    color: hasAmount
+                        ? typeColor
+                        : typeColor.withValues(alpha: 0.35),
                     letterSpacing: -2,
                     height: 1.1,
                   ),
@@ -632,7 +700,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(2),
                   color: typeColor.withValues(
-                    alpha: hasAmount ? 0.35 : (0.15 + 0.2 * _pulseAnimation.value),
+                    alpha: hasAmount
+                        ? 0.35
+                        : (0.15 + 0.2 * _pulseAnimation.value),
                   ),
                 ),
               );
@@ -646,7 +716,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Form Section
   // ═══════════════════════════════════════════════════════
-  Widget _buildFormSection(BuildContext context, List<TransactionCategory> categories, Color typeColor) {
+  Widget _buildFormSection(
+    BuildContext context,
+    List<TransactionCategory> categories,
+    Color typeColor,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -655,7 +729,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.7)),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -675,8 +751,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     color: AppTheme.surfaceLightColor(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.sticky_note_2_rounded,
-                      size: 17, color: AppTheme.textLightColor(context)),
+                  child: Icon(
+                    Icons.sticky_note_2_rounded,
+                    size: 17,
+                    color: AppTheme.textLightColor(context),
+                  ),
                 ),
                 const Gap(12),
                 Expanded(
@@ -695,7 +774,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     decoration: InputDecoration(
                       hintText: 'Add a note...',
                       hintStyle: TextStyle(
-                        color: AppTheme.textLightColor(context).withValues(alpha: 0.45),
+                        color: AppTheme.textLightColor(
+                          context,
+                        ).withValues(alpha: 0.45),
                         fontWeight: FontWeight.w400,
                         fontSize: 15,
                       ),
@@ -720,7 +801,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.7)),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -735,7 +818,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, anim) => SizeTransition(
-                    sizeFactor: anim, child: FadeTransition(opacity: anim, child: child)),
+                  sizeFactor: anim,
+                  child: FadeTransition(opacity: anim, child: child),
+                ),
                 child: _selectedType != TransactionType.transfer
                     ? Column(
                         key: const ValueKey('cat_section'),
@@ -744,12 +829,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             context,
                             fallbackIcon: Icons.category_rounded,
                             label: 'Category',
-                            selectedName: _categoryById(categories, _selectedCategoryId)?.name,
-                            selectedColor: _categoryById(categories, _selectedCategoryId)?.color,
-                            selectedIconCodePoint:
-                                _categoryById(categories, _selectedCategoryId)?.iconCodePoint,
+                            selectedName: _categoryById(
+                              categories,
+                              _selectedCategoryId,
+                            )?.name,
+                            selectedColor: _categoryById(
+                              categories,
+                              _selectedCategoryId,
+                            )?.color,
+                            selectedIconCodePoint: _categoryById(
+                              categories,
+                              _selectedCategoryId,
+                            )?.iconCodePoint,
                             placeholder: 'Select category',
-                            onTap: () => _openCategoryPicker(context, categories),
+                            onTap: () =>
+                                _openCategoryPicker(context, categories),
                             trailing: Container(
                               decoration: BoxDecoration(
                                 color: AppTheme.surfaceLightColor(context),
@@ -762,12 +856,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) => const CategoryManagerScreen()),
+                                      builder: (context) =>
+                                          const CategoryManagerScreen(),
+                                    ),
                                   );
                                 },
-                                icon: Icon(Icons.tune_rounded,
-                                    size: 18, color: AppTheme.textLightColor(context)),
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                icon: Icon(
+                                  Icons.tune_rounded,
+                                  size: 18,
+                                  color: AppTheme.textLightColor(context),
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
                                 padding: EdgeInsets.zero,
                               ),
                             ),
@@ -794,29 +896,45 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           _buildSelectionRow(
                             context,
                             fallbackIcon: Icons.account_balance_wallet_rounded,
-                            label: _selectedType == TransactionType.transfer ? 'From' : 'Account',
-                            selectedName: _accountById(accounts, _selectedAccountId)?.name,
-                            selectedColor: _accountById(accounts, _selectedAccountId)?.color,
-                            selectedIconCodePoint:
-                                _accountById(accounts, _selectedAccountId)?.iconCodePoint,
+                            label: _selectedType == TransactionType.transfer
+                                ? 'From'
+                                : 'Account',
+                            selectedName: _accountById(
+                              accounts,
+                              _selectedAccountId,
+                            )?.name,
+                            selectedColor: _accountById(
+                              accounts,
+                              _selectedAccountId,
+                            )?.color,
+                            selectedIconCodePoint: _accountById(
+                              accounts,
+                              _selectedAccountId,
+                            )?.iconCodePoint,
                             placeholder: 'Select account',
                             onTap: () => _openAccountPicker(
                               context,
                               accounts,
                               title: 'Account',
-                              subtitle: _selectedType == TransactionType.transfer
+                              subtitle:
+                                  _selectedType == TransactionType.transfer
                                   ? 'Choose where the money leaves from'
                                   : 'Choose the account for this transaction',
                               selectedId: _selectedAccountId,
-                              onSelected: (id) => setState(() => _selectedAccountId = id),
+                              onSelected: (id) =>
+                                  setState(() => _selectedAccountId = id),
                             ),
                           ),
                           // To Account (transfer only)
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 300),
                             transitionBuilder: (child, anim) => SizeTransition(
-                                sizeFactor: anim,
-                                child: FadeTransition(opacity: anim, child: child)),
+                              sizeFactor: anim,
+                              child: FadeTransition(
+                                opacity: anim,
+                                child: child,
+                              ),
+                            ),
                             child: _selectedType == TransactionType.transfer
                                 ? Column(
                                     key: const ValueKey('to_acc'),
@@ -824,25 +942,33 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                       _buildDivider(context),
                                       _buildSelectionRow(
                                         context,
-                                        fallbackIcon: Icons.account_balance_wallet_rounded,
+                                        fallbackIcon: Icons
+                                            .account_balance_wallet_rounded,
                                         label: 'To',
-                                        selectedName:
-                                            _accountById(accounts, _selectedToAccountId)?.name,
-                                        selectedColor:
-                                            _accountById(accounts, _selectedToAccountId)?.color,
-                                        selectedIconCodePoint:
-                                            _accountById(accounts, _selectedToAccountId)
-                                                ?.iconCodePoint,
+                                        selectedName: _accountById(
+                                          accounts,
+                                          _selectedToAccountId,
+                                        )?.name,
+                                        selectedColor: _accountById(
+                                          accounts,
+                                          _selectedToAccountId,
+                                        )?.color,
+                                        selectedIconCodePoint: _accountById(
+                                          accounts,
+                                          _selectedToAccountId,
+                                        )?.iconCodePoint,
                                         placeholder: 'Select destination',
                                         onTap: () => _openAccountPicker(
                                           context,
                                           accounts,
                                           title: 'Destination',
-                                          subtitle: 'Choose where the money arrives',
+                                          subtitle:
+                                              'Choose where the money arrives',
                                           selectedId: _selectedToAccountId,
                                           excludeAccountId: _selectedAccountId,
-                                          onSelected: (id) =>
-                                              setState(() => _selectedToAccountId = id),
+                                          onSelected: (id) => setState(
+                                            () => _selectedToAccountId = id,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -865,8 +991,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ),
                     error: (err, stack) => Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Text('Error: $err',
-                          style: TextStyle(color: AppTheme.errorColor(context), fontSize: 13)),
+                      child: Text(
+                        'Error: $err',
+                        style: TextStyle(
+                          color: AppTheme.errorColor(context),
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -893,7 +1024,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     Widget? trailing,
   }) {
     final hasSelection =
-        selectedName != null && selectedColor != null && selectedIconCodePoint != null;
+        selectedName != null &&
+        selectedColor != null &&
+        selectedIconCodePoint != null;
 
     return Material(
       color: Colors.transparent,
@@ -921,7 +1054,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ? IconUtils.getIcon(selectedIconCodePoint)
                       : fallbackIcon,
                   size: 17,
-                  color: hasSelection ? selectedColor : AppTheme.textLightColor(context),
+                  color: hasSelection
+                      ? selectedColor
+                      : AppTheme.textLightColor(context),
                 ),
               ),
               const Gap(12),
@@ -934,7 +1069,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textLightColor(context).withValues(alpha: 0.65),
+                        color: AppTheme.textLightColor(
+                          context,
+                        ).withValues(alpha: 0.65),
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -946,19 +1083,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         fontWeight: FontWeight.w600,
                         color: hasSelection
                             ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(context).withValues(alpha: 0.4),
+                            : AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.4),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const Gap(8),
-                trailing,
-              ],
+              if (trailing != null) ...[const Gap(8), trailing],
               const Gap(4),
-              Icon(Icons.chevron_right_rounded,
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.4), size: 22),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
+                size: 22,
+              ),
             ],
           ),
         ),
@@ -969,7 +1108,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget _buildDivider(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(height: 1, color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
+      child: Divider(
+        height: 1,
+        color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+      ),
     );
   }
 
@@ -977,8 +1119,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Pickers
   // ═══════════════════════════════════════════════════════
   Future<void> _openCategoryPicker(
-      BuildContext context, List<TransactionCategory> categories) async {
-    final filteredCategories = categories.where((c) => c.type == _selectedType).toList();
+    BuildContext context,
+    List<TransactionCategory> categories,
+  ) async {
+    final filteredCategories = categories
+        .where((c) => c.type == _selectedType)
+        .toList();
 
     final id = await _showPremiumSelectionSheet<String>(
       context: context,
@@ -1054,16 +1200,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       isScrollControlled: true,
       builder: (sheetContext) {
         return Padding(
-          padding: EdgeInsets.only(top: MediaQuery.of(sheetContext).padding.top + 12),
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(sheetContext).padding.top + 12,
+          ),
           child: Align(
             alignment: Alignment.bottomCenter,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: Container(
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceColor(sheetContext),
-                  border: Border.all(color: AppTheme.dividerColor(sheetContext)),
+                  border: Border.all(
+                    color: AppTheme.dividerColor(sheetContext),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.12),
@@ -1132,7 +1284,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ),
                     if (emptyMessage != null)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 24,
+                        ),
                         child: Text(
                           emptyMessage,
                           textAlign: TextAlign.center,
@@ -1145,7 +1300,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     else
                       Expanded(
                         child: ListView.separated(
-                          padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            16 + bottomInset,
+                          ),
                           itemCount: itemCount,
                           separatorBuilder: (context, index) => const Gap(8),
                           itemBuilder: itemBuilder,
@@ -1187,9 +1347,9 @@ class _PremiumSheetItem extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-        HapticService.selection();
-        onTap();
-      },
+          HapticService.selection();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1255,7 +1415,9 @@ class _PremiumSheetItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppTheme.textLightColor(context).withValues(alpha: 0.25),
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.25),
                           width: 1.5,
                         ),
                       ),

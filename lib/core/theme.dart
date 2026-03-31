@@ -7,25 +7,37 @@ class AppTheme {
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-      systemNavigationBarColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
-      systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: isDarkMode
+          ? const Color(0xFF0A0A0A)
+          : Colors.white,
+      systemNavigationBarIconBrightness: isDarkMode
+          ? Brightness.light
+          : Brightness.dark,
     );
   }
 
   // Helper getters using context
-  static Color primaryColor(BuildContext context) => Theme.of(context).colorScheme.primary;
-  static Color surfaceColor(BuildContext context) => Theme.of(context).colorScheme.surface;
-  static Color backgroundColor(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
-  static Color errorColor(BuildContext context) => Theme.of(context).colorScheme.error;
-  static Color textColor(BuildContext context) => Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
-  static Color textLightColor(BuildContext context) => Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
-  static Color dividerColor(BuildContext context) => Theme.of(context).dividerColor;
-  static Color secondaryColor(BuildContext context) => Theme.of(context).colorScheme.secondary;
-  
+  static Color primaryColor(BuildContext context) =>
+      Theme.of(context).colorScheme.primary;
+  static Color surfaceColor(BuildContext context) =>
+      Theme.of(context).colorScheme.surface;
+  static Color backgroundColor(BuildContext context) =>
+      Theme.of(context).scaffoldBackgroundColor;
+  static Color errorColor(BuildContext context) =>
+      Theme.of(context).colorScheme.error;
+  static Color textColor(BuildContext context) =>
+      Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
+  static Color textLightColor(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
+  static Color dividerColor(BuildContext context) =>
+      Theme.of(context).dividerColor;
+  static Color secondaryColor(BuildContext context) =>
+      Theme.of(context).colorScheme.secondary;
+
   static Color incomeColor(BuildContext context) => const Color(0xFF00D09E);
   static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
   static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
-  
+
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF1F3F5);
@@ -53,13 +65,25 @@ class AppTheme {
   );
 
   static ThemeData getTheme(Color primaryColor, bool isDarkMode) {
-    final Color backgroundColor = isDarkMode ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA);
-    final Color surfaceColor = isDarkMode ? const Color(0xFF141414) : Colors.white;
-    final Color surfaceLightColor = isDarkMode ? const Color(0xFF1F1F1F) : const Color(0xFFF1F3F5);
-    final Color textColor = isDarkMode ? const Color(0xFFF5F5F5) : const Color(0xFF1A1A1A);
-    final Color textLightColor = isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
-    final Color dividerColor = isDarkMode ? const Color(0xFF262626) : const Color(0xFFE5E7EB);
-    
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF0A0A0A)
+        : const Color(0xFFF8F9FA);
+    final Color surfaceColor = isDarkMode
+        ? const Color(0xFF141414)
+        : Colors.white;
+    final Color surfaceLightColor = isDarkMode
+        ? const Color(0xFF1F1F1F)
+        : const Color(0xFFF1F3F5);
+    final Color textColor = isDarkMode
+        ? const Color(0xFFF5F5F5)
+        : const Color(0xFF1A1A1A);
+    final Color textLightColor = isDarkMode
+        ? const Color(0xFF9CA3AF)
+        : const Color(0xFF6B7280);
+    final Color dividerColor = isDarkMode
+        ? const Color(0xFF262626)
+        : const Color(0xFFE5E7EB);
+
     const Color errorColor = Color(0xFFFF6B6B);
     const Color secondaryColor = Color(0xFF34D399);
 
@@ -71,37 +95,52 @@ class AppTheme {
       brightness: brightness,
       primaryColor: primaryColor,
       dividerColor: dividerColor,
-      colorScheme: isDarkMode 
-        ? ColorScheme.dark(
-            primary: primaryColor,
-            secondary: secondaryColor,
-            surface: surfaceColor,
-            error: errorColor,
-            onPrimary: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
-            onSecondary: const Color(0xFF0A0A0A),
-            onSurface: textColor,
-            onError: Colors.white,
-          )
-        : ColorScheme.light(
-            primary: primaryColor,
-            secondary: secondaryColor,
-            surface: surfaceColor,
-            error: errorColor,
-            onPrimary: Colors.white,
-            onSecondary: Colors.white,
-            onSurface: textColor,
-            onError: Colors.white,
-          ),
+      colorScheme: isDarkMode
+          ? ColorScheme.dark(
+              primary: primaryColor,
+              secondary: secondaryColor,
+              surface: surfaceColor,
+              error: errorColor,
+              onPrimary: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
+              onSecondary: const Color(0xFF0A0A0A),
+              onSurface: textColor,
+              onError: Colors.white,
+            )
+          : ColorScheme.light(
+              primary: primaryColor,
+              secondary: secondaryColor,
+              surface: surfaceColor,
+              error: errorColor,
+              onPrimary: Colors.white,
+              onSecondary: Colors.white,
+              onSurface: textColor,
+              onError: Colors.white,
+            ),
       scaffoldBackgroundColor: backgroundColor,
       textTheme: GoogleFonts.outfitTextTheme(baseTheme.textTheme).copyWith(
-        displayLarge: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold),
-        displayMedium: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold),
-        titleLarge: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w600),
-        titleMedium: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w600),
+        displayLarge: GoogleFonts.outfit(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: GoogleFonts.outfit(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: GoogleFonts.outfit(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: GoogleFonts.outfit(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
         bodyLarge: GoogleFonts.outfit(color: textColor),
         bodyMedium: GoogleFonts.outfit(color: textLightColor),
         bodySmall: GoogleFonts.outfit(color: textLightColor),
-        labelLarge: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w600),
+        labelLarge: GoogleFonts.outfit(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: backgroundColor,
@@ -175,7 +214,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: errorColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
         hintStyle: GoogleFonts.outfit(color: textLightColor, fontSize: 15),
         labelStyle: GoogleFonts.outfit(color: textLightColor, fontSize: 15),
         prefixIconColor: textLightColor,
@@ -187,23 +229,25 @@ class AppTheme {
         unselectedItemColor: textLightColor,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500),
+        selectedLabelStyle: GoogleFonts.outfit(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.outfit(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
         foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
         elevation: 8,
         highlightElevation: 12,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: surfaceColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         titleTextStyle: GoogleFonts.outfit(
           color: textColor,
           fontSize: 20,
@@ -215,17 +259,20 @@ class AppTheme {
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: surfaceLightColor,
-        contentTextStyle: GoogleFonts.outfit(color: textColor),
+        backgroundColor: surfaceColor,
+        contentTextStyle: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
         behavior: SnackBarBehavior.floating,
+        elevation: 12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: dividerColor, width: 1),
         ),
       ),
-      dividerTheme: DividerThemeData(
-        color: dividerColor,
-        thickness: 1,
-      ),
+      dividerTheme: DividerThemeData(color: dividerColor, thickness: 1),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: primaryColor,
         linearTrackColor: dividerColor,
@@ -242,9 +289,7 @@ class AppTheme {
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: surfaceLightColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
