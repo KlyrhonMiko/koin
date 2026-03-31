@@ -14,6 +14,7 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -164,7 +165,9 @@ class SettingsScreen extends ConsumerWidget {
                     subtitle: Text(
                       settings.themeMode == ThemeMode.system
                           ? 'System'
-                          : settings.themeMode == ThemeMode.dark ? 'On' : 'Off',
+                          : settings.themeMode == ThemeMode.dark
+                          ? 'On'
+                          : 'Off',
                       style: TextStyle(
                         color: AppTheme.textLightColor(context),
                         fontSize: 12,
@@ -501,22 +504,16 @@ class SettingsScreen extends ConsumerWidget {
         );
 
         if (context.mounted && savedPath != null && savedPath.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Backup saved successfully: $savedPath')),
-          );
+          KoinSnackBar.success(context, 'Backup saved successfully');
         }
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Database file not found!')),
-          );
+          KoinSnackBar.error(context, 'Database file not found!');
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error creating backup: $e')));
+        KoinSnackBar.error(context, 'Error creating backup: $e');
       }
     }
   }
@@ -572,21 +569,15 @@ class SettingsScreen extends ConsumerWidget {
           ref.invalidate(accountProvider);
           ref.invalidate(categoriesProvider);
           ref.invalidate(savingsGoalsProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Data restored successfully!')),
-          );
+          KoinSnackBar.success(context, 'Data restored successfully!');
         } else {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to restore data.')),
-          );
+          KoinSnackBar.error(context, 'Failed to restore data.');
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error restoring data: $e')));
+        KoinSnackBar.error(context, 'Error restoring data: $e');
       }
     }
   }
@@ -611,9 +602,7 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(accountProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All transactions deleted.')),
-        );
+        KoinSnackBar.success(context, 'All transactions deleted.');
       }
     }
   }
@@ -637,9 +626,7 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(savingsGoalsProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('All data deleted.')));
+        KoinSnackBar.success(context, 'All data deleted.');
       }
     }
   }
@@ -664,10 +651,9 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(savingsGoalsProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('App has been reset to factory defaults.'),
-          ),
+        KoinSnackBar.success(
+          context,
+          'App has been reset to factory defaults.',
         );
       }
     }

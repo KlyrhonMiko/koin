@@ -20,7 +20,8 @@ class CategoryManagerScreen extends ConsumerStatefulWidget {
   const CategoryManagerScreen({super.key});
 
   @override
-  ConsumerState<CategoryManagerScreen> createState() => _CategoryManagerScreenState();
+  ConsumerState<CategoryManagerScreen> createState() =>
+      _CategoryManagerScreenState();
 }
 
 class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
@@ -58,13 +59,20 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
               child: categoriesAsync.when(
                 data: (categories) {
                   final filtered = categories.where((c) {
-                    final matchesSearch = _searchQuery.isEmpty || 
-                        c.name.toLowerCase().contains(_searchQuery.toLowerCase());
+                    final matchesSearch =
+                        _searchQuery.isEmpty ||
+                        c.name.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        );
                     return matchesSearch;
                   }).toList();
 
-                  final expenseCategories = filtered.where((c) => c.type == TransactionType.expense).toList();
-                  final incomeCategories = filtered.where((c) => c.type == TransactionType.income).toList();
+                  final expenseCategories = filtered
+                      .where((c) => c.type == TransactionType.expense)
+                      .toList();
+                  final incomeCategories = filtered
+                      .where((c) => c.type == TransactionType.income)
+                      .toList();
 
                   return TabBarView(
                     controller: _tabController,
@@ -109,14 +117,21 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 icon: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                    color: AppTheme.surfaceColor(
+                      context,
+                    ).withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(11),
                     border: Border.all(
-                      color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                      color: AppTheme.dividerColor(
+                        context,
+                      ).withValues(alpha: 0.5),
                     ),
                   ),
-                  child: Icon(Icons.arrow_back_ios_new_rounded,
-                      size: 15, color: AppTheme.textColor(context)),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 15,
+                    color: AppTheme.textColor(context),
+                  ),
                 ),
               ),
               Expanded(
@@ -138,10 +153,14 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 icon: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                    color: AppTheme.surfaceColor(
+                      context,
+                    ).withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(11),
                     border: Border.all(
-                      color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                      color: AppTheme.dividerColor(
+                        context,
+                      ).withValues(alpha: 0.5),
                     ),
                   ),
                   child: Icon(
@@ -166,9 +185,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
           ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
           const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _buildSegmentedControl(context),
-          ).animate().fade(delay: 100.ms).scale(begin: const Offset(0.95, 0.95)),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _buildSegmentedControl(context),
+              )
+              .animate()
+              .fade(delay: 100.ms)
+              .scale(begin: const Offset(0.95, 0.95)),
         ],
       ),
     );
@@ -183,7 +205,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context).withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.5)),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(26),
@@ -193,7 +217,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 builder: (context, constraints) {
                   final tabWidth = constraints.maxWidth / 2;
                   final animationValue = _tabController.animation!.value;
-                  
+
                   return Stack(
                     children: [
                       // Real-time tracking Indicator
@@ -224,7 +248,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                                 borderRadius: BorderRadius.circular(2),
                                 gradient: LinearGradient(
                                   colors: [
-                                    AppTheme.primaryColor(context).withValues(alpha: 0.6),
+                                    AppTheme.primaryColor(
+                                      context,
+                                    ).withValues(alpha: 0.6),
                                     AppTheme.primaryColor(context),
                                   ],
                                 ),
@@ -246,8 +272,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                                 child: Text(
                                   'Expenses',
                                   style: TextStyle(
-                                    fontWeight: _tabController.index == 0 ? FontWeight.w700 : FontWeight.w600,
-                                    color: _tabController.index == 0 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontWeight: _tabController.index == 0
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: _tabController.index == 0
+                                        ? AppTheme.primaryColor(context)
+                                        : AppTheme.textLightColor(context),
                                     fontSize: 14,
                                     letterSpacing: -0.2,
                                   ),
@@ -266,8 +296,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                                 child: Text(
                                   'Income',
                                   style: TextStyle(
-                                    fontWeight: _tabController.index == 1 ? FontWeight.w700 : FontWeight.w600,
-                                    color: _tabController.index == 1 ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                    fontWeight: _tabController.index == 1
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: _tabController.index == 1
+                                        ? AppTheme.primaryColor(context)
+                                        : AppTheme.textLightColor(context),
                                     fontSize: 14,
                                     letterSpacing: -0.2,
                                   ),
@@ -326,7 +360,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isExpense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.08),
+                  color:
+                      (isExpense
+                              ? AppTheme.expenseColor(context)
+                              : AppTheme.incomeColor(context))
+                          .withValues(alpha: 0.08),
                   blurRadius: 40,
                   spreadRadius: 8,
                 ),
@@ -359,30 +397,47 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: isExpense ? AppTheme.dangerGradient : AppTheme.successGradient,
+              gradient: isExpense
+                  ? AppTheme.dangerGradient
+                  : AppTheme.successGradient,
               boxShadow: [
                 BoxShadow(
-                  color: (isExpense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.3),
+                  color:
+                      (isExpense
+                              ? AppTheme.expenseColor(context)
+                              : AppTheme.incomeColor(context))
+                          .withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: ElevatedButton.icon(
-            onPressed: () {
-              HapticService.medium();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CategoryDetailScreen(category: null, initialType: type)),
-              );
-            },
+              onPressed: () {
+                HapticService.medium();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        CategoryDetailScreen(category: null, initialType: type),
+                  ),
+                );
+              },
               icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text('Create ${isExpense ? 'Expense' : 'Income'}', style: const TextStyle(color: Colors.white)),
+              label: Text(
+                'Create ${isExpense ? 'Expense' : 'Income'}',
+                style: const TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
           ),
@@ -391,11 +446,15 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
     ).animate().fade(duration: 400.ms).scale(begin: const Offset(0.95, 0.95));
   }
 
-  Future<bool?> _confirmDelete(BuildContext context, TransactionCategory category) {
+  Future<bool?> _confirmDelete(
+    BuildContext context,
+    TransactionCategory category,
+  ) {
     return ConfirmationSheet.show(
       context: context,
       title: 'Delete Category?',
-      description: 'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
+      description:
+          'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.expenseColor(context),
       icon: Icons.delete_forever_rounded,
@@ -420,20 +479,11 @@ class CategoryList extends ConsumerStatefulWidget {
   ConsumerState<CategoryList> createState() => _CategoryListState();
 }
 
-class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepAliveClientMixin {
-  bool _showEntranceAnimations = true;
-
+class _CategoryListState extends ConsumerState<CategoryList>
+    with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
-    // Only show entrance animations once
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        setState(() {
-          _showEntranceAnimations = false;
-        });
-      }
-    });
   }
 
   @override
@@ -442,9 +492,10 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     if (widget.categories.isEmpty) {
-      return context.findAncestorStateOfType<_CategoryManagerScreenState>()!
+      return context
+          .findAncestorStateOfType<_CategoryManagerScreenState>()!
           ._buildEmptyState(context, widget.type);
     }
 
@@ -456,21 +507,26 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
       itemCount: widget.categories.length,
       onReorder: (oldIndex, newIndex) {
         HapticService.medium();
-        ref.read(categoriesProvider.notifier).reorderCategories(oldIndex, newIndex, widget.type);
+        ref
+            .read(categoriesProvider.notifier)
+            .reorderCategories(oldIndex, newIndex, widget.type);
       },
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
           animation: animation,
           builder: (context, child) {
             final elevation = Curves.easeOut.transform(animation.value) * 16;
-            final scale = 1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
+            final scale =
+                1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
             return Transform.scale(
               scale: scale,
               child: Material(
                 elevation: elevation,
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
-                shadowColor: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                shadowColor: AppTheme.primaryColor(
+                  context,
+                ).withValues(alpha: 0.3),
                 child: child,
               ),
             );
@@ -478,231 +534,274 @@ class _CategoryListState extends ConsumerState<CategoryList> with AutomaticKeepA
           child: child,
         );
       },
-      header: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          children: [
-            Text(
-              '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textLightColor(context),
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-    ).animate(
-      key: ValueKey('header_${widget.type.name}'),
-      autoPlay: _showEntranceAnimations,
-    ).fade(duration: 300.ms),
+      header:
+          Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  children: [
+                    Text(
+                      '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textLightColor(context),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate(
+                key: ValueKey('header_${widget.type.name}'),
+                autoPlay: true,
+              )
+              .fade(duration: 300.ms),
       footer: Column(
         children: [
           const Gap(6),
           GestureDetector(
-            onTap: () {
-              HapticService.medium();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CategoryDetailScreen(initialType: widget.type)),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppTheme.dividerColor(context),
+                onTap: () {
+                  HapticService.medium();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          CategoryDetailScreen(initialType: widget.type),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(
+                      context,
+                    ).withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color:
+                              (widget.type == TransactionType.expense
+                                      ? AppTheme.expenseColor(context)
+                                      : AppTheme.incomeColor(context))
+                                  .withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.add_rounded,
+                          size: 18,
+                          color: widget.type == TransactionType.expense
+                              ? AppTheme.expenseColor(context)
+                              : AppTheme.incomeColor(context),
+                        ),
+                      ),
+                      const Gap(10),
+                      Text(
+                        'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: widget.type == TransactionType.expense
+                              ? AppTheme.expenseColor(context)
+                              : AppTheme.incomeColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: (widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context)).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: 18,
-                      color: widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
-                    ),
-                  ),
-                  const Gap(10),
-                  Text(
-                    'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: widget.type == TransactionType.expense ? AppTheme.expenseColor(context) : AppTheme.incomeColor(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ).animate(
-            key: ValueKey('footer_${widget.type.name}'),
-            autoPlay: _showEntranceAnimations,
-          ).fade(delay: 100.ms),
+              )
+              .animate(
+                key: ValueKey('footer_${widget.type.name}'),
+                autoPlay: true,
+              )
+              .fade(delay: 100.ms),
         ],
       ),
       itemBuilder: (context, index) {
         final category = widget.categories[index];
 
         return Dismissible(
-            key: Key('dismiss_${category.id}'),
-            direction: DismissDirection.endToStart,
-            confirmDismiss: (_) {
-              HapticService.medium();
-              return context.findAncestorStateOfType<_CategoryManagerScreenState>()!
-                  ._confirmDelete(context, category);
-            },
-            onDismissed: (_) {
-              HapticService.heavy();
-              ref.read(categoriesProvider.notifier).deleteCategory(category.id);
-            },
-            background: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 24),
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                gradient: AppTheme.dangerGradient,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
-                  Gap(4),
-                  Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            child: GestureDetector(
-              onTap: () {
-                HapticService.light();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CategoryDetailScreen(category: category),
-                  ),
-                );
+              key: Key('dismiss_${category.id}'),
+              direction: DismissDirection.endToStart,
+              confirmDismiss: (_) {
+                HapticService.medium();
+                return context
+                    .findAncestorStateOfType<_CategoryManagerScreenState>()!
+                    ._confirmDelete(context, category);
               },
-              child: Container(
+              onDismissed: (_) {
+                HapticService.heavy();
+                ref
+                    .read(categoriesProvider.notifier)
+                    .deleteCategory(category.id);
+              },
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 24),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
+                  gradient: AppTheme.dangerGradient,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.dividerColor(context)),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-                          child: Row(
-                            children: [
-                              // Drag handle
-                              Listener(
-                                onPointerDown: (_) => HapticService.light(),
-                                child: ReorderableDragStartListener(
-                                  index: index,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.drag_indicator_rounded,
-                                      color: AppTheme.textLightColor(context).withValues(alpha: 0.25),
-                                      size: 20,
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    Gap(4),
+                    Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              child: GestureDetector(
+                onTap: () {
+                  HapticService.light();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          CategoryDetailScreen(category: category),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                            child: Row(
+                              children: [
+                                // Drag handle
+                                Listener(
+                                  onPointerDown: (_) => HapticService.light(),
+                                  child: ReorderableDragStartListener(
+                                    index: index,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.drag_indicator_rounded,
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.25),
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const Gap(8),
-                              // Glowing icon
-                              Container(
-                                padding: const EdgeInsets.all(11),
-                                decoration: BoxDecoration(
-                                  color: category.color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: category.color.withValues(alpha: 0.15),
-                                      blurRadius: 12,
-                                      spreadRadius: 1,
+                                const Gap(8),
+                                // Glowing icon
+                                Container(
+                                  padding: const EdgeInsets.all(11),
+                                  decoration: BoxDecoration(
+                                    color: category.color.withValues(
+                                      alpha: 0.12,
                                     ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  IconUtils.getIcon(category.iconCodePoint),
-                                  color: category.color,
-                                  size: 22,
-                                ),
-                              ),
-                              const Gap(14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      category.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                        letterSpacing: -0.2,
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: category.color.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (category.type == TransactionType.expense && ((category.budget != null && category.budget! > 0) || (category.isPercentBudget && category.budgetPercent != null && category.budgetPercent! > 0))) ...[
-                                      const Gap(4),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    IconUtils.getIcon(category.iconCodePoint),
+                                    color: category.color,
+                                    size: 22,
+                                  ),
+                                ),
+                                const Gap(14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       Text(
-                                        category.isPercentBudget
-                                            ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
-                                            : 'Budget: ${fmt.format(category.budget)}',
-                                        style: TextStyle(
-                                          color: AppTheme.textLightColor(context),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
+                                        category.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          letterSpacing: -0.2,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
+                                      if (category.type ==
+                                              TransactionType.expense &&
+                                          ((category.budget != null &&
+                                                  category.budget! > 0) ||
+                                              (category.isPercentBudget &&
+                                                  category.budgetPercent !=
+                                                      null &&
+                                                  category.budgetPercent! >
+                                                      0))) ...[
+                                        const Gap(4),
+                                        Text(
+                                          category.isPercentBudget
+                                              ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
+                                              : 'Budget: ${fmt.format(category.budget)}',
+                                          style: TextStyle(
+                                            color: AppTheme.textLightColor(
+                                              context,
+                                            ),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              const Gap(8),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 20,
-                                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                              ),
-                            ],
+                                const Gap(8),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.4),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-            ),
-          ),
-        ).animate(
-          key: ValueKey(category.id),
-          autoPlay: _showEntranceAnimations,
-        ).fade(delay: (index * 50).ms).slideX(begin: 0.04);
+              ),
+            )
+            .animate(key: ValueKey(category.id), autoPlay: true)
+            .fade(delay: (index * 50).ms)
+            .slideX(begin: 0.04);
       },
     );
   }
