@@ -150,7 +150,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     leading: _buildIconBox(
                       context,
-                      settings.isDarkMode
+                      Theme.of(context).brightness == Brightness.dark
                           ? Icons.dark_mode_rounded
                           : Icons.light_mode_rounded,
                     ),
@@ -162,7 +162,9 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      settings.isDarkMode ? 'On' : 'Off',
+                      settings.themeMode == ThemeMode.system
+                          ? 'System'
+                          : settings.themeMode == ThemeMode.dark ? 'On' : 'Off',
                       style: TextStyle(
                         color: AppTheme.textLightColor(context),
                         fontSize: 12,
@@ -170,7 +172,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                     trailing: Switch.adaptive(
-                      value: settings.isDarkMode,
+                      value: Theme.of(context).brightness == Brightness.dark,
                       activeTrackColor: AppTheme.primaryColor(context),
                       onChanged: (val) {
                         HapticService.medium();
@@ -621,7 +623,7 @@ class SettingsScreen extends ConsumerWidget {
       context,
       title: 'Delete All Data',
       message:
-          'This will delete all transactions, savings logs, and custom accounts/categories. Defaults will be restored. Are you sure?',
+          'This will delete all transactions, savings logs, accounts, and categories. Are you sure?',
       confirmText: 'Delete Data',
       icon: Icons.delete_forever_rounded,
       isDestructive: true,

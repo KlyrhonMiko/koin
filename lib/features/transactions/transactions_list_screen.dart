@@ -44,22 +44,29 @@ class TransactionsListScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min, // Keep column compact
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(28),
+                          padding: const EdgeInsets.all(36),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
+                            color: AppTheme.surfaceColor(context),
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                                blurRadius: 40,
+                                spreadRadius: 10,
+                              ),
+                            ],
                           ),
-                          child: Icon(Icons.receipt_long_rounded, size: 48, color: AppTheme.primaryColor(context).withValues(alpha: 0.4)),
+                          child: Icon(Icons.receipt_long_rounded, size: 56, color: AppTheme.primaryColor(context).withValues(alpha: 0.6)),
                         ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms).fadeIn(),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                         Text(
                           'No recent activity',
-                          style: TextStyle(color: AppTheme.textColor(context), fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                          style: TextStyle(color: AppTheme.textColor(context), fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5),
                         ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms).fadeIn(),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           'Transactions will appear here once added',
-                          style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 13),
+                          style: TextStyle(color: AppTheme.textLightColor(context).withValues(alpha: 0.6), fontSize: 14),
                         ).animate().slideY(begin: 0.2, delay: 400.ms, duration: 400.ms).fadeIn(),
                       ],
                     ),

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,26 +11,26 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 class SettingsState {
   final Currency currency;
   final Color themeColor;
-  final bool isDarkMode;
+  final ThemeMode themeMode;
   final int analysisFilterIndex;
 
   const SettingsState({
     required this.currency,
     required this.themeColor,
-    required this.isDarkMode,
+    required this.themeMode,
     required this.analysisFilterIndex,
   });
 
   SettingsState copyWith({
     Currency? currency,
     Color? themeColor,
-    bool? isDarkMode,
+    ThemeMode? themeMode,
     int? analysisFilterIndex,
   }) {
     return SettingsState(
       currency: currency ?? this.currency,
       themeColor: themeColor ?? this.themeColor,
-      isDarkMode: isDarkMode ?? this.isDarkMode,
+      themeMode: themeMode ?? this.themeMode,
       analysisFilterIndex: analysisFilterIndex ?? this.analysisFilterIndex,
     );
   }
@@ -38,7 +39,7 @@ class SettingsState {
 class SettingsNotifier extends Notifier<SettingsState> {
   static const String _currencyCodeKey = 'currency_code';
   static const String _themeColorKey = 'theme_color';
-  static const String _isDarkModeKey = 'is_dark_mode';
+  static const String _themeModeKey = 'theme_mode';
   static const String _analysisFilterIndexKey = 'analysis_filter_index';
 
   @override
@@ -47,7 +48,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     final currencyCode = prefs.getString(_currencyCodeKey);
     final themeColorValue = prefs.getInt(_themeColorKey);
-    final isDarkMode = prefs.getBool(_isDarkModeKey) ?? false;
+    final themeModeIndex = prefs.getInt(_themeModeKey);
     final analysisFilterIndex = prefs.getInt(_analysisFilterIndexKey) ?? 0;
 
     final currency = Currency.supportedCurrencies.firstWhere(
@@ -58,11 +59,15 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final themeColor = themeColorValue != null
         ? Color(themeColorValue)
         : const Color(0xFF00D09E);
+        
+    final themeMode = themeModeIndex != null
+        ? ThemeMode.values[themeModeIndex]
+        : ThemeMode.system;
 
     return SettingsState(
       currency: currency,
       themeColor: themeColor,
-      isDarkMode: isDarkMode,
+      themeMode: themeMode,
       analysisFilterIndex: analysisFilterIndex,
     );
   }
@@ -79,9 +84,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     ref.invalidateSelf();
   }
 
-  Future<void> setDarkMode(bool isDark) async {
+  Future<void> setThemeMode(ThemeMode mode) async {
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setBool(_isDarkModeKey, isDark);
+    await prefs.setInt(_themeModeKey, mode.index);
     ref.invalidateSelf();
   }
 
@@ -92,14 +97,16 @@ class SettingsNotifier extends Notifier<SettingsState> {
   }
 
   Future<void> toggleDarkMode() async {
-    await setDarkMode(!state.isDarkMode);
+    final currentIsDark = state.themeMode == ThemeMode.dark || 
+        (state.themeMode == ThemeMode.system && PlatformDispatcher.instance.platformBrightness == Brightness.dark);
+    await setThemeMode(currentIsDark ? ThemeMode.light : ThemeMode.dark);
   }
 
   Future<void> resetSettings() async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove(_currencyCodeKey);
     await prefs.remove(_themeColorKey);
-    await prefs.remove(_isDarkModeKey);
+    await prefs.remove(_themeModeKey);
     await prefs.remove(_analysisFilterIndexKey);
     ref.invalidateSelf();
   }

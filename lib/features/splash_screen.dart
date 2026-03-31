@@ -113,7 +113,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final isDark = settings.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = settings.themeColor;
     final size = MediaQuery.of(context).size;
 
