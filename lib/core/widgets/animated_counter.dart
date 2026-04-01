@@ -114,9 +114,8 @@ class _RollingDigit extends StatelessWidget {
         '$digit',
         key: ValueKey<int>(digit),
         style: style.copyWith(
-          color:
-              style.color?.withValues(alpha: opacity) ??
-              Colors.white.withValues(alpha: opacity),
+          color: (style.color ?? Theme.of(context).colorScheme.onSurface)
+              .withValues(alpha: opacity),
         ),
       ),
     );

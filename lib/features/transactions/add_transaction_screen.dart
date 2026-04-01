@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -859,9 +860,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                   HapticService.light();
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const CategoryManagerScreen(),
+                                    SlideUpRoute(
+                                      page: const CategoryManagerScreen(),
                                     ),
                                   );
                                 },

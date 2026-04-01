@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
@@ -423,9 +424,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 HapticService.medium();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        CategoryDetailScreen(category: null, initialType: type),
+                  SlideUpRoute(
+                    page: CategoryDetailScreen(
+                      category: null,
+                      initialType: type,
+                    ),
                   ),
                 );
               },
@@ -565,9 +568,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   HapticService.medium();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          CategoryDetailScreen(initialType: widget.type),
+                    SlideUpRoute(
+                      page: CategoryDetailScreen(initialType: widget.type),
                     ),
                   );
                 },
@@ -679,9 +681,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   HapticService.light();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          CategoryDetailScreen(category: category),
+                    SlideUpRoute(
+                      page: CategoryDetailScreen(category: category),
                     ),
                   );
                 },

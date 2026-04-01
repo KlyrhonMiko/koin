@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/theme.dart';
@@ -71,47 +72,48 @@ class MainLayout extends ConsumerWidget {
             duration: const Duration(milliseconds: 600),
             curve: Curves.elasticOut,
             scale: currentIndex != 4 ? 1.0 : 0.0,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                HapticService.medium();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AddTransactionScreen(),
-                  ),
-                );
-              },
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Add',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.centerLeft,
-                    child: ClipRect(
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 250),
-                        opacity: currentIndex == 2 ? 0.0 : 1.0,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: currentIndex == 2 ? 0.0 : 1.0,
-                          child: const Text(
-                            ' Transaction',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            softWrap: false,
+            child: _BreathingGlowFAB(
+              glowColor: AppTheme.primaryColor(context),
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  HapticService.medium();
+                  Navigator.push(
+                    context,
+                    SlideUpRoute(page: const AddTransactionScreen()),
+                  );
+                },
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Add',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.centerLeft,
+                      child: ClipRect(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 250),
+                          opacity: currentIndex == 2 ? 0.0 : 1.0,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: currentIndex == 2 ? 0.0 : 1.0,
+                            child: const Text(
+                              ' Transaction',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                icon: const Icon(Icons.add_rounded),
               ),
-              icon: const Icon(Icons.add_rounded),
             ),
           ),
         ),
@@ -345,6 +347,70 @@ class AnimatedClipRect extends StatelessWidget {
           child: open ? child : const SizedBox.shrink(),
         ),
       ),
+    );
+  }
+}
+
+/// A wrapper that adds a breathing glow shadow to the FAB.
+/// Uses a repeating animation to pulse the shadow blur radius
+/// for a subtle, premium "alive" feeling.
+class _BreathingGlowFAB extends StatefulWidget {
+  final Widget child;
+  final Color glowColor;
+
+  const _BreathingGlowFAB({required this.child, required this.glowColor});
+
+  @override
+  State<_BreathingGlowFAB> createState() => _BreathingGlowFABState();
+}
+
+class _BreathingGlowFABState extends State<_BreathingGlowFAB>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        final glowValue = _glowAnimation.value;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: widget.glowColor.withValues(
+                  alpha: 0.15 + 0.2 * glowValue,
+                ),
+                blurRadius: 10 + 16 * glowValue,
+                spreadRadius: -2 + 4 * glowValue,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
     );
   }
 }

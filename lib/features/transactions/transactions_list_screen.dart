@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -205,10 +206,12 @@ class TransactionsListScreen extends ConsumerWidget {
                                             NumberFormat.currency(
                                               symbol: currency.symbol,
                                             ).format(v);
-                                        if (dailyTotal > 0)
+                                        if (dailyTotal > 0) {
                                           fmtBalance = '+$fmtBalance';
-                                        if (dailyTotal < 0)
+                                        }
+                                        if (dailyTotal < 0) {
                                           fmtBalance = '-$fmtBalance';
+                                        }
                                         return fmtBalance;
                                       },
                                       duration: const Duration(
@@ -277,11 +280,10 @@ class TransactionsListScreen extends ConsumerWidget {
                                   HapticService.light();
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          AddTransactionScreen(
-                                            editingTransaction: tx,
-                                          ),
+                                    SlideUpRoute(
+                                      page: AddTransactionScreen(
+                                        editingTransaction: tx,
+                                      ),
                                     ),
                                   );
                                 },

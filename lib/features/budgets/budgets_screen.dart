@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -310,9 +311,8 @@ class BudgetsScreen extends ConsumerWidget {
                                       HapticService.light();
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const CategoryManagerScreen(),
+                                        SlideUpRoute(
+                                          page: const CategoryManagerScreen(),
                                         ),
                                       );
                                     },
@@ -410,9 +410,7 @@ class BudgetsScreen extends ConsumerWidget {
               HapticService.light();
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CategoryManagerScreen(),
-                ),
+                SlideUpRoute(page: const CategoryManagerScreen()),
               );
             },
           ),
@@ -511,9 +509,8 @@ class BudgetsScreen extends ConsumerWidget {
                               HapticService.medium();
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CategoryDetailScreen(),
+                                SlideUpRoute(
+                                  page: const CategoryDetailScreen(),
                                 ),
                               );
                             },
@@ -967,9 +964,7 @@ class BudgetsScreen extends ConsumerWidget {
             HapticService.light();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const CategoryManagerScreen(),
-              ),
+              SlideUpRoute(page: const CategoryManagerScreen()),
             );
           },
           child: Container(

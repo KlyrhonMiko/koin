@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -283,10 +284,7 @@ class DashboardScreen extends ConsumerWidget {
         GestureDetector(
           onTap: () {
             HapticService.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            );
+            Navigator.push(context, SlideUpRoute(page: const SettingsScreen()));
           },
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -483,8 +481,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.income,
                 ),
               ),
@@ -500,8 +498,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.expense,
                 ),
               ),
@@ -517,8 +515,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.transfer,
                 ),
               ),
