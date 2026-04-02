@@ -544,102 +544,235 @@ class TransactionsListScreen extends ConsumerWidget {
     TransactionFilter filter,
     TransactionFilterNotifier filterNotifier,
   ) {
+    final primary = AppTheme.primaryColor(context);
+    final hasFilters = !filter.isEmpty;
+
+    // Count non-query filters
+    int filterCount = 0;
+    if (filter.type != null) filterCount++;
+    if (filter.dateRange != null) filterCount++;
+    if (filter.categoryIds.isNotEmpty) filterCount += filter.categoryIds.length;
+    if (filter.accountIds.isNotEmpty) filterCount += filter.accountIds.length;
+    if (filter.minAmount != null) filterCount++;
+    if (filter.maxAmount != null) filterCount++;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      child: Column(
         children: [
-          Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+          // ── Unified search + filter capsule ──
+          Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceLightColor(context),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
               ),
-              child: TextField(
-                onChanged: (value) => filterNotifier.setQuery(value),
-                decoration: InputDecoration(
-                  hintText: 'Search transactions...',
-                  hintStyle: TextStyle(
+            ),
+            child: Row(
+              children: [
+                // Search icon
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Icon(
+                    Icons.search_rounded,
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.5),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.6),
                     size: 20,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-              ),
-            ),
-          ),
-          const Gap(12),
-          Stack(
-            children: [
-              PressableScale(
-                onTap: () {
-                  HapticService.light();
-                  FilterBottomSheet.show(context);
-                },
-                child: Container(
-                  height: 48,
-                  width: 48,
-                  decoration: BoxDecoration(
-                    color: filter.isEmpty
-                        ? AppTheme.surfaceColor(context)
-                        : AppTheme.primaryColor(context),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: filter.isEmpty
-                            ? Colors.black.withValues(alpha: 0.03)
-                            : AppTheme.primaryColor(
-                                context,
-                              ).withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+
+                // Search field
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) => filterNotifier.setQuery(value),
+                    style: TextStyle(
+                      color: AppTheme.textColor(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search transactions...',
+                      hintStyle: TextStyle(
+                        color: AppTheme.textLightColor(
+                          context,
+                        ).withValues(alpha: 0.4),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.tune_rounded,
-                    color: filter.isEmpty
-                        ? AppTheme.primaryColor(context)
-                        : Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              if (!filter.isEmpty)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
-            ],
+
+                // Divider line
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+                ),
+
+                // Filter button
+                PressableScale(
+                  onTap: () {
+                    HapticService.light();
+                    FilterBottomSheet.show(context);
+                  },
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: hasFilters
+                          ? primary.withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(17),
+                        bottomRight: Radius.circular(17),
+                      ),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          color: hasFilters
+                              ? primary
+                              : AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.5),
+                          size: 20,
+                        ),
+                        if (filterCount > 0)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primary.withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$filterCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // ── Active filter summary strip ──
+          if (hasFilters)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child:
+                  Row(
+                        children: [
+                          Icon(
+                            Icons.filter_list_rounded,
+                            size: 13,
+                            color: primary.withValues(alpha: 0.6),
+                          ),
+                          const Gap(6),
+                          Expanded(
+                            child: Text(
+                              _buildFilterSummary(filter),
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Gap(8),
+                          GestureDetector(
+                            onTap: () {
+                              HapticService.light();
+                              filterNotifier.clearFilters();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Clear',
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                      .animate()
+                      .fadeIn(duration: 200.ms)
+                      .slideY(begin: -0.3, duration: 200.ms),
+            ),
         ],
       ),
     );
+  }
+
+  String _buildFilterSummary(TransactionFilter filter) {
+    final parts = <String>[];
+    if (filter.type != null) {
+      parts.add(
+        filter.type!.name[0].toUpperCase() + filter.type!.name.substring(1),
+      );
+    }
+    if (filter.dateRange != null) {
+      parts.add('Date range');
+    }
+    if (filter.categoryIds.isNotEmpty) {
+      parts.add(
+        '${filter.categoryIds.length} categor${filter.categoryIds.length == 1 ? 'y' : 'ies'}',
+      );
+    }
+    if (filter.accountIds.isNotEmpty) {
+      parts.add(
+        '${filter.accountIds.length} account${filter.accountIds.length == 1 ? '' : 's'}',
+      );
+    }
+    if (filter.minAmount != null || filter.maxAmount != null) {
+      parts.add('Amount range');
+    }
+    return parts.join(' • ');
   }
 }

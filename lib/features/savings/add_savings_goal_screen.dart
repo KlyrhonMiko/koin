@@ -185,10 +185,12 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Please enter an amount';
-                              if (double.tryParse(value) == null)
+                              }
+                              if (double.tryParse(value) == null) {
                                 return 'Please enter a valid number';
+                              }
                               return null;
                             },
                           ),

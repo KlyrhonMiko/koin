@@ -20,6 +20,7 @@ import 'package:koin/features/reports/report_service.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/date_range_selector.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -66,41 +67,48 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                       .fade(duration: 500.ms)
                       .slideY(begin: -0.1, curve: Curves.easeOutCubic),
                   const Gap(32),
-                  _buildDateSelector(context)
-                      .animate()
-                      .fade(delay: 100.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  DateRangeSelector(
+                    initialDateRange: _dateRange,
+                    onChanged: (range) {
+                      if (range != null) {
+                        setState(() => _dateRange = range);
+                      }
+                    },
+                  ).animate().fade(delay: 100.ms, duration: 500.ms),
                   const Gap(24),
                   _buildSummaryCard(context, ref, currencySymbol)
                       .animate()
-                      .fade(delay: 150.ms, duration: 500.ms)
+                      .fade(delay: 200.ms, duration: 500.ms)
                       .slideY(begin: 0.1, curve: Curves.easeOutCubic),
                   const Gap(28),
                   _buildSectionHeader(
                     'Transaction Type',
-                  ).animate().fade(delay: 200.ms, duration: 500.ms),
+                    subtitle: 'Filter by income or expense',
+                  ).animate().fade(delay: 250.ms, duration: 500.ms),
                   const Gap(12),
                   _buildTypeSelector(context)
                       .animate()
-                      .fade(delay: 250.ms, duration: 500.ms)
+                      .fade(delay: 300.ms, duration: 500.ms)
                       .slideY(begin: 0.1, curve: Curves.easeOutCubic),
                   const Gap(28),
                   _buildSectionHeader(
                     'Categories',
-                  ).animate().fade(delay: 300.ms, duration: 500.ms),
+                    subtitle: 'Narrow down by spending categories',
+                  ).animate().fade(delay: 350.ms, duration: 500.ms),
                   const Gap(12),
                   _buildCategorySelector(context, categories)
                       .animate()
-                      .fade(delay: 350.ms, duration: 500.ms)
+                      .fade(delay: 400.ms, duration: 500.ms)
                       .slideY(begin: 0.1, curve: Curves.easeOutCubic),
                   const Gap(28),
                   _buildSectionHeader(
                     'Accounts',
-                  ).animate().fade(delay: 400.ms, duration: 500.ms),
+                    subtitle: 'Select specific accounts to include',
+                  ).animate().fade(delay: 450.ms, duration: 500.ms),
                   const Gap(12),
                   _buildAccountSelector(context, accounts)
                       .animate()
-                      .fade(delay: 450.ms, duration: 500.ms)
+                      .fade(delay: 500.ms, duration: 500.ms)
                       .slideY(begin: 0.1, curve: Curves.easeOutCubic),
                 ],
               ),
@@ -166,7 +174,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         ref.watch(categoriesProvider).value ?? [],
         ref.watch(accountProvider).value ?? [],
         currencySymbol,
-        filtered.length,
       );
     }
 
@@ -261,136 +268,31 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 19,
-        fontWeight: FontWeight.w800,
-        color: AppTheme.textColor(context),
-        letterSpacing: -0.4,
-      ),
-    );
-  }
-
-  Widget _buildDateSelector(BuildContext context) {
-    return PressableScale(
-      onTap: () async {
-        HapticService.light();
-        final picked = await showDateRangePicker(
-          context: context,
-          initialDateRange: _dateRange,
-          firstDate: DateTime(2020),
-          lastDate: DateTime.now(),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: AppTheme.primaryColor(context),
-                  primary: AppTheme.primaryColor(context),
-                  onPrimary: Colors.white,
-                  surface: AppTheme.surfaceColor(context),
-                  onSurface: AppTheme.textColor(context),
-                ),
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null) {
-          setState(() => _dateRange = picked);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor(context).withValues(alpha: 0.05),
-              AppTheme.primaryColor(context).withValues(alpha: 0.12),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.2),
-            width: 1.5,
+  Widget _buildSectionHeader(String title, {String? subtitle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textColor(context),
+            letterSpacing: -0.4,
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Icon(
-                Icons.calendar_month_rounded,
-                size: 100,
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
-              ),
+        if (subtitle != null) ...[
+          const Gap(3),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
             ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(context),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor(
-                          context,
-                        ).withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.calendar_today_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const Gap(20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Time Period',
-                        style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        '${DateFormat('MMM d').format(_dateRange.start)} — ${DateFormat('MMM d, yyyy').format(_dateRange.end)}',
-                        style: TextStyle(
-                          color: AppTheme.textColor(context),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.5),
-                  size: 14,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -686,25 +588,16 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     List<TransactionCategory> categories,
     List<Account> accounts,
     String currencySymbol,
-    int transactionCount,
   ) {
     return Align(
       alignment: Alignment.bottomCenter,
       child: ClipRRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppTheme.backgroundColor(context).withValues(alpha: 0.7),
-                  AppTheme.backgroundColor(context).withValues(alpha: 0.95),
-                  AppTheme.backgroundColor(context),
-                ],
-              ),
+              color: AppTheme.backgroundColor(context).withValues(alpha: 0.8),
               border: Border(
                 top: BorderSide(
                   color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
@@ -717,14 +610,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                 Expanded(
                   child: _buildExportButton(
                     context,
-                    'CSV',
-                    '($transactionCount)',
+                    'Export CSV',
                     Icons.grid_on_rounded,
-                    const LinearGradient(
-                      colors: [Color(0xFF00B09B), Color(0xFF96C93D)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                    AppTheme.textColor(context),
                     () => _handleExport(
                       context,
                       categories,
@@ -734,21 +623,14 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     ),
                   ),
                 ),
-                const Gap(16),
+                const Gap(12),
                 Expanded(
                   child: _buildExportButton(
                     context,
-                    'PDF',
-                    'Report',
+                    'Export PDF',
                     Icons.picture_as_pdf_rounded,
-                    LinearGradient(
-                      colors: [
-                        AppTheme.primaryColor(context),
-                        AppTheme.primaryColor(context).withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    AppTheme.primaryColor(context),
+                    AppTheme.primaryColor(context),
                     () => _handleExport(
                       context,
                       categories,
@@ -769,76 +651,31 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   Widget _buildExportButton(
     BuildContext context,
     String label,
-    String subLabel,
     IconData icon,
-    Gradient gradient,
+    Color borderColor,
+    Color textColor,
     VoidCallback onTap,
   ) {
     return PressableScale(
       onTap: onTap,
       child: Container(
-        height: 60,
+        height: 56,
         decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: (gradient as LinearGradient).colors.first.withValues(
-                alpha: 0.3,
-              ),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: 1.5),
         ),
-        child: Stack(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Positioned(
-              right: -10,
-              top: -10,
-              child: Icon(
-                icon,
-                color: Colors.white.withValues(alpha: 0.1),
-                size: 60,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 18),
-                  ),
-                  const Gap(12),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        subLabel,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            Icon(icon, color: textColor, size: 18),
+            const Gap(10),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
           ],

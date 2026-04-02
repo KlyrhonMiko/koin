@@ -222,19 +222,19 @@ class ReportService {
             children: [
               _buildSummaryCard(
                 'TOTAL INCOME',
-                '$currencySymbol${totalIncome.toStringAsFixed(2)}',
+                '${_sanitizeCurrency(currencySymbol)}${totalIncome.toStringAsFixed(2)}',
                 incomeColor,
               ),
               pw.SizedBox(width: 16),
               _buildSummaryCard(
                 'TOTAL EXPENSE',
-                '$currencySymbol${totalExpense.toStringAsFixed(2)}',
+                '${_sanitizeCurrency(currencySymbol)}${totalExpense.toStringAsFixed(2)}',
                 expenseColor,
               ),
               pw.SizedBox(width: 16),
               _buildSummaryCard(
                 'NET BALANCE',
-                '$currencySymbol${netBalance.toStringAsFixed(2)}',
+                '${_sanitizeCurrency(currencySymbol)}${netBalance.toStringAsFixed(2)}',
                 netBalance >= 0 ? incomeColor : expenseColor,
               ),
             ],
@@ -465,9 +465,15 @@ class ReportService {
   }
 
   static String _sanitizeCurrency(String symbol) {
-    // Map problematic symbols to safe alternatives if they might cause issues
-    // though the best fix is a font that supports them.
-    final map = {'₹': 'Rs.', '₱': 'P', '€': 'E', '£': 'L', '¥': 'Y'};
+    // Map problematic symbols to safe alternatives that are universally supported.
+    final map = {
+      '₹': 'INR ',
+      '₱': 'PHP ',
+      '€': 'EUR ',
+      '£': 'GBP ',
+      '¥': 'JPY ',
+      '\$': '\$',
+    };
     return map[symbol] ?? symbol;
   }
 }

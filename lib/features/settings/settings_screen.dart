@@ -928,64 +928,101 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(
+          bottom: 32,
+          left: 24,
+          right: 24,
+          top: 12,
+        ),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 40,
+              offset: const Offset(0, -10),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Gap(12),
             Container(
-              width: 40,
-              height: 4,
+              width: 48,
+              height: 5,
               decoration: BoxDecoration(
                 color: AppTheme.dividerColor(context),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(2.5),
               ),
             ),
-            const Gap(20),
-            const Text(
-              'Select Theme Mode',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const Gap(20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  _buildThemeOption(
-                    context,
-                    ref,
-                    title: 'Follow System',
-                    subtitle: 'Match your device\'s theme settings',
-                    icon: Icons.brightness_auto_rounded,
-                    mode: ThemeMode.system,
-                    isSelected: currentMode == ThemeMode.system,
-                  ),
-                  const Gap(8),
-                  _buildThemeOption(
-                    context,
-                    ref,
-                    title: 'Light Mode',
-                    subtitle: 'Always use a light appearance',
-                    icon: Icons.light_mode_rounded,
-                    mode: ThemeMode.light,
-                    isSelected: currentMode == ThemeMode.light,
-                  ),
-                  const Gap(8),
-                  _buildThemeOption(
-                    context,
-                    ref,
-                    title: 'Dark Mode',
-                    subtitle: 'Always use a dark appearance',
-                    icon: Icons.dark_mode_rounded,
-                    mode: ThemeMode.dark,
-                    isSelected: currentMode == ThemeMode.dark,
-                  ),
-                ],
+            const Gap(24),
+            Text(
+              'App Appearance',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textColor(context),
+                letterSpacing: -0.5,
               ),
+            ),
+            const Gap(8),
+            Text(
+              'Choose how Koin looks to you',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textLightColor(context),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Gap(32),
+            Row(
+              children: [
+                Expanded(
+                  child:
+                      _buildThemeOption(
+                            context,
+                            ref,
+                            title: 'System',
+                            icon: Icons.brightness_auto_rounded,
+                            mode: ThemeMode.system,
+                            isSelected: currentMode == ThemeMode.system,
+                          )
+                          .animate()
+                          .fadeIn(delay: 50.ms)
+                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                ),
+                const Gap(12),
+                Expanded(
+                  child:
+                      _buildThemeOption(
+                            context,
+                            ref,
+                            title: 'Light',
+                            icon: Icons.light_mode_rounded,
+                            mode: ThemeMode.light,
+                            isSelected: currentMode == ThemeMode.light,
+                          )
+                          .animate()
+                          .fadeIn(delay: 100.ms)
+                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                ),
+                const Gap(12),
+                Expanded(
+                  child:
+                      _buildThemeOption(
+                            context,
+                            ref,
+                            title: 'Dark',
+                            icon: Icons.dark_mode_rounded,
+                            mode: ThemeMode.dark,
+                            isSelected: currentMode == ThemeMode.dark,
+                          )
+                          .animate()
+                          .fadeIn(delay: 150.ms)
+                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                ),
+              ],
             ),
           ],
         ),
@@ -997,68 +1034,84 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required String title,
-    required String subtitle,
     required IconData icon,
     required ThemeMode mode,
     required bool isSelected,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? AppTheme.primaryColor(context).withValues(alpha: 0.08)
-            : AppTheme.surfaceLightColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: isSelected
-            ? Border.all(color: AppTheme.primaryColor(context), width: 1.5)
-            : Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: ListTile(
-        onTap: () {
-          HapticService.light();
-          ref.read(settingsProvider.notifier).setThemeMode(mode);
-          Navigator.pop(context);
-        },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.primaryColor(context)
-                : AppTheme.dividerColor(context),
-            borderRadius: BorderRadius.circular(10),
+    final primaryColor = AppTheme.primaryColor(context);
+    final surfaceColor = AppTheme.surfaceLightColor(context);
+
+    return GestureDetector(
+      onTap: () {
+        HapticService.light();
+        ref.read(settingsProvider.notifier).setThemeMode(mode);
+        Navigator.pop(context);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? primaryColor.withValues(alpha: 0.08)
+              : surfaceColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? primaryColor : AppTheme.dividerColor(context),
+            width: isSelected ? 2 : 1,
           ),
-          child: Icon(
-            icon,
-            color: isSelected ? Colors.white : AppTheme.textColor(context),
-            size: 20,
-          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected
-                ? AppTheme.primaryColor(context)
-                : AppTheme.textColor(context),
-            fontSize: 15,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : surfaceColor,
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: AppTheme.dividerColor(
+                          context,
+                        ).withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected
+                    ? Colors.white
+                    : AppTheme.textLightColor(context),
+                size: 28,
+              ),
+            ),
+            const Gap(16),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? primaryColor : AppTheme.textColor(context),
+                fontSize: 14,
+                letterSpacing: -0.3,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppTheme.textLightColor(context),
-          ),
-        ),
-        trailing: isSelected
-            ? Icon(
-                Icons.check_circle_rounded,
-                color: AppTheme.primaryColor(context),
-                size: 22,
-              )
-            : null,
       ),
     );
   }

@@ -117,12 +117,13 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
         state = state.copyWith(lastWords: result.recognizedWords);
       },
       localeId: preferredLocaleId,
-      // Removed deprecated `onDevice: true` to allow better OS-level fallback accuracy
-      listenMode: ListenMode.dictation,
-      partialResults: true,
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
-      cancelOnError: true,
+      listenOptions: SpeechListenOptions(
+        listenMode: ListenMode.dictation,
+        partialResults: true,
+        cancelOnError: true,
+      ),
     );
   }
 

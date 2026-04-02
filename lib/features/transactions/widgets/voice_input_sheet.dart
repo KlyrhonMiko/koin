@@ -14,7 +14,7 @@ import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:gap/gap.dart';
 
 class VoiceInputSheet extends ConsumerStatefulWidget {
-  const VoiceInputSheet({Key? key}) : super(key: key);
+  const VoiceInputSheet({super.key});
 
   @override
   ConsumerState<VoiceInputSheet> createState() => _VoiceInputSheetState();
