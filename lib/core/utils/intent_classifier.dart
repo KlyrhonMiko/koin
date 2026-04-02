@@ -290,10 +290,11 @@ class IntentClassifier {
   /// Simple stemmer to handle common English/Tagalog suffixes
   static String _stem(String word) {
     if (word.length <= 3) return word; // Prevent over-stemming very short words
-    if (word.endsWith('ies')) return word.substring(0, word.length - 3) + 'y';
+    if (word.endsWith('ies')) return '${word.substring(0, word.length - 3)}y';
     if (word.endsWith('es')) return word.substring(0, word.length - 2);
-    if (word.endsWith('s') && !word.endsWith('ss'))
+    if (word.endsWith('s') && !word.endsWith('ss')) {
       return word.substring(0, word.length - 1);
+    }
     if (word.endsWith('ing')) return word.substring(0, word.length - 3);
     if (word.endsWith('ed')) return word.substring(0, word.length - 2);
     if (word.endsWith('ly')) return word.substring(0, word.length - 2);
