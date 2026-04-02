@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/transaction.dart';
 
@@ -456,23 +457,87 @@ class IntentClassifier {
     'buck',
     'php',
     'usd',
+    'uh',
+    'um',
+    'ah',
+    'like',
+    'basically',
+    'literally',
+    'ang',
+    'ng',
+    'sa',
+    'mga',
+    'lang',
+    'pa',
+    'na',
+    'yung',
+    'eh',
+    'naman',
+    'din',
+    'rin',
+    'daw',
+    'po',
+    'opo',
+    'naka',
+    'nag',
+    'si',
+    'ni',
+    'kay',
+    'o',
   };
 
-  /// Simple stemmer to handle common English/Tagalog suffixes
+  /// Simple stemmer to handle common English/Tagalog suffixes safely
   static String _stem(String word) {
-    if (word.length <= 3) return word; // Prevent over-stemming very short words
-    if (word.endsWith('ies')) return '${word.substring(0, word.length - 3)}y';
-    if (word.endsWith('es')) return word.substring(0, word.length - 2);
-    if (word.endsWith('s') && !word.endsWith('ss')) {
+    if (word.length <= 3) {
+      return word; // Prevent over-stemming very short words
+    }
+    if (word.endsWith('ies') && word.length > 4) {
+      return '${word.substring(0, word.length - 3)}y';
+    }
+    if (word.endsWith('es') && word.length > 4) {
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('s') &&
+        !word.endsWith('ss') &&
+        !word.endsWith('is') &&
+        !word.endsWith('us') &&
+        word.length > 3) {
       return word.substring(0, word.length - 1);
     }
-    if (word.endsWith('ing')) return word.substring(0, word.length - 3);
-    if (word.endsWith('ed')) return word.substring(0, word.length - 2);
-    if (word.endsWith('ly')) return word.substring(0, word.length - 2);
+    if (word.endsWith('ing') && word.length > 5) {
+      return word.substring(0, word.length - 3);
+    }
+    if (word.endsWith('ed') && word.length > 4) {
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('ly') && word.length > 4) {
+      return word.substring(0, word.length - 2);
+    }
     return word;
   }
 
-  /// Returns the category intent key matched using Bag-of-Words and Stemming TF logic + Auto-Learning.
+  /// Computes the Levenshtein distance between two strings
+  static int _levenshteinDistance(String a, String b) {
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
+
+    List<int> v0 = List<int>.generate(b.length + 1, (i) => i);
+    List<int> v1 = List<int>.filled(b.length + 1, 0);
+
+    for (int i = 0; i < a.length; i++) {
+      v1[0] = i + 1;
+      for (int j = 0; j < b.length; j++) {
+        int cost = (a[i] == b[j]) ? 0 : 1;
+        v1[j + 1] = min(v1[j] + 1, min(v0[j + 1] + 1, v0[j] + cost));
+      }
+      for (int j = 0; j < v0.length; j++) {
+        v0[j] = v1[j];
+      }
+    }
+    return v1[b.length];
+  }
+
+  /// Returns the category intent key matched using Bag-of-Words and Stemming TF logic + Auto-Learning + Fuzzy matching.
   static String? classifyIntent(
     String text,
     List<TransactionCategory> categories,
@@ -488,22 +553,44 @@ class IntentClassifier {
         .where((w) => w.isNotEmpty)
         .toList();
 
-    // 1. Remove stopwords and 2. Stem remaining tokens
-    final tokens = rawTokens
+    // 1. Remove stopwords
+    final nonStopTokens = rawTokens
         .where((w) => !_stopwords.contains(w))
-        .map(_stem)
         .toList();
 
-    if (tokens.isEmpty) return null;
+    if (nonStopTokens.isEmpty) return null;
+
+    // 2. Generate Stemmed Features (Unigrams, Bigrams, and Trigrams)
+    final List<String> tokenFeatures = [];
+    for (int i = 0; i < nonStopTokens.length; i++) {
+      tokenFeatures.add(_stem(nonStopTokens[i]));
+      if (i < nonStopTokens.length - 1) {
+        tokenFeatures.add(
+          '${_stem(nonStopTokens[i])} ${_stem(nonStopTokens[i + 1])}',
+        );
+      }
+      if (i < nonStopTokens.length - 2) {
+        tokenFeatures.add(
+          '${_stem(nonStopTokens[i])} ${_stem(nonStopTokens[i + 1])} ${_stem(nonStopTokens[i + 2])}',
+        );
+      }
+    }
 
     // Dynamically inject custom categories into corpus, applying stemming to everything
     Map<String, List<String>> dynamicCorpus = Map.from(
-      _corpus.map((k, v) => MapEntry(k, v.map(_stem).toList())),
+      _corpus.map(
+        (k, v) => MapEntry(
+          k,
+          v.map((w) {
+            return w.split(' ').map(_stem).join(' ');
+          }).toList(),
+        ),
+      ),
     );
 
     for (var cat in categories) {
       final nameLower = cat.name.toLowerCase();
-      final stemmedName = _stem(nameLower);
+      final stemmedName = nameLower.split(' ').map(_stem).join(' ');
 
       if (!dynamicCorpus.containsKey(cat.name)) {
         dynamicCorpus[cat.name] = [stemmedName, nameLower];
@@ -549,22 +636,38 @@ class IntentClassifier {
     Map<String, double> scores = {for (var key in dynamicCorpus.keys) key: 0.0};
 
     // Calculate term frequency weights including historical auto-learning
-    for (var token in tokens) {
+    for (var tokenFeature in tokenFeatures) {
       for (var entry in dynamicCorpus.entries) {
         final category = entry.key;
         final keywords = entry.value;
 
-        // Exact match on stem gets full weight
-        if (keywords.contains(token)) {
-          scores[category] = scores[category]! + 1.0;
+        // Exact match on stem gets full weight (bigrams usually hit exactly)
+        if (keywords.contains(tokenFeature)) {
+          scores[category] =
+              scores[category]! + 1.2; // Extra reward for explicit match
         } else {
-          // Similarity matching: if the token is extremely close to the keyword root
+          // Similarity matching using Levenshtein distance for typos
           for (var keyword in keywords) {
-            if (keyword.length >= 4 && token.length >= 4) {
-              if (token.startsWith(keyword) || keyword.startsWith(token)) {
-                // To avoid overly aggressive matching, ensure lengths are very close
-                if ((token.length - keyword.length).abs() <= 1) {
+            if (keyword.length >= 4 && tokenFeature.length >= 4) {
+              if (tokenFeature.startsWith(keyword) ||
+                  keyword.startsWith(tokenFeature)) {
+                // Prefix match is very strong
+                if ((tokenFeature.length - keyword.length).abs() <= 2) {
                   scores[category] = scores[category]! + 0.8;
+                  break;
+                }
+              } else {
+                // Levenshtein fuzzy match
+                int distance = _levenshteinDistance(tokenFeature, keyword);
+                // Allow 1 typo per 5 characters, max 2
+                int maxAllowedDistance = (keyword.length / 5).floor().clamp(
+                  1,
+                  2,
+                );
+                if (distance <= maxAllowedDistance) {
+                  scores[category] =
+                      scores[category]! +
+                      (0.7 / distance); // Less reward for higher distance
                   break;
                 }
               }
@@ -573,19 +676,21 @@ class IntentClassifier {
         }
       }
 
-      // Add auto-learning weight from past transactions
-      historyWeights.forEach((catName, tokenCounts) {
-        if (tokenCounts.containsKey(token)) {
-          final occurrences = tokenCounts[token]!;
-          // Cap the maximum history weight (2.5) so a frequently occurring historical root exerts strong preference
-          final bonus = (0.75 * occurrences).clamp(0.75, 2.5);
+      // Add auto-learning weight from past transactions (we only loop over tokens, skip bigrams for history)
+      if (!tokenFeature.contains(' ')) {
+        historyWeights.forEach((catName, tokenCounts) {
+          if (tokenCounts.containsKey(tokenFeature)) {
+            final occurrences = tokenCounts[tokenFeature]!;
+            // Cap the maximum history weight (2.5) so a frequently occurring historical root exerts strong preference
+            final bonus = (0.75 * occurrences).clamp(0.75, 2.5);
 
-          if (!scores.containsKey(catName)) {
-            scores[catName] = 0.0;
+            if (!scores.containsKey(catName)) {
+              scores[catName] = 0.0;
+            }
+            scores[catName] = scores[catName]! + bonus;
           }
-          scores[catName] = scores[catName]! + bonus;
-        }
-      });
+        });
+      }
     }
 
     // Get the category with max score

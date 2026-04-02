@@ -118,7 +118,7 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
       },
       localeId: preferredLocaleId,
       listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
+      pauseFor: const Duration(seconds: 8),
       listenOptions: SpeechListenOptions(
         listenMode: ListenMode.dictation,
         partialResults: true,
