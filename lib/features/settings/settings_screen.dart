@@ -490,16 +490,28 @@ class SettingsScreen extends ConsumerWidget {
         );
 
         if (context.mounted && savedPath != null && savedPath.isNotEmpty) {
-          KoinSnackBar.success(context, 'Backup saved successfully');
+          KoinSnackBar.success(
+            context,
+            'Backup saved successfully',
+            subtitle: 'Your database is now safe',
+          );
         }
       } else {
         if (context.mounted) {
-          KoinSnackBar.error(context, 'Database file not found!');
+          KoinSnackBar.error(
+            context,
+            'Database file not found!',
+            subtitle: 'Please try again or contact support',
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        KoinSnackBar.error(context, 'Error creating backup: $e');
+        KoinSnackBar.error(
+          context,
+          'Error creating backup',
+          subtitle: 'An unexpected error occurred: $e',
+        );
       }
     }
   }
@@ -555,15 +567,27 @@ class SettingsScreen extends ConsumerWidget {
           ref.invalidate(accountProvider);
           ref.invalidate(categoriesProvider);
           ref.invalidate(savingsGoalsProvider);
-          KoinSnackBar.success(context, 'Data restored successfully!');
+          KoinSnackBar.success(
+            context,
+            'Data restored successfully!',
+            subtitle: 'App will now refresh with your data',
+          );
         } else {
           if (!context.mounted) return;
-          KoinSnackBar.error(context, 'Failed to restore data.');
+          KoinSnackBar.error(
+            context,
+            'Failed to restore data.',
+            subtitle: 'The backup file might be corrupted',
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        KoinSnackBar.error(context, 'Error restoring data: $e');
+        KoinSnackBar.error(
+          context,
+          'Error restoring data',
+          subtitle: 'Check the backup file and try again: $e',
+        );
       }
     }
   }
@@ -588,7 +612,11 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(accountProvider);
 
       if (context.mounted) {
-        KoinSnackBar.success(context, 'All transactions deleted.');
+        KoinSnackBar.success(
+          context,
+          'All transactions deleted',
+          subtitle: 'Your transaction history has been cleared',
+        );
       }
     }
   }
@@ -612,7 +640,11 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(savingsGoalsProvider);
 
       if (context.mounted) {
-        KoinSnackBar.success(context, 'All data deleted.');
+        KoinSnackBar.success(
+          context,
+          'All data deleted',
+          subtitle: 'All records, accounts and goals are gone',
+        );
       }
     }
   }
@@ -639,7 +671,8 @@ class SettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         KoinSnackBar.success(
           context,
-          'App has been reset to factory defaults.',
+          'App Factory Reset',
+          subtitle: 'Starting fresh with a clean slate',
         );
       }
     }

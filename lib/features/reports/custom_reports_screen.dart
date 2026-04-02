@@ -730,7 +730,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         if (mounted) {
           KoinSnackBar.info(
             context,
-            'No transactions found for the selected filters',
+            'No Data Found',
+            subtitle: 'Try adjusting your filters or date range',
           );
         }
         return;
@@ -790,7 +791,11 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     } catch (e) {
       debugPrint('Export error: $e');
       if (!context.mounted) return;
-      KoinSnackBar.error(context, 'Failed to export: $e');
+      KoinSnackBar.error(
+        context,
+        'Export Failed',
+        subtitle: 'An error occurred while saving the report: $e',
+      );
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }

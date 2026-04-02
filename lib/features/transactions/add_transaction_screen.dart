@@ -129,20 +129,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedAccountId == null ||
         (isTransfer && _selectedToAccountId == null)) {
       HapticService.error();
-      _showErrorSnackbar('Please fill all required fields');
+      _showErrorSnackbar(
+        'Please fill all required fields',
+        subtitle: 'Amount, Category, and Account are mandatory',
+      );
       return;
     }
 
     if (isTransfer && _selectedAccountId == _selectedToAccountId) {
       HapticService.error();
-      _showErrorSnackbar('Source and destination must be different');
+      _showErrorSnackbar(
+        'Source and destination must be different',
+        subtitle: 'You cannot transfer money to the same account',
+      );
       return;
     }
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
       HapticService.error();
-      _showErrorSnackbar('Enter a valid amount');
+      _showErrorSnackbar(
+        'Enter a valid amount',
+        subtitle: 'The amount must be greater than zero',
+      );
       return;
     }
 
@@ -166,8 +175,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     Navigator.pop(context);
   }
 
-  void _showErrorSnackbar(String message) {
-    KoinSnackBar.error(context, message);
+  void _showErrorSnackbar(String message, {String? subtitle}) {
+    KoinSnackBar.error(context, message, subtitle: subtitle);
   }
 
   // ═══════════════════════════════════════════════════════
