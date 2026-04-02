@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 
 class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
   @override
@@ -50,10 +51,33 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
   }
 }
 
-final savingsGoalsProvider = AsyncNotifierProvider<SavingsGoalsNotifier, List<SavingsGoal>>(() {
-  return SavingsGoalsNotifier();
+final savingsGoalsProvider =
+    AsyncNotifierProvider<SavingsGoalsNotifier, List<SavingsGoal>>(() {
+      return SavingsGoalsNotifier();
+    });
+
+final computedSavingsGoalsProvider = Provider<AsyncValue<List<SavingsGoal>>>((
+  ref,
+) {
+  final asyncGoals = ref.watch(savingsGoalsProvider);
+  final stats = ref.watch(dashboardStatsProvider);
+
+  return asyncGoals.whenData((goals) {
+    return goals.map((goal) {
+      if (goal.linkedAccountId != null) {
+        final balance = stats.accountBalances[goal.linkedAccountId!];
+        if (balance != null) {
+          return goal.copyWith(currentAmount: balance);
+        }
+      }
+      return goal;
+    }).toList();
+  });
 });
 
-final savingsLogsProvider = FutureProvider.family<List<SavingsLog>, String>((ref, goalId) async {
+final savingsLogsProvider = FutureProvider.family<List<SavingsLog>, String>((
+  ref,
+  goalId,
+) async {
   return await DatabaseHelper.instance.getSavingsLogs(goalId);
 });

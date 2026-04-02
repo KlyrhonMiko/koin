@@ -20,7 +20,7 @@ class SavingsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goalsAsync = ref.watch(savingsGoalsProvider);
+    final goalsAsync = ref.watch(computedSavingsGoalsProvider);
     final settings = ref.watch(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(
       name: settings.currency.code,

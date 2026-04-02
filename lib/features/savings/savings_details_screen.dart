@@ -14,6 +14,10 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
+import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/models/account.dart';
+import 'package:koin/core/providers/transaction_provider.dart';
+import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 
@@ -250,7 +254,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final goalsAsync = ref.watch(savingsGoalsProvider);
+    final goalsAsync = ref.watch(computedSavingsGoalsProvider);
     final goal = goalsAsync.when(
       data: (goals) => goals.firstWhere(
         (g) => g.id == widget.goal.id,
@@ -265,35 +269,51 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     final currencyFormat = NumberFormat.simpleCurrency(
       name: settings.currency.code,
     );
+    final accountsAsync = ref.watch(accountProvider);
+    Account? linkedAccount;
+    if (goal.linkedAccountId != null && accountsAsync.hasValue) {
+      try {
+        linkedAccount = accountsAsync.value!.firstWhere(
+          (a) => a.id == goal.linkedAccountId,
+        );
+      } catch (_) {}
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: AppTheme.primaryGradient(context),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+      floatingActionButton: linkedAccount != null
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: AppTheme.primaryGradient(context),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor(
+                      context,
+                    ).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  HapticService.medium();
+                  _showAddLogSheet();
+                },
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                icon: const Icon(Icons.add_rounded, color: Colors.white),
+                label: const Text(
+                  'Add Savings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            HapticService.medium();
-            _showAddLogSheet();
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          icon: const Icon(Icons.add_rounded, color: Colors.white),
-          label: const Text(
-            'Add Savings',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -304,16 +324,47 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   const KoinBackButton(),
                   const Gap(16),
                   Expanded(
-                    child: Text(
-                      goal.name,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: AppTheme.textColor(context),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          goal.name,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: AppTheme.textColor(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (linkedAccount != null) ...[
+                          const Gap(2),
+                          Row(
+                            children: [
+                              Icon(
+                                IconData(
+                                  linkedAccount.iconCodePoint,
+                                  fontFamily: 'MaterialIcons',
+                                ),
+                                size: 12,
+                                color: linkedAccount.color,
+                              ),
+                              const Gap(4),
+                              Text(
+                                linkedAccount.name,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   IconButton(
@@ -356,12 +407,21 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     const Gap(28),
                     _buildSavingsNeededSection(context, goal, currencyFormat),
                     const Gap(28),
-                    _buildActivitySection(
-                      context,
-                      goal,
-                      logsAsync,
-                      currencyFormat,
-                    ),
+                    if (linkedAccount != null)
+                      _buildLinkedActivitySection(
+                        context,
+                        goal,
+                        ref.watch(transactionProvider),
+                        currencyFormat,
+                        linkedAccount,
+                      )
+                    else
+                      _buildActivitySection(
+                        context,
+                        goal,
+                        logsAsync,
+                        currencyFormat,
+                      ),
                   ],
                 ),
               ),
@@ -771,6 +831,74 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         .slideY(begin: 0.04, curve: Curves.easeOutCubic);
   }
 
+  Widget _buildLinkedActivitySection(
+    BuildContext context,
+    SavingsGoal goal,
+    AsyncValue<List<AppTransaction>> transactionsAsync,
+    NumberFormat currencyFormat,
+    Account linkedAccount,
+  ) {
+    return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Account Activity',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textColor(context),
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const Gap(8),
+                Icon(
+                  Icons.sync_rounded,
+                  size: 16,
+                  color: AppTheme.primaryColor(context),
+                ),
+              ],
+            ),
+            const Gap(6),
+            Text(
+              'Transactions from ${linkedAccount.name}',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+              ),
+            ),
+            const Gap(14),
+            transactionsAsync.when(
+              data: (transactions) {
+                final linkedTxs = transactions
+                    .where(
+                      (t) =>
+                          t.accountId == linkedAccount.id ||
+                          t.toAccountId == linkedAccount.id,
+                    )
+                    .toList();
+
+                if (linkedTxs.isEmpty) {
+                  return _buildEmptyActivity(context);
+                }
+                return _buildTransactionTimeline(
+                  context,
+                  linkedTxs,
+                  currencyFormat,
+                  linkedAccount.id,
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Text('Error: $err'),
+            ),
+          ],
+        )
+        .animate()
+        .fade(delay: 250.ms, duration: 400.ms)
+        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+  }
+
   Widget _buildEmptyActivity(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -992,6 +1120,177 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                             ],
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+            .animate()
+            .fade(delay: (index * 60).ms, duration: 350.ms)
+            .slideX(begin: 0.04);
+      }).toList(),
+    );
+  }
+
+  Widget _buildTransactionTimeline(
+    BuildContext context,
+    List<AppTransaction> transactions,
+    NumberFormat currencyFormat,
+    String accountId,
+  ) {
+    return Column(
+      children: transactions.asMap().entries.map((entry) {
+        final index = entry.key;
+        final tx = entry.value;
+        final isLast = index == transactions.length - 1;
+
+        // Determine if it added to or subtracted from the account
+        bool isIncome = false;
+        if (tx.type == TransactionType.income) {
+          isIncome = true;
+        } else if (tx.type == TransactionType.transfer &&
+            tx.toAccountId == accountId) {
+          isIncome = true;
+        } else if (tx.type == TransactionType.transfer &&
+            tx.accountId == accountId) {
+          isIncome = false;
+        } else if (tx.type == TransactionType.expense) {
+          isIncome = false;
+        }
+
+        final amountColor = isIncome
+            ? AppTheme.incomeColor(context)
+            : AppTheme.expenseColor(context);
+        final amountPrefix = isIncome ? '+' : '-';
+        final amountIcon = isIncome
+            ? Icons.arrow_upward_rounded
+            : Icons.arrow_downward_rounded;
+
+        return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Timeline connector
+                  SizedBox(
+                    width: 24,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(top: 20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryColor(
+                                  context,
+                                ).withValues(alpha: 0.15),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isLast)
+                          Expanded(
+                            child: Container(
+                              width: 1,
+                              color: AppTheme.dividerColor(context),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Gap(10),
+                  // Log card
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(context),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: amountColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              amountIcon,
+                              color: amountColor,
+                              size: 16,
+                            ),
+                          ),
+                          const Gap(14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tx.note.isEmpty ? 'Transaction' : tx.note,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppTheme.textColor(context),
+                                  ),
+                                ),
+                                const Gap(4),
+                                Text(
+                                  '$amountPrefix ${currencyFormat.format(tx.amount)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: amountColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _formatRelativeTime(tx.date),
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Gap(4),
+                              Text(
+                                DateFormat.MMMd().format(tx.date),
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.4),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

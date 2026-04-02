@@ -26,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -34,7 +34,9 @@ class DatabaseHelper {
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE transactions ADD COLUMN accountId TEXT DEFAULT "default_account"');
+      await db.execute(
+        'ALTER TABLE transactions ADD COLUMN accountId TEXT DEFAULT "default_account"',
+      );
       await _createAccountsTable(db);
       await _insertDefaultAccounts(db);
     }
@@ -48,28 +50,38 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE categories ADD COLUMN budget REAL');
     }
     if (oldVersion < 6) {
-      await db.execute('ALTER TABLE categories ADD COLUMN type TEXT DEFAULT "expense"');
+      await db.execute(
+        'ALTER TABLE categories ADD COLUMN type TEXT DEFAULT "expense"',
+      );
     }
     if (oldVersion < 7) {
       await db.execute('ALTER TABLE categories ADD COLUMN budgetPercent REAL');
-      await db.execute('ALTER TABLE categories ADD COLUMN isPercentBudget INTEGER DEFAULT 0');
+      await db.execute(
+        'ALTER TABLE categories ADD COLUMN isPercentBudget INTEGER DEFAULT 0',
+      );
     }
     if (oldVersion < 8) {
       try {
-        await db.execute('ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0');
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN excludeFromTotal INTEGER DEFAULT 0',
+        );
       } catch (e) {
         // Column might already exist if table was created in version 2-7
       }
     }
     if (oldVersion < 9) {
       try {
-        await db.execute('ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0');
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN position INTEGER DEFAULT 0',
+        );
       } catch (e) {
         // Column might already exist if table was created in version 2-8
       }
     }
     if (oldVersion < 10) {
-      await db.execute('ALTER TABLE categories ADD COLUMN position INTEGER DEFAULT 0');
+      await db.execute(
+        'ALTER TABLE categories ADD COLUMN position INTEGER DEFAULT 0',
+      );
     }
     if (oldVersion < 11) {
       await db.execute('''
@@ -78,6 +90,11 @@ CREATE TABLE app_settings (
   value TEXT NOT NULL
 )
 ''');
+    }
+    if (oldVersion < 12) {
+      await db.execute(
+        'ALTER TABLE savings_goals ADD COLUMN linkedAccountId TEXT',
+      );
     }
   }
 
@@ -94,7 +111,8 @@ CREATE TABLE savings_goals (
   currentAmount $realType,
   startDate $textType,
   endDate $textType,
-  notes TEXT
+  notes TEXT,
+  linkedAccountId TEXT
 )
 ''');
 
@@ -183,14 +201,62 @@ CREATE TABLE transactions (
 
   Future _insertDefaultCategories(DatabaseExecutor db) async {
     final defaultCategories = [
-      TransactionCategory(id: 'cat_groceries', name: 'Groceries', iconCodePoint: Icons.shopping_cart.codePoint, colorHex: '#4CAF50', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_dining', name: 'Dining', iconCodePoint: Icons.restaurant.codePoint, colorHex: '#FF9800', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_transport', name: 'Transport', iconCodePoint: Icons.directions_car.codePoint, colorHex: '#2196F3', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_salary', name: 'Salary', iconCodePoint: Icons.attach_money.codePoint, colorHex: '#8BC34A', type: TransactionType.income),
-      TransactionCategory(id: 'cat_entertainment', name: 'Entertainment', iconCodePoint: Icons.movie.codePoint, colorHex: '#9C27B0', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_health', name: 'Health', iconCodePoint: Icons.local_hospital.codePoint, colorHex: '#F44336', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_others', name: 'Others', iconCodePoint: Icons.category.codePoint, colorHex: '#607D8B', type: TransactionType.expense),
-      TransactionCategory(id: 'cat_others_inc', name: 'Other Income', iconCodePoint: Icons.add_circle.codePoint, colorHex: '#00D09E', type: TransactionType.income),
+      TransactionCategory(
+        id: 'cat_groceries',
+        name: 'Groceries',
+        iconCodePoint: Icons.shopping_cart.codePoint,
+        colorHex: '#4CAF50',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_dining',
+        name: 'Dining',
+        iconCodePoint: Icons.restaurant.codePoint,
+        colorHex: '#FF9800',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_transport',
+        name: 'Transport',
+        iconCodePoint: Icons.directions_car.codePoint,
+        colorHex: '#2196F3',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_salary',
+        name: 'Salary',
+        iconCodePoint: Icons.attach_money.codePoint,
+        colorHex: '#8BC34A',
+        type: TransactionType.income,
+      ),
+      TransactionCategory(
+        id: 'cat_entertainment',
+        name: 'Entertainment',
+        iconCodePoint: Icons.movie.codePoint,
+        colorHex: '#9C27B0',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_health',
+        name: 'Health',
+        iconCodePoint: Icons.local_hospital.codePoint,
+        colorHex: '#F44336',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_others',
+        name: 'Others',
+        iconCodePoint: Icons.category.codePoint,
+        colorHex: '#607D8B',
+        type: TransactionType.expense,
+      ),
+      TransactionCategory(
+        id: 'cat_others_inc',
+        name: 'Other Income',
+        iconCodePoint: Icons.add_circle.codePoint,
+        colorHex: '#00D09E',
+        type: TransactionType.income,
+      ),
     ];
 
     for (var category in defaultCategories) {
@@ -200,9 +266,27 @@ CREATE TABLE transactions (
 
   Future _insertDefaultAccounts(DatabaseExecutor db) async {
     final defaultAccounts = [
-      Account(id: 'default_account', name: 'Cash', iconCodePoint: Icons.payments_rounded.codePoint, colorHex: '#00D09E', position: 0),
-      Account(id: 'bank_account', name: 'Bank', iconCodePoint: Icons.account_balance_rounded.codePoint, colorHex: '#3B82F6', position: 1),
-      Account(id: 'savings_account', name: 'Savings', iconCodePoint: Icons.savings_rounded.codePoint, colorHex: '#F59E0B', position: 2),
+      Account(
+        id: 'default_account',
+        name: 'Cash',
+        iconCodePoint: Icons.payments_rounded.codePoint,
+        colorHex: '#00D09E',
+        position: 0,
+      ),
+      Account(
+        id: 'bank_account',
+        name: 'Bank',
+        iconCodePoint: Icons.account_balance_rounded.codePoint,
+        colorHex: '#3B82F6',
+        position: 1,
+      ),
+      Account(
+        id: 'savings_account',
+        name: 'Savings',
+        iconCodePoint: Icons.savings_rounded.codePoint,
+        colorHex: '#F59E0B',
+        position: 2,
+      ),
     ];
 
     for (var account in defaultAccounts) {
@@ -240,7 +324,9 @@ CREATE TABLE transactions (
   }
 
   // Categories commands
-  Future<TransactionCategory> insertCategory(TransactionCategory category) async {
+  Future<TransactionCategory> insertCategory(
+    TransactionCategory category,
+  ) async {
     final db = await instance.database;
     await db.insert('categories', category.toMap());
     return category;
@@ -264,14 +350,12 @@ CREATE TABLE transactions (
 
   Future<int> deleteCategory(String id) async {
     final db = await instance.database;
-    return await db.delete(
-      'categories',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> updateCategoryPositions(List<TransactionCategory> categories) async {
+  Future<void> updateCategoryPositions(
+    List<TransactionCategory> categories,
+  ) async {
     final db = await instance.database;
     await db.transaction((txn) async {
       final batch = txn.batch();
@@ -312,11 +396,7 @@ CREATE TABLE transactions (
 
   Future<int> deleteAccount(String id) async {
     final db = await instance.database;
-    return await db.delete(
-      'accounts',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('accounts', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> updateAccountPositions(List<Account> accounts) async {
@@ -360,11 +440,7 @@ CREATE TABLE transactions (
 
   Future<int> deleteTransaction(String id) async {
     final db = await instance.database;
-    return await db.delete(
-      'transactions',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
   // Savings Goals commands
@@ -392,35 +468,27 @@ CREATE TABLE transactions (
 
   Future<int> deleteSavingsGoal(String id) async {
     final db = await instance.database;
-    return await db.delete(
-      'savings_goals',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('savings_goals', where: 'id = ?', whereArgs: [id]);
   }
 
   // Savings Logs commands
   Future<SavingsLog> insertSavingsLog(SavingsLog log) async {
     final db = await instance.database;
     await db.insert('savings_logs', log.toMap());
-    
+
     // Update currentAmount in savings_goals
     await db.execute(
       'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
       [log.amount, log.goalId],
     );
-    
+
     return log;
   }
 
   Future<void> deleteSavingsLog(SavingsLog log) async {
     final db = await instance.database;
     await db.transaction((txn) async {
-      await txn.delete(
-        'savings_logs',
-        where: 'id = ?',
-        whereArgs: [log.id],
-      );
+      await txn.delete('savings_logs', where: 'id = ?', whereArgs: [log.id]);
       await txn.execute(
         'UPDATE savings_goals SET currentAmount = currentAmount - ? WHERE id = ?',
         [log.amount, log.goalId],
@@ -462,7 +530,10 @@ CREATE TABLE transactions (
     await db.transaction((txn) async {
       await txn.delete('app_settings');
       for (var entry in settings.entries) {
-        await txn.insert('app_settings', {'key': entry.key, 'value': entry.value});
+        await txn.insert('app_settings', {
+          'key': entry.key,
+          'value': entry.value,
+        });
       }
     });
   }
@@ -471,7 +542,9 @@ CREATE TABLE transactions (
     final db = await instance.database;
     try {
       final result = await db.query('app_settings');
-      return {for (var row in result) row['key'] as String: row['value'] as String};
+      return {
+        for (var row in result) row['key'] as String: row['value'] as String,
+      };
     } catch (e) {
       return {};
     }
@@ -494,12 +567,12 @@ CREATE TABLE transactions (
     try {
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'koin.db');
-      
+
       if (_database != null) {
         await _database!.close();
         _database = null;
       }
-      
+
       // Delete any existing WAL and SHM files to prevent corruption of the restored DB
       final walFile = File('$path-wal');
       final shmFile = File('$path-shm');
@@ -509,10 +582,10 @@ CREATE TABLE transactions (
       if (await shmFile.exists()) {
         await shmFile.delete();
       }
-      
+
       final sourceFile = File(backupPath);
       await sourceFile.copy(path);
-      
+
       // Test initialization
       await database;
       return true;

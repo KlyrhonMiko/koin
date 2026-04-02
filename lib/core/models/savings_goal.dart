@@ -6,6 +6,7 @@ class SavingsGoal {
   final DateTime startDate;
   final DateTime endDate;
   final String? notes;
+  final String? linkedAccountId;
 
   SavingsGoal({
     required this.id,
@@ -15,6 +16,7 @@ class SavingsGoal {
     required this.startDate,
     required this.endDate,
     this.notes,
+    this.linkedAccountId,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class SavingsGoal {
       'startDate': startDate.toIso8601String(),
       'endDate': endDate.toIso8601String(),
       'notes': notes,
+      'linkedAccountId': linkedAccountId,
     };
   }
 
@@ -38,6 +41,7 @@ class SavingsGoal {
       startDate: DateTime.parse(map['startDate']),
       endDate: DateTime.parse(map['endDate']),
       notes: map['notes'],
+      linkedAccountId: map['linkedAccountId'],
     );
   }
 
@@ -49,6 +53,7 @@ class SavingsGoal {
     DateTime? startDate,
     DateTime? endDate,
     String? notes,
+    String? linkedAccountId,
   }) {
     return SavingsGoal(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class SavingsGoal {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
+      linkedAccountId: linkedAccountId ?? this.linkedAccountId,
     );
   }
 
