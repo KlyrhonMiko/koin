@@ -759,16 +759,6 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Colored accent bar at top
-          Container(
-            width: 20,
-            height: 3,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const Gap(12),
           Text(
             label,
             style: TextStyle(
