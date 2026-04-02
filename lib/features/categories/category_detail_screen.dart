@@ -102,7 +102,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   void _save(WidgetRef ref) {
     if (_nameController.text.trim().isEmpty) {
       HapticService.error();
-      KoinSnackBar.error(context, 'Please enter a category name');
+      KoinSnackBar.error(
+        context,
+        'Name Required',
+        subtitle: 'Please provide a name for this category',
+      );
       return;
     }
 
