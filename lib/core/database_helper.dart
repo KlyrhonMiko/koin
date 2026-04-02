@@ -26,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -94,6 +94,12 @@ CREATE TABLE app_settings (
     if (oldVersion < 12) {
       await db.execute(
         'ALTER TABLE savings_goals ADD COLUMN linkedAccountId TEXT',
+      );
+    }
+    if (oldVersion < 13) {
+      // Rename default "Dining" to "Food"
+      await db.execute(
+        "UPDATE categories SET name = 'Food' WHERE id = 'cat_dining' AND name = 'Dining'",
       );
     }
   }
@@ -209,8 +215,8 @@ CREATE TABLE transactions (
         type: TransactionType.expense,
       ),
       TransactionCategory(
-        id: 'cat_dining',
-        name: 'Dining',
+        id: 'cat_food',
+        name: 'Food',
         iconCodePoint: Icons.restaurant.codePoint,
         colorHex: '#FF9800',
         type: TransactionType.expense,
