@@ -27,6 +27,7 @@ class AnalysisScreen extends ConsumerStatefulWidget {
 class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   late int _selectedFilterIndex;
   bool _isInitialized = false;
+  int _touchedGroupIndex = -1;
 
   @override
   void didChangeDependencies() {
@@ -547,20 +548,40 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               borderData: FlBorderData(show: false),
               barTouchData: BarTouchData(
                 touchCallback: (FlTouchEvent event, barTouchResponse) {
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        barTouchResponse == null ||
+                        barTouchResponse.spot == null) {
+                      _touchedGroupIndex = -1;
+                      return;
+                    }
+                    _touchedGroupIndex =
+                        barTouchResponse.spot!.touchedBarGroupIndex;
+                  });
+
                   if (event is FlTapDownEvent || event is FlPanStartEvent) {
                     HapticService.light();
                   }
                 },
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (_) => AppTheme.textColor(context),
+                  getTooltipColor: (_) => AppTheme.surfaceColor(context),
+                  tooltipBorder: BorderSide(
+                    color: AppTheme.dividerColor(
+                      context,
+                    ).withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                  tooltipMargin: 8,
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     // Original toY is stored in the barGroups
                     final originalY =
                         barGroups[groupIndex].barRods[rodIndex].toY;
                     return BarTooltipItem(
                       '${bottomLabels[group.x.toInt()]}\n',
-                      const TextStyle(
-                        color: Colors.white70,
+                      TextStyle(
+                        color: AppTheme.textLightColor(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -569,8 +590,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           text: NumberFormat.currency(
                             symbol: currency.symbol,
                           ).format(originalY),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppTheme.textColor(context),
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -580,11 +601,31 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   },
                 ),
               ),
-              barGroups: barGroups.map((group) {
+              barGroups: barGroups.asMap().entries.map((entry) {
+                final index = entry.key;
+                final group = entry.value;
+                final isTouched = index == _touchedGroupIndex;
                 return BarChartGroupData(
                   x: group.x,
                   barRods: group.barRods.map((rod) {
-                    return rod.copyWith(toY: rod.toY * value);
+                    return rod.copyWith(
+                      toY: rod.toY * value,
+                      color: isTouched
+                          ? AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.8)
+                          : AppTheme.primaryColor(context),
+                      width: isTouched ? rod.width + 2 : rod.width,
+                      backDrawRodData: BackgroundBarChartRodData(
+                        show: rod.backDrawRodData.show,
+                        toY: rod.backDrawRodData.toY,
+                        color: isTouched
+                            ? AppTheme.dividerColor(
+                                context,
+                              ).withValues(alpha: 0.3)
+                            : rod.backDrawRodData.color,
+                      ),
+                    );
                   }).toList(),
                 );
               }).toList(),
