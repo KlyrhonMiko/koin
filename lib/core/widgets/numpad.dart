@@ -2,15 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
-enum NumPadAction {
-  digit,
-  operator,
-  decimal,
-  backspace,
-  clear,
-  equals,
-  done,
-}
+enum NumPadAction { digit, operator, decimal, backspace, clear, equals, done }
 
 class NumPad extends StatefulWidget {
   final Function(String expression, String result) onValueChanged;
@@ -73,7 +65,8 @@ class _NumPadState extends State<NumPad> {
         if (_expression.isNotEmpty) {
           final lastChar = _expression[_expression.length - 1];
           if (RegExp(r'[+\-*/]').hasMatch(lastChar)) {
-            _expression = _expression.substring(0, _expression.length - 1) + value;
+            _expression =
+                _expression.substring(0, _expression.length - 1) + value;
           } else {
             _expression += value;
           }
@@ -112,7 +105,9 @@ class _NumPadState extends State<NumPad> {
         return;
       }
 
-      final tokens = RegExp(r'(\d+\.?\d*)|([+\-*/])').allMatches(_expression).map((m) => m.group(0)!).toList();
+      final tokens = RegExp(
+        r'(\d+\.?\d*)|([+\-*/])',
+      ).allMatches(_expression).map((m) => m.group(0)!).toList();
 
       if (tokens.isEmpty) {
         _result = '0';
@@ -161,16 +156,16 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       flex: flex,
-      child: Padding(
-        padding: EdgeInsets.all(keyPad),
-        child: Material(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(keyRadius),
-          child: InkWell(
-            onTap: () => _onPress(text, text == '.' ? NumPadAction.decimal : NumPadAction.digit),
+      child: _AnimatedKeyWrapper(
+        onTap: () => _onPress(
+          text,
+          text == '.' ? NumPadAction.decimal : NumPadAction.digit,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(keyPad),
+          child: Material(
+            color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(keyRadius),
-            splashColor: AppTheme.primaryColor(context).withValues(alpha: 0.08),
-            highlightColor: AppTheme.primaryColor(context).withValues(alpha: 0.04),
             child: Container(
               height: keyHeight,
               alignment: Alignment.center,
@@ -198,16 +193,13 @@ class _NumPadState extends State<NumPad> {
     final primaryColor = AppTheme.primaryColor(context);
 
     return Expanded(
-      child: Padding(
-        padding: EdgeInsets.all(keyPad),
-        child: Material(
-          color: primaryColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(keyRadius),
-          child: InkWell(
-            onTap: () => _onPress(value, NumPadAction.operator),
+      child: _AnimatedKeyWrapper(
+        onTap: () => _onPress(value, NumPadAction.operator),
+        child: Padding(
+          padding: EdgeInsets.all(keyPad),
+          child: Material(
+            color: primaryColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(keyRadius),
-            splashColor: primaryColor.withValues(alpha: 0.15),
-            highlightColor: primaryColor.withValues(alpha: 0.08),
             child: Container(
               height: keyHeight,
               alignment: Alignment.center,
@@ -226,7 +218,8 @@ class _NumPadState extends State<NumPad> {
     );
   }
 
-  Widget _buildActionKey(BuildContext context, {
+  Widget _buildActionKey(
+    BuildContext context, {
     required NumPadAction action,
     IconData? icon,
     String? text,
@@ -242,16 +235,13 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       flex: flex,
-      child: Padding(
-        padding: EdgeInsets.all(keyPad),
-        child: Material(
-          color: bgColor ?? AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(keyRadius),
-          child: InkWell(
-            onTap: () => _onPress(text ?? '', action),
+      child: _AnimatedKeyWrapper(
+        onTap: () => _onPress(text ?? '', action),
+        child: Padding(
+          padding: EdgeInsets.all(keyPad),
+          child: Material(
+            color: bgColor ?? AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(keyRadius),
-            splashColor: effectiveColor.withValues(alpha: 0.12),
-            highlightColor: effectiveColor.withValues(alpha: 0.06),
             child: Container(
               height: keyHeight,
               alignment: Alignment.center,
@@ -280,16 +270,13 @@ class _NumPadState extends State<NumPad> {
     final primaryColor = AppTheme.primaryColor(context);
 
     return Expanded(
-      child: Padding(
-        padding: EdgeInsets.all(keyPad),
-        child: Material(
-          color: primaryColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(keyRadius),
-          child: InkWell(
-            onTap: () => _onPress('=', NumPadAction.equals),
+      child: _AnimatedKeyWrapper(
+        onTap: () => _onPress('=', NumPadAction.equals),
+        child: Padding(
+          padding: EdgeInsets.all(keyPad),
+          child: Material(
+            color: primaryColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(keyRadius),
-            splashColor: primaryColor.withValues(alpha: 0.15),
-            highlightColor: primaryColor.withValues(alpha: 0.08),
             child: Container(
               height: keyHeight,
               alignment: Alignment.center,
@@ -316,48 +303,42 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       flex: flex,
-      child: Padding(
-        padding: EdgeInsets.all(keyPad),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(keyRadius),
-          child: InkWell(
-            onTap: () {
-              HapticService.success();
-              _onPress('Done', NumPadAction.done);
-            },
-            borderRadius: BorderRadius.circular(keyRadius),
-            splashColor: Colors.white.withValues(alpha: 0.2),
-            child: Container(
-              height: keyHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient(context),
-                borderRadius: BorderRadius.circular(keyRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+      child: _AnimatedKeyWrapper(
+        onTap: () {
+          HapticService.success();
+          _onPress('Done', NumPadAction.done);
+        },
+        child: Padding(
+          padding: EdgeInsets.all(keyPad),
+          child: Container(
+            height: keyHeight,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient(context),
+              borderRadius: BorderRadius.circular(keyRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: c ? 15.5 : 16.0,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Save',
-                    style: TextStyle(
-                      fontSize: c ? 15.5 : 16.0,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -369,19 +350,26 @@ class _NumPadState extends State<NumPad> {
   Widget build(BuildContext context) {
     final c = widget.compact;
     return Container(
-      padding: EdgeInsets.fromLTRB(10, c ? 10 : 12, 10, widget.inline ? (c ? 10 : 12) : (c ? 8 : 12)),
+      padding: EdgeInsets.fromLTRB(
+        10,
+        c ? 10 : 12,
+        10,
+        widget.inline ? (c ? 10 : 12) : (c ? 8 : 12),
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceLightColor(context),
-        borderRadius: widget.inline 
+        borderRadius: widget.inline
             ? BorderRadius.circular(c ? 24 : 28)
             : BorderRadius.vertical(top: Radius.circular(c ? 24 : 28)),
-        boxShadow: widget.inline ? null : [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        boxShadow: widget.inline
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
       ),
       child: SafeArea(
         top: false,
@@ -420,7 +408,8 @@ class _NumPadState extends State<NumPad> {
               children: [
                 _buildDigitKey(context, '.'),
                 _buildDigitKey(context, '0'),
-                _buildActionKey(context,
+                _buildActionKey(
+                  context,
                   action: NumPadAction.clear,
                   text: 'C',
                   color: const Color(0xFFFF6B6B),
@@ -432,7 +421,8 @@ class _NumPadState extends State<NumPad> {
             // Row 5: ⌫ = [  Save  ]
             Row(
               children: [
-                _buildActionKey(context,
+                _buildActionKey(
+                  context,
                   action: NumPadAction.backspace,
                   icon: Icons.backspace_outlined,
                   color: AppTheme.textLightColor(context),
@@ -445,6 +435,72 @@ class _NumPadState extends State<NumPad> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Animated wrapper that provides scale-bounce feedback on key press.
+/// Scales down to 0.88 on tap-down with a fast ease-in, then springs
+/// back to 1.0 on tap-up/cancel with an easeOutBack overshoot curve.
+class _AnimatedKeyWrapper extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _AnimatedKeyWrapper({required this.child, required this.onTap});
+
+  @override
+  State<_AnimatedKeyWrapper> createState() => _AnimatedKeyWrapperState();
+}
+
+class _AnimatedKeyWrapperState extends State<_AnimatedKeyWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeIn,
+        reverseCurve: Curves.easeOutBack,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails _) {
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }

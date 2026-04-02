@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -13,8 +14,10 @@ import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/features/categories/category_detail_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/features/categories/category_detail_screen.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 
 class BudgetsScreen extends ConsumerWidget {
@@ -308,9 +311,8 @@ class BudgetsScreen extends ConsumerWidget {
                                       HapticService.light();
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const CategoryManagerScreen(),
+                                        SlideUpRoute(
+                                          page: const CategoryManagerScreen(),
                                         ),
                                       );
                                     },
@@ -408,9 +410,7 @@ class BudgetsScreen extends ConsumerWidget {
               HapticService.light();
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CategoryManagerScreen(),
-                ),
+                SlideUpRoute(page: const CategoryManagerScreen()),
               );
             },
           ),
@@ -509,9 +509,8 @@ class BudgetsScreen extends ConsumerWidget {
                               HapticService.medium();
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CategoryDetailScreen(),
+                                SlideUpRoute(
+                                  page: const CategoryDetailScreen(),
                                 ),
                               );
                             },
@@ -591,8 +590,9 @@ class BudgetsScreen extends ConsumerWidget {
                       ),
                     ),
                     const Gap(8),
-                    Text(
-                      fmt.format(totalBudget),
+                    AnimatedCounter(
+                      value: totalBudget,
+                      formatter: (v) => fmt.format(v),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 32,
@@ -614,8 +614,9 @@ class BudgetsScreen extends ConsumerWidget {
                       : Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  '$percent%',
+                child: AnimatedCounter(
+                  value: double.tryParse(percent) ?? 0,
+                  formatter: (v) => '${v.toStringAsFixed(0)}%',
                   style: TextStyle(
                     color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
                     fontWeight: FontWeight.w800,
@@ -649,25 +650,44 @@ class BudgetsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Spent ${fmt.format(totalSpent)}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Spent ',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  AnimatedCounter(
+                    value: totalSpent,
+                    formatter: (v) => fmt.format(v),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                isOver
-                    ? 'Over by ${fmt.format(totalSpent - totalBudget)}'
-                    : '${fmt.format(remaining)} left',
-                style: TextStyle(
-                  color: isOver
-                      ? const Color(0xFFFFCDD2)
-                      : Colors.white.withValues(alpha: 0.8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  AnimatedCounter(
+                    value: isOver ? (totalSpent - totalBudget) : remaining,
+                    formatter: (v) {
+                      final val = fmt.format(v);
+                      return isOver ? 'Over by $val' : '$val left';
+                    },
+                    style: TextStyle(
+                      color: isOver
+                          ? const Color(0xFFFFCDD2)
+                          : Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -692,11 +712,10 @@ class BudgetsScreen extends ConsumerWidget {
         ? (spent / budget * 100).toStringAsFixed(0)
         : '0';
     final isOver = spent > budget;
-    final remaining = budget - spent;
     final fmt = NumberFormat.currency(symbol: currency.symbol);
     final isPercent = category.isPercentBudget;
 
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         HapticService.light();
         _showEditBudgetSheet(context, ref, category, currency, totalIncome);
@@ -708,6 +727,14 @@ class BudgetsScreen extends ConsumerWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppTheme.dividerColor(context)),
+          boxShadow: [
+            if (isOver)
+              BoxShadow(
+                color: Colors.red.withValues(alpha: 0.08),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,102 +775,120 @@ class BudgetsScreen extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 7,
-                                vertical: 2,
+                                vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: category.color.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppTheme.primaryColor(
+                                  context,
+                                ).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                '${category.budgetPercent?.toStringAsFixed(0)}%',
+                                '${category.budgetPercent}%',
                                 style: TextStyle(
-                                  color: category.color,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 11,
+                                  color: AppTheme.primaryColor(context),
                                 ),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      const Gap(2),
-                      Text(
-                        isOver
-                            ? 'Exceeded by ${fmt.format(spent - budget)}'
-                            : '${fmt.format(remaining)} remaining',
-                        style: TextStyle(
-                          color: isOver
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.textLightColor(context),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const Gap(4),
+                      Row(
+                        children: [
+                          AnimatedCounter(
+                            value: spent,
+                            formatter: (v) => fmt.format(v),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            ' / ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          AnimatedCounter(
+                            value: budget,
+                            formatter: (v) => fmt.format(v),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isOver
-                        ? AppTheme.expenseColor(context).withValues(alpha: 0.12)
-                        : category.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$percent%',
-                    style: TextStyle(
-                      color: isOver
-                          ? AppTheme.expenseColor(context)
-                          : category.color,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isOver
+                            ? Colors.red.withValues(alpha: 0.1)
+                            : AppTheme.surfaceLightColor(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AnimatedCounter(
+                        value: double.tryParse(percent) ?? 0,
+                        formatter: (v) => '${v.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: isOver
+                              ? Colors.red
+                              : AppTheme.textLightColor(context),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    )
+                    .animate(
+                      onPlay: (controller) =>
+                          isOver ? controller.repeat(reverse: true) : null,
+                    )
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.05, 1.05),
+                      duration: 800.ms,
+                      curve: Curves.easeInOut,
                     ),
-                  ),
-                ),
               ],
             ),
-            const Gap(14),
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 1000),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: value,
-                    minHeight: 7,
-                    backgroundColor: AppTheme.dividerColor(context),
+            const Gap(16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: progress),
+                duration: Duration(milliseconds: 700 + (index * 100)),
+                curve: Curves.easeOutCubic,
+                builder: (context, animatedProgress, _) {
+                  return LinearProgressIndicator(
+                    value: animatedProgress,
+                    minHeight: 6,
+                    backgroundColor: AppTheme.dividerColor(
+                      context,
+                    ).withValues(alpha: 0.5),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isOver ? AppTheme.errorColor(context) : category.color,
+                      isOver ? Colors.red : category.color,
                     ),
-                  ),
-                );
-              },
-            ),
-            const Gap(10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  fmt.format(spent),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  'of ${fmt.format(budget)}',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -858,7 +903,7 @@ class BudgetsScreen extends ConsumerWidget {
     currency,
     double totalIncome,
   ) {
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         HapticService.light();
         _showEditBudgetSheet(context, ref, category, currency, totalIncome);
@@ -919,9 +964,7 @@ class BudgetsScreen extends ConsumerWidget {
             HapticService.light();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const CategoryManagerScreen(),
-              ),
+              SlideUpRoute(page: const CategoryManagerScreen()),
             );
           },
           child: Container(

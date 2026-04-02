@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,7 +58,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final themeColor = themeColorValue != null
         ? Color(themeColorValue)
         : const Color(0xFF00D09E);
-        
+
     final themeMode = themeModeIndex != null
         ? ThemeMode.values[themeModeIndex]
         : ThemeMode.system;
@@ -94,12 +93,6 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_analysisFilterIndexKey, index);
     ref.invalidateSelf();
-  }
-
-  Future<void> toggleDarkMode() async {
-    final currentIsDark = state.themeMode == ThemeMode.dark || 
-        (state.themeMode == ThemeMode.system && PlatformDispatcher.instance.platformBrightness == Brightness.dark);
-    await setThemeMode(currentIsDark ? ThemeMode.light : ThemeMode.dark);
   }
 
   Future<void> resetSettings() async {

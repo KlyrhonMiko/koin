@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
@@ -12,6 +13,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
@@ -34,6 +36,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        HapticService.selection();
+      }
+    });
   }
 
   @override
@@ -417,9 +424,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 HapticService.medium();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        CategoryDetailScreen(category: null, initialType: type),
+                  SlideUpRoute(
+                    page: CategoryDetailScreen(
+                      category: null,
+                      initialType: type,
+                    ),
                   ),
                 );
               },
@@ -554,14 +563,13 @@ class _CategoryListState extends ConsumerState<CategoryList>
       footer: Column(
         children: [
           const Gap(6),
-          GestureDetector(
+          PressableScale(
                 onTap: () {
                   HapticService.medium();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          CategoryDetailScreen(initialType: widget.type),
+                    SlideUpRoute(
+                      page: CategoryDetailScreen(initialType: widget.type),
                     ),
                   );
                 },
@@ -623,6 +631,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
         return Dismissible(
               key: Key('dismiss_${category.id}'),
               direction: DismissDirection.endToStart,
+              onUpdate: (details) {
+                if (details.reached && !details.previousReached) {
+                  HapticService.selection();
+                }
+              },
               confirmDismiss: (_) {
                 HapticService.medium();
                 return context
@@ -663,14 +676,13 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ],
                 ),
               ),
-              child: GestureDetector(
+              child: PressableScale(
                 onTap: () {
                   HapticService.light();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          CategoryDetailScreen(category: category),
+                    SlideUpRoute(
+                      page: CategoryDetailScreen(category: category),
                     ),
                   );
                 },

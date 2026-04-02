@@ -13,6 +13,8 @@ import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/animated_counter.dart';
 import 'dart:ui';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
@@ -255,28 +257,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       ],
                     ),
                     const Gap(12),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 0, end: totalExpense),
+                    AnimatedCounter(
+                      value: totalExpense,
+                      formatter: (val) => NumberFormat.currency(
+                        symbol: currency.symbol,
+                      ).format(val),
                       duration: const Duration(milliseconds: 1000),
-                      curve: Curves.easeOutCirc,
-                      builder: (context, value, child) {
-                        return FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            NumberFormat.currency(
-                              symbol: currency.symbol,
-                            ).format(value),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 48,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1.5,
-                              height: 1.1,
-                            ),
-                          ),
-                        );
-                      },
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.5,
+                        height: 1.1,
+                      ),
                     ).animate().fade(delay: 150.ms).slideX(begin: -0.05),
                   ],
                 ),
@@ -635,99 +628,100 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         );
         final percent = (entry.value / totalSpent) * 100;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: category.color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+        return PressableScale(
+          onTap: () {
+            // Future: Navigate to category detail analysis
+            HapticService.light();
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-                child: Icon(
-                  IconUtils.getIcon(category.iconCodePoint),
-                  color: category.color,
-                  size: 24,
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    IconUtils.getIcon(category.iconCodePoint),
+                    color: category.color,
+                    size: 24,
+                  ),
                 ),
-              ),
-              const Gap(16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                          ),
-                        ),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0, end: entry.value),
-                          duration: const Duration(milliseconds: 1000),
-                          curve: Curves.easeOutCirc,
-                          builder: (context, value, child) {
-                            return Text(
-                              NumberFormat.compactCurrency(
-                                symbol: currency.symbol,
-                              ).format(value),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                                letterSpacing: -0.5,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    const Gap(8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        height: 6,
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                        ),
-                        child:
-                            FractionallySizedBox(
-                              widthFactor: percent / 100,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: category.color,
-                                ),
-                              ),
-                            ).animate().scaleX(
-                              alignment: Alignment.centerLeft,
-                              duration: 800.ms,
-                              curve: Curves.easeOutCirc,
+                const Gap(16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            category.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
                             ),
+                          ),
+                          AnimatedCounter(
+                            value: entry.value,
+                            formatter: (val) => NumberFormat.compactCurrency(
+                              symbol: currency.symbol,
+                            ).format(val),
+                            duration: const Duration(milliseconds: 1000),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const Gap(8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          height: 6,
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(
+                            color: AppTheme.dividerColor(
+                              context,
+                            ).withValues(alpha: 0.3),
+                          ),
+                          child:
+                              FractionallySizedBox(
+                                widthFactor: percent / 100,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: category.color,
+                                  ),
+                                ),
+                              ).animate().scaleX(
+                                alignment: Alignment.centerLeft,
+                                duration: 800.ms,
+                                curve: Curves.easeOutCirc,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       }).toList(),

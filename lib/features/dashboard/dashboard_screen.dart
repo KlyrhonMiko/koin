@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,8 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/widgets/account_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/animated_counter.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -281,10 +284,7 @@ class DashboardScreen extends ConsumerWidget {
         GestureDetector(
           onTap: () {
             HapticService.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            );
+            Navigator.push(context, SlideUpRoute(page: const SettingsScreen()));
           },
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -399,24 +399,19 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const Gap(12),
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: stats.currentBalance),
-                duration: const Duration(milliseconds: 1000),
-                curve: Curves.easeOutCirc,
-                builder: (context, value, child) {
-                  return Text(
-                    NumberFormat.currency(
-                      symbol: currency.symbol,
-                    ).format(value),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 42,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.5,
-                      height: 1.1,
-                    ),
-                  );
-                },
+              AnimatedCounter(
+                value: stats.currentBalance,
+                formatter: (v) =>
+                    NumberFormat.currency(symbol: currency.symbol).format(v),
+                duration: const Duration(milliseconds: 1400),
+                curve: Curves.easeOutCubic,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.5,
+                  height: 1.1,
+                ),
               ),
               const Gap(20),
               Row(
@@ -443,20 +438,16 @@ class DashboardScreen extends ConsumerWidget {
                           size: 14,
                         ),
                         const Gap(4),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0, end: netChange.abs()),
-                          duration: const Duration(milliseconds: 1000),
-                          curve: Curves.easeOutCirc,
-                          builder: (context, value, child) {
-                            return Text(
-                              '${NumberFormat.compactCurrency(symbol: currency.symbol).format(value)} this month',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            );
-                          },
+                        AnimatedCounter(
+                          value: netChange.abs(),
+                          formatter: (v) =>
+                              '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
+                          duration: const Duration(milliseconds: 1200),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -490,8 +481,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.income,
                 ),
               ),
@@ -507,8 +498,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.expense,
                 ),
               ),
@@ -524,8 +515,8 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddTransactionScreen(
+              SlideUpRoute(
+                page: const AddTransactionScreen(
                   initialType: TransactionType.transfer,
                 ),
               ),
@@ -561,7 +552,8 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return _PressableScale(
+    return PressableScale(
+      enableHaptic: false,
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -694,22 +686,17 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const Spacer(),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: balance),
-            duration: const Duration(milliseconds: 1000),
-            curve: Curves.easeOutCirc,
-            builder: (context, value, child) {
-              return Text(
-                NumberFormat.currency(symbol: currency.symbol).format(value),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 17,
-                  letterSpacing: -0.5,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
+          AnimatedCounter(
+            value: balance,
+            formatter: (v) =>
+                NumberFormat.currency(symbol: currency.symbol).format(v),
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 17,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1507,57 +1494,6 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
       error: (e, st) => Center(child: Text('Error: $e')),
-    );
-  }
-}
-
-/// A widget that scales down on press for tactile feedback.
-class _PressableScale extends StatefulWidget {
-  final Widget child;
-  final VoidCallback onTap;
-
-  const _PressableScale({required this.child, required this.onTap});
-
-  @override
-  State<_PressableScale> createState() => _PressableScaleState();
-}
-
-class _PressableScaleState extends State<_PressableScale>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 120),
-      reverseDuration: const Duration(milliseconds: 200),
-    );
-    _scaleAnim = Tween<double>(
-      begin: 1.0,
-      end: 0.93,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(scale: _scaleAnim, child: widget.child),
     );
   }
 }

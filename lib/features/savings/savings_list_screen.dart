@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
@@ -8,9 +9,11 @@ import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 class SavingsListScreen extends ConsumerWidget {
   const SavingsListScreen({super.key});
@@ -33,23 +36,32 @@ class SavingsListScreen extends ConsumerWidget {
               if (goals.isEmpty) {
                 return _buildEmptyState(context);
               }
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                itemCount: goals.length + 2, // +1 hero, +1 add button
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _buildHeroSummaryCard(
-                      context,
-                      goals,
-                      currencyFormat,
-                    );
-                  }
-                  if (index == goals.length + 1) {
-                    return _buildAddGoalButton(context, index);
-                  }
-                  final goal = goals[index - 1];
-                  return _buildGoalCard(context, goal, index, currencyFormat);
+              return RefreshIndicator(
+                onRefresh: () {
+                  HapticService.light();
+                  return ref.read(savingsGoalsProvider.notifier).loadGoals();
                 },
+                color: AppTheme.primaryColor(context),
+                backgroundColor: AppTheme.surfaceColor(context),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                  itemCount: goals.length + 2, // +1 hero, +1 add button
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return _buildHeroSummaryCard(
+                        context,
+                        goals,
+                        currencyFormat,
+                      );
+                    }
+                    if (index == goals.length + 1) {
+                      return _buildAddGoalButton(context, index);
+                    }
+                    final goal = goals[index - 1];
+                    return _buildGoalCard(context, goal, index, currencyFormat);
+                  },
+                ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -108,7 +120,6 @@ class SavingsListScreen extends ConsumerWidget {
     final overallProgress = totalTarget > 0
         ? (totalSaved / totalTarget).clamp(0.0, 1.0)
         : 0.0;
-    final progressPercent = (overallProgress * 100).toStringAsFixed(0);
 
     return Container(
           margin: const EdgeInsets.only(bottom: 24),
@@ -193,51 +204,61 @@ class SavingsListScreen extends ConsumerWidget {
                   ),
                   const Gap(20),
                   // Centered radial gauge
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: CustomPaint(
-                      painter: _RadialProgressPainter(
-                        progress: overallProgress,
-                        trackColor: Colors.white.withValues(alpha: 0.15),
-                        progressColor: Colors.white,
-                        strokeWidth: 8,
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$progressPercent%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 28,
-                                letterSpacing: -1,
-                                height: 1.1,
-                              ),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: overallProgress),
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedProgress, child) {
+                      final animatedPercent = (animatedProgress * 100)
+                          .toStringAsFixed(0);
+                      return SizedBox(
+                        width: 120,
+                        height: 120,
+                        child: CustomPaint(
+                          painter: _RadialProgressPainter(
+                            progress: animatedProgress,
+                            trackColor: Colors.white.withValues(alpha: 0.15),
+                            progressColor: Colors.white,
+                            strokeWidth: 8,
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$animatedPercent%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 28,
+                                    letterSpacing: -1,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                Text(
+                                  'saved',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              'saved',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   const Gap(24),
                   // Stats row
                   Row(
                     children: [
                       Expanded(
-                        child: _buildHeroStat(
+                        child: _buildHeroStatAnimated(
                           'Saved',
-                          currencyFormat.format(totalSaved),
+                          totalSaved,
+                          currencyFormat,
                         ),
                       ),
                       Container(
@@ -246,9 +267,10 @@ class SavingsListScreen extends ConsumerWidget {
                         color: Colors.white.withValues(alpha: 0.15),
                       ),
                       Expanded(
-                        child: _buildHeroStat(
+                        child: _buildHeroStatAnimated(
                           'Target',
-                          currencyFormat.format(totalTarget),
+                          totalTarget,
+                          currencyFormat,
                         ),
                       ),
                       Container(
@@ -257,9 +279,10 @@ class SavingsListScreen extends ConsumerWidget {
                         color: Colors.white.withValues(alpha: 0.15),
                       ),
                       Expanded(
-                        child: _buildHeroStat(
+                        child: _buildHeroStatAnimated(
                           'Remaining',
-                          currencyFormat.format(totalTarget - totalSaved),
+                          totalTarget - totalSaved,
+                          currencyFormat,
                         ),
                       ),
                     ],
@@ -274,7 +297,7 @@ class SavingsListScreen extends ConsumerWidget {
         .slideY(begin: 0.08, curve: Curves.easeOutCubic);
   }
 
-  Widget _buildHeroStat(String label, String value) {
+  Widget _buildHeroStatAnimated(String label, double amount, NumberFormat fmt) {
     return Column(
       children: [
         Text(
@@ -289,8 +312,11 @@ class SavingsListScreen extends ConsumerWidget {
         FittedBox(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              value,
+            child: AnimatedCounter(
+              value: amount,
+              formatter: (v) => fmt.format(v),
+              duration: const Duration(milliseconds: 1400),
+              curve: Curves.easeOutCubic,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,
@@ -374,9 +400,15 @@ class SavingsListScreen extends ConsumerWidget {
                       .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
                       .fadeIn(),
                   const Gap(36),
-                  SizedBox(
-                        width: double.infinity,
+                  PressableScale(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            SlideUpRoute(page: const AddSavingsGoalScreen()),
+                          );
+                        },
                         child: Container(
+                          width: double.infinity,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: AppTheme.primaryGradient(context),
@@ -391,16 +423,7 @@ class SavingsListScreen extends ConsumerWidget {
                             ],
                           ),
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              HapticService.medium();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AddSavingsGoalScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: null, // Let PressableScale handle onTap
                             icon: const Icon(
                               Icons.add_rounded,
                               color: Colors.white,
@@ -417,6 +440,8 @@ class SavingsListScreen extends ConsumerWidget {
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
                               padding: const EdgeInsets.symmetric(vertical: 16),
+                              disabledBackgroundColor: Colors.transparent,
+                              disabledForegroundColor: Colors.white,
                             ),
                           ),
                         ),
@@ -434,14 +459,11 @@ class SavingsListScreen extends ConsumerWidget {
   }
 
   Widget _buildAddGoalButton(BuildContext context, int index) {
-    return GestureDetector(
+    return PressableScale(
           onTap: () {
-            HapticService.medium();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AddSavingsGoalScreen(),
-              ),
+              SlideUpRoute(page: const AddSavingsGoalScreen()),
             );
           },
           child: Container(
@@ -489,6 +511,7 @@ class SavingsListScreen extends ConsumerWidget {
     NumberFormat currencyFormat,
   ) {
     final progressPercent = (goal.progress * 100).toStringAsFixed(0);
+    final isCompleted = goal.progress >= 1.0;
 
     // Accent colors for left strip
     final accentColors = [
@@ -501,14 +524,12 @@ class SavingsListScreen extends ConsumerWidget {
     ];
     final accentColor = accentColors[index % accentColors.length];
 
-    return GestureDetector(
+    return PressableScale(
           onTap: () {
             HapticService.light();
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => SavingsDetailsScreen(goal: goal),
-              ),
+              SlideUpRoute(page: SavingsDetailsScreen(goal: goal)),
             );
           },
           child: Container(
@@ -522,6 +543,13 @@ class SavingsListScreen extends ConsumerWidget {
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
+                if (isCompleted)
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    spreadRadius: -2,
+                    offset: const Offset(0, 4),
+                  ),
               ],
             ),
             child: Row(
@@ -583,18 +611,27 @@ class SavingsListScreen extends ConsumerWidget {
                           ],
                         ),
                         const Gap(14),
-                        // Horizontal progress bar
+                        // Animated horizontal progress bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: goal.progress,
-                            backgroundColor: accentColor.withValues(
-                              alpha: 0.08,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: goal.progress),
+                            duration: Duration(
+                              milliseconds: 800 + (index * 100),
                             ),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              accentColor,
-                            ),
-                            minHeight: 5,
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animatedProgress, _) {
+                              return LinearProgressIndicator(
+                                value: animatedProgress,
+                                backgroundColor: accentColor.withValues(
+                                  alpha: 0.08,
+                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  accentColor,
+                                ),
+                                minHeight: 5,
+                              );
+                            },
                           ),
                         ),
                         const Gap(12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
@@ -15,6 +16,7 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -34,9 +36,8 @@ class SettingsScreen extends ConsumerWidget {
               // Inline header
               Row(
                 children: [
-                  GestureDetector(
+                  PressableScale(
                     onTap: () {
-                      HapticService.light();
                       Navigator.of(context).pop();
                     },
                     child: Container(
@@ -143,20 +144,26 @@ class SettingsScreen extends ConsumerWidget {
               _buildGroupedCard(
                 context,
                 children: [
-                  // Dark Mode toggle
+                  // Theme Mode selector
                   ListTile(
+                    onTap: () {
+                      HapticService.light();
+                      _showThemeModePicker(context, ref, settings.themeMode);
+                    },
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 2,
                     ),
                     leading: _buildIconBox(
                       context,
-                      Theme.of(context).brightness == Brightness.dark
+                      settings.themeMode == ThemeMode.system
+                          ? Icons.brightness_auto_rounded
+                          : settings.themeMode == ThemeMode.dark
                           ? Icons.dark_mode_rounded
                           : Icons.light_mode_rounded,
                     ),
                     title: const Text(
-                      'Dark Mode',
+                      'Theme Mode',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -164,23 +171,20 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     subtitle: Text(
                       settings.themeMode == ThemeMode.system
-                          ? 'System'
+                          ? 'Follow System'
                           : settings.themeMode == ThemeMode.dark
-                          ? 'On'
-                          : 'Off',
+                          ? 'Dark Mode'
+                          : 'Light Mode',
                       style: TextStyle(
                         color: AppTheme.textLightColor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    trailing: Switch.adaptive(
-                      value: Theme.of(context).brightness == Brightness.dark,
-                      activeTrackColor: AppTheme.primaryColor(context),
-                      onChanged: (val) {
-                        HapticService.medium();
-                        ref.read(settingsProvider.notifier).toggleDarkMode();
-                      },
+                    trailing: Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppTheme.textLightColor(context),
+                      size: 20,
                     ),
                   ),
                   _buildInlineDivider(context),
@@ -217,7 +221,7 @@ class SettingsScreen extends ConsumerWidget {
                               final isSelected =
                                   settings.themeColor.toARGB32() ==
                                   color.toARGB32();
-                              return GestureDetector(
+                              return PressableScale(
                                 onTap: () {
                                   HapticService.light();
                                   ref
@@ -690,83 +694,114 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const Gap(24),
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color:
-                    (isDestructive
-                            ? Colors.red
-                            : AppTheme.primaryColor(context))
-                        .withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isDestructive
-                    ? Colors.red
-                    : AppTheme.primaryColor(context),
-                size: 32,
-              ),
-            ),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        (isDestructive
+                                ? Colors.red
+                                : AppTheme.primaryColor(context))
+                            .withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDestructive
+                        ? Colors.red
+                        : AppTheme.primaryColor(context),
+                    size: 32,
+                  ),
+                )
+                .animate()
+                .scale(
+                  begin: const Offset(0.5, 0.5),
+                  duration: 400.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .fadeIn(duration: 300.ms),
             const Gap(20),
             Text(
-              title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 100.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.15,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
+                ),
             const Gap(12),
             Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppTheme.textLightColor(context),
-                height: 1.5,
-              ),
-            ),
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textLightColor(context),
+                    height: 1.5,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 180.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.15,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
+                ),
             const Gap(32),
             Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(context),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontWeight: FontWeight.w700,
+                    const Gap(16),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: isDestructive
+                              ? Colors.red
+                              : AppTheme.primaryColor(context),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          confirmText,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                )
+                .animate()
+                .fadeIn(delay: 260.ms, duration: 300.ms)
+                .slideY(
+                  begin: 0.2,
+                  duration: 300.ms,
+                  curve: Curves.easeOutCubic,
                 ),
-                const Gap(16),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: isDestructive
-                          ? Colors.red
-                          : AppTheme.primaryColor(context),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      confirmText,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
             const Gap(8),
           ],
         ),
@@ -896,6 +931,152 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showThemeModePicker(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode currentMode,
+  ) {
+    HapticService.light();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Gap(12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.dividerColor(context),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Gap(20),
+            const Text(
+              'Select Theme Mode',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const Gap(20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  _buildThemeOption(
+                    context,
+                    ref,
+                    title: 'Follow System',
+                    subtitle: 'Match your device\'s theme settings',
+                    icon: Icons.brightness_auto_rounded,
+                    mode: ThemeMode.system,
+                    isSelected: currentMode == ThemeMode.system,
+                  ),
+                  const Gap(8),
+                  _buildThemeOption(
+                    context,
+                    ref,
+                    title: 'Light Mode',
+                    subtitle: 'Always use a light appearance',
+                    icon: Icons.light_mode_rounded,
+                    mode: ThemeMode.light,
+                    isSelected: currentMode == ThemeMode.light,
+                  ),
+                  const Gap(8),
+                  _buildThemeOption(
+                    context,
+                    ref,
+                    title: 'Dark Mode',
+                    subtitle: 'Always use a dark appearance',
+                    icon: Icons.dark_mode_rounded,
+                    mode: ThemeMode.dark,
+                    isSelected: currentMode == ThemeMode.dark,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required ThemeMode mode,
+    required bool isSelected,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppTheme.primaryColor(context).withValues(alpha: 0.08)
+            : AppTheme.surfaceLightColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: isSelected
+            ? Border.all(color: AppTheme.primaryColor(context), width: 1.5)
+            : Border.all(color: AppTheme.dividerColor(context)),
+      ),
+      child: ListTile(
+        onTap: () {
+          HapticService.light();
+          ref.read(settingsProvider.notifier).setThemeMode(mode);
+          Navigator.pop(context);
+        },
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        leading: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primaryColor(context)
+                : AppTheme.dividerColor(context),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? Colors.white : AppTheme.textColor(context),
+            size: 20,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            color: isSelected
+                ? AppTheme.primaryColor(context)
+                : AppTheme.textColor(context),
+            fontSize: 15,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.textLightColor(context),
+          ),
+        ),
+        trailing: isSelected
+            ? Icon(
+                Icons.check_circle_rounded,
+                color: AppTheme.primaryColor(context),
+                size: 22,
+              )
+            : null,
       ),
     );
   }

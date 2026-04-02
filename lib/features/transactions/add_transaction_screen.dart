@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +18,7 @@ import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
@@ -423,7 +426,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Time chip
-                    GestureDetector(
+                    PressableScale(
+                      enableHaptic: false,
                       onTap: _pickTime,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -464,7 +468,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ),
                     const Gap(6),
                     // Date chip
-                    GestureDetector(
+                    PressableScale(
+                      enableHaptic: false,
                       onTap: _pickDate,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -855,9 +860,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                   HapticService.light();
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const CategoryManagerScreen(),
+                                    SlideUpRoute(
+                                      page: const CategoryManagerScreen(),
                                     ),
                                   );
                                 },
@@ -1308,7 +1312,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           ),
                           itemCount: itemCount,
                           separatorBuilder: (context, index) => const Gap(8),
-                          itemBuilder: itemBuilder,
+                          itemBuilder: (context, index) {
+                            return itemBuilder(context, index)
+                                .animate()
+                                .fadeIn(
+                                  delay: (index * 40).ms,
+                                  duration: 250.ms,
+                                )
+                                .slideX(
+                                  begin: 0.04,
+                                  duration: 250.ms,
+                                  curve: Curves.easeOutCubic,
+                                );
+                          },
                         ),
                       ),
                   ],
