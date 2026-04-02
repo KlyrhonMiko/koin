@@ -19,6 +19,8 @@ import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/utils/voice_command_parser.dart';
+import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
@@ -165,6 +167,43 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   void _showErrorSnackbar(String message) {
     KoinSnackBar.error(context, message);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Voice Input
+  // ═══════════════════════════════════════════════════════
+  Future<void> _showVoiceInputSheet() async {
+    HapticService.selection();
+    final result = await showModalBottomSheet<ParsedTransactionData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const VoiceInputSheet(),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        if (result.amount != null) {
+          final amtInt = result.amount!.truncateToDouble();
+          if (result.amount == amtInt) {
+            _amountController.text = result.amount!.toInt().toString();
+          } else {
+            _amountController.text = result.amount!.toString();
+          }
+          _currentExpression = _amountController.text;
+        }
+        if (result.type != TransactionType.transfer) {
+          _selectedType = result.type;
+        }
+        if (result.category != null) {
+          _selectedCategoryId = result.category!.id;
+        }
+        if (result.note.isNotEmpty) {
+          _noteController.text = result.note;
+        }
+      });
+      _onTypeChanged(_selectedType, ref.read(categoriesProvider).value ?? []);
+    }
   }
 
   // ═══════════════════════════════════════════════════════
@@ -520,8 +559,58 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             child: _buildTypeSelector(context, typeColor),
           ),
           const Gap(24),
-          // ── Hero amount ──
-          _buildHeroAmount(context, currency, typeColor),
+          // ── Hero amount with voice button ──
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _buildHeroAmount(context, currency, typeColor),
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return PressableScale(
+                        onTap: _showVoiceInputSheet,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                typeColor,
+                                typeColor.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: typeColor.withValues(
+                                  alpha: 0.15 + 0.2 * _pulseAnimation.value,
+                                ),
+                                blurRadius: 12 + 6 * _pulseAnimation.value,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.mic_rounded,
+                            size: 22,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
           const Gap(24),
         ],
       ),
