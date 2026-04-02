@@ -5,6 +5,8 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/transactions/transactions_list_screen.dart';
 import 'package:koin/features/analysis/analysis_screen.dart';
+import 'package:koin/features/reports/custom_reports_screen.dart';
+import 'package:koin/core/utils/slide_up_route.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -59,25 +61,74 @@ class _ActivityScreenState extends State<ActivityScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TIMELINE',
-            style: TextStyle(
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
-          const SizedBox(height: 4),
-          Text(
-            'Activity & Flow',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              color: AppTheme.textColor(context),
-            ),
-          ).animate().fade(duration: 400.ms, delay: 100.ms).slideY(begin: -0.2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TIMELINE',
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(
+                          context,
+                        ).withValues(alpha: 0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+                    const SizedBox(height: 4),
+                    Text(
+                          'Activity & Flow',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: AppTheme.textColor(context),
+                          ),
+                        )
+                        .animate()
+                        .fade(duration: 400.ms, delay: 100.ms)
+                        .slideY(begin: -0.2),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                    onTap: () {
+                      HapticService.light();
+                      Navigator.push(
+                        context,
+                        SlideUpRoute(page: const CustomReportsScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(context),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.summarize_outlined,
+                        color: AppTheme.textColor(context),
+                        size: 22,
+                      ),
+                    ),
+                  )
+                  .animate()
+                  .fade(duration: 400.ms, delay: 200.ms)
+                  .scale(begin: const Offset(0.8, 0.8)),
+            ],
+          ),
           const SizedBox(height: 20),
           _buildSegmentedControl(context)
               .animate()

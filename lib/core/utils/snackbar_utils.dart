@@ -9,6 +9,7 @@ class KoinSnackBar {
   static void show(
     BuildContext context, {
     required String message,
+    String? subtitle,
     SnackBarType type = SnackBarType.info,
     Duration duration = const Duration(seconds: 3),
   }) {
@@ -18,6 +19,7 @@ class KoinSnackBar {
     overlayEntry = OverlayEntry(
       builder: (context) => _SnackBarWidget(
         message: message,
+        subtitle: subtitle,
         type: type,
         onDismiss: () {
           overlayEntry.remove();
@@ -29,27 +31,48 @@ class KoinSnackBar {
     overlay.insert(overlayEntry);
   }
 
-  static void success(BuildContext context, String message) {
-    show(context, message: message, type: SnackBarType.success);
+  static void success(
+    BuildContext context,
+    String message, {
+    String? subtitle,
+  }) {
+    show(
+      context,
+      message: message,
+      subtitle: subtitle,
+      type: SnackBarType.success,
+    );
   }
 
-  static void error(BuildContext context, String message) {
-    show(context, message: message, type: SnackBarType.error);
+  static void error(BuildContext context, String message, {String? subtitle}) {
+    show(
+      context,
+      message: message,
+      subtitle: subtitle,
+      type: SnackBarType.error,
+    );
   }
 
-  static void info(BuildContext context, String message) {
-    show(context, message: message, type: SnackBarType.info);
+  static void info(BuildContext context, String message, {String? subtitle}) {
+    show(
+      context,
+      message: message,
+      subtitle: subtitle,
+      type: SnackBarType.info,
+    );
   }
 }
 
 class _SnackBarWidget extends StatefulWidget {
   final String message;
+  final String? subtitle;
   final SnackBarType type;
   final VoidCallback onDismiss;
   final Duration duration;
 
   const _SnackBarWidget({
     required this.message,
+    this.subtitle,
     required this.type,
     required this.onDismiss,
     required this.duration,
@@ -216,14 +239,38 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 4,
                                       ),
-                                      child: Text(
-                                        widget.message,
-                                        style: TextStyle(
-                                          color: AppTheme.textColor(context),
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: -0.4,
-                                        ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.message,
+                                            style: TextStyle(
+                                              color: AppTheme.textColor(
+                                                context,
+                                              ),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.4,
+                                            ),
+                                          ),
+                                          if (widget.subtitle != null) ...[
+                                            const Gap(2),
+                                            Text(
+                                              widget.subtitle!,
+                                              style: TextStyle(
+                                                color: AppTheme.textLightColor(
+                                                  context,
+                                                ).withValues(alpha: 0.7),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                   ),
