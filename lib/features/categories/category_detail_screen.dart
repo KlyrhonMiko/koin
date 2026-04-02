@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
@@ -138,108 +139,132 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     return Consumer(
       builder: (context, ref, _) {
         return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              onPressed: () {
-                HapticService.light();
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            ),
-            title: Text(
-              widget.category != null ? 'Edit Category' : 'New Category',
-            ),
-          ),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+          backgroundColor: AppTheme.backgroundColor(context),
+          body: SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Live preview card
-                _buildPreviewCard(
-                  context,
-                  selectedColor,
-                  previewName,
-                ).animate().fade(duration: 400.ms).slideY(begin: 0.05),
-
-                const Gap(28),
-
-                // Name field
-                _buildSectionLabel(context, 'Category Name'),
-                const Gap(10),
-                TextField(
-                  controller: _nameController,
-                  autofocus: widget.category == null,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g., Groceries',
-                    prefixIcon: Icon(Icons.label_outline),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
                   ),
-                ).animate().fade(delay: 100.ms),
-
-                const Gap(28),
-
-                // Type selector
-                _buildSectionLabel(context, 'Category Type'),
-                const Gap(10),
-                _buildTypeSelector(context).animate().fade(delay: 120.ms),
-
-                const Gap(28),
-
-                // Icon picker
-                _buildSectionLabel(context, 'Icon'),
-                const Gap(12),
-                _buildIconGrid(
-                  context,
-                  selectedColor,
-                ).animate().fade(delay: 150.ms),
-
-                const Gap(28),
-
-                // Color picker
-                _buildSectionLabel(context, 'Color'),
-                const Gap(12),
-                _buildColorGrid(context).animate().fade(delay: 200.ms),
-
-                const Gap(36),
-
-                // Save button
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: AppTheme.primaryGradient(context),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                  child: Row(
+                    children: [
+                      const KoinBackButton(),
+                      const Gap(16),
+                      Text(
+                        widget.category != null
+                            ? 'Edit Category'
+                            : 'New Category',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: AppTheme.textColor(context),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Live preview card
+                        _buildPreviewCard(
+                          context,
+                          selectedColor,
+                          previewName,
+                        ).animate().fade(duration: 400.ms).slideY(begin: 0.05),
+
+                        const Gap(28),
+
+                        // Name field
+                        _buildSectionLabel(context, 'Category Name'),
+                        const Gap(10),
+                        TextField(
+                          controller: _nameController,
+                          autofocus: widget.category == null,
+                          decoration: const InputDecoration(
+                            hintText: 'e.g., Groceries',
+                            prefixIcon: Icon(Icons.label_outline),
+                          ),
+                        ).animate().fade(delay: 100.ms),
+
+                        const Gap(28),
+
+                        // Type selector
+                        _buildSectionLabel(context, 'Category Type'),
+                        const Gap(10),
+                        _buildTypeSelector(
+                          context,
+                        ).animate().fade(delay: 120.ms),
+
+                        const Gap(28),
+
+                        // Icon picker
+                        _buildSectionLabel(context, 'Icon'),
+                        const Gap(12),
+                        _buildIconGrid(
+                          context,
+                          selectedColor,
+                        ).animate().fade(delay: 150.ms),
+
+                        const Gap(28),
+
+                        // Color picker
+                        _buildSectionLabel(context, 'Color'),
+                        const Gap(12),
+                        _buildColorGrid(context).animate().fade(delay: 200.ms),
+
+                        const Gap(36),
+
+                        // Save button
+                        SizedBox(
+                          width: double.infinity,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: AppTheme.primaryGradient(context),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryColor(
+                                    context,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () => _save(ref),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                              ),
+                              child: Text(
+                                widget.category != null
+                                    ? 'Update Category'
+                                    : 'Create Category',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ).animate().fade(delay: 250.ms),
                       ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: () => _save(ref),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                      ),
-                      child: Text(
-                        widget.category != null
-                            ? 'Update Category'
-                            : 'Create Category',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
                   ),
-                ).animate().fade(delay: 250.ms),
+                ),
               ],
             ),
           ),

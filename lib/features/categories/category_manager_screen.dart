@@ -13,6 +13,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 
 import 'package:koin/core/utils/icon_utils.dart';
@@ -111,36 +112,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Column(
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: () {
-                  HapticService.light();
-                  Navigator.pop(context);
-                },
-                icon: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(
-                      context,
-                    ).withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(
-                      color: AppTheme.dividerColor(
-                        context,
-                      ).withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 15,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-              ),
+              const KoinBackButton(),
               Expanded(
                 child: _showSearch
                     ? _buildSearchField(context)

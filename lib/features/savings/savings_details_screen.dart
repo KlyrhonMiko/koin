@@ -13,6 +13,7 @@ import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/numpad.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 
@@ -266,42 +267,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            HapticService.light();
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        ),
-        title: Text(goal.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B)),
-            onPressed: () async {
-              HapticService.medium();
-              final confirmed = await ConfirmationSheet.show(
-                context: context,
-                title: 'Delete Goal?',
-                description:
-                    'Are you sure you want to delete this savings goal? This action cannot be undone.',
-                confirmLabel: 'Delete',
-                confirmColor: AppTheme.expenseColor(context),
-                icon: Icons.delete_forever_rounded,
-                isDanger: true,
-              );
-              if (confirmed == true && mounted) {
-                await ref
-                    .read(savingsGoalsProvider.notifier)
-                    .deleteGoal(goal.id);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              }
-            },
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.backgroundColor(context),
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -328,16 +294,78 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildGaugeHeader(context, goal, currencyFormat),
-            const Gap(28),
-            _buildSavingsNeededSection(context, goal, currencyFormat),
-            const Gap(28),
-            _buildActivitySection(context, goal, logsAsync, currencyFormat),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  const KoinBackButton(),
+                  const Gap(16),
+                  Expanded(
+                    child: Text(
+                      goal.name,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: AppTheme.textColor(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFFF6B6B),
+                    ),
+                    onPressed: () async {
+                      HapticService.medium();
+                      final confirmed = await ConfirmationSheet.show(
+                        context: context,
+                        title: 'Delete Goal?',
+                        description:
+                            'Are you sure you want to delete this savings goal? This action cannot be undone.',
+                        confirmLabel: 'Delete',
+                        confirmColor: AppTheme.expenseColor(context),
+                        icon: Icons.delete_forever_rounded,
+                        isDanger: true,
+                      );
+                      if (confirmed == true && mounted) {
+                        await ref
+                            .read(savingsGoalsProvider.notifier)
+                            .deleteGoal(goal.id);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildGaugeHeader(context, goal, currencyFormat),
+                    const Gap(28),
+                    _buildSavingsNeededSection(context, goal, currencyFormat),
+                    const Gap(28),
+                    _buildActivitySection(
+                      context,
+                      goal,
+                      logsAsync,
+                      currencyFormat,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

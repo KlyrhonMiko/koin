@@ -13,7 +13,9 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+
 import 'package:koin/features/reports/report_service.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
@@ -220,63 +222,42 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        PressableScale(
-          onTap: () {
-            HapticService.light();
-            Navigator.pop(context);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const KoinBackButton(),
+          const Gap(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'REPORT BUILDER',
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const Gap(2),
+                Text(
+                  'Custom Reports',
+                  style: TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ],
             ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppTheme.textColor(context),
-              size: 20,
-            ),
           ),
-        ),
-        const Gap(16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'REPORT BUILDER',
-                style: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const Gap(2),
-              Text(
-                'Custom Reports',
-                style: TextStyle(
-                  color: AppTheme.textColor(context),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

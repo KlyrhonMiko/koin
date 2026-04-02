@@ -16,6 +16,7 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -36,26 +37,7 @@ class SettingsScreen extends ConsumerWidget {
               // Inline header
               Row(
                 children: [
-                  PressableScale(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.dividerColor(context),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-                  ),
+                  const KoinBackButton(),
                   const Gap(16),
                   Text(
                     'Settings',

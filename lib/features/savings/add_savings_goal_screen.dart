@@ -9,6 +9,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:uuid/uuid.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 
 class AddSavingsGoalScreen extends ConsumerStatefulWidget {
   final SavingsGoal? goal;
@@ -16,7 +17,8 @@ class AddSavingsGoalScreen extends ConsumerStatefulWidget {
   const AddSavingsGoalScreen({super.key, this.goal});
 
   @override
-  ConsumerState<AddSavingsGoalScreen> createState() => _AddSavingsGoalScreenState();
+  ConsumerState<AddSavingsGoalScreen> createState() =>
+      _AddSavingsGoalScreenState();
 }
 
 class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
@@ -31,10 +33,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.goal?.name ?? '');
-    _amountController = TextEditingController(text: widget.goal?.targetAmount.toString() ?? '');
+    _amountController = TextEditingController(
+      text: widget.goal?.targetAmount.toString() ?? '',
+    );
     _notesController = TextEditingController(text: widget.goal?.notes ?? '');
     _startDate = widget.goal?.startDate ?? DateTime.now();
-    _endDate = widget.goal?.endDate ?? DateTime.now().add(const Duration(days: 30));
+    _endDate =
+        widget.goal?.endDate ?? DateTime.now().add(const Duration(days: 30));
   }
 
   @override
@@ -121,204 +126,243 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final primaryColor = AppTheme.primaryColor(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            HapticService.light();
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        ),
-        title: Text(isEditing ? 'Edit Goal' : 'New Savings Goal'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Section 1: Goal Details
-              _buildSection(
-                context,
-                title: 'Goal Details',
-                delay: 0,
+      backgroundColor: AppTheme.backgroundColor(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
                 children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Goal Name',
-                      hintText: 'e.g. New Car, Vacation Fund',
-                      prefixIcon: Icon(Icons.flag_rounded),
+                  const KoinBackButton(),
+                  const Gap(16),
+                  Text(
+                    isEditing ? 'Edit Goal' : 'New Savings Goal',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      color: AppTheme.textColor(context),
                     ),
-                    validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
-                  ),
-                  const Gap(14),
-                  TextFormField(
-                    controller: _amountController,
-                    decoration: InputDecoration(
-                      labelText: 'Target Amount',
-                      hintText: 'How much do you want to save?',
-                      prefixIcon: const Icon(Icons.payments_outlined),
-                      prefixText: '${settings.currency.symbol} ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setState(() {}),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Please enter an amount';
-                      if (double.tryParse(value) == null) return 'Please enter a valid number';
-                      return null;
-                    },
                   ),
                 ],
               ),
-              const Gap(14),
-
-              // Section 2: Timeline
-              _buildSection(
-                context,
-                title: 'Timeline',
-                delay: 80,
-                children: [
-                  Row(
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: _buildDateSelector(
-                          context,
-                          label: 'Start',
-                          date: _startDate,
-                          icon: Icons.play_arrow_rounded,
-                          onTap: () {
-                            HapticService.light();
-                            _selectDate(context, true);
-                          },
-                        ),
+                      // Section 1: Goal Details
+                      _buildSection(
+                        context,
+                        title: 'Goal Details',
+                        delay: 0,
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Goal Name',
+                              hintText: 'e.g. New Car, Vacation Fund',
+                              prefixIcon: Icon(Icons.flag_rounded),
+                            ),
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'Please enter a name'
+                                : null,
+                          ),
+                          const Gap(14),
+                          TextFormField(
+                            controller: _amountController,
+                            decoration: InputDecoration(
+                              labelText: 'Target Amount',
+                              hintText: 'How much do you want to save?',
+                              prefixIcon: const Icon(Icons.payments_outlined),
+                              prefixText: '${settings.currency.symbol} ',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => setState(() {}),
+                            validator: (value) {
+                              if (value == null || value.isEmpty)
+                                return 'Please enter an amount';
+                              if (double.tryParse(value) == null)
+                                return 'Please enter a valid number';
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
-                      const Gap(12),
-                      // Connector arrow
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 18,
-                          color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-                        ),
+                      const Gap(14),
+
+                      // Section 2: Timeline
+                      _buildSection(
+                        context,
+                        title: 'Timeline',
+                        delay: 80,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDateSelector(
+                                  context,
+                                  label: 'Start',
+                                  date: _startDate,
+                                  icon: Icons.play_arrow_rounded,
+                                  onTap: () {
+                                    HapticService.light();
+                                    _selectDate(context, true);
+                                  },
+                                ),
+                              ),
+                              const Gap(12),
+                              // Connector arrow
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 18,
+                                  color: AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.3),
+                                ),
+                              ),
+                              const Gap(12),
+                              Expanded(
+                                child: _buildDateSelector(
+                                  context,
+                                  label: 'End',
+                                  date: _endDate,
+                                  icon: Icons.flag_rounded,
+                                  onTap: () {
+                                    HapticService.light();
+                                    _selectDate(context, false);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Gap(14),
+                          // Duration + estimate pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceLightColor(context),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.schedule_rounded,
+                                  size: 15,
+                                  color: primaryColor.withValues(alpha: 0.6),
+                                ),
+                                const Gap(8),
+                                Text(
+                                  '$_totalDays days',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.textColor(context),
+                                  ),
+                                ),
+                                const Gap(8),
+                                Container(
+                                  width: 3,
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.textLightColor(
+                                      context,
+                                    ).withValues(alpha: 0.3),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const Gap(8),
+                                Expanded(
+                                  child: Text(
+                                    '${_getDailyEstimate()}/day to reach goal',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.textLightColor(
+                                        context,
+                                      ).withValues(alpha: 0.6),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const Gap(12),
-                      Expanded(
-                        child: _buildDateSelector(
-                          context,
-                          label: 'End',
-                          date: _endDate,
-                          icon: Icons.flag_rounded,
-                          onTap: () {
-                            HapticService.light();
-                            _selectDate(context, false);
-                          },
-                        ),
+                      const Gap(14),
+
+                      // Section 3: Notes
+                      _buildSection(
+                        context,
+                        title: 'Notes',
+                        subtitle: 'Optional',
+                        delay: 160,
+                        children: [
+                          TextFormField(
+                            controller: _notesController,
+                            decoration: const InputDecoration(
+                              hintText: 'Add any notes about this goal...',
+                              prefixIcon: Icon(Icons.edit_note_rounded),
+                            ),
+                            maxLines: 3,
+                          ),
+                        ],
                       ),
+                      const Gap(32),
+
+                      // Save button
+                      Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: AppTheme.primaryGradient(context),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withValues(alpha: 0.25),
+                                  blurRadius: 20,
+                                  spreadRadius: -2,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _save,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                              ),
+                              child: Text(
+                                isEditing ? 'Update Goal' : 'Create Goal',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
+                          .animate()
+                          .fade(delay: 240.ms, duration: 400.ms)
+                          .slideY(begin: 0.06, curve: Curves.easeOutCubic),
                     ],
                   ),
-                  const Gap(14),
-                  // Duration + estimate pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceLightColor(context),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          size: 15,
-                          color: primaryColor.withValues(alpha: 0.6),
-                        ),
-                        const Gap(8),
-                        Text(
-                          '$_totalDays days',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textColor(context),
-                          ),
-                        ),
-                        const Gap(8),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const Gap(8),
-                        Expanded(
-                          child: Text(
-                            '${_getDailyEstimate()}/day to reach goal',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(14),
-
-              // Section 3: Notes
-              _buildSection(
-                context,
-                title: 'Notes',
-                subtitle: 'Optional',
-                delay: 160,
-                children: [
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      hintText: 'Add any notes about this goal...',
-                      prefixIcon: Icon(Icons.edit_note_rounded),
-                    ),
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-              const Gap(32),
-
-              // Save button
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: AppTheme.primaryGradient(context),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.25),
-                      blurRadius: 20,
-                      spreadRadius: -2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
-                  child: Text(
-                    isEditing ? 'Update Goal' : 'Create Goal',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
-                  ),
-                ),
-              ).animate().fade(delay: 240.ms, duration: 400.ms).slideY(begin: 0.06, curve: Curves.easeOutCubic),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -345,14 +389,22 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 13, color: AppTheme.textLightColor(context).withValues(alpha: 0.5)),
+                Icon(
+                  icon,
+                  size: 13,
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.5),
+                ),
                 const Gap(6),
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.5),
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -377,57 +429,65 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     required List<Widget> children,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section header — clean text only, no icon container
-          Row(
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textColor(context),
-                  letterSpacing: -0.3,
-                ),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-              if (subtitle != null) ...[
-                const Gap(8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
-          const Gap(18),
-          ...children,
-        ],
-      ),
-    ).animate().fade(delay: delay.ms, duration: 400.ms).slideY(begin: 0.06, curve: Curves.easeOutCubic);
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section header — clean text only, no icon container
+              Row(
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textColor(context),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const Gap(8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLightColor(context),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const Gap(18),
+              ...children,
+            ],
+          ),
+        )
+        .animate()
+        .fade(delay: delay.ms, duration: 400.ms)
+        .slideY(begin: 0.06, curve: Curves.easeOutCubic);
   }
 }

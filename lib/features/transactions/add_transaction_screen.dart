@@ -18,6 +18,7 @@ import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/utils/voice_command_parser.dart';
 import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
@@ -430,35 +431,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           Gap(topPadding),
           // ── Top bar ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Row(
               children: [
                 // Back button
-                IconButton(
-                  onPressed: () {
-                    HapticService.light();
-                    Navigator.pop(context);
-                  },
-                  icon: Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(
-                        context,
-                      ).withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 15,
-                      color: AppTheme.textColor(context),
-                    ),
-                  ),
-                ),
+                const KoinBackButton(),
                 const Spacer(),
                 // Date & Time chips
                 Row(
