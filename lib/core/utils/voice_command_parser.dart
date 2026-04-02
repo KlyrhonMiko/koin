@@ -26,10 +26,20 @@ class VoiceCommandParser {
 
     // Parse Amount
     double? amount;
-    // Look for numbers including decimals
-    final amountMatch = RegExp(r'\$?\s?(\d+(?:\.\d{1,2})?)').firstMatch(text);
+    // Look for numbers including decimals and optional comma thousands separators
+    final amountMatch = RegExp(
+      r'(?:php|usd|\$|₱)?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)(k|m)?\b',
+      caseSensitive: false,
+    ).firstMatch(text);
     if (amountMatch != null) {
-      amount = double.tryParse(amountMatch.group(1)!);
+      final cleanAmountString = amountMatch.group(1)!.replaceAll(',', '');
+      amount = double.tryParse(cleanAmountString);
+      final multiplier = amountMatch.group(2)?.toLowerCase();
+      if (amount != null && multiplier == 'k') {
+        amount *= 1000;
+      } else if (amount != null && multiplier == 'm') {
+        amount *= 1000000;
+      }
     }
 
     // Parse Type
@@ -37,9 +47,12 @@ class VoiceCommandParser {
     if (text.contains('got') ||
         text.contains('received') ||
         text.contains('earned') ||
+        text.contains('paid') ||
         text.contains('income')) {
       type = TransactionType.income;
-    } else if (text.contains('transferred') || text.contains('transfer')) {
+    } else if (text.contains('transferred') ||
+        text.contains('transfer') ||
+        text.contains('sent to')) {
       type = TransactionType.transfer;
     }
 
