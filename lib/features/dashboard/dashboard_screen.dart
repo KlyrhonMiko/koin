@@ -1357,10 +1357,10 @@ class DashboardScreen extends ConsumerWidget {
           }
 
           final Color iconBgColor = isTransfer
-              ? color.withValues(alpha: 0.08)
+              ? color.withValues(alpha: 0.1)
               : (category != null
-                    ? category.color.withValues(alpha: 0.08)
-                    : color.withValues(alpha: 0.08));
+                    ? category.color.withValues(alpha: 0.1)
+                    : color.withValues(alpha: 0.1));
           final Color iconColor = isTransfer
               ? color
               : (category != null ? category.color : color);

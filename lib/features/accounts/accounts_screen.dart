@@ -318,9 +318,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                     formatter: (v) => NumberFormat.currency(
                                       symbol: currency.symbol,
                                     ).format(v),
-                                    duration: const Duration(
-                                      milliseconds: 1200,
-                                    ),
+                                    duration: const Duration(milliseconds: 600),
                                     style: TextStyle(
                                       color: AppTheme.textColor(context),
                                       fontWeight: FontWeight.w700,
@@ -458,7 +456,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 AnimatedCounter(
                   value: stats.currentBalance,
                   formatter: (v) => fmt.format(v),
-                  duration: const Duration(milliseconds: 1400),
+                  duration: const Duration(milliseconds: 600),
                   curve: Curves.easeOutCubic,
                   style: TextStyle(
                     color: AppTheme.textColor(context),

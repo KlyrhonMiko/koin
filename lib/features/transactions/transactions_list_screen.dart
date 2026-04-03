@@ -17,6 +17,7 @@ import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/features/transactions/widgets/filter_bottom_sheet.dart';
 import 'package:koin/core/models/transaction_filter.dart';
 import 'package:gap/gap.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 
 class TransactionsListScreen extends ConsumerWidget {
   const TransactionsListScreen({super.key});
@@ -294,17 +295,31 @@ class TransactionsListScreen extends ConsumerWidget {
                                     final isTransfer =
                                         tx.type == TransactionType.transfer;
 
-                                    final color = isTransfer
+                                    final typeColor = isTransfer
                                         ? AppTheme.transferColor(context)
                                         : (isIncome
                                               ? AppTheme.incomeColor(context)
                                               : AppTheme.expenseColor(context));
 
+                                    final category = categories
+                                        .where((c) => c.id == tx.categoryId)
+                                        .firstOrNull;
+
+                                    final color = isTransfer
+                                        ? typeColor
+                                        : (category?.color ?? typeColor);
+
                                     final icon = isTransfer
                                         ? Icons.swap_horiz_rounded
-                                        : (isIncome
-                                              ? Icons.arrow_downward_rounded
-                                              : Icons.arrow_upward_rounded);
+                                        : (category != null
+                                              ? IconUtils.getIcon(
+                                                  category.iconCodePoint,
+                                                )
+                                              : (isIncome
+                                                    ? Icons
+                                                          .arrow_downward_rounded
+                                                    : Icons
+                                                          .arrow_upward_rounded));
 
                                     final categoryName =
                                         categories
@@ -408,7 +423,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                                         ).format(tx.amount)
                                                       : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
                                                   style: TextStyle(
-                                                    color: color,
+                                                    color: typeColor,
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 15,
                                                     letterSpacing: -0.5,
