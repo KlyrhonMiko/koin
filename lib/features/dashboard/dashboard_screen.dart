@@ -5,7 +5,6 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
@@ -21,6 +20,7 @@ import 'package:koin/core/widgets/account_sheet.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/core/widgets/spending_trend_chart.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -128,7 +128,12 @@ class DashboardScreen extends ConsumerWidget {
                 },
               ).animate().fade(delay: 500.ms, duration: 500.ms),
               const Gap(16),
-              _buildChartSection(context, stats, currency)
+              _buildChartSection(
+                    context,
+                    stats,
+                    currency,
+                    transactionsAsync.value ?? [],
+                  )
                   .animate()
                   .fade(delay: 550.ms, duration: 600.ms)
                   .scale(
@@ -747,6 +752,7 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     DashboardStats stats,
     Currency currency,
+    List<AppTransaction> transactions,
   ) {
     if (stats.totalIncome == 0 && stats.totalExpense == 0) {
       return Container(
@@ -784,176 +790,14 @@ class DashboardScreen extends ConsumerWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 160,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: 16),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, radius, _) {
-                    return PieChart(
-                      PieChartData(
-                        pieTouchData: PieTouchData(
-                          touchCallback:
-                              (FlTouchEvent event, pieTouchResponse) {
-                                if (!event.isInterestedForInteractions ||
-                                    pieTouchResponse == null ||
-                                    pieTouchResponse.touchedSection == null) {
-                                  return;
-                                }
-                                if (event is FlTapDownEvent ||
-                                    event is FlPanStartEvent) {
-                                  HapticService.light();
-                                }
-                              },
-                        ),
-                        sectionsSpace: 4,
-                        centerSpaceRadius: 65,
-                        startDegreeOffset: -90,
-                        sections: [
-                          if (stats.totalIncome > 0)
-                            PieChartSectionData(
-                              color: AppTheme.secondaryColor(context),
-                              value: stats.totalIncome,
-                              title: '',
-                              radius: radius,
-                            ),
-                          if (stats.totalExpense > 0)
-                            PieChartSectionData(
-                              color: AppTheme.errorColor(context),
-                              value: stats.totalExpense,
-                              title: '',
-                              radius: radius,
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Net',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Gap(2),
-                    Builder(
-                      builder: (context) {
-                        final net = stats.totalIncome - stats.totalExpense;
-                        final formattedAmount = NumberFormat.compact().format(
-                          net.abs(),
-                        );
-                        return Text(
-                          '${net < 0 ? '−' : ''}${currency.symbol}$formattedAmount',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 20,
-                            letterSpacing: -0.5,
-                            color: net >= 0
-                                ? AppTheme.incomeColor(context)
-                                : AppTheme.expenseColor(context),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Gap(28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildLegendItem(
-                context,
-                'Income',
-                AppTheme.incomeColor(context),
-                NumberFormat.compactCurrency(
-                  symbol: currency.symbol,
-                ).format(stats.totalIncome),
-              ),
-              Container(
-                width: 1,
-                height: 24,
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-              ),
-              _buildLegendItem(
-                context,
-                'Expense',
-                AppTheme.expenseColor(context),
-                NumberFormat.compactCurrency(
-                  symbol: currency.symbol,
-                ).format(stats.totalExpense),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+    final expenses = transactions
+        .where((t) => t.type == TransactionType.expense)
+        .toList();
 
-  Widget _buildLegendItem(
-    BuildContext context,
-    String label,
-    Color color,
-    String amount,
-  ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const Gap(8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              amount,
-              style: TextStyle(
-                color: AppTheme.textColor(context),
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-      ],
+    return SpendingTrendChart(
+      expenses: expenses,
+      currency: currency,
+      filterIndex: 0, // Weekly trend for dashboard
     );
   }
 

@@ -15,7 +15,9 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/core/widgets/spending_trend_chart.dart';
 import 'dart:ui';
+import 'dart:math' show pi;
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -27,7 +29,9 @@ class AnalysisScreen extends ConsumerStatefulWidget {
 class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   late int _selectedFilterIndex;
   bool _isInitialized = false;
-  int _touchedGroupIndex = -1;
+  int _touchedPieIndex = -1;
+  bool _showPieChart = false;
+  DateTime _baseDate = DateTime.now();
 
   @override
   void didChangeDependencies() {
@@ -36,6 +40,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       try {
         final settings = ref.read(settingsProvider);
         _selectedFilterIndex = settings.analysisFilterIndex;
+        // Default to Month if "All" (3) was previously selected
+        if (_selectedFilterIndex > 2) {
+          _selectedFilterIndex = 1;
+        }
       } catch (e) {
         debugPrint('Error loading analysis filter setting: $e');
         _selectedFilterIndex = 0;
@@ -72,28 +80,75 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               );
             }
 
-            final now = DateTime.now();
             List<AppTransaction> filteredTransactions = transactions
                 .where((t) => t.type == TransactionType.expense)
                 .toList();
 
+            double? previousExpense;
+
             if (_selectedFilterIndex == 0) {
-              final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+              final startOfWeek = _baseDate.subtract(
+                Duration(days: _baseDate.weekday - 1),
+              );
               final startOfWeekDate = DateTime(
                 startOfWeek.year,
                 startOfWeek.month,
                 startOfWeek.day,
               );
+              final endOfWeekDate = startOfWeekDate.add(
+                const Duration(days: 7),
+              );
+
+              final prevStartOfWeekDate = startOfWeekDate.subtract(
+                const Duration(days: 7),
+              );
+
+              previousExpense = filteredTransactions
+                  .where(
+                    (t) =>
+                        t.date.isAfter(
+                          prevStartOfWeekDate.subtract(const Duration(days: 1)),
+                        ) &&
+                        t.date.isBefore(startOfWeekDate),
+                  )
+                  .fold<double>(0.0, (sum, t) => sum + t.amount);
+
               filteredTransactions = filteredTransactions
                   .where(
-                    (t) => t.date.isAfter(
-                      startOfWeekDate.subtract(const Duration(days: 1)),
-                    ),
+                    (t) =>
+                        t.date.isAfter(
+                          startOfWeekDate.subtract(const Duration(days: 1)),
+                        ) &&
+                        t.date.isBefore(endOfWeekDate),
                   )
                   .toList();
             } else if (_selectedFilterIndex == 1) {
+              final prevMonthDate = DateTime(
+                _baseDate.year,
+                _baseDate.month - 1,
+                1,
+              );
+              previousExpense = filteredTransactions
+                  .where((t) {
+                    return t.date.year == prevMonthDate.year &&
+                        t.date.month == prevMonthDate.month;
+                  })
+                  .fold<double>(0.0, (sum, t) => sum + t.amount);
+
               filteredTransactions = filteredTransactions.where((t) {
-                return t.date.year == now.year && t.date.month == now.month;
+                return t.date.year == _baseDate.year &&
+                    t.date.month == _baseDate.month;
+              }).toList();
+            } else if (_selectedFilterIndex == 2) {
+              final prevYear = _baseDate.year - 1;
+              previousExpense = filteredTransactions
+                  .where((t) {
+                    return t.date.year == prevYear;
+                  })
+                  .fold<double>(0.0, (sum, t) => sum + t.amount);
+
+              filteredTransactions = filteredTransactions.where((t) {
+                return t.date.year == _baseDate.year;
               }).toList();
             }
 
@@ -105,7 +160,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                _buildImmersiveHeader(context, totalExpense, currency),
+                _buildImmersiveHeader(
+                  context,
+                  totalExpense,
+                  previousExpense,
+                  currency,
+                ),
                 if (filteredTransactions.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -124,9 +184,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        _buildTrendChart(
+                        _buildChartSection(
                               context,
                               filteredTransactions,
+                              categories,
                               currency,
                             )
                             .animate()
@@ -188,6 +249,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   Widget _buildImmersiveHeader(
     BuildContext context,
     double totalExpense,
+    double? previousExpense,
     Currency currency,
   ) {
     return SliverPadding(
@@ -272,6 +334,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         height: 1.1,
                       ),
                     ).animate().fade(delay: 150.ms).slideX(begin: -0.05),
+                    const Gap(12),
+                    Row(
+                      children: [
+                        _buildInlinePeriodSelector(),
+                        if (previousExpense != null) ...[
+                          const Gap(10),
+                          _buildTrendBadge(
+                            totalExpense,
+                            previousExpense,
+                          ).animate().fade(delay: 200.ms),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -280,6 +355,147 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTrendBadge(double total, double previous) {
+    if (previous == 0) return const SizedBox.shrink();
+
+    final diff = total - previous;
+    final percent = (diff / previous * 100).abs();
+    final isIncrease = diff > 0;
+
+    final badgeColor = isIncrease
+        ? Colors.redAccent.shade100
+        : Colors.greenAccent.shade200;
+    final icon = isIncrease
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: badgeColor, size: 14),
+          const Gap(4),
+          Text(
+            '${percent.toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+              shadows: [
+                Shadow(color: badgeColor.withValues(alpha: 0.8), blurRadius: 6),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getPeriodLabel() {
+    if (_selectedFilterIndex == 0) {
+      final startOfWeek = _baseDate.subtract(
+        Duration(days: _baseDate.weekday - 1),
+      );
+      final endOfWeek = startOfWeek.add(const Duration(days: 6));
+      final startLabel = DateFormat('MMM d').format(startOfWeek);
+      final endLabel = DateFormat('MMM d').format(endOfWeek);
+      return '$startLabel - $endLabel';
+    } else if (_selectedFilterIndex == 1) {
+      return DateFormat('MMMM yyyy').format(_baseDate);
+    } else if (_selectedFilterIndex == 2) {
+      return DateFormat('yyyy').format(_baseDate);
+    }
+    return ''; // Should not happen with current filters
+  }
+
+  Widget _buildInlinePeriodSelector() {
+    final now = DateTime.now();
+    bool isCurrentPeriod = false;
+    if (_selectedFilterIndex == 0) {
+      final currentStart = now.subtract(Duration(days: now.weekday - 1));
+      final baseStart = _baseDate.subtract(
+        Duration(days: _baseDate.weekday - 1),
+      );
+      isCurrentPeriod =
+          currentStart.year == baseStart.year &&
+          currentStart.month == baseStart.month &&
+          currentStart.day == baseStart.day;
+    } else if (_selectedFilterIndex == 1) {
+      isCurrentPeriod =
+          now.year == _baseDate.year && now.month == _baseDate.month;
+    } else if (_selectedFilterIndex == 2) {
+      isCurrentPeriod = now.year == _baseDate.year;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () {
+            HapticService.selection();
+            setState(() {
+              if (_selectedFilterIndex == 0) {
+                _baseDate = _baseDate.subtract(const Duration(days: 7));
+              } else if (_selectedFilterIndex == 1) {
+                _baseDate = DateTime(_baseDate.year, _baseDate.month - 1, 1);
+              } else if (_selectedFilterIndex == 2) {
+                _baseDate = DateTime(_baseDate.year - 1, _baseDate.month, 1);
+              }
+            });
+          },
+          child: const Icon(
+            Icons.chevron_left_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
+        ),
+        const Gap(6),
+        Text(
+          _getPeriodLabel(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const Gap(6),
+        GestureDetector(
+          onTap: isCurrentPeriod
+              ? null
+              : () {
+                  HapticService.selection();
+                  setState(() {
+                    if (_selectedFilterIndex == 0) {
+                      _baseDate = _baseDate.add(const Duration(days: 7));
+                    } else if (_selectedFilterIndex == 1) {
+                      _baseDate = DateTime(
+                        _baseDate.year,
+                        _baseDate.month + 1,
+                        1,
+                      );
+                    } else if (_selectedFilterIndex == 2) {
+                      _baseDate = DateTime(
+                        _baseDate.year + 1,
+                        _baseDate.month,
+                        1,
+                      );
+                    }
+                  });
+                },
+          child: Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white.withValues(alpha: isCurrentPeriod ? 0.4 : 1.0),
+            size: 18,
+          ),
+        ),
+      ],
+    ).animate().fade(delay: 150.ms);
   }
 
   Widget _buildGlassFilterControl(BuildContext context) {
@@ -294,13 +510,43 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildFilterOption(0, 'Wk'),
-              _buildFilterOption(1, 'Mo'),
-              _buildFilterOption(2, 'All'),
-            ],
+          child: SizedBox(
+            width: 156, // 52px per segment for better spacing
+            height: 32,
+            child: Stack(
+              children: [
+                // Sliding Indicator background
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutQuart,
+                  left: _selectedFilterIndex * (156 / 3.0),
+                  top: 0,
+                  bottom: 0,
+                  width: 156 / 3.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Pill Options overlay
+                Row(
+                  children: [
+                    _buildFilterOption(0, 'Wk'),
+                    _buildFilterOption(1, 'Mo'),
+                    _buildFilterOption(2, 'Yr'),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -309,139 +555,151 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildFilterOption(int index, String label) {
     final isSelected = _selectedFilterIndex == index;
-    return GestureDetector(
-      onTap: () {
-        HapticService.selection();
-        setState(() => _selectedFilterIndex = index);
-        ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            fontSize: 13,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticService.selection();
+          setState(() {
+            _selectedFilterIndex = index;
+            _baseDate = DateTime.now();
+          });
+          ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTrendChart(
+  Widget _buildChartSection(
     BuildContext context,
     List<AppTransaction> expenses,
+    List<TransactionCategory> categories,
+    Currency currency,
+  ) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _showPieChart ? 'Spending by Category' : 'Spending Trend',
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textColor(context),
+                letterSpacing: -0.4,
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                HapticService.selection();
+                setState(() {
+                  _showPieChart = !_showPieChart;
+                });
+              },
+              icon: Icon(
+                Icons.flip_rounded,
+                color: AppTheme.primaryColor(context),
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor(
+                  context,
+                ).withValues(alpha: 0.1),
+              ),
+            ),
+          ],
+        ),
+        const Gap(16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 600),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeInBack,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return AnimatedBuilder(
+              animation: animation,
+              child: child,
+              builder: (context, widget) {
+                final isEntering = (widget?.key == ValueKey(_showPieChart));
+                final rotation = isEntering
+                    ? (1 - animation.value) * pi
+                    : -(1 - animation.value) * pi;
+                return Transform(
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(rotation),
+                  alignment: Alignment.center,
+                  child: rotation.abs() <= (pi / 2 + 0.01)
+                      ? widget
+                      : const SizedBox.shrink(),
+                );
+              },
+            );
+          },
+          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+            return Stack(
+              alignment: Alignment.center,
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
+          child: _showPieChart
+              ? KeyedSubtree(
+                  key: const ValueKey(true),
+                  child: _buildCategoryPieChart(
+                    context,
+                    expenses,
+                    categories,
+                    currency,
+                  ),
+                )
+              : KeyedSubtree(
+                  key: const ValueKey(false),
+                  child: SpendingTrendChart(
+                    expenses: expenses,
+                    currency: currency,
+                    filterIndex: _selectedFilterIndex,
+                    baseDate: _baseDate,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryPieChart(
+    BuildContext context,
+    List<AppTransaction> expenses,
+    List<TransactionCategory> categories,
     Currency currency,
   ) {
     if (expenses.isEmpty) return const SizedBox.shrink();
 
-    Map<String, double> dailyTotals = {};
+    Map<String, double> categorySpending = {};
     for (var tx in expenses) {
-      String dateKey = DateFormat('yyyy-MM-dd').format(tx.date);
-      dailyTotals[dateKey] = (dailyTotals[dateKey] ?? 0) + tx.amount;
+      categorySpending[tx.categoryId] =
+          (categorySpending[tx.categoryId] ?? 0) + tx.amount;
     }
 
-    var sortedDaily =
-        dailyTotals.entries
-            .map((e) => MapEntry(DateTime.parse(e.key), e.value))
-            .toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
+    var sortedEntries = categorySpending.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-    DateTime endDate = DateTime.now();
-
-    List<BarChartGroupData> barGroups = [];
-    List<String> bottomLabels = [];
-    double maxY = 0;
-
-    if (_selectedFilterIndex == 0) {
-      // Week
-      final startOfWeek = endDate.subtract(Duration(days: endDate.weekday - 1));
-
-      // Find maxY first
-      for (int i = 0; i < 7; i++) {
-        DateTime currentDate = startOfWeek.add(Duration(days: i));
-        String dateKey = DateFormat('yyyy-MM-dd').format(currentDate);
-        double y = dailyTotals[dateKey] ?? 0;
-        if (y > maxY) maxY = y;
-      }
-      maxY = maxY * 1.2;
-      if (maxY == 0) maxY = 100;
-
-      for (int i = 0; i < 7; i++) {
-        DateTime currentDate = startOfWeek.add(Duration(days: i));
-        String dateKey = DateFormat('yyyy-MM-dd').format(currentDate);
-        double y = dailyTotals[dateKey] ?? 0;
-
-        barGroups.add(
-          BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: y,
-                color: AppTheme.primaryColor(context),
-                width: 16,
-                borderRadius: BorderRadius.circular(6),
-                backDrawRodData: BackgroundBarChartRodData(
-                  show: true,
-                  toY: maxY,
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.2),
-                ),
-              ),
-            ],
-          ),
-        );
-        bottomLabels.add(DateFormat('E').format(currentDate).substring(0, 1));
-      }
-    } else {
-      // Month or All Time
-      for (int i = 0; i < sortedDaily.length; i++) {
-        if (sortedDaily[i].value > maxY) maxY = sortedDaily[i].value;
-      }
-      maxY = maxY * 1.2;
-      if (maxY == 0) maxY = 100;
-
-      for (int i = 0; i < sortedDaily.length; i++) {
-        var entry = sortedDaily[i];
-        barGroups.add(
-          BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: entry.value,
-                color: AppTheme.primaryColor(context),
-                width: _selectedFilterIndex == 1 ? 8 : 4,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-          ),
-        );
-        bottomLabels.add(
-          DateFormat(
-            _selectedFilterIndex == 1 ? 'd' : 'MMM d',
-          ).format(entry.key),
-        );
-      }
-    }
+    double totalSpent = expenses.fold(0, (s, t) => s + t.amount);
 
     return Container(
       height: 240,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(32),
@@ -454,182 +712,188 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ],
       ),
       child: TweenAnimationBuilder<double>(
-        key: ValueKey(_selectedFilterIndex),
+        key: ValueKey(_selectedFilterIndex), // Re-animate on filter change
         tween: Tween<double>(begin: 0, end: 1),
         duration: const Duration(milliseconds: 1000),
         curve: Curves.easeOutQuart,
         builder: (context, value, child) {
-          return BarChart(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: (maxY / 4) == 0 ? 1 : maxY / 4,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.3),
-                    strokeWidth: 1,
-                    dashArray: [4, 4],
-                  );
-                },
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (val, meta) {
-                      int index = val.toInt();
-                      if (index < 0 || index >= bottomLabels.length) {
-                        return const SizedBox.shrink();
-                      }
-                      // Avoid crowding on non-weekly filters
-                      if (_selectedFilterIndex != 0 &&
-                          index % 2 != 0 &&
-                          bottomLabels.length > 7) {
-                        return const SizedBox.shrink();
-                      }
-                      if (_selectedFilterIndex == 2 &&
-                          index % 5 != 0 &&
-                          bottomLabels.length > 15) {
-                        return const SizedBox.shrink();
-                      }
+          return Row(
+            children: [
+              Expanded(
+                flex: 10,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PieChart(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      PieChartData(
+                        pieTouchData: PieTouchData(
+                          touchCallback:
+                              (FlTouchEvent event, pieTouchResponse) {
+                                setState(() {
+                                  if (!event.isInterestedForInteractions ||
+                                      pieTouchResponse == null ||
+                                      pieTouchResponse.touchedSection == null) {
+                                    _touchedPieIndex = -1;
+                                    return;
+                                  }
+                                  _touchedPieIndex = pieTouchResponse
+                                      .touchedSection!
+                                      .touchedSectionIndex;
+                                });
 
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          bottomLabels[index],
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
+                                if (event is FlTapDownEvent ||
+                                    event is FlPanStartEvent) {
+                                  HapticService.light();
+                                }
+                              },
                         ),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: (maxY / 4) == 0 ? 1 : maxY / 4,
-                    getTitlesWidget: (val, meta) {
-                      if (val == 0 || val >= maxY) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Text(
-                          NumberFormat.compact().format(val),
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barTouchData: BarTouchData(
-                touchCallback: (FlTouchEvent event, barTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        barTouchResponse == null ||
-                        barTouchResponse.spot == null) {
-                      _touchedGroupIndex = -1;
-                      return;
-                    }
-                    _touchedGroupIndex =
-                        barTouchResponse.spot!.touchedBarGroupIndex;
-                  });
+                        borderData: FlBorderData(show: false),
+                        sectionsSpace: 4,
+                        centerSpaceRadius: 46,
+                        sections: sortedEntries.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final data = entry.value;
+                          final isTouched = index == _touchedPieIndex;
+                          final radius = isTouched ? 22.0 : 16.0;
 
-                  if (event is FlTapDownEvent || event is FlPanStartEvent) {
-                    HapticService.light();
-                  }
-                },
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (_) => AppTheme.surfaceColor(context),
-                  tooltipBorder: BorderSide(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                  tooltipMargin: 8,
-                  fitInsideHorizontally: true,
-                  fitInsideVertically: true,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    // Original toY is stored in the barGroups
-                    final originalY =
-                        barGroups[groupIndex].barRods[rodIndex].toY;
-                    return BarTooltipItem(
-                      '${bottomLabels[group.x.toInt()]}\n',
-                      TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                          final category = categories.firstWhere(
+                            (c) => c.id == data.key,
+                            orElse: () => TransactionCategory(
+                              id: 'unknown',
+                              name: 'Unknown',
+                              iconCodePoint: Icons.help_outline.codePoint,
+                              colorHex: '#9E9E9E',
+                              type: TransactionType.expense,
+                            ),
+                          );
+
+                          return PieChartSectionData(
+                            color: category.color,
+                            value: data.value * value,
+                            title: '',
+                            radius: radius * value,
+                            showTitle: false,
+                          );
+                        }).toList(),
                       ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextSpan(
-                          text: NumberFormat.currency(
-                            symbol: currency.symbol,
-                          ).format(originalY),
+                        Text(
+                          'Total',
                           style: TextStyle(
-                            color: AppTheme.textColor(context),
-                            fontSize: 14,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                        const Gap(2),
+                        Text(
+                          NumberFormat.compactCurrency(
+                            symbol: currency.symbol,
+                          ).format(totalSpent * value),
+                          style: TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.w800,
+                            color: AppTheme.textColor(context),
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-              barGroups: barGroups.asMap().entries.map((entry) {
-                final index = entry.key;
-                final group = entry.value;
-                final isTouched = index == _touchedGroupIndex;
-                return BarChartGroupData(
-                  x: group.x,
-                  barRods: group.barRods.map((rod) {
-                    return rod.copyWith(
-                      toY: rod.toY * value,
-                      color: isTouched
-                          ? AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.8)
-                          : AppTheme.primaryColor(context),
-                      width: isTouched ? rod.width + 2 : rod.width,
-                      backDrawRodData: BackgroundBarChartRodData(
-                        show: rod.backDrawRodData.show,
-                        toY: rod.backDrawRodData.toY,
-                        color: isTouched
-                            ? AppTheme.dividerColor(
+              const Gap(16),
+              Expanded(
+                flex: 12,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: sortedEntries.take(4).map((data) {
+                    final index = sortedEntries.indexOf(data);
+                    final isTouched =
+                        _touchedPieIndex == -1 || _touchedPieIndex == index;
+                    final opacity = isTouched ? 1.0 : 0.4;
+                    final percent = (data.value / totalSpent) * 100;
+
+                    final category = categories.firstWhere(
+                      (c) => c.id == data.key,
+                      orElse: () => TransactionCategory(
+                        id: 'unknown',
+                        name: 'Unknown',
+                        iconCodePoint: Icons.help_outline.codePoint,
+                        colorHex: '#9E9E9E',
+                        type: TransactionType.expense,
+                      ),
+                    );
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: category.color.withValues(alpha: opacity),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  category.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isTouched
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: AppTheme.textColor(
+                                      context,
+                                    ).withValues(alpha: opacity),
+                                  ),
+                                ),
+                                const Gap(2),
+                                Text(
+                                  NumberFormat.compactCurrency(
+                                    symbol: currency.symbol,
+                                  ).format(data.value),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textLightColor(
+                                      context,
+                                    ).withValues(alpha: opacity),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${percent.toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textColor(
                                 context,
-                              ).withValues(alpha: 0.3)
-                            : rod.backDrawRodData.color,
+                              ).withValues(alpha: opacity),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),
-                );
-              }).toList(),
-            ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -710,12 +974,27 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            category.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                category.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const Gap(6),
+                              Text(
+                                '${percent.toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: AppTheme.textLightColor(context),
+                                ),
+                              ),
+                            ],
                           ),
                           AnimatedCounter(
                             value: entry.value,

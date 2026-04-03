@@ -188,7 +188,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 );
               }
               return ReorderableListView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                 itemCount: accounts.length,
                 footer: _buildAddAccountButton(context, ref),
                 onReorder: (oldIndex, newIndex) {
@@ -428,7 +428,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     return Padding(
       padding: EdgeInsets.only(
         top: MediaQuery.paddingOf(context).top + 16,
-        bottom: 24,
+        bottom: 8,
         left: 24,
         right: 24,
       ),
