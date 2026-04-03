@@ -349,16 +349,14 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     ),
                   );
 
-                  if (_showEntranceAnimations) {
-                    accountItem = accountItem
-                        .animate()
-                        .fade(delay: (index * 60).ms, duration: 400.ms)
-                        .slideY(
-                          begin: 0.1,
-                          duration: 400.ms,
-                          curve: Curves.easeOutCubic,
-                        );
-                  }
+                  accountItem = accountItem
+                      .animate(autoPlay: _showEntranceAnimations)
+                      .fade(delay: (index * 60).ms, duration: 400.ms)
+                      .slideY(
+                        begin: 0.1,
+                        duration: 400.ms,
+                        curve: Curves.easeOutCubic,
+                      );
 
                   return KeyedSubtree(
                     key: ValueKey(account.id),
