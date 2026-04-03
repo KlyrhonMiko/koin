@@ -280,7 +280,11 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                           isListening
                               ? Icons.stop_rounded
                               : showPreview
-                              ? Icons.check_rounded
+                              ? (_parsedData!.category != null
+                                    ? IconUtils.getIcon(
+                                        _parsedData!.category!.iconCodePoint,
+                                      )
+                                    : Icons.check_rounded)
                               : Icons.close_rounded,
                           size: 32,
                           color: (isListening || showPreview)

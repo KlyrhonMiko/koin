@@ -20,6 +20,8 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -1153,9 +1155,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             ? AppTheme.incomeColor(context)
             : AppTheme.expenseColor(context);
         final amountPrefix = isIncome ? '+' : '-';
+        final category = ref
+            .watch(categoriesProvider)
+            .value
+            ?.where((c) => c.id == tx.categoryId)
+            .firstOrNull;
+
         final amountIcon = isIncome
-            ? Icons.arrow_upward_rounded
-            : Icons.arrow_downward_rounded;
+            ? (category != null
+                  ? IconUtils.getIcon(category.iconCodePoint)
+                  : Icons.arrow_upward_rounded)
+            : (category != null
+                  ? IconUtils.getIcon(category.iconCodePoint)
+                  : Icons.arrow_downward_rounded);
 
         return IntrinsicHeight(
               child: Row(
