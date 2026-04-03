@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// A premium animated counter that rolls individual digits up/down
 /// like a mechanical odometer. Each digit independently transitions
 /// with a slight stagger for a sophisticated cascading effect.
-class AnimatedCounter extends StatelessWidget {
+class AnimatedCounter extends StatefulWidget {
   final double value;
   final String Function(double) formatter;
   final TextStyle? style;
@@ -25,25 +25,39 @@ class AnimatedCounter extends StatelessWidget {
   });
 
   @override
+  State<AnimatedCounter> createState() => _AnimatedCounterState();
+}
+
+class _AnimatedCounterState extends State<AnimatedCounter> {
+  double? _oldValue;
+
+  @override
   Widget build(BuildContext context) {
+    final beginValue = _oldValue ?? 0.0;
+    _oldValue = widget.value;
+
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: value),
-      duration: duration,
-      curve: curve,
+      tween: Tween<double>(begin: beginValue, end: widget.value),
+      duration: widget.duration,
+      curve: widget.curve,
       builder: (context, animatedValue, child) {
-        final formatted = formatter(animatedValue);
+        final formatted = widget.formatter(animatedValue);
 
         return Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
-          children: _buildDigits(formatted, animatedValue),
+          children: _buildDigits(formatted, animatedValue, widget.style),
         );
       },
     );
   }
 
-  List<Widget> _buildDigits(String formatted, double animatedValue) {
+  List<Widget> _buildDigits(
+    String formatted,
+    double animatedValue,
+    TextStyle? style,
+  ) {
     final effectiveStyle = style ?? const TextStyle();
     final List<Widget> widgets = [];
 
@@ -56,7 +70,7 @@ class AnimatedCounter extends StatelessWidget {
         widgets.add(
           _RollingDigit(
             digit: digit,
-            progress: animatedValue / max(value.abs(), 1),
+            progress: animatedValue / max(widget.value.abs(), 1),
             style: effectiveStyle,
           ),
         );

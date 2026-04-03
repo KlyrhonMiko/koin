@@ -511,12 +511,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       ),
     );
 
-    if (_showEntranceAnimations) {
-      return button
-          .animate()
-          .fade(delay: 300.ms, duration: 400.ms)
-          .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
-    }
-    return button;
+    return button
+        .animate(autoPlay: _showEntranceAnimations)
+        .fade(delay: 300.ms, duration: 400.ms)
+        .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
   }
 }
