@@ -40,6 +40,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       try {
         final settings = ref.read(settingsProvider);
         _selectedFilterIndex = settings.analysisFilterIndex;
+        // Default to Month if "All" (3) was previously selected
+        if (_selectedFilterIndex > 2) {
+          _selectedFilterIndex = 1;
+        }
       } catch (e) {
         debugPrint('Error loading analysis filter setting: $e');
         _selectedFilterIndex = 0;
@@ -330,21 +334,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         height: 1.1,
                       ),
                     ).animate().fade(delay: 150.ms).slideX(begin: -0.05),
-                    if (_selectedFilterIndex != 3) ...[
-                      const Gap(12),
-                      Row(
-                        children: [
-                          _buildInlinePeriodSelector(),
-                          if (previousExpense != null) ...[
-                            const Gap(10),
-                            _buildTrendBadge(
-                              totalExpense,
-                              previousExpense,
-                            ).animate().fade(delay: 200.ms),
-                          ],
+                    const Gap(12),
+                    Row(
+                      children: [
+                        _buildInlinePeriodSelector(),
+                        if (previousExpense != null) ...[
+                          const Gap(10),
+                          _buildTrendBadge(
+                            totalExpense,
+                            previousExpense,
+                          ).animate().fade(delay: 200.ms),
                         ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -407,7 +409,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     } else if (_selectedFilterIndex == 2) {
       return DateFormat('yyyy').format(_baseDate);
     }
-    return 'All Time';
+    return ''; // Should not happen with current filters
   }
 
   Widget _buildInlinePeriodSelector() {
@@ -508,14 +510,43 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildFilterOption(0, 'Wk'),
-              _buildFilterOption(1, 'Mo'),
-              _buildFilterOption(2, 'Yr'),
-              _buildFilterOption(3, 'All'),
-            ],
+          child: SizedBox(
+            width: 156, // 52px per segment for better spacing
+            height: 32,
+            child: Stack(
+              children: [
+                // Sliding Indicator background
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutQuart,
+                  left: _selectedFilterIndex * (156 / 3.0),
+                  top: 0,
+                  bottom: 0,
+                  width: 156 / 3.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Pill Options overlay
+                Row(
+                  children: [
+                    _buildFilterOption(0, 'Wk'),
+                    _buildFilterOption(1, 'Mo'),
+                    _buildFilterOption(2, 'Yr'),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -524,38 +555,25 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildFilterOption(int index, String label) {
     final isSelected = _selectedFilterIndex == index;
-    return GestureDetector(
-      onTap: () {
-        HapticService.selection();
-        setState(() {
-          _selectedFilterIndex = index;
-          _baseDate = DateTime.now();
-        });
-        ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            fontSize: 13,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticService.selection();
+          setState(() {
+            _selectedFilterIndex = index;
+            _baseDate = DateTime.now();
+          });
+          ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
       ),

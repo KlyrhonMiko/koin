@@ -121,7 +121,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
         bottomLabels.add(DateFormat('MMM').format(DateTime(2020, i, 1)));
       }
     } else {
-      // Month or All Time
+      // Month
       for (int i = 0; i < sortedDaily.length; i++) {
         if (sortedDaily[i].value > maxY) maxY = sortedDaily[i].value;
       }
@@ -208,11 +208,6 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                       if (widget.filterIndex != 0 &&
                           index % 2 != 0 &&
                           bottomLabels.length > 7) {
-                        return const SizedBox.shrink();
-                      }
-                      if (widget.filterIndex == 3 &&
-                          index % 5 != 0 &&
-                          bottomLabels.length > 15) {
                         return const SizedBox.shrink();
                       }
 
