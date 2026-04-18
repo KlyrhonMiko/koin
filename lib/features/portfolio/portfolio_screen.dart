@@ -43,6 +43,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _showEntranceAnimations = true;
+  late final String _animationSessionKey;
   final GlobalKey _headerKey = GlobalKey();
 
   // Add more tabs here in the future (e.g., 'Investments')
@@ -50,6 +51,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
 
   @override
   void initState() {
+    _animationSessionKey = DateTime.now().millisecondsSinceEpoch.toString();
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(() {
@@ -180,7 +182,10 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
             children: [
               _buildAccountsTab(context, currency),
               _buildSavingsTab(context),
-              const DebtsTab(),
+              DebtsTab(
+                animationSessionKey: _animationSessionKey,
+                showEntranceAnimations: _showEntranceAnimations,
+              ),
               _buildPlannedTab(context),
             ],
           ),
@@ -375,6 +380,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
               account: account,
               balance: balance,
               currencySymbol: currency.symbol,
+              animationSessionKey: _animationSessionKey,
               onTap: () {
                 HapticService.light();
                 Navigator.push(
@@ -1364,6 +1370,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: AnimatedCounter(
               value: amount,
+              lastValueToken:
+                  'portfolio_hero_${label.toLowerCase()}_$_animationSessionKey',
               formatter: (v) => fmt.format(v),
               duration: const Duration(milliseconds: 1400),
               curve: Curves.easeOutCubic,

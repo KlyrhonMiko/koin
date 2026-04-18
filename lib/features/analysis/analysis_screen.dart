@@ -415,6 +415,30 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     return ''; // Should not happen with current filters
   }
 
+  DateTimeRange? _getCurrentDateRange() {
+    if (_selectedFilterIndex == 0) {
+      final startOfWeek = _baseDate.subtract(
+        Duration(days: _baseDate.weekday - 1),
+      );
+      final start = DateTime(
+        startOfWeek.year,
+        startOfWeek.month,
+        startOfWeek.day,
+      );
+      final end = start.add(const Duration(days: 6));
+      return DateTimeRange(start: start, end: end);
+    } else if (_selectedFilterIndex == 1) {
+      final start = DateTime(_baseDate.year, _baseDate.month, 1);
+      final end = DateTime(_baseDate.year, _baseDate.month + 1, 0);
+      return DateTimeRange(start: start, end: end);
+    } else if (_selectedFilterIndex == 2) {
+      final start = DateTime(_baseDate.year, 1, 1);
+      final end = DateTime(_baseDate.year, 12, 31);
+      return DateTimeRange(start: start, end: end);
+    }
+    return null;
+  }
+
   Widget _buildInlinePeriodSelector() {
     final now = DateTime.now();
     bool isCurrentPeriod = false;
@@ -927,9 +951,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         return PressableScale(
           onTap: () {
             HapticService.light();
+            final dateRange = _getCurrentDateRange();
             ref
                 .read(transactionFilterProvider.notifier)
-                .updateFilter(TransactionFilter(categoryIds: {category.id}));
+                .updateFilter(
+                  TransactionFilter(
+                    categoryIds: {category.id},
+                    dateRange: dateRange,
+                  ),
+                );
             ref.read(navigationProvider.notifier).setIndex(1);
             ref.read(activityTabProvider.notifier).setIndex(1);
           },

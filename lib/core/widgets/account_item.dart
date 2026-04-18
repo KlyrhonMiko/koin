@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/animation_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/widgets/card_background_shapes.dart';
@@ -17,6 +18,7 @@ class AccountItem extends StatelessWidget {
   final Widget? trailing;
   final bool isPreview;
   final bool isSelected;
+  final String? animationSessionKey;
 
   const AccountItem({
     super.key,
@@ -28,6 +30,7 @@ class AccountItem extends StatelessWidget {
     this.trailing,
     this.isPreview = false,
     this.isSelected = false,
+    this.animationSessionKey,
   });
 
   /// Whether the card has a coloured (non-default) background.
@@ -114,6 +117,12 @@ class AccountItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPrivate = account.excludeFromTotal;
+    if (isPrivate && animationSessionKey != null) {
+      AnimationTracker.updateValue(
+        'acc_bal_${account.id}_$animationSessionKey',
+        0.0,
+      );
+    }
     final colored = _hasColoredBackground;
 
     return PressableScale(
@@ -206,6 +215,9 @@ class AccountItem extends StatelessWidget {
                                 )
                               : AnimatedCounter(
                                   value: balance,
+                                  lastValueToken: animationSessionKey != null
+                                      ? 'acc_bal_${account.id}_$animationSessionKey'
+                                      : null,
                                   formatter: (v) => NumberFormat.currency(
                                     symbol: currencySymbol,
                                   ).format(v),

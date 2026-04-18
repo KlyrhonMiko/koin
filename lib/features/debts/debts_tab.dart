@@ -17,7 +17,14 @@ import 'package:koin/features/debts/add_edit_debt_screen.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 
 class DebtsTab extends ConsumerWidget {
-  const DebtsTab({super.key});
+  final String? animationSessionKey;
+  final bool showEntranceAnimations;
+
+  const DebtsTab({
+    super.key,
+    this.animationSessionKey,
+    this.showEntranceAnimations = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -447,6 +454,9 @@ class DebtsTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: AnimatedCounter(
               value: amount,
+              lastValueToken: animationSessionKey != null
+                  ? 'debts_hero_${label.toLowerCase()}_$animationSessionKey'
+                  : null,
               formatter: (v) => fmt.format(v),
               duration: const Duration(milliseconds: 1400),
               curve: Curves.easeOutCubic,

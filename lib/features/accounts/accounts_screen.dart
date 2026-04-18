@@ -24,9 +24,11 @@ class AccountsScreen extends ConsumerStatefulWidget {
 
 class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   bool _showEntranceAnimations = true;
+  late final String _animationSessionKey;
 
   @override
   void initState() {
+    _animationSessionKey = DateTime.now().millisecondsSinceEpoch.toString();
     super.initState();
     // Only show entrance animations once
     Future.delayed(const Duration(milliseconds: 1000), () {
@@ -236,6 +238,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     account: account,
                     balance: balance,
                     currencySymbol: currency.symbol,
+                    animationSessionKey: _animationSessionKey,
                     onTap: () {
                       HapticService.light();
                       Navigator.push(
@@ -371,6 +374,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 const Gap(4),
                 AnimatedCounter(
                   value: stats.currentBalance,
+                  lastValueToken:
+                      'portfolio_total_balance_$_animationSessionKey',
                   formatter: (v) => fmt.format(v),
                   duration: const Duration(milliseconds: 600),
                   curve: Curves.easeOutCubic,
