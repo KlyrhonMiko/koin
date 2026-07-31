@@ -74,7 +74,7 @@ class DashboardScreen extends ConsumerWidget {
                     curve: Curves.easeOutCubic,
                   ),
               const Gap(24),
-              _buildBalanceCard(context, stats, currency)
+              _buildBalanceCard(context, ref, stats, settings)
                   .animate()
                   .fade(duration: 600.ms, delay: 100.ms)
                   .slideY(
@@ -317,9 +317,11 @@ class DashboardScreen extends ConsumerWidget {
   // ─── Balance Card (Hero) ──────────────────────────────────────────
   Widget _buildBalanceCard(
     BuildContext context,
+    WidgetRef ref,
     DashboardStats stats,
-    Currency currency,
+    SettingsState settings,
   ) {
+    final currency = settings.currency;
     final netChange = stats.totalIncome - stats.totalExpense;
 
     return Container(
@@ -381,42 +383,76 @@ class DashboardScreen extends ConsumerWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      currency.code,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        letterSpacing: 0.5,
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          HapticService.selection();
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setHideBalance(!settings.hideBalance);
+                        },
+                        child: Icon(
+                          settings.hideBalance
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: Colors.white.withValues(
+                            alpha: settings.hideBalance ? 0.6 : 0.9,
+                          ),
+                          size: 20,
+                        ),
                       ),
-                    ),
+                      const Gap(12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          currency.code,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               const Gap(12),
-              AnimatedCounter(
-                value: stats.currentBalance,
-                formatter: (v) =>
-                    NumberFormat.currency(symbol: currency.symbol).format(v),
-                duration: const Duration(milliseconds: 1400),
-                curve: Curves.easeOutCubic,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.5,
-                  height: 1.1,
-                ),
-              ),
+              settings.hideBalance
+                  ? const Text(
+                      '••••••',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.0,
+                        height: 1.1,
+                      ),
+                    )
+                  : AnimatedCounter(
+                      value: stats.currentBalance,
+                      formatter: (v) => NumberFormat.currency(
+                        symbol: currency.symbol,
+                      ).format(v),
+                      duration: const Duration(milliseconds: 1400),
+                      curve: Curves.easeOutCubic,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.5,
+                        height: 1.1,
+                      ),
+                    ),
               const Gap(20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -444,8 +480,9 @@ class DashboardScreen extends ConsumerWidget {
                         const Gap(4),
                         AnimatedCounter(
                           value: netChange.abs(),
-                          formatter: (v) =>
-                              '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
+                          formatter: (v) => settings.hideBalance
+                              ? '•••••• this month'
+                              : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
                           duration: const Duration(milliseconds: 1200),
                           style: const TextStyle(
                             color: Colors.white,

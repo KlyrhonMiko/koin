@@ -372,20 +372,30 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                 ),
                 const Gap(4),
-                AnimatedCounter(
-                  value: stats.currentBalance,
-                  lastValueToken:
-                      'portfolio_total_balance_$_animationSessionKey',
-                  formatter: (v) => fmt.format(v),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeOutCubic,
-                  style: TextStyle(
-                    color: AppTheme.textColor(context),
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.2,
-                  ),
-                ),
+                settings.hideBalance
+                    ? Text(
+                        '••••••',
+                        style: TextStyle(
+                          color: AppTheme.textColor(context),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.0,
+                        ),
+                      )
+                    : AnimatedCounter(
+                        value: stats.currentBalance,
+                        lastValueToken:
+                            'portfolio_total_balance_$_animationSessionKey',
+                        formatter: (v) => fmt.format(v),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeOutCubic,
+                        style: TextStyle(
+                          color: AppTheme.textColor(context),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.2,
+                        ),
+                      ),
               ],
             ),
           ),

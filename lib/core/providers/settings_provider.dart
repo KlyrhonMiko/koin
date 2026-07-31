@@ -12,25 +12,30 @@ class SettingsState {
   final Color themeColor;
   final ThemeMode themeMode;
   final int analysisFilterIndex;
+  final bool? _hideBalance;
+  bool get hideBalance => _hideBalance ?? false;
 
   const SettingsState({
     required this.currency,
     required this.themeColor,
     required this.themeMode,
     required this.analysisFilterIndex,
-  });
+    bool? hideBalance,
+  }) : _hideBalance = hideBalance;
 
   SettingsState copyWith({
     Currency? currency,
     Color? themeColor,
     ThemeMode? themeMode,
     int? analysisFilterIndex,
+    bool? hideBalance,
   }) {
     return SettingsState(
       currency: currency ?? this.currency,
       themeColor: themeColor ?? this.themeColor,
       themeMode: themeMode ?? this.themeMode,
       analysisFilterIndex: analysisFilterIndex ?? this.analysisFilterIndex,
+      hideBalance: hideBalance ?? this.hideBalance,
     );
   }
 }
@@ -40,6 +45,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const String _themeColorKey = 'theme_color';
   static const String _themeModeKey = 'theme_mode';
   static const String _analysisFilterIndexKey = 'analysis_filter_index';
+  static const String _hideBalanceKey = 'hide_balance';
 
   @override
   SettingsState build() {
@@ -49,6 +55,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final themeColorValue = prefs.getInt(_themeColorKey);
     final themeModeIndex = prefs.getInt(_themeModeKey);
     final analysisFilterIndex = prefs.getInt(_analysisFilterIndexKey) ?? 0;
+    final hideBalance = prefs.getBool(_hideBalanceKey) ?? false;
 
     final currency = Currency.supportedCurrencies.firstWhere(
       (c) => c.code == currencyCode,
@@ -68,6 +75,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       themeColor: themeColor,
       themeMode: themeMode,
       analysisFilterIndex: analysisFilterIndex,
+      hideBalance: hideBalance,
     );
   }
 
@@ -95,12 +103,19 @@ class SettingsNotifier extends Notifier<SettingsState> {
     ref.invalidateSelf();
   }
 
+  Future<void> setHideBalance(bool hide) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_hideBalanceKey, hide);
+    ref.invalidateSelf();
+  }
+
   Future<void> resetSettings() async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove(_currencyCodeKey);
     await prefs.remove(_themeColorKey);
     await prefs.remove(_themeModeKey);
     await prefs.remove(_analysisFilterIndexKey);
+    await prefs.remove(_hideBalanceKey);
     ref.invalidateSelf();
   }
 }
