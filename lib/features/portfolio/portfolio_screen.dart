@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -671,10 +672,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
               ),
               child: Icon(
                 category != null
-                    ? IconData(
-                        category.iconCodePoint,
-                        fontFamily: 'MaterialIcons',
-                      )
+                    ? IconUtils.getIcon(category.iconCodePoint)
                     : Icons.category_rounded,
                 color: categoryColor,
                 size: 24,

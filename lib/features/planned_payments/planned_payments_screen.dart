@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
@@ -218,10 +219,7 @@ class PlannedPaymentsScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Icon(
-                                  IconData(
-                                    category.iconCodePoint,
-                                    fontFamily: 'MaterialIcons',
-                                  ),
+                                  IconUtils.getIcon(category.iconCodePoint),
                                   color: categoryColor,
                                   size: 24,
                                 ),

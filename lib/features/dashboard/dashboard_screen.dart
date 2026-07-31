@@ -1703,10 +1703,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
               child: Icon(
                 category != null
-                    ? IconData(
-                        category.iconCodePoint,
-                        fontFamily: 'MaterialIcons',
-                      )
+                    ? IconUtils.getIcon(category.iconCodePoint)
                     : Icons.category_rounded,
                 color: categoryColor,
                 size: 20,

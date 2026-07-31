@@ -345,10 +345,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           Row(
                             children: [
                               Icon(
-                                IconData(
-                                  linkedAccount.iconCodePoint,
-                                  fontFamily: 'MaterialIcons',
-                                ),
+                                IconUtils.getIcon(linkedAccount.iconCodePoint),
                                 size: 12,
                                 color: linkedAccount.color,
                               ),
