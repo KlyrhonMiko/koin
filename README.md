@@ -38,7 +38,7 @@ Koin is designed to offer a premium and effortless experience for managing your 
 
 Get the latest version directly from our [GitHub Releases](https://github.com/KlyrhonMiko/koin/releases).
 
-[![Download APK](https://img.shields.io/badge/Download_APK_v1.1.1-4CAF50?style=for-the-badge&logo=android&logoColor=white)](https://github.com/KlyrhonMiko/koin/releases/download/v1.1.1/koinv1.1.1.apk)
+[![Download APK](https://img.shields.io/badge/Download_APK_v1.1.2-4CAF50?style=for-the-badge&logo=android&logoColor=white)](https://github.com/KlyrhonMiko/koin/releases/download/v1.1.2/koin_v1.1.2.apk)
 
 > [!TIP]
 > **For Android users:** Download the `koin.apk` file, open it on your device, and follow the prompts to install. You may need to enable "Install from Unknown Sources" in your settings.
