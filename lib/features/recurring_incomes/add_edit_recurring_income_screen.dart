@@ -20,24 +20,24 @@ import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 
-class AddEditPlannedPaymentScreen extends ConsumerStatefulWidget {
+class AddEditRecurringIncomeScreen extends ConsumerStatefulWidget {
   final PlannedPayment? payment;
 
-  const AddEditPlannedPaymentScreen({super.key, this.payment});
+  const AddEditRecurringIncomeScreen({super.key, this.payment});
 
   @override
-  ConsumerState<AddEditPlannedPaymentScreen> createState() =>
-      _AddEditPlannedPaymentScreenState();
+  ConsumerState<AddEditRecurringIncomeScreen> createState() =>
+      _AddEditRecurringIncomeScreenState();
 }
 
-class _AddEditPlannedPaymentScreenState
-    extends ConsumerState<AddEditPlannedPaymentScreen> {
+class _AddEditRecurringIncomeScreenState
+    extends ConsumerState<AddEditRecurringIncomeScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _notesController;
 
-  TransactionType _selectedType = TransactionType.expense;
+  TransactionType _selectedType = TransactionType.income;
   String? _selectedCategoryId;
   String? _selectedAccountId;
   DateTime _startDate = DateTime.now();
@@ -164,10 +164,10 @@ class _AddEditPlannedPaymentScreenState
   Future<void> _showDeleteConfirmation() async {
     final confirmed = await ConfirmationSheet.show(
       context: context,
-      title: 'Delete Subscription?',
+      title: 'Delete Recurring Income?',
       description:
-          'Are you sure you want to delete this subscription? This action cannot be undone.',
-      confirmLabel: 'Delete Subscription',
+          'Are you sure you want to delete this Recurring Income? This action cannot be undone.',
+      confirmLabel: 'Delete Income',
       confirmColor: AppTheme.expenseColor(context),
       icon: Icons.delete_outline_rounded,
       isDanger: true,
@@ -411,7 +411,7 @@ class _AddEditPlannedPaymentScreenState
                 letterSpacing: -0.5,
               ),
               decoration: InputDecoration(
-                hintText: 'Name your subscription',
+                hintText: 'Name your recurring income',
                 border: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -511,7 +511,7 @@ class _AddEditPlannedPaymentScreenState
     final id = await _showPremiumSelectionSheet<String>(
       context: context,
       title: 'Category',
-      subtitle: 'Choose a category for this subscription',
+      subtitle: 'Choose a category for this recurring income',
       itemCount: filteredCategories.length,
       itemBuilder: (context, index) {
         final cat = filteredCategories[index];
@@ -536,7 +536,7 @@ class _AddEditPlannedPaymentScreenState
     final id = await _showPremiumSelectionSheet<String>(
       context: context,
       title: 'Account',
-      subtitle: 'Choose the account for this subscription',
+      subtitle: 'Choose the account for this recurring income',
       itemCount: accounts.length,
       itemBuilder: (context, index) {
         final acc = accounts[index];
@@ -705,7 +705,7 @@ class _AddEditPlannedPaymentScreenState
                     const Gap(12),
                     _buildDateSelector(
                       context,
-                      label: 'Next Payment Date',
+                      label: 'Next Income Date',
                       date: _startDate,
                       icon: Icons.calendar_month_rounded,
                       onTap: () async {
@@ -910,7 +910,7 @@ class _AddEditPlannedPaymentScreenState
             ),
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: Text(
-              isEditing ? 'Save Changes' : 'Create Subscription',
+              isEditing ? 'Save Changes' : 'Create Income',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,

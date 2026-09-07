@@ -26,12 +26,14 @@ import 'package:koin/features/savings/savings_details_screen.dart';
 import 'package:koin/features/debts/debts_tab.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/features/planned_payments/add_edit_planned_payment_screen.dart';
+import 'package:koin/features/recurring_incomes/recurring_incomes_screen.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
 import 'package:koin/core/utils/animation_utils.dart';
+import 'package:koin/core/providers/navigation_provider.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});
@@ -48,16 +50,23 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   final GlobalKey _headerKey = GlobalKey();
 
   // Add more tabs here in the future (e.g., 'Investments')
-  static const _tabs = ['Accounts', 'Goals', 'Debts', 'Planned'];
+  static const _tabs = ['Accounts', 'Goals', 'Debts', 'Planned', 'Incomes'];
 
   @override
   void initState() {
     _animationSessionKey = DateTime.now().millisecondsSinceEpoch.toString();
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    final initialTab = ref.read(portfolioTabProvider);
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+      initialIndex: (initialTab >= 0 && initialTab < _tabs.length) ? initialTab : 0,
+    );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         HapticService.selection();
+      } else {
+        ref.read(portfolioTabProvider.notifier).setIndex(_tabController.index);
       }
     });
     Future.delayed(const Duration(milliseconds: 1200), () {
@@ -145,6 +154,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(portfolioTabProvider, (previous, next) {
+      if (next >= 0 && next < _tabs.length && _tabController.index != next) {
+        _tabController.animateTo(next);
+      }
+    });
+
     // Recreate controller if length mismatch (e.g. during hot reload after adding tabs)
     if (_tabController.length != _tabs.length) {
       final oldIndex = _tabController.index;
@@ -157,6 +172,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
       _tabController.addListener(() {
         if (_tabController.indexIsChanging) {
           HapticService.selection();
+        } else {
+          ref.read(portfolioTabProvider.notifier).setIndex(_tabController.index);
         }
       });
     }
@@ -188,6 +205,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                 showEntranceAnimations: _showEntranceAnimations,
               ),
               _buildPlannedTab(context),
+              const RecurringIncomesTab(),
             ],
           ),
         ),
@@ -542,6 +560,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
 
     return paymentsAsync.when(
       data: (payments) {
+        final expenses = payments.where((p) => p.type == TransactionType.expense).toList();
+        payments = expenses;
         if (payments.isEmpty) {
           return _buildFullEmptyState(
             context,

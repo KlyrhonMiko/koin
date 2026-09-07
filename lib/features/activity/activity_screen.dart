@@ -24,12 +24,18 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final initialTab = ref.read(activityTabProvider);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: (initialTab >= 0 && initialTab < 2) ? initialTab : 0,
+    );
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
+      if (_tabController.indexIsChanging) {
         HapticService.selection();
+      } else {
+        ref.read(activityTabProvider.notifier).setIndex(_tabController.index);
       }
-      ref.read(activityTabProvider.notifier).setIndex(_tabController.index);
     });
   }
 

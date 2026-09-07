@@ -66,3 +66,16 @@ class ActivityTabNotifier extends Notifier<int> {
 final activityTabProvider = NotifierProvider<ActivityTabNotifier, int>(() {
   return ActivityTabNotifier();
 });
+
+class PortfolioTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setIndex(int index) {
+    state = index;
+  }
+}
+
+final portfolioTabProvider = NotifierProvider<PortfolioTabNotifier, int>(() {
+  return PortfolioTabNotifier();
+});

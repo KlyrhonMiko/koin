@@ -21,6 +21,9 @@ import 'package:koin/features/planned_payments/add_edit_planned_payment_screen.d
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/accounts/screens/account_form_screen.dart';
+import 'package:uuid/uuid.dart';
+import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/widgets/spending_trend_chart.dart';
@@ -41,6 +44,84 @@ class DashboardScreen extends ConsumerWidget {
     if (hour < 12) return Icons.light_mode_rounded;
     if (hour < 17) return Icons.wb_sunny_rounded;
     return Icons.dark_mode_rounded;
+  }
+
+  Future<void> _paySubscription(
+    BuildContext context,
+    WidgetRef ref,
+    PlannedPayment payment,
+  ) async {
+    final result = await PaymentConfirmationSheet.show(
+      context: context,
+      payment: payment,
+    );
+    if (result == null || !context.mounted) return;
+
+    final isExpense = payment.type == TransactionType.expense;
+    final noteSuffix = isExpense ? ' (Subscription)' : ' (Recurring Income)';
+
+    final transaction = AppTransaction(
+      id: const Uuid().v4(),
+      note: '${payment.title}$noteSuffix',
+      amount: result.amount,
+      type: payment.type,
+      date: DateTime.now(),
+      categoryId: result.categoryId,
+      accountId: result.accountId,
+      plannedPaymentId: payment.id,
+    );
+
+    DateTime nextDate = payment.nextDate;
+    switch (payment.frequency) {
+      case PaymentFrequency.daily:
+        nextDate = nextDate.add(const Duration(days: 1));
+        break;
+      case PaymentFrequency.weekly:
+        nextDate = nextDate.add(const Duration(days: 7));
+        break;
+      case PaymentFrequency.biWeekly:
+        nextDate = nextDate.add(const Duration(days: 14));
+        break;
+      case PaymentFrequency.monthly:
+        nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
+        break;
+      case PaymentFrequency.quarterly:
+        nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
+        break;
+      case PaymentFrequency.yearly:
+        nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
+        break;
+    }
+
+    final updatedPayment = PlannedPayment(
+      id: payment.id,
+      title: payment.title,
+      amount: payment.amount,
+      type: payment.type,
+      categoryId: payment.categoryId,
+      accountId: payment.accountId,
+      startDate: payment.startDate,
+      endDate: payment.endDate,
+      nextDate: nextDate,
+      frequency: payment.frequency,
+      notes: payment.notes,
+      isAutoProcess: payment.isAutoProcess,
+    );
+
+    await ref.read(transactionProvider.notifier).addTransaction(transaction);
+    await ref
+        .read(plannedPaymentProvider.notifier)
+        .updatePlannedPayment(updatedPayment);
+
+    if (context.mounted) {
+      KoinSnackBar.success(
+        context,
+        isExpense ? 'Payment processed' : 'Income processed',
+        subtitle: isExpense 
+            ? 'Your planned payment has been completed' 
+            : 'Your recurring income has been completed',
+      );
+    }
   }
 
   @override
@@ -120,15 +201,9 @@ class DashboardScreen extends ConsumerWidget {
                 title: 'Spending Overview',
                 buttonLabel: 'Full Analysis',
                 onTap: () {
-                  ref.read(navigationProvider.notifier).setIndex(1);
                   HapticService.light();
-                  ref
-                      .read(pageControllerProvider)
-                      .animateToPage(
-                        1,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
+                  ref.read(activityTabProvider.notifier).setIndex(0);
+                  ref.read(navigationProvider.notifier).setIndex(1);
                 },
               ).animate().fade(delay: 500.ms, duration: 500.ms),
               const Gap(16),
@@ -155,15 +230,9 @@ class DashboardScreen extends ConsumerWidget {
                 title: 'Recent Transactions',
                 buttonLabel: 'View All',
                 onTap: () {
-                  ref.read(navigationProvider.notifier).setIndex(1);
                   HapticService.light();
-                  ref
-                      .read(pageControllerProvider)
-                      .animateToPage(
-                        1,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
+                  ref.read(activityTabProvider.notifier).setIndex(1);
+                  ref.read(navigationProvider.notifier).setIndex(1);
                 },
               ).animate().fade(delay: 600.ms, duration: 500.ms),
               const Gap(12),
@@ -566,13 +635,6 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.popUntil(context, (route) => route.isFirst);
             ref.read(navigationProvider.notifier).setIndex(2);
-            ref
-                .read(pageControllerProvider)
-                .animateToPage(
-                  2,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
           },
         ),
       ],
@@ -1054,13 +1116,6 @@ class DashboardScreen extends ConsumerWidget {
           onTap: () {
             Navigator.popUntil(context, (route) => route.isFirst);
             ref.read(navigationProvider.notifier).setIndex(2);
-            ref
-                .read(pageControllerProvider)
-                .animateToPage(
-                  2,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
           },
         ),
         const Gap(14),
@@ -1116,13 +1171,6 @@ class DashboardScreen extends ConsumerWidget {
                     HapticService.medium();
                     Navigator.popUntil(context, (route) => route.isFirst);
                     ref.read(navigationProvider.notifier).setIndex(2);
-                    ref
-                        .read(pageControllerProvider)
-                        .animateToPage(
-                          2,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor(context),
@@ -1583,14 +1631,8 @@ class DashboardScreen extends ConsumerWidget {
           buttonLabel: 'Planned',
           onTap: () {
             HapticService.light();
+            ref.read(portfolioTabProvider.notifier).setIndex(4);
             ref.read(navigationProvider.notifier).setIndex(3);
-            ref
-                .read(pageControllerProvider)
-                .animateToPage(
-                  3,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
           },
         ),
         const Gap(16),
@@ -1614,6 +1656,7 @@ class DashboardScreen extends ConsumerWidget {
 
                 Widget item = _buildUpcomingPaymentItem(
                   context,
+                  ref,
                   payment,
                   category,
                   currency,
@@ -1650,6 +1693,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildUpcomingPaymentItem(
     BuildContext context,
+    WidgetRef ref,
     PlannedPayment payment,
     dynamic category,
     Currency currency,
@@ -1666,10 +1710,7 @@ class DashboardScreen extends ConsumerWidget {
     return PressableScale(
       onTap: () {
         HapticService.light();
-        Navigator.push(
-          context,
-          SlideUpRoute(page: AddEditPlannedPaymentScreen(payment: payment)),
-        );
+        _paySubscription(context, ref, payment);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

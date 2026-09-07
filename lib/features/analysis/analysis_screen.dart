@@ -960,8 +960,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     dateRange: dateRange,
                   ),
                 );
-            ref.read(navigationProvider.notifier).setIndex(1);
             ref.read(activityTabProvider.notifier).setIndex(1);
+            ref.read(navigationProvider.notifier).setIndex(1);
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
