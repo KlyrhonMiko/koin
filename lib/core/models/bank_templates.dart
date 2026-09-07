@@ -29,11 +29,18 @@ class BankTemplate {
       colorHex: '#C62828',
     ),
     BankTemplate(
-      id: 'metrobank',
-      name: 'Metrobank',
-      logoAsset: 'assets/logos/metrobank.png',
+      id: 'cimb',
+      name: 'CIMB',
+      logoAsset: 'assets/logos/cimb.png',
       iconCodePoint: 0xe069,
-      colorHex: '#1565C0',
+      colorHex: '#D50000',
+    ),
+    BankTemplate(
+      id: 'eastwest',
+      name: 'EastWest',
+      logoAsset: 'assets/logos/eastwest.png',
+      iconCodePoint: 0xe069,
+      colorHex: '#B3BD43',
     ),
     BankTemplate(
       id: 'gcash',
@@ -41,13 +48,6 @@ class BankTemplate {
       logoAsset: 'assets/logos/gcash.png',
       iconCodePoint: 0xf08b4, // Icons.wallet_rounded
       colorHex: '#007DFE',
-    ),
-    BankTemplate(
-      id: 'maya',
-      name: 'Maya',
-      logoAsset: 'assets/logos/maya.png',
-      iconCodePoint: 0xf08b4,
-      colorHex: '#49A35B',
     ),
     BankTemplate(
       id: 'gotyme',
@@ -64,18 +64,25 @@ class BankTemplate {
       colorHex: '#1B5E20',
     ),
     BankTemplate(
-      id: 'unionbank',
-      name: 'UnionBank',
-      logoAsset: 'assets/logos/unionbank.png',
+      id: 'maribank',
+      name: 'MariBank',
+      logoAsset: 'assets/logos/maribank.png',
       iconCodePoint: 0xe069,
-      colorHex: '#F57C00',
+      colorHex: '#EA5F00',
     ),
     BankTemplate(
-      id: 'rcbc',
-      name: 'RCBC',
-      logoAsset: 'assets/logos/rcbc.png',
+      id: 'maya',
+      name: 'Maya',
+      logoAsset: 'assets/logos/maya.png',
+      iconCodePoint: 0xf08b4,
+      colorHex: '#49A35B',
+    ),
+    BankTemplate(
+      id: 'metrobank',
+      name: 'Metrobank',
+      logoAsset: 'assets/logos/metrobank.png',
       iconCodePoint: 0xe069,
-      colorHex: '#1A237E',
+      colorHex: '#1565C0',
     ),
     BankTemplate(
       id: 'pnb',
@@ -85,6 +92,13 @@ class BankTemplate {
       colorHex: '#0D47A1',
     ),
     BankTemplate(
+      id: 'rcbc',
+      name: 'RCBC',
+      logoAsset: 'assets/logos/rcbc.png',
+      iconCodePoint: 0xe069,
+      colorHex: '#1A237E',
+    ),
+    BankTemplate(
       id: 'securitybank',
       name: 'Security Bank',
       logoAsset: 'assets/logos/securitybank.png',
@@ -92,18 +106,11 @@ class BankTemplate {
       colorHex: '#00695C',
     ),
     BankTemplate(
-      id: 'eastwest',
-      name: 'EastWest',
-      logoAsset: 'assets/logos/eastwest.png',
+      id: 'unionbank',
+      name: 'UnionBank',
+      logoAsset: 'assets/logos/unionbank.png',
       iconCodePoint: 0xe069,
-      colorHex: '#B3BD43',
-    ),
-    BankTemplate(
-      id: 'cimb',
-      name: 'CIMB',
-      logoAsset: 'assets/logos/cimb.png',
-      iconCodePoint: 0xe069,
-      colorHex: '#D50000',
+      colorHex: '#F57C00',
     ),
   ];
 }
