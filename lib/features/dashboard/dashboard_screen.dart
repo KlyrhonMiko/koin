@@ -147,13 +147,6 @@ class DashboardScreen extends ConsumerWidget {
                     curve: Curves.easeOutCubic,
                   ),
               const Gap(28),
-              _buildBudgetSection(
-                context,
-                ref,
-                stats,
-                currency,
-              ).animate().fade(delay: 500.ms, duration: 500.ms),
-              const Gap(16),
               _buildUpcomingPayments(context, ref, currency),
               const Gap(32),
               _buildSectionHeader(
@@ -572,11 +565,11 @@ class DashboardScreen extends ConsumerWidget {
           onTap: () {
             HapticService.medium();
             Navigator.popUntil(context, (route) => route.isFirst);
-            ref.read(navigationProvider.notifier).setIndex(3);
+            ref.read(navigationProvider.notifier).setIndex(2);
             ref
                 .read(pageControllerProvider)
                 .animateToPage(
-                  3,
+                  2,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
@@ -1060,11 +1053,11 @@ class DashboardScreen extends ConsumerWidget {
           buttonLabel: 'Manage',
           onTap: () {
             Navigator.popUntil(context, (route) => route.isFirst);
-            ref.read(navigationProvider.notifier).setIndex(3);
+            ref.read(navigationProvider.notifier).setIndex(2);
             ref
                 .read(pageControllerProvider)
                 .animateToPage(
-                  3,
+                  2,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
@@ -1122,11 +1115,11 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () {
                     HapticService.medium();
                     Navigator.popUntil(context, (route) => route.isFirst);
-                    ref.read(navigationProvider.notifier).setIndex(3);
+                    ref.read(navigationProvider.notifier).setIndex(2);
                     ref
                         .read(pageControllerProvider)
                         .animateToPage(
-                          3,
+                          2,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
