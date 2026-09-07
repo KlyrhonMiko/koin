@@ -27,18 +27,27 @@ class MainLayout extends ConsumerWidget {
       ref.read(navigationProvider.notifier).setIndex(index);
     }
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDarkMode
-            ? Brightness.light
-            : Brightness.dark,
-        systemNavigationBarColor: AppTheme.surfaceColor(context),
-        systemNavigationBarIconBrightness: isDarkMode
-            ? Brightness.light
-            : Brightness.dark,
-      ),
-      child: Scaffold(
+    final canGoBack = ref.read(navigationProvider.notifier).canPop();
+
+    return PopScope(
+      canPop: !canGoBack,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        HapticService.light();
+        ref.read(navigationProvider.notifier).pop();
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDarkMode
+              ? Brightness.light
+              : Brightness.dark,
+          systemNavigationBarColor: AppTheme.surfaceColor(context),
+          systemNavigationBarIconBrightness: isDarkMode
+              ? Brightness.light
+              : Brightness.dark,
+        ),
+        child: Scaffold(
         extendBody: true,
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 350),
@@ -168,8 +177,9 @@ class MainLayout extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _getPage(int index) {
     switch (index) {
