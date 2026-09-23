@@ -890,6 +890,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     required String? selectedName,
     required Color? selectedColor,
     required int? selectedIconCodePoint,
+    String? selectedLogoAsset,
     required String placeholder,
     required VoidCallback onTap,
   }) {
@@ -925,7 +926,21 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Container(
+                Builder(builder: (context) {
+
+                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      selectedLogoAsset,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }
+
+                  return Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
@@ -943,7 +958,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                         ? selectedColor
                         : AppTheme.textLightColor(context),
                   ),
-                ),
+                );
+
+                }),
                 const Gap(12),
                 Expanded(
                   child: Column(

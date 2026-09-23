@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -22,6 +21,10 @@ import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:uuid/uuid.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 
 class DebtDetailsScreen extends ConsumerStatefulWidget {
   final String debtId;
@@ -32,13 +35,13 @@ class DebtDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
-  void _addRepayment(BuildContext context, Debt debt) {
+  void _addRepayment(BuildContext context, Debt debt, {bool isIncrease = false}) {
     HapticService.light();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _AddRepaymentSheet(debt: debt),
+      builder: (context) => _AddRepaymentSheet(debt: debt, isIncrease: isIncrease),
     );
   }
 
@@ -120,24 +123,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_rounded, size: 22),
-                        onPressed: () {
-                          HapticService.light();
-                          Navigator.push(
-                            context,
-                            SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 22,
-                          color: AppTheme.expenseColor(context),
-                        ),
-                        onPressed: () => _showDeleteConfirmation(debt),
-                      ),
+                      // Removed Edit and Delete from AppBar to put them in Quick Actions
                     ],
                   ),
                 ),
@@ -148,8 +134,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Gauge Header Card ──
-                        _buildGaugeHeader(
+                        // ── Main Card ──
+                        _buildMainCard(
                           context,
                           debt: debt,
                           progress: progress,
@@ -158,11 +144,10 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                           color: color,
                           currencyFormat: currencyFormat,
                         ),
-                        const Gap(20),
-                        // ── Log Payment Button ──
-                        if (!isSettled)
-                          _buildLogPaymentButton(context, debt, color),
-                        if (!isSettled) const Gap(28),
+                        const Gap(24),
+                        // ── Quick Actions ──
+                        _buildQuickActions(context, debt, color),
+                        const Gap(32),
                         // ── Payment History ──
                         _buildPaymentHistorySection(
                           context,
@@ -184,8 +169,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     );
   }
 
-  // ── Gauge Header Card ──
-  Widget _buildGaugeHeader(
+  // ── Main Card ──
+  Widget _buildMainCard(
     BuildContext context, {
     required Debt debt,
     required double progress,
@@ -194,356 +179,282 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required Color color,
     required NumberFormat currencyFormat,
   }) {
-    final primaryColor = AppTheme.primaryColor(context);
-
     return Container(
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color,
+            color.withValues(alpha: 0.85),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          child: Column(
-            children: [
-              // Person name + type badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          debt.personName,
-                          style: TextStyle(
-                            color: AppTheme.textColor(context),
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const Gap(8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSettled
-                                ? primaryColor.withValues(alpha: 0.1)
-                                : color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isSettled
-                                ? 'SETTLED'
-                                : debt.type == DebtType.owedToMe
-                                ? 'OWES YOU'
-                                : 'YOU OWE',
-                            style: TextStyle(
-                              color: isSettled ? primaryColor : color,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        if (debt.totalInstallments > 0) ...[
-                          const Gap(6),
-                          Text(
-                            '${debt.totalInstallments} ${debt.frequency.name} payments',
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background circle decorations
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
               ),
-              const Gap(28),
-
-              // Radial gauge
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.08),
-                      blurRadius: 40,
-                      spreadRadius: 8,
+            ),
+          ),
+          Positioned(
+            bottom: -40,
+            left: -20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Person Name & Badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        debt.personName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Gap(12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isSettled
+                            ? 'SETTLED'
+                            : debt.type == DebtType.owedToMe
+                            ? 'OWES YOU'
+                            : 'YOU OWE',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: progress),
-                  duration: const Duration(milliseconds: 1200),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, animatedProgress, child) {
-                    final animatedPercent = (animatedProgress * 100)
-                        .toStringAsFixed(1);
-                    return SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: CustomPaint(
-                        painter: _RadialGaugePainter(
-                          progress: animatedProgress,
-                          trackColor: AppTheme.dividerColor(context),
-                          progressColor: color,
-                          strokeWidth: 10,
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedCounter(
-                                value: double.parse(animatedPercent),
-                                formatter: (v) =>
-                                    '${v.toStringAsFixed(v >= 100 ? 0 : 1)}%',
-                                duration: const Duration(milliseconds: 400),
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  color: color,
-                                  letterSpacing: -1,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const Gap(2),
-                              Text(
-                                isSettled ? 'completed' : 'repaid',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.5),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ).animate().scale(
-                begin: const Offset(0.85, 0.85),
-                end: const Offset(1.0, 1.0),
-                duration: 600.ms,
-                curve: Curves.elasticOut,
-              ),
-              const Gap(28),
-
-              // Stat row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: AppTheme.incomeColor(context),
-                      label: 'Repaid',
-                      value: debt.currentAmount,
-                      formatter: currencyFormat.format,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: AppTheme.dividerColor(context),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: color,
-                      label: 'Total',
-                      value: debt.amount,
-                      formatter: currencyFormat.format,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: AppTheme.dividerColor(context),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: AppTheme.expenseColor(context),
-                      label: 'Remaining',
-                      value: remaining,
-                      formatter: currencyFormat.format,
+                
+                if (debt.totalInstallments > 0) ...[
+                  const Gap(4),
+                  Text(
+                    '${debt.totalInstallments} ${debt.frequency.name} payments',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-              ),
-
-              // Due date pill
-              if (debt.dueDate != null) ...[
-                const Gap(20),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 15,
-                        color: _isDueOverdue(debt.dueDate!)
-                            ? AppTheme.expenseColor(context)
-                            : AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
-                      ),
-                      const Gap(8),
-                      Text(
-                        _formatDueDateLabel(debt.dueDate!),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _isDueOverdue(debt.dueDate!)
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.textColor(context),
-                        ),
-                      ),
-                      const Gap(8),
-                      Container(
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        'due ${DateFormat.yMMMd().format(debt.dueDate!)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
+                
+                const Gap(24),
+                
+                // Total Debt Amount
+                AnimatedCounter(
+                  value: debt.amount,
+                  formatter: (v) => currencyFormat.format(v),
+                  duration: const Duration(milliseconds: 1400),
+                  curve: Curves.easeOutCubic,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.0,
+                    height: 1.1,
                   ),
                 ),
+                
+                const Gap(28),
+                
+                // Progress Bar Section
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${(progress * 100).toStringAsFixed(1)}% Repaid',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${currencyFormat.format(remaining)} left',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(8),
+                    // Progress Track
+                    Container(
+                      height: 8,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Stack(
+                        children: [
+                          FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress.clamp(0.0, 1.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            ],
+            ),
           ),
-        )
+        ],
+      ),
+    )
         .animate()
-        .fade(duration: 400.ms)
-        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.05, curve: Curves.easeOutCubic);
   }
 
-  Widget _buildStatItem(
-    BuildContext context, {
-    required Color color,
-    required String label,
-    required double value,
-    required String Function(double) formatter,
-  }) {
-    return Column(
+  // ── Quick Actions ──
+  Widget _buildQuickActions(BuildContext context, Debt debt, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const Gap(6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        _buildActionItem(
+          context,
+          icon: Icons.add_rounded,
+          label: 'Payment',
+          color: color,
+          onTap: () => _addRepayment(context, debt),
         ),
-        const Gap(6),
-        FittedBox(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: AnimatedCounter(
-              value: value,
-              formatter: formatter,
-              duration: const Duration(milliseconds: 1000),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-            ),
-          ),
+        _buildActionItem(
+          context,
+          icon: Icons.arrow_upward_rounded,
+          label: 'Increase',
+          color: color,
+          onTap: () => _addRepayment(context, debt, isIncrease: true),
+        ),
+        _buildActionItem(
+          context,
+          icon: Icons.edit_rounded,
+          label: 'Edit',
+          color: AppTheme.textLightColor(context),
+          onTap: () {
+            HapticService.light();
+            Navigator.push(
+              context,
+              SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
+            );
+          },
+        ),
+        _buildActionItem(
+          context,
+          icon: Icons.delete_outline_rounded,
+          label: 'Delete',
+          color: AppTheme.expenseColor(context),
+          onTap: () => _showDeleteConfirmation(debt),
         ),
       ],
-    );
-  }
-
-  Widget _buildLogPaymentButton(BuildContext context, Debt debt, Color color) {
-    return SizedBox(
-          width: double.infinity,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: LinearGradient(
-                colors: [color, color.withValues(alpha: 0.8)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: () => _addRepayment(context, debt),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: const Text(
-                'Log Payment',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        )
+    )
         .animate()
         .fadeIn(delay: 200.ms, duration: 400.ms)
         .slideY(begin: 0.1, curve: Curves.easeOutCubic);
+  }
+
+  Widget _buildActionItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return PressableScale(
+      enableHaptic: false,
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const Gap(8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textLightColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPaymentHistorySection(
@@ -620,7 +531,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             Row(
               children: [
                 Text(
-                  'Payment History',
+                  'Debt Activity',
                   style: TextStyle(
                     color: AppTheme.textColor(context),
                     fontSize: 19,
@@ -728,14 +639,20 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                               borderRadius: BorderRadius.circular(9),
                             ),
                             child: Center(
-                              child: Text(
-                                '#$paymentNumber',
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                              child: repayment.isIncrease
+                                  ? Icon(
+                                      Icons.arrow_upward_rounded,
+                                      size: 14,
+                                      color: color,
+                                    )
+                                  : Text(
+                                      '#$paymentNumber',
+                                      style: TextStyle(
+                                        color: color,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
                             ),
                           ),
                           if (!isLast)
@@ -786,9 +703,13 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    repayment.note?.isNotEmpty == true
-                                        ? repayment.note!
-                                        : 'Payment',
+                                    repayment.isIncrease
+                                        ? (repayment.note?.isNotEmpty == true
+                                            ? repayment.note!
+                                            : 'Increased Debt')
+                                        : (repayment.note?.isNotEmpty == true
+                                            ? repayment.note!
+                                            : 'Payment'),
                                     style: TextStyle(
                                       color: AppTheme.textColor(context),
                                       fontWeight: FontWeight.w600,
@@ -837,68 +758,6 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               ),
     );
   }
-
-  String _formatDueDateLabel(DateTime dueDate) {
-    final now = DateTime.now();
-    final diff = dueDate.difference(now).inDays;
-    if (diff < 0) return '${-diff} days overdue';
-    if (diff == 0) return 'Due today';
-    if (diff == 1) return 'Due tomorrow';
-    return '$diff days left';
-  }
-
-  bool _isDueOverdue(DateTime dueDate) {
-    return dueDate.isBefore(DateTime.now());
-  }
-}
-
-// ── Radial Gauge Painter ──
-class _RadialGaugePainter extends CustomPainter {
-  final double progress;
-  final Color trackColor;
-  final Color progressColor;
-  final double strokeWidth;
-
-  _RadialGaugePainter({
-    required this.progress,
-    required this.trackColor,
-    required this.progressColor,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    final trackPaint = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, trackPaint);
-
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    final sweepAngle = 2 * pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RadialGaugePainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.progressColor != progressColor ||
-        oldDelegate.trackColor != trackColor;
-  }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -907,7 +766,8 @@ class _RadialGaugePainter extends CustomPainter {
 
 class _AddRepaymentSheet extends ConsumerStatefulWidget {
   final Debt debt;
-  const _AddRepaymentSheet({required this.debt});
+  final bool isIncrease;
+  const _AddRepaymentSheet({required this.debt, this.isIncrease = false});
 
   @override
   ConsumerState<_AddRepaymentSheet> createState() => _AddRepaymentSheetState();
@@ -918,12 +778,13 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
   final _noteController = TextEditingController();
   final _noteFocusNode = FocusNode();
   String? _selectedAccountId;
+  bool _accountInitialized = false;
   String _currentExpression = '';
 
   @override
   void initState() {
     super.initState();
-    if (widget.debt.totalInstallments > 0) {
+    if (!widget.isIncrease && widget.debt.totalInstallments > 0) {
       final payment = widget.debt.amount / widget.debt.totalInstallments;
       var paymentStr = payment.toStringAsFixed(2);
       if (paymentStr.endsWith('.00')) {
@@ -950,16 +811,17 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
         ? AppTheme.incomeColor(context)
         : AppTheme.expenseColor(context);
 
-    final selectedAccount = _selectedAccountId != null
-        ? accounts.firstWhere(
-            (a) => a.id == _selectedAccountId,
-            orElse: () => accounts.first,
-          )
-        : (accounts.isNotEmpty ? accounts.first : null);
-
-    if (_selectedAccountId == null && selectedAccount != null) {
-      _selectedAccountId = selectedAccount.id;
+    if (!widget.isIncrease && !_accountInitialized && accounts.isNotEmpty) {
+      _selectedAccountId = accounts.first.id;
+      _accountInitialized = true;
     }
+
+    final selectedAccount = _selectedAccountId != null
+        ? accounts.cast<Account?>().firstWhere(
+            (a) => a?.id == _selectedAccountId,
+            orElse: () => null,
+          )
+        : null;
 
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
@@ -1031,7 +893,7 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
                   ),
                   const Spacer(),
                   Text(
-                    'Log Payment',
+                    widget.isIncrease ? 'Add to Debt' : 'Log Payment',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1163,11 +1025,12 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
                         _buildSelectionRow(
                           context,
                           fallbackIcon: Icons.account_balance_wallet_rounded,
-                          label: 'Account',
+                          label: 'Account (Optional)',
                           selectedName: selectedAccount?.name,
                           selectedColor: selectedAccount?.color,
                           selectedIconCodePoint: selectedAccount?.iconCodePoint,
-                          placeholder: 'Select account',
+                          selectedLogoAsset: selectedAccount?.logoAsset,
+                          placeholder: 'None (Balance only)',
                           onTap: () => _openAccountPicker(context, accounts),
                         ),
                       ],
@@ -1300,40 +1163,48 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
                                 ? _noteController.text.trim()
                                 : null,
                             accountId: _selectedAccountId,
+                            isIncrease: widget.isIncrease,
                           );
 
                           await ref
                               .read(debtsProvider.notifier)
                               .addRepayment(repayment);
 
-                          // Automatically add a transaction
-                          final transaction = AppTransaction(
-                            id: const Uuid().v4(),
-                            amount: repayment.amount,
-                            date: repayment.date,
-                            type: widget.debt.type == DebtType.iOwe
-                                ? TransactionType.expense
-                                : TransactionType.income,
-                            categoryId: widget.debt.type == DebtType.iOwe
-                                ? 'cat_others'
-                                : 'cat_others_inc',
-                            accountId: repayment.accountId ?? 'default_account',
-                            note:
-                                'Debt Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
-                          );
+                          // Automatically add a transaction ONLY if an account is selected
+                          if (repayment.accountId != null) {
+                            final isExpense = widget.isIncrease 
+                                ? widget.debt.type == DebtType.owedToMe
+                                : widget.debt.type == DebtType.iOwe;
 
-                          await ref
-                              .read(transactionProvider.notifier)
-                              .addTransaction(
-                                transaction.copyWith(
-                                  debtRepaymentId: repayment.id,
-                                ),
-                              );
+                            final transaction = AppTransaction(
+                              id: const Uuid().v4(),
+                              amount: repayment.amount,
+                              date: repayment.date,
+                              type: isExpense
+                                  ? TransactionType.expense
+                                  : TransactionType.income,
+                              categoryId: widget.debt.categoryId ?? (isExpense
+                                  ? 'cat_others'
+                                  : 'cat_others_inc'),
+                              accountId: repayment.accountId!,
+                              note: widget.isIncrease
+                                  ? 'Added to Debt: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}'
+                                  : 'Debt Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
+                            );
+
+                            await ref
+                                .read(transactionProvider.notifier)
+                                .addTransaction(
+                                  transaction.copyWith(
+                                    debtRepaymentId: repayment.id,
+                                  ),
+                                );
+                          }
 
                           if (context.mounted) {
                             KoinSnackBar.success(
                               context,
-                              'Payment Logged',
+                              widget.isIncrease ? 'Debt Increased' : 'Payment Logged',
                               subtitle:
                                   'Transaction added to ${selectedAccount?.name ?? 'Account'}',
                             );
@@ -1350,9 +1221,9 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
                             borderRadius: BorderRadius.circular(18),
                           ),
                         ),
-                        child: const Text(
-                          'Confirm Payment',
-                          style: TextStyle(
+                        child: Text(
+                          widget.isIncrease ? 'Confirm Increase' : 'Confirm Payment',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.3,
@@ -1378,6 +1249,7 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
     required String? selectedName,
     required Color? selectedColor,
     required int? selectedIconCodePoint,
+    String? selectedLogoAsset,
     required String placeholder,
     required VoidCallback onTap,
   }) {
@@ -1385,6 +1257,39 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
         selectedName != null &&
         selectedColor != null &&
         selectedIconCodePoint != null;
+
+    Widget iconWidget;
+    if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
+      iconWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          selectedLogoAsset,
+          width: 36,
+          height: 36,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      iconWidget = Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: hasSelection
+              ? selectedColor.withValues(alpha: 0.12)
+              : AppTheme.surfaceLightColor(context),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          hasSelection
+              ? IconUtils.getIcon(selectedIconCodePoint)
+              : fallbackIcon,
+          size: 17,
+          color: hasSelection
+              ? selectedColor
+              : AppTheme.textLightColor(context),
+        ),
+      );
+    }
 
     return Material(
       color: Colors.transparent,
@@ -1398,25 +1303,7 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: hasSelection
-                      ? selectedColor.withValues(alpha: 0.12)
-                      : AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  hasSelection
-                      ? IconUtils.getIcon(selectedIconCodePoint)
-                      : fallbackIcon,
-                  size: 17,
-                  color: hasSelection
-                      ? selectedColor
-                      : AppTheme.textLightColor(context),
-                ),
-              ),
+              iconWidget,
               const Gap(12),
               Expanded(
                 child: Column(
@@ -1466,265 +1353,55 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
     BuildContext context,
     List<Account> accounts,
   ) async {
-    final id = await _showPremiumSelectionSheet<String>(
+    final stats = ref.read(dashboardStatsProvider);
+    final currency = ref.read(settingsProvider).currency;
+
+    final id = await showSelectSheet<String?>(
       context: context,
       title: 'Account',
-      subtitle: 'Choose the account for this payment',
-      itemCount: accounts.length,
+      subtitle: widget.isIncrease ? 'Which account was used?' : 'Choose the account for this payment',
+      itemCount: accounts.length + 1,
       itemBuilder: (context, index) {
-        final acc = accounts[index];
-        return _PremiumSheetItem(
-          name: acc.name,
-          accentColor: acc.color,
-          iconCodePoint: acc.iconCodePoint,
-          selected: acc.id == _selectedAccountId,
-          onTap: () => Navigator.pop(context, acc.id),
+        if (index == 0) {
+          return SelectSheetItem(
+            name: 'No Account (Balance only)',
+            accentColor: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+            iconCodePoint: Icons.money_off_rounded.codePoint,
+            selected: _selectedAccountId == null,
+            onTap: () => Navigator.pop(context, 'none'),
+          );
+        }
+
+        final accIndex = index - 1;
+        return Consumer(
+          builder: (context, ref, _) {
+            final liveAccounts = ref.watch(accountProvider).value ?? [];
+            final acc = liveAccounts.firstWhere(
+              (a) => a.id == accounts[accIndex].id,
+              orElse: () => accounts[accIndex],
+            );
+            final balance = stats.accountBalances[acc.id];
+            final isSelected = acc.id == _selectedAccountId;
+
+            return AccountItem(
+              account: acc,
+              balance: balance ?? 0,
+              currencySymbol: currency.symbol,
+              isSelected: isSelected,
+              onTap: () => Navigator.pop(context, acc.id),
+              onPrivateToggle: () {
+                final updatedAccount = acc.copyWith(
+                  excludeFromTotal: !acc.excludeFromTotal,
+                );
+                ref.read(accountProvider.notifier).updateAccount(updatedAccount);
+              },
+            );
+          },
         );
       },
     );
     if (id != null && mounted) {
-      setState(() => _selectedAccountId = id);
+      setState(() => _selectedAccountId = id == 'none' ? null : id);
     }
-  }
-
-  Future<T?> _showPremiumSelectionSheet<T>({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required int itemCount,
-    required Widget Function(BuildContext context, int index) itemBuilder,
-  }) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final color = widget.debt.type == DebtType.owedToMe
-        ? AppTheme.incomeColor(context)
-        : AppTheme.expenseColor(context);
-
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(sheetContext).padding.top + 12,
-          ),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: Container(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(sheetContext),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(sheetContext),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 32,
-                      offset: const Offset(0, -8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Gap(10),
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(sheetContext),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const Gap(10),
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.6,
-                                  color: AppTheme.textColor(sheetContext),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Gap(4),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 14),
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                height: 1.35,
-                                color: AppTheme.textLightColor(sheetContext),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          16 + bottomInset,
-                        ),
-                        itemCount: itemCount,
-                        separatorBuilder: (context, index) => const Gap(8),
-                        itemBuilder: (context, index) {
-                          return itemBuilder(context, index)
-                              .animate()
-                              .fadeIn(delay: (index * 40).ms, duration: 250.ms)
-                              .slideX(
-                                begin: 0.04,
-                                duration: 250.ms,
-                                curve: Curves.easeOutCubic,
-                              );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PremiumSheetItem extends StatelessWidget {
-  const _PremiumSheetItem({
-    required this.name,
-    required this.accentColor,
-    required this.iconCodePoint,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String name;
-  final Color accentColor;
-  final int iconCodePoint;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = AppTheme.primaryColor(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticService.selection();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected
-                  ? primary.withValues(alpha: 0.45)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.65),
-              width: selected ? 1.5 : 1,
-            ),
-            color: selected
-                ? primary.withValues(alpha: 0.08)
-                : AppTheme.surfaceLightColor(context).withValues(alpha: 0.45),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  IconUtils.getIcon(iconCodePoint),
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle_rounded, color: primary, size: 26)
-              else
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.4),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

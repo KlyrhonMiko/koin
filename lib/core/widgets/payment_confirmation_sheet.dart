@@ -339,6 +339,7 @@ class _PaymentConfirmationSheetState
                           selectedName: selectedAccount?.name,
                           selectedColor: selectedAccount?.color,
                           selectedIconCodePoint: selectedAccount?.iconCodePoint,
+                          selectedLogoAsset: selectedAccount?.logoAsset,
                           placeholder: 'Select account',
                           onTap: () => _openAccountPicker(context, accounts),
                         ),
@@ -432,6 +433,7 @@ class _PaymentConfirmationSheetState
     required String? selectedName,
     required Color? selectedColor,
     required int? selectedIconCodePoint,
+    String? selectedLogoAsset,
     required String placeholder,
     required VoidCallback onTap,
   }) {
@@ -452,7 +454,21 @@ class _PaymentConfirmationSheetState
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Container(
+              Builder(builder: (context) {
+
+                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      selectedLogoAsset,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }
+
+                return Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
@@ -470,7 +486,9 @@ class _PaymentConfirmationSheetState
                       ? selectedColor
                       : AppTheme.textLightColor(context),
                 ),
-              ),
+              );
+
+              }),
               const Gap(12),
               Expanded(
                 child: Column(

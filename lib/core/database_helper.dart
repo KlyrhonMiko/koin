@@ -29,7 +29,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 22,
+      version: 24,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -204,6 +204,24 @@ CREATE TABLE app_settings (
         // Column might already exist
       }
     }
+    if (oldVersion < 23) {
+      try {
+        await db.execute(
+          'ALTER TABLE debt_repayments ADD COLUMN isIncrease INTEGER DEFAULT 0',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
+    if (oldVersion < 24) {
+      try {
+        await db.execute(
+          'ALTER TABLE debts ADD COLUMN categoryId TEXT',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
   }
 
   Future _createPlannedPaymentsTable(Database db) async {
@@ -248,7 +266,8 @@ CREATE TABLE debts (
   dueDate TEXT,
   totalInstallments INTEGER DEFAULT 0,
   frequency TEXT DEFAULT "monthly",
-  accountId TEXT
+  accountId TEXT,
+  categoryId TEXT
 )
 ''');
 
@@ -260,6 +279,7 @@ CREATE TABLE debt_repayments (
   date $textType,
   note TEXT,
   accountId TEXT,
+  isIncrease INTEGER DEFAULT 0,
   FOREIGN KEY (debtId) REFERENCES debts (id) ON DELETE CASCADE
 )
 ''');
@@ -901,11 +921,18 @@ CREATE TABLE transactions (
     final db = await instance.database;
     await db.insert('debt_repayments', repayment.toMap());
 
-    // Update currentAmount in debts
-    await db.execute(
-      'UPDATE debts SET currentAmount = currentAmount + ? WHERE id = ?',
-      [repayment.amount, repayment.debtId],
-    );
+    // Update debts table based on whether this is an increase or repayment
+    if (repayment.isIncrease) {
+      await db.execute(
+        'UPDATE debts SET amount = amount + ? WHERE id = ?',
+        [repayment.amount, repayment.debtId],
+      );
+    } else {
+      await db.execute(
+        'UPDATE debts SET currentAmount = currentAmount + ? WHERE id = ?',
+        [repayment.amount, repayment.debtId],
+      );
+    }
 
     return repayment;
   }
@@ -924,10 +951,19 @@ CREATE TABLE transactions (
         where: 'debtRepaymentId = ?',
         whereArgs: [repayment.id],
       );
-      await txn.execute(
-        'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
-        [repayment.amount, repayment.debtId],
-      );
+      
+      // Reverse the effect on the debt
+      if (repayment.isIncrease) {
+        await txn.execute(
+          'UPDATE debts SET amount = amount - ? WHERE id = ?',
+          [repayment.amount, repayment.debtId],
+        );
+      } else {
+        await txn.execute(
+          'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
+          [repayment.amount, repayment.debtId],
+        );
+      }
     });
   }
 

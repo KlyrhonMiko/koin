@@ -895,6 +895,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                               accounts,
                               _selectedAccountId,
                             )?.iconCodePoint,
+                            selectedLogoAsset: _accountById(
+                              accounts,
+                              _selectedAccountId,
+                            )?.logoAsset,
                             placeholder: 'Select account',
                             onTap: () => _openAccountPicker(
                               context,
@@ -948,6 +952,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                           accounts,
                                           _selectedToAccountId,
                                         )?.iconCodePoint,
+                                        selectedLogoAsset: _accountById(
+                                          accounts,
+                                          _selectedToAccountId,
+                                        )?.logoAsset,
                                         placeholder: 'Select destination',
                                         onTap: () => _openAccountPicker(
                                           context,
@@ -1017,6 +1025,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     required String? selectedName,
     required Color? selectedColor,
     required int? selectedIconCodePoint,
+    String? selectedLogoAsset,
     required String placeholder,
     required VoidCallback onTap,
     Widget? trailing,
@@ -1038,7 +1047,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Container(
+              Builder(builder: (context) {
+                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      selectedLogoAsset,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }
+
+                return Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
@@ -1056,7 +1078,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ? selectedColor
                       : AppTheme.textLightColor(context),
                 ),
-              ),
+              );
+
+              }),
               const Gap(12),
               Expanded(
                 child: Column(

@@ -13,6 +13,7 @@ class Debt {
   final int totalInstallments;
   final InstallmentFrequency frequency;
   final String? accountId; // If initially funded/received from an account
+  final String? categoryId; // Connected category for transactions
   final double currentAmount; // Derived from repayments and initial amount
 
   Debt({
@@ -26,6 +27,7 @@ class Debt {
     this.totalInstallments = 0,
     this.frequency = InstallmentFrequency.monthly,
     this.accountId,
+    this.categoryId,
     this.currentAmount = 0.0,
   });
 
@@ -41,6 +43,7 @@ class Debt {
       'totalInstallments': totalInstallments,
       'frequency': frequency.name,
       'accountId': accountId,
+      'categoryId': categoryId,
       'currentAmount': currentAmount,
     };
   }
@@ -59,6 +62,7 @@ class Debt {
           ? InstallmentFrequency.values.byName(map['frequency'])
           : InstallmentFrequency.monthly,
       accountId: map['accountId'],
+      categoryId: map['categoryId'],
       currentAmount: map['currentAmount'] != null
           ? (map['currentAmount'] as num).toDouble()
           : 0.0,
