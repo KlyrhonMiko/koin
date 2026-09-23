@@ -199,7 +199,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                 itemCount: accounts.length,
                 footer: _buildAddAccountButton(context, ref),
-                onReorder: (oldIndex, newIndex) {
+                onReorderItem: (oldIndex, newIndex) {
                   HapticService.medium();
                   ref
                       .read(accountProvider.notifier)

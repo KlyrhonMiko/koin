@@ -29,7 +29,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 24,
+      version: 25,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -217,6 +217,15 @@ CREATE TABLE app_settings (
       try {
         await db.execute(
           'ALTER TABLE debts ADD COLUMN categoryId TEXT',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
+    if (oldVersion < 25) {
+      try {
+        await db.execute(
+          'ALTER TABLE debts ADD COLUMN sortOrder INTEGER DEFAULT 0',
         );
       } catch (e) {
         // Column might already exist
@@ -888,6 +897,22 @@ CREATE TABLE transactions (
     }
   }
 
+  Future<void> updateDebtPositions(List<Debt> debts) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (var debt in debts) {
+        batch.update(
+          'debts',
+          {'sortOrder': debt.sortOrder},
+          where: 'id = ?',
+          whereArgs: [debt.id],
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   // Debts commands
   Future<Debt> insertDebt(Debt debt) async {
     final db = await instance.database;
@@ -897,7 +922,7 @@ CREATE TABLE transactions (
 
   Future<List<Debt>> getDebts() async {
     final db = await instance.database;
-    final result = await db.query('debts', orderBy: 'startDate DESC');
+    final result = await db.query('debts', orderBy: 'sortOrder ASC, startDate DESC');
     return result.map((json) => Debt.fromMap(json)).toList();
   }
 

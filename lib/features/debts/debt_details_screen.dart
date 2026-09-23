@@ -41,7 +41,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _AddRepaymentSheet(debt: debt, isIncrease: isIncrease),
+      builder: (context) => AddRepaymentSheet(debt: debt, isIncrease: isIncrease),
     );
   }
 
@@ -764,16 +764,16 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 //  Premium Log Payment Bottom Sheet
 // ──────────────────────────────────────────────────────────────
 
-class _AddRepaymentSheet extends ConsumerStatefulWidget {
+class AddRepaymentSheet extends ConsumerStatefulWidget {
   final Debt debt;
   final bool isIncrease;
-  const _AddRepaymentSheet({required this.debt, this.isIncrease = false});
+  const AddRepaymentSheet({super.key, required this.debt, this.isIncrease = false});
 
   @override
-  ConsumerState<_AddRepaymentSheet> createState() => _AddRepaymentSheetState();
+  ConsumerState<AddRepaymentSheet> createState() => AddRepaymentSheetState();
 }
 
-class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
+class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   final _noteFocusNode = FocusNode();
@@ -826,416 +826,280 @@ class _AddRepaymentSheetState extends ConsumerState<_AddRepaymentSheet> {
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
         padding: EdgeInsets.fromLTRB(
-          0,
-          12,
-          0,
-          MediaQuery.of(context).padding.bottom + 16,
+          24,
+          16,
+          24,
+          MediaQuery.of(context).padding.bottom + 24,
         ),
         decoration: BoxDecoration(
           color: AppTheme.backgroundColor(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 40,
-              offset: const Offset(0, -10),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+              blurRadius: 32,
+              offset: const Offset(0, -8),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Handle ──
+            // ── Minimal Handle ──
             Container(
-              width: 40,
+              width: 48,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
+                color: AppTheme.dividerColor(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Gap(16),
+            const Gap(24),
 
-            // ── Title bar ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticService.light();
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
+            // ── Title ──
+            Text(
+              widget.isIncrease ? 'Add to Debt' : 'Log Payment',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textColor(context),
+                letterSpacing: -0.3,
+              ),
+            ),
+            const Gap(32),
+
+            // ── Beautiful Amount Input ──
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${settings.currency.symbol} ',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    color: hasAmount 
+                        ? color.withValues(alpha: 0.8)
+                        : AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                  ),
+                ),
+                IntrinsicWidth(
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      hoverColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                    ),
+                    child: TextField(
+                      controller: _amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textAlign: TextAlign.center,
+                      onChanged: (val) =>
+                          setState(() => _currentExpression = val),
+                      style: TextStyle(
+                        fontSize: 56,
+                        fontWeight: FontWeight.w800,
+                        color: hasAmount
+                            ? color
+                            : AppTheme.textLightColor(context).withValues(alpha: 0.2),
+                        letterSpacing: -2.5,
+                        height: 1.1,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        hintStyle: TextStyle(
+                          color: AppTheme.textLightColor(context).withValues(alpha: 0.2),
                         ),
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppTheme.textLightColor(context),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        filled: false,
+                        fillColor: Colors.transparent,
+                        isDense: true,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    widget.isIncrease ? 'Add to Debt' : 'Log Payment',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textLightColor(context),
+                ),
+              ],
+            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
+            const Gap(32),
+
+            // ── Soft Fields (No harsh borders/shadows) ──
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildSelectionRow(
+                    context,
+                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    label: 'Account (Optional)',
+                    selectedName: selectedAccount?.name,
+                    selectedColor: selectedAccount?.color,
+                    selectedIconCodePoint: selectedAccount?.iconCodePoint,
+                    selectedLogoAsset: selectedAccount?.logoAsset,
+                    placeholder: 'None (Balance only)',
+                    onTap: () => _openAccountPicker(context, accounts),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                    indent: 64,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLightColor(context),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.sticky_note_2_rounded,
+                            size: 18,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: TextField(
+                            controller: _noteController,
+                            focusNode: _noteFocusNode,
+                            onTap: () => HapticService.light(),
+                            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                              color: AppTheme.textColor(context),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Add a note...',
+                              hintStyle: TextStyle(
+                                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
+                                fontWeight: FontWeight.w400,
+                                fontSize: 15,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 20),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
-                  const SizedBox(width: 40),
                 ],
               ),
-            ),
-            const Gap(24),
+            ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
 
-            // ── Hero Amount ──
-            Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      Text(
-                        settings.currency.code,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: color.withValues(alpha: 0.5),
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const Gap(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${settings.currency.symbol} ',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: color.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          IntrinsicWidth(
-                            child: Theme(
-                              data: Theme.of(context).copyWith(
-                                hoverColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                splashColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                              ),
-                              child: TextField(
-                                controller: _amountController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                textAlign: TextAlign.center,
-                                onChanged: (val) =>
-                                    setState(() => _currentExpression = val),
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.w800,
-                                  color: hasAmount
-                                      ? color
-                                      : color.withValues(alpha: 0.35),
-                                  letterSpacing: -2,
-                                  height: 1.1,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  hintStyle: TextStyle(
-                                    color: color.withValues(alpha: 0.35),
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
-                                  filled: false,
-                                  fillColor: Colors.transparent,
-                                  isDense: true,
-                                  isCollapsed: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(8),
-                      Container(
-                        width: hasAmount ? 60 : 40,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: color.withValues(alpha: 0.25),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 300.ms)
-                .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+            const Gap(32),
 
-            const Gap(28),
+            // ── Confirm button (Solid, crisp) ──
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () async {
+                  HapticService.medium();
+                  final amtStr = _amountController.text.replaceAll(',', '');
+                  if (amtStr.isEmpty) return;
+                  final amt = double.tryParse(amtStr) ?? 0.0;
+                  if (amt <= 0) return;
 
-            // ── Account selection ──
-            Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.7),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildSelectionRow(
-                          context,
-                          fallbackIcon: Icons.account_balance_wallet_rounded,
-                          label: 'Account (Optional)',
-                          selectedName: selectedAccount?.name,
-                          selectedColor: selectedAccount?.color,
-                          selectedIconCodePoint: selectedAccount?.iconCodePoint,
-                          selectedLogoAsset: selectedAccount?.logoAsset,
-                          placeholder: 'None (Balance only)',
-                          onTap: () => _openAccountPicker(context, accounts),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 100.ms, duration: 300.ms)
-                .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  final repayment = DebtRepayment(
+                    id: const Uuid().v4(),
+                    debtId: widget.debt.id,
+                    amount: amt,
+                    date: DateTime.now(),
+                    note: _noteController.text.trim().isNotEmpty
+                        ? _noteController.text.trim()
+                        : null,
+                    accountId: _selectedAccountId,
+                    isIncrease: widget.isIncrease,
+                  );
 
-            const Gap(16),
+                  await ref.read(debtsProvider.notifier).addRepayment(repayment);
 
-            // ── Note field ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(
+                  if (repayment.accountId != null) {
+                    final isExpense = widget.isIncrease 
+                        ? widget.debt.type == DebtType.owedToMe
+                        : widget.debt.type == DebtType.iOwe;
+
+                    final transaction = AppTransaction(
+                      id: const Uuid().v4(),
+                      amount: repayment.amount,
+                      date: repayment.date,
+                      type: isExpense ? TransactionType.expense : TransactionType.income,
+                      categoryId: widget.debt.categoryId ?? (isExpense ? 'cat_others' : 'cat_others_inc'),
+                      accountId: repayment.accountId!,
+                      note: widget.isIncrease
+                          ? 'Added to Debt: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}'
+                          : 'Debt Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
+                    );
+
+                    await ref.read(transactionProvider.notifier).addTransaction(
+                      transaction.copyWith(debtRepaymentId: repayment.id),
+                    );
+                  }
+
+                  if (context.mounted) {
+                    KoinSnackBar.success(
                       context,
-                    ).withValues(alpha: 0.7),
+                      widget.isIncrease ? 'Debt Increased' : 'Payment Logged',
+                      subtitle: 'Transaction added to ${selectedAccount?.name ?? 'Account'}',
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceLightColor(context),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.sticky_note_2_rounded,
-                          size: 17,
-                          color: AppTheme.textLightColor(context),
-                        ),
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: TextField(
-                          controller: _noteController,
-                          focusNode: _noteFocusNode,
-                          onTap: () {
-                            HapticService.light();
-                          },
-                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: AppTheme.textColor(context),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Add a note...',
-                            hintStyle: TextStyle(
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.45),
-                              fontWeight: FontWeight.w400,
-                              fontSize: 15,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 15,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                child: Text(
+                  widget.isIncrease ? 'Confirm Increase' : 'Confirm Payment',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ),
-            ),
-
-            const Gap(24),
-
-            // ── Confirm button ──
-            Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [color, color.withValues(alpha: 0.85)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          HapticService.medium();
-                          final amtStr = _amountController.text.replaceAll(
-                            ',',
-                            '',
-                          );
-                          if (amtStr.isEmpty) return;
-                          final amt = double.tryParse(amtStr) ?? 0.0;
-                          if (amt <= 0) return;
-
-                          final repayment = DebtRepayment(
-                            id: const Uuid().v4(),
-                            debtId: widget.debt.id,
-                            amount: amt,
-                            date: DateTime.now(),
-                            note: _noteController.text.trim().isNotEmpty
-                                ? _noteController.text.trim()
-                                : null,
-                            accountId: _selectedAccountId,
-                            isIncrease: widget.isIncrease,
-                          );
-
-                          await ref
-                              .read(debtsProvider.notifier)
-                              .addRepayment(repayment);
-
-                          // Automatically add a transaction ONLY if an account is selected
-                          if (repayment.accountId != null) {
-                            final isExpense = widget.isIncrease 
-                                ? widget.debt.type == DebtType.owedToMe
-                                : widget.debt.type == DebtType.iOwe;
-
-                            final transaction = AppTransaction(
-                              id: const Uuid().v4(),
-                              amount: repayment.amount,
-                              date: repayment.date,
-                              type: isExpense
-                                  ? TransactionType.expense
-                                  : TransactionType.income,
-                              categoryId: widget.debt.categoryId ?? (isExpense
-                                  ? 'cat_others'
-                                  : 'cat_others_inc'),
-                              accountId: repayment.accountId!,
-                              note: widget.isIncrease
-                                  ? 'Added to Debt: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}'
-                                  : 'Debt Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
-                            );
-
-                            await ref
-                                .read(transactionProvider.notifier)
-                                .addTransaction(
-                                  transaction.copyWith(
-                                    debtRepaymentId: repayment.id,
-                                  ),
-                                );
-                          }
-
-                          if (context.mounted) {
-                            KoinSnackBar.success(
-                              context,
-                              widget.isIncrease ? 'Debt Increased' : 'Payment Logged',
-                              subtitle:
-                                  'Transaction added to ${selectedAccount?.name ?? 'Account'}',
-                            );
-                            Navigator.pop(context);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: Text(
-                          widget.isIncrease ? 'Confirm Increase' : 'Confirm Payment',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 300.ms)
-                .slideY(begin: 0.15, curve: Curves.easeOutCubic),
+            ).animate().fadeIn(delay: 200.ms, duration: 300.ms).slideY(begin: 0.1, curve: Curves.easeOutCubic),
           ],
         ),
       ),

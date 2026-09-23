@@ -44,6 +44,20 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
     ref.invalidate(transactionProvider);
     await loadDebts();
   }
+
+  Future<void> reorderDebts(int oldIndex, int newIndex) async {
+    final currentDebts = List<Debt>.from(state.value ?? []);
+
+    final item = currentDebts.removeAt(oldIndex);
+    currentDebts.insert(newIndex, item);
+    
+    final updatedDebts = currentDebts.asMap().entries.map((e) {
+      return e.value.copyWith(sortOrder: e.key);
+    }).toList();
+    
+    state = AsyncValue.data(updatedDebts);
+    await DatabaseHelper.instance.updateDebtPositions(updatedDebts);
+  }
 }
 
 final debtsProvider = AsyncNotifierProvider<DebtsNotifier, List<Debt>>(() {

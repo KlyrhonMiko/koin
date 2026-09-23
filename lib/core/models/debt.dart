@@ -15,6 +15,7 @@ class Debt {
   final String? accountId; // If initially funded/received from an account
   final String? categoryId; // Connected category for transactions
   final double currentAmount; // Derived from repayments and initial amount
+  final int sortOrder; // Added for custom reordering
 
   Debt({
     required this.id,
@@ -29,7 +30,40 @@ class Debt {
     this.accountId,
     this.categoryId,
     this.currentAmount = 0.0,
+    this.sortOrder = 0,
   });
+
+  Debt copyWith({
+    String? id,
+    String? personName,
+    String? description,
+    double? amount,
+    DebtType? type,
+    DateTime? startDate,
+    DateTime? dueDate,
+    int? totalInstallments,
+    InstallmentFrequency? frequency,
+    String? accountId,
+    String? categoryId,
+    double? currentAmount,
+    int? sortOrder,
+  }) {
+    return Debt(
+      id: id ?? this.id,
+      personName: personName ?? this.personName,
+      description: description ?? this.description,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      startDate: startDate ?? this.startDate,
+      dueDate: dueDate ?? this.dueDate,
+      totalInstallments: totalInstallments ?? this.totalInstallments,
+      frequency: frequency ?? this.frequency,
+      accountId: accountId ?? this.accountId,
+      categoryId: categoryId ?? this.categoryId,
+      currentAmount: currentAmount ?? this.currentAmount,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -45,6 +79,7 @@ class Debt {
       'accountId': accountId,
       'categoryId': categoryId,
       'currentAmount': currentAmount,
+      'sortOrder': sortOrder,
     };
   }
 
@@ -66,6 +101,7 @@ class Debt {
       currentAmount: map['currentAmount'] != null
           ? (map['currentAmount'] as num).toDouble()
           : 0.0,
+      sortOrder: map['sortOrder'] ?? 0,
     );
   }
 }

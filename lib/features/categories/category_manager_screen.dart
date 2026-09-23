@@ -364,7 +364,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       physics: const BouncingScrollPhysics(),
       itemCount: widget.categories.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         HapticService.medium();
         ref
             .read(categoriesProvider.notifier)

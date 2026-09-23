@@ -36,6 +36,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   DateTime _startDate = DateTime.now();
   String? _selectedAccountId;
   InstallmentFrequency _selectedFrequency = InstallmentFrequency.monthly;
+  bool _frequencyUserSet = false;
   late TabController _tabController;
 
   @override
@@ -52,6 +53,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
           ? d.totalInstallments.toString()
           : '';
       _selectedFrequency = d.frequency;
+      _frequencyUserSet = true;
       _selectedAccountId = d.accountId;
     } else {
       _selectedType = DebtType.owedToMe;
@@ -162,12 +164,30 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
                     const Gap(32),
 
-                    // Start Date
-                    _buildSectionTitle(context, 'Start Date'),
+                    // Installment Plan
+                    _buildSectionTitle(context, 'Installment Plan (Optional)'),
+                    const Gap(12),
+                    _buildInstallmentsCard(
+                      context,
+                      primaryColor,
+                    ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                    const Gap(32),
+
+                    // Date
+                    _buildSectionTitle(
+                      context,
+                      int.tryParse(_installmentsController.text) != null &&
+                              int.parse(_installmentsController.text) > 0
+                          ? 'Start Payment Date'
+                          : 'Debt Date',
+                    ),
                     const Gap(12),
                     _buildDateSelector(
                       context,
-                      label: 'Effective Date',
+                      label: int.tryParse(_installmentsController.text) != null &&
+                              int.parse(_installmentsController.text) > 0
+                          ? 'Start Payment Date'
+                          : 'Debt Date',
                       date: _startDate,
                       icon: Icons.calendar_today_rounded,
                       onTap: () async {
@@ -181,15 +201,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                           setState(() => _startDate = dt);
                         }
                       },
-                    ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
-                    const Gap(32),
-
-                    // Installment Plan
-                    _buildSectionTitle(context, 'Installment Plan (Optional)'),
-                    const Gap(12),
-                    _buildInstallmentsCard(
-                      context,
-                      primaryColor,
                     ).animate().fade(delay: 125.ms).slideY(begin: 0.1),
                     const Gap(32),
 
@@ -637,7 +648,14 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                               color: AppTheme.textColor(context),
                             ),
                             onTap: () => HapticService.light(),
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (val) {
+                              final count = int.tryParse(val) ?? 0;
+                              setState(() {
+                                if (count > 0 && !_frequencyUserSet) {
+                                  _selectedFrequency = InstallmentFrequency.monthly;
+                                }
+                              });
+                            },
                             decoration: InputDecoration(
                               hintText: 'None',
                               hintStyle: TextStyle(
@@ -665,7 +683,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             Expanded(
               child: PressableScale(
                 onTap: () {
+                  if (inst <= 0) return;
                   HapticService.light();
+                  _frequencyUserSet = true;
                   _openFrequencyPicker(context, primaryColor);
                 },
                 child: Container(
@@ -709,16 +729,20 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                           Icon(
                             Icons.event_repeat_rounded,
                             size: 16,
-                            color: primaryColor.withValues(alpha: 0.8),
+                            color: inst > 0
+                                ? primaryColor.withValues(alpha: 0.8)
+                                : AppTheme.textLightColor(context).withValues(alpha: 0.3),
                           ),
                           const Gap(8),
                           Expanded(
                             child: Text(
-                              freqName,
+                              inst > 0 ? freqName : 'None',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textColor(context),
+                                color: inst > 0
+                                    ? AppTheme.textColor(context)
+                                    : AppTheme.textLightColor(context).withValues(alpha: 0.35),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -728,7 +752,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             size: 16,
                             color: AppTheme.textLightColor(
                               context,
-                            ).withValues(alpha: 0.4),
+                            ).withValues(alpha: inst > 0 ? 0.4 : 0.2),
                           ),
                         ],
                       ),

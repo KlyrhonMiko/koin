@@ -64,9 +64,7 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     if (accounts == null) return;
 
     final items = List<Account>.from(accounts);
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
+
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
 

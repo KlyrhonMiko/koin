@@ -62,10 +62,6 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     // Filter categories by type to reorder within that type
     final typeCategories = categories.where((c) => c.type == type).toList();
     final otherCategories = categories.where((c) => c.type != type).toList();
-
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
     
     final item = typeCategories.removeAt(oldIndex);
     typeCategories.insert(newIndex, item);
