@@ -7,11 +7,18 @@ import 'package:koin/core/providers/transaction_provider.dart';
 class DebtsNotifier extends AsyncNotifier<List<Debt>> {
   @override
   Future<List<Debt>> build() async {
-    return await DatabaseHelper.instance.getDebts();
+    try {
+      return await DatabaseHelper.instance.getDebts();
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('[debtsProvider] Error loading debts: $e\n$st');
+      rethrow;
+    }
   }
 
   Future<void> loadDebts() async {
-    state = const AsyncValue.loading();
+    // Don't set loading state here — it causes a persistent spinner if an
+    // error occurs. AsyncValue.guard will set error state properly.
     state = await AsyncValue.guard(() async {
       return await DatabaseHelper.instance.getDebts();
     });

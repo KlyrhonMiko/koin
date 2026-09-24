@@ -401,10 +401,11 @@ class DebtsTab extends ConsumerWidget {
       ),
     )
     .animate()
-    .fade(duration: 260.ms)
+    .fade(duration: 260.ms, delay: 60.ms)
     .slideY(
       begin: 0.06,
       duration: 280.ms,
+      delay: 60.ms,
       curve: const Cubic(0.23, 1, 0.32, 1),
     );
   }

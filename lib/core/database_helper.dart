@@ -276,7 +276,8 @@ CREATE TABLE debts (
   totalInstallments INTEGER DEFAULT 0,
   frequency TEXT DEFAULT "monthly",
   accountId TEXT,
-  categoryId TEXT
+  categoryId TEXT,
+  sortOrder INTEGER DEFAULT 0
 )
 ''');
 
@@ -922,7 +923,22 @@ CREATE TABLE transactions (
 
   Future<List<Debt>> getDebts() async {
     final db = await instance.database;
-    final result = await db.query('debts', orderBy: 'sortOrder ASC, startDate DESC');
+    // Check if sortOrder column exists (guard for databases migrated before v25
+    // where the column may not have been added due to a failed migration).
+    List<Map<String, dynamic>> result;
+    try {
+      result = await db.query('debts', orderBy: 'sortOrder ASC, startDate DESC');
+    } catch (_) {
+      // sortOrder column missing — add it now and retry with a safe order.
+      try {
+        await db.execute(
+          'ALTER TABLE debts ADD COLUMN sortOrder INTEGER DEFAULT 0',
+        );
+      } catch (_) {
+        // Column may already exist in a partial state; ignore.
+      }
+      result = await db.query('debts', orderBy: 'startDate DESC');
+    }
     return result.map((json) => Debt.fromMap(json)).toList();
   }
 
