@@ -706,12 +706,10 @@ class DashboardScreen extends ConsumerWidget {
           context,
           ref,
           title: 'Accounts',
-          buttonLabel: 'Add',
+          buttonLabel: 'View all',
           onTap: () {
-            Navigator.push(
-              context,
-              SlideUpRoute(page: const AccountFormScreen()),
-            );
+            ref.read(portfolioTabProvider.notifier).setIndex(0);
+            ref.read(navigationProvider.notifier).setIndex(3);
           },
         ),
         const Gap(4),
