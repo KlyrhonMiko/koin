@@ -570,7 +570,14 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     required VoidCallback onTap,
   }) {
     return PressableScale(
-      onTap: onTap,
+      onTap: () async {
+        final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+        FocusManager.instance.primaryFocus?.unfocus();
+        if (hadFocus) {
+          await Future.delayed(const Duration(milliseconds: 150));
+        }
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -994,8 +1001,13 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
+          onTap: () async {
             HapticService.light();
+            final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+            FocusManager.instance.primaryFocus?.unfocus();
+            if (hadFocus) {
+              await Future.delayed(const Duration(milliseconds: 150));
+            }
             onTap();
           },
           borderRadius: BorderRadius.circular(16),

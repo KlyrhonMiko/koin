@@ -708,6 +708,9 @@ CREATE TABLE transactions (
                   prevDate.day,
                 );
                 break;
+              case PaymentFrequency.flexible:
+                // Do not rollback date for flexible incomes
+                break;
             }
 
             // 4. Update the planned payment

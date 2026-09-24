@@ -1000,7 +1000,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                             controller: _noteController,
                             focusNode: _noteFocusNode,
                             onTap: () => HapticService.light(),
-                            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 15,
@@ -1174,8 +1174,13 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           HapticService.light();
+          final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+          FocusManager.instance.primaryFocus?.unfocus();
+          if (hadFocus) {
+            await Future.delayed(const Duration(milliseconds: 150));
+          }
           onTap();
         },
         borderRadius: BorderRadius.circular(18),

@@ -61,6 +61,12 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+    if (!context.mounted) return;
     HapticService.light();
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -570,7 +576,14 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     required VoidCallback onTap,
   }) {
     return PressableScale(
-      onTap: onTap,
+      onTap: () async {
+        final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+        FocusManager.instance.primaryFocus?.unfocus();
+        if (hadFocus) {
+          await Future.delayed(const Duration(milliseconds: 150));
+        }
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -653,8 +666,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
+          onTap: () async {
             HapticService.light();
+            final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+            FocusManager.instance.primaryFocus?.unfocus();
+            if (hadFocus) {
+              await Future.delayed(const Duration(milliseconds: 150));
+            }
             onTap();
           },
           borderRadius: BorderRadius.circular(16),

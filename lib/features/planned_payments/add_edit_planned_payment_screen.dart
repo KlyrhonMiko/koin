@@ -45,7 +45,7 @@ class _AddEditPlannedPaymentScreenState
   String? _selectedAccountId;
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
-  PaymentFrequency _selectedFrequency = PaymentFrequency.monthly;
+  PaymentFrequency _selectedFrequency = PaymentFrequency.flexible;
   bool _isAutoProcess = false;
 
   @override
@@ -111,26 +111,30 @@ class _AddEditPlannedPaymentScreenState
     // Calculate next date based on frequency and start date
     DateTime nextDate = _startDate;
     final now = DateTime.now();
-    while (nextDate.isBefore(now)) {
-      switch (_selectedFrequency) {
-        case PaymentFrequency.daily:
-          nextDate = nextDate.add(const Duration(days: 1));
-          break;
-        case PaymentFrequency.weekly:
-          nextDate = nextDate.add(const Duration(days: 7));
-          break;
-        case PaymentFrequency.biWeekly:
-          nextDate = nextDate.add(const Duration(days: 14));
-          break;
-        case PaymentFrequency.monthly:
-          nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
-          break;
-        case PaymentFrequency.quarterly:
-          nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
-          break;
-        case PaymentFrequency.yearly:
-          nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
-          break;
+    if (_selectedFrequency != PaymentFrequency.flexible) {
+      while (nextDate.isBefore(now)) {
+        switch (_selectedFrequency) {
+          case PaymentFrequency.daily:
+            nextDate = nextDate.add(const Duration(days: 1));
+            break;
+          case PaymentFrequency.weekly:
+            nextDate = nextDate.add(const Duration(days: 7));
+            break;
+          case PaymentFrequency.biWeekly:
+            nextDate = nextDate.add(const Duration(days: 14));
+            break;
+          case PaymentFrequency.monthly:
+            nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
+            break;
+          case PaymentFrequency.quarterly:
+            nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
+            break;
+          case PaymentFrequency.yearly:
+            nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
+            break;
+          case PaymentFrequency.flexible:
+            break;
+        }
       }
     }
 
@@ -221,8 +225,13 @@ class _AddEditPlannedPaymentScreenState
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
+          onTap: () async {
             HapticService.light();
+            final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+            FocusManager.instance.primaryFocus?.unfocus();
+            if (hadFocus) {
+              await Future.delayed(const Duration(milliseconds: 150));
+            }
             onTap();
           },
           borderRadius: BorderRadius.circular(16),
@@ -334,7 +343,14 @@ class _AddEditPlannedPaymentScreenState
     required VoidCallback onTap,
   }) {
     return PressableScale(
-      onTap: onTap,
+      onTap: () async {
+        final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+        FocusManager.instance.primaryFocus?.unfocus();
+        if (hadFocus) {
+          await Future.delayed(const Duration(milliseconds: 150));
+        }
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -731,36 +747,6 @@ class _AddEditPlannedPaymentScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Timeline Section
-                    _buildSectionTitle(context, 'Timeline'),
-                    const Gap(12),
-                    _buildDateSelector(
-                      context,
-                      label: 'Next Payment Date',
-                      date: _startDate,
-                      icon: Icons.calendar_month_rounded,
-                      onTap: () async {
-                        final dt = await showDatePicker(
-                          context: context,
-                          initialDate: _startDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: Theme.of(context).colorScheme.copyWith(
-                                  primary: primaryColor,
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (dt != null) setState(() => _startDate = dt);
-                      },
-                    ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
-                    const Gap(32),
-
                     // Repeats Section
                     _buildSectionTitle(context, 'Repeats'),
                     const Gap(12),
@@ -824,8 +810,53 @@ class _AddEditPlannedPaymentScreenState
                           );
                         },
                       ),
-                    ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                    ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
                     const Gap(32),
+
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.topCenter,
+                      child: _selectedFrequency != PaymentFrequency.flexible
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Timeline Section
+                    _buildSectionTitle(context, 'Timeline'),
+                    const Gap(12),
+                    _buildDateSelector(
+                      context,
+                      label: _selectedFrequency == PaymentFrequency.flexible
+                          ? 'Start Date'
+                          : 'Next Payment Date',
+                      date: _startDate,
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () async {
+                        final dt = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: Theme.of(context).colorScheme.copyWith(
+                                  primary: primaryColor,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (dt != null) setState(() => _startDate = dt);
+                      },
+                    ),
+                    const Gap(32),
+                            ].animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                          )
+                        : const SizedBox.shrink(),
+                    ),
+
 
                     // Details Section
                     _buildSectionTitle(context, 'Details'),

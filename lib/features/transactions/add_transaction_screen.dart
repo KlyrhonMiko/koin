@@ -227,6 +227,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Date picker
   // ═══════════════════════════════════════════════════════
   Future<void> _pickDate() async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
     HapticService.light();
     final pickedDate = await showDatePicker(
       context: context,
@@ -264,6 +269,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Time picker
   // ═══════════════════════════════════════════════════════
   Future<void> _pickTime() async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
     HapticService.light();
     final pickedTime = await showTimePicker(
       context: context,
@@ -1038,8 +1048,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           HapticService.light();
+          final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+          FocusManager.instance.primaryFocus?.unfocus();
+          if (hadFocus) {
+            await Future.delayed(const Duration(milliseconds: 150));
+          }
           onTap();
         },
         borderRadius: BorderRadius.circular(18),

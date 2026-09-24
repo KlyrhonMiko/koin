@@ -62,6 +62,9 @@ class PlannedPaymentsScreen extends ConsumerWidget {
       case PaymentFrequency.yearly:
         nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
         break;
+      case PaymentFrequency.flexible:
+        // Do not advance the nextDate for flexible payments
+        break;
     }
 
     final updatedPayment = PlannedPayment(

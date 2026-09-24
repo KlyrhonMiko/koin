@@ -1,6 +1,6 @@
 import 'package:koin/core/models/transaction.dart';
 
-enum PaymentFrequency { daily, weekly, biWeekly, monthly, quarterly, yearly }
+enum PaymentFrequency { flexible, daily, weekly, biWeekly, monthly, quarterly, yearly }
 
 class PlannedPayment {
   final String id;

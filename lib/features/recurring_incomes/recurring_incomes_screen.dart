@@ -64,6 +64,9 @@ class RecurringIncomesTab extends ConsumerWidget {
       case PaymentFrequency.yearly:
         nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
         break;
+      case PaymentFrequency.flexible:
+        // For flexible incomes, do not advance the nextDate.
+        break;
     }
 
     final updatedPayment = PlannedPayment(
@@ -526,7 +529,9 @@ class RecurringIncomesTab extends ConsumerWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Next Income Date',
+                                        payment.frequency == PaymentFrequency.flexible
+                                            ? 'Start Date'
+                                            : 'Next Income Date',
                                         style: TextStyle(
                                           color: AppTheme.textLightColor(
                                             context,
@@ -537,7 +542,9 @@ class RecurringIncomesTab extends ConsumerWidget {
                                       ),
                                       Text(
                                         DateFormat.yMMMd().format(
-                                          payment.nextDate,
+                                          payment.frequency == PaymentFrequency.flexible
+                                              ? payment.startDate
+                                              : payment.nextDate,
                                         ),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,

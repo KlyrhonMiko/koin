@@ -114,6 +114,11 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   // Selection Helpers
   // ═══════════════════════════════════════════════════════
   Future<void> _editCategory() async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
     final categories = ref.read(categoriesProvider).value ?? [];
     final filteredCategories = categories
         .where((c) => c.type == _parsedData!.type)
@@ -144,6 +149,11 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   }
 
   Future<void> _editAccount() async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
     final accounts = ref.read(accountProvider).value ?? [];
 
     final id = await showSelectSheet<String>(
@@ -182,6 +192,11 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   }
 
   Future<void> _editToAccount() async {
+    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (hadFocus) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
     final accounts = ref.read(accountProvider).value ?? [];
 
     final id = await showSelectSheet<String>(
