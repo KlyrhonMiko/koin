@@ -729,7 +729,13 @@ class DashboardScreen extends ConsumerWidget {
               final account = stats.accounts[index];
               final balance = stats.accountBalances[account.id] ?? 0;
               return GestureDetector(
-                onTap: () => HapticService.light(),
+                onTap: () {
+                  HapticService.light();
+                  Navigator.push(
+                    context,
+                    SlideUpRoute(page: AccountFormScreen(account: account)),
+                  );
+                },
                 child: _buildAccountCard(context, account, balance, currency),
               );
             },

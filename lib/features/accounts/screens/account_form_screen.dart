@@ -13,6 +13,7 @@ import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/card_background_shapes.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class AccountFormScreen extends ConsumerStatefulWidget {
   final Account? account;
@@ -737,310 +738,304 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             ),
             const Gap(24),
 
-            Row(
-              children: [
-                Icon(
-                  Icons.image_rounded,
-                  size: 16,
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                ),
-                const Gap(6),
-                Text(
-                  'Icon',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            IgnorePointer(
-              ignoring: selectedTemplateId != null,
-              child: Opacity(
-                opacity: selectedTemplateId != null ? 0.5 : 1.0,
-                child: SizedBox(
-                  height: 50,
-                  child: ListView.builder(
-                    controller: _iconScrollController,
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    itemCount: icons.length,
-                    itemBuilder: (context, index) {
-                      final icon = icons[index];
-                      final isSelected = selectedIcon == icon.codePoint;
-                      return GestureDetector(
-                        onTap: () {
-                          HapticService.light();
-                          setState(() => selectedIcon = icon.codePoint);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? selectedColor.withValues(alpha: 0.1)
-                                : AppTheme.dividerColor(
-                                    context,
-                                  ).withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? selectedColor
-                                  : Colors.transparent,
-                              width: 2,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: selectedTemplateId == null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.image_rounded,
+                              size: 16,
+                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
                             ),
-                          ),
-                          child: Icon(
-                            icon,
-                            color: isSelected
-                                ? selectedColor
-                                : AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.5),
-                            size: 24,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Row(
-              children: [
-                Icon(
-                  Icons.color_lens_rounded,
-                  size: 16,
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                ),
-                const Gap(6),
-                Text(
-                  'Color',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            IgnorePointer(
-              ignoring: selectedTemplateId != null,
-              child: Opacity(
-                opacity: selectedTemplateId != null ? 0.5 : 1.0,
-                child: SizedBox(
-                  height: 50,
-                  child: ListView.builder(
-                    controller: _colorScrollController,
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    itemCount: colors.length,
-                    itemBuilder: (context, index) {
-                      final c = colors[index];
-                      final isSelected =
-                          selectedColor.toARGB32() == c.toARGB32();
-                      return GestureDetector(
-                        onTap: () {
-                          HapticService.light();
-                          setState(() => selectedColor = c);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              width: 3,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: c.withValues(alpha: 0.4),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                )
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Row(
-              children: [
-                Icon(
-                  Icons.wallpaper_rounded,
-                  size: 16,
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                ),
-                const Gap(6),
-                Text(
-                  'Card Background',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            IgnorePointer(
-              ignoring: selectedTemplateId != null,
-              child: Opacity(
-                opacity: selectedTemplateId != null ? 0.5 : 1.0,
-                child: SizedBox(
-                  height: 50,
-                  child: ListView(
-                    controller: _cardColorScrollController,
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          HapticService.light();
-                          setState(() => selectedCardColor = null);
-                        },
-                        child: Center(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.only(right: 12),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selectedCardColor == null
-                                  ? AppTheme.primaryColor(
-                                      context,
-                                    ).withValues(alpha: 0.1)
-                                  : AppTheme.dividerColor(
-                                      context,
-                                    ).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: selectedCardColor == null
-                                    ? AppTheme.primaryColor(context)
-                                    : AppTheme.dividerColor(
-                                        context,
-                                      ).withValues(alpha: 0.3),
-                                width: selectedCardColor == null ? 2 : 1,
+                            const Gap(6),
+                            Text(
+                              'Icon',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.format_color_reset_rounded,
-                                  size: 16,
-                                  color: selectedCardColor == null
-                                      ? AppTheme.primaryColor(context)
-                                      : AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.5),
-                                ),
-                                const Gap(6),
-                                Text(
-                                  'Default',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: selectedCardColor == null
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: selectedCardColor == null
-                                        ? AppTheme.primaryColor(context)
+                          ],
+                        ),
+                        const Gap(12),
+                        SizedBox(
+                          height: 50,
+                          child: ListView.builder(
+                            controller: _iconScrollController,
+                            scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
+                            itemCount: icons.length,
+                            itemBuilder: (context, index) {
+                              final icon = icons[index];
+                              final isSelected = selectedIcon == icon.codePoint;
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticService.light();
+                                  setState(() => selectedIcon = icon.codePoint);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 12),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? selectedColor.withValues(alpha: 0.1)
+                                        : AppTheme.dividerColor(
+                                            context,
+                                          ).withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? selectedColor
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    icon,
+                                    color: isSelected
+                                        ? selectedColor
                                         : AppTheme.textLightColor(
                                             context,
                                           ).withValues(alpha: 0.5),
+                                    size: 24,
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
-                      ),
-                      ...cardBgColors.map((c) {
-                        final isSelected =
-                            selectedCardColor != null &&
-                            selectedCardColor!.toARGB32() == c.toARGB32();
-                        return GestureDetector(
-                          onTap: () {
-                            HapticService.light();
-                            setState(() => selectedCardColor = c);
-                          },
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.only(right: 12),
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: c,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.transparent,
-                                  width: 3,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: c.withValues(alpha: 0.4),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.white,
-                                      size: 22,
-                                    )
-                                  : null,
+                        const Gap(24),
+
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.color_lens_rounded,
+                              size: 16,
+                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
                             ),
+                            const Gap(6),
+                            Text(
+                              'Color',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Gap(12),
+                        SizedBox(
+                          height: 50,
+                          child: ListView.builder(
+                            controller: _colorScrollController,
+                            scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
+                            itemCount: colors.length,
+                            itemBuilder: (context, index) {
+                              final c = colors[index];
+                              final isSelected =
+                                  selectedColor.toARGB32() == c.toARGB32();
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticService.light();
+                                  setState(() => selectedColor = c);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 12),
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: c,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: c.withValues(alpha: 0.4),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(
+                                          Icons.check_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        )
+                                      : null,
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
+                        ),
+                        const Gap(24),
+
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.wallpaper_rounded,
+                              size: 16,
+                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
+                            ),
+                            const Gap(6),
+                            Text(
+                              'Card Background',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Gap(12),
+                        SizedBox(
+                          height: 50,
+                          child: ListView(
+                            controller: _cardColorScrollController,
+                            scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  HapticService.light();
+                                  setState(() => selectedCardColor = null);
+                                },
+                                child: Center(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.only(right: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: selectedCardColor == null
+                                          ? AppTheme.primaryColor(
+                                              context,
+                                            ).withValues(alpha: 0.1)
+                                          : AppTheme.dividerColor(
+                                              context,
+                                            ).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(22),
+                                      border: Border.all(
+                                        color: selectedCardColor == null
+                                            ? AppTheme.primaryColor(context)
+                                            : AppTheme.dividerColor(
+                                                context,
+                                              ).withValues(alpha: 0.3),
+                                        width: selectedCardColor == null ? 2 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.format_color_reset_rounded,
+                                          size: 16,
+                                          color: selectedCardColor == null
+                                              ? AppTheme.primaryColor(context)
+                                              : AppTheme.textLightColor(
+                                                  context,
+                                                ).withValues(alpha: 0.5),
+                                        ),
+                                        const Gap(6),
+                                        Text(
+                                          'Default',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: selectedCardColor == null
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: selectedCardColor == null
+                                                ? AppTheme.primaryColor(context)
+                                                : AppTheme.textLightColor(
+                                                    context,
+                                                  ).withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              ...cardBgColors.map((c) {
+                                final isSelected =
+                                    selectedCardColor != null &&
+                                    selectedCardColor!.toARGB32() == c.toARGB32();
+                                return GestureDetector(
+                                  onTap: () {
+                                    HapticService.light();
+                                    setState(() => selectedCardColor = c);
+                                  },
+                                  child: Center(
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      margin: const EdgeInsets.only(right: 12),
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: c,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.transparent,
+                                          width: 3,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: c.withValues(alpha: 0.4),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: isSelected
+                                          ? const Icon(
+                                              Icons.check_rounded,
+                                              color: Colors.white,
+                                              size: 22,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                        const Gap(24),
+                      ].animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                    )
+                  : const SizedBox.shrink(),
             ),
-            const Gap(24),
             Row(
               children: [
                 Icon(
