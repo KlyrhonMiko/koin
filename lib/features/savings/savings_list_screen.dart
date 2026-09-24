@@ -15,11 +15,26 @@ import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 
-class SavingsListScreen extends ConsumerWidget {
+class SavingsListScreen extends ConsumerStatefulWidget {
   const SavingsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SavingsListScreen> createState() => _SavingsListScreenState();
+}
+
+class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
+  bool _showEntranceAnimations = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) setState(() => _showEntranceAnimations = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final goalsAsync = ref.watch(computedSavingsGoalsProvider);
     final settings = ref.watch(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(
@@ -59,7 +74,7 @@ class SavingsListScreen extends ConsumerWidget {
                       return _buildAddGoalButton(context, index);
                     }
                     final goal = goals[index - 1];
-                    return _buildGoalCard(context, goal, index, currencyFormat);
+                    return _buildGoalCard(context, goal, index, currencyFormat, _showEntranceAnimations);
                   },
                 ),
               );
@@ -509,6 +524,7 @@ class SavingsListScreen extends ConsumerWidget {
     SavingsGoal goal,
     int index,
     NumberFormat currencyFormat,
+    bool showEntranceAnimation,
   ) {
     final progressPercent = (goal.progress * 100).toStringAsFixed(0);
     final isCompleted = goal.progress >= 1.0;
@@ -698,9 +714,13 @@ class SavingsListScreen extends ConsumerWidget {
             ),
           ),
         )
-        .animate()
-        .fade(delay: (index * 80).ms, duration: 400.ms)
-        .slideY(begin: 0.06, curve: Curves.easeOutCubic);
+        .animate(
+          key: ValueKey('goal_${goal.id}_entrance'),
+          autoPlay: showEntranceAnimation,
+          target: showEntranceAnimation ? null : 1,
+        )
+        .fade(delay: (index * 60).ms, duration: 300.ms)
+        .slideY(begin: 0.06, curve: const Cubic(0.23, 1, 0.32, 1));
   }
 }
 

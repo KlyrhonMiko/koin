@@ -826,6 +826,11 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
 
+    // Account is required whenever logging a real payment — money either
+    // leaves your account (I owe) or arrives in your account (owed to me)
+    final isAccountRequired = !widget.isIncrease;
+    final hasAccount = _selectedAccountId != null;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -956,12 +961,14 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   _buildSelectionRow(
                     context,
                     fallbackIcon: Icons.account_balance_wallet_rounded,
-                    label: 'Account (Optional)',
+                    label: isAccountRequired ? 'Account' : 'Account (Optional)',
                     selectedName: selectedAccount?.name,
                     selectedColor: selectedAccount?.color,
                     selectedIconCodePoint: selectedAccount?.iconCodePoint,
                     selectedLogoAsset: selectedAccount?.logoAsset,
-                    placeholder: 'None (Balance only)',
+                    placeholder: isAccountRequired
+                        ? 'Select Account'
+                        : 'None (Balance only)',
                     onTap: () => _openAccountPicker(context, accounts),
                   ),
                   Divider(
@@ -1035,6 +1042,15 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   if (amtStr.isEmpty) return;
                   final amt = double.tryParse(amtStr) ?? 0.0;
                   if (amt <= 0) return;
+                  if (isAccountRequired && !hasAccount) {
+                    HapticService.error();
+                    KoinSnackBar.error(
+                      context,
+                      'Account Required',
+                      subtitle: 'Select an account to record this payment',
+                    );
+                    return;
+                  }
 
                   final repayment = DebtRepayment(
                     id: const Uuid().v4(),

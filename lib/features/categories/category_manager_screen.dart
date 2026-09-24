@@ -345,6 +345,16 @@ class CategoryList extends ConsumerStatefulWidget {
 
 class _CategoryListState extends ConsumerState<CategoryList>
     with AutomaticKeepAliveClientMixin {
+  bool _showEntranceAnimations = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) setState(() => _showEntranceAnimations = false);
+    });
+  }
+
   @override
   bool get wantKeepAlive => true;
 
@@ -412,7 +422,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
               )
               .animate(
                 key: ValueKey('header_${widget.type.name}'),
-                autoPlay: true,
+                autoPlay: _showEntranceAnimations,
+                target: _showEntranceAnimations ? null : 1,
               )
               .fade(duration: 300.ms),
       footer: Column(
@@ -475,7 +486,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
               )
               .animate(
                 key: ValueKey('footer_${widget.type.name}'),
-                autoPlay: true,
+                autoPlay: _showEntranceAnimations,
+                target: _showEntranceAnimations ? null : 1,
               )
               .fade(delay: 100.ms),
         ],
@@ -661,7 +673,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 ),
               ),
             )
-            .animate(key: ValueKey(category.id), autoPlay: true)
+            .animate(
+              key: ValueKey('${category.id}_entrance'),
+              autoPlay: _showEntranceAnimations,
+              target: _showEntranceAnimations ? null : 1,
+            )
             .fade(delay: (index * 50).ms)
             .slideX(begin: 0.04);
       },

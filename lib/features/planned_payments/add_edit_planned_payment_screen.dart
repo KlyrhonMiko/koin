@@ -5,6 +5,9 @@ import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/theme.dart';
@@ -550,19 +553,30 @@ class _AddEditPlannedPaymentScreenState
     BuildContext context,
     List<Account> accounts,
   ) async {
-    final id = await _showPremiumSelectionSheet<String>(
+    final stats = ref.read(dashboardStatsProvider);
+    final currency = ref.read(settingsProvider).currency;
+    final id = await showSelectSheet<String>(
       context: context,
       title: 'Account',
       subtitle: 'Choose the account for this subscription',
       itemCount: accounts.length,
       itemBuilder: (context, index) {
-        final acc = accounts[index];
-        return _PremiumSheetItem(
-          name: acc.name,
-          accentColor: acc.color,
-          iconCodePoint: acc.iconCodePoint,
-          selected: acc.id == _selectedAccountId,
-          onTap: () => Navigator.pop(context, acc.id),
+        return Consumer(
+          builder: (context, ref, _) {
+            final liveAccounts = ref.watch(accountProvider).value ?? [];
+            final acc = liveAccounts.firstWhere(
+              (a) => a.id == accounts[index].id,
+              orElse: () => accounts[index],
+            );
+            final balance = stats.accountBalances[acc.id] ?? 0.0;
+            return AccountItem(
+              account: acc,
+              balance: balance,
+              currencySymbol: currency.symbol,
+              isSelected: acc.id == _selectedAccountId,
+              onTap: () => Navigator.pop(context, acc.id),
+            );
+          },
         );
       },
     );
@@ -880,6 +894,14 @@ class _AddEditPlannedPaymentScreenState
                                 .where((a) => a.id == _selectedAccountId)
                                 .firstOrNull
                                 ?.iconCodePoint,
+                            loading: () => null,
+                            error: (_, stackTrace) => null,
+                          ),
+                          selectedLogoAsset: accountsState.when(
+                            data: (accounts) => accounts
+                                .where((a) => a.id == _selectedAccountId)
+                                .firstOrNull
+                                ?.logoAsset,
                             loading: () => null,
                             error: (_, stackTrace) => null,
                           ),

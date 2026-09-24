@@ -72,11 +72,12 @@ class DebtsTab extends ConsumerWidget {
                             )
                             .animate()
                             .scale(
-                              delay: 200.ms,
+                              begin: const Offset(0.88, 0.88),
+                              delay: 60.ms,
                               curve: Curves.easeOutBack,
-                              duration: 600.ms,
+                              duration: 280.ms,
                             )
-                            .fadeIn(),
+                            .fadeIn(duration: 220.ms),
                         const SizedBox(height: 24),
                         Text(
                               'No debts or loans',
@@ -88,8 +89,13 @@ class DebtsTab extends ConsumerWidget {
                               ),
                             )
                             .animate()
-                            .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-                            .fadeIn(),
+                            .slideY(
+                              begin: 0.08,
+                              delay: 100.ms,
+                              duration: 240.ms,
+                              curve: const Cubic(0.23, 1, 0.32, 1),
+                            )
+                            .fadeIn(duration: 200.ms, delay: 100.ms),
                         const SizedBox(height: 8),
                         Text(
                               'Keep track of money you owe\nor money owed to you.',
@@ -101,8 +107,13 @@ class DebtsTab extends ConsumerWidget {
                               ),
                             )
                             .animate()
-                            .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-                            .fadeIn(),
+                            .slideY(
+                              begin: 0.08,
+                              delay: 140.ms,
+                              duration: 240.ms,
+                              curve: const Cubic(0.23, 1, 0.32, 1),
+                            )
+                            .fadeIn(duration: 200.ms, delay: 140.ms),
                         const SizedBox(height: 36),
                         SizedBox(
                               width: double.infinity,
@@ -153,8 +164,13 @@ class DebtsTab extends ConsumerWidget {
                               ),
                             )
                             .animate()
-                            .slideY(begin: 0.2, delay: 500.ms, duration: 400.ms)
-                            .fadeIn(),
+                            .slideY(
+                              begin: 0.08,
+                              delay: 180.ms,
+                              duration: 240.ms,
+                              curve: const Cubic(0.23, 1, 0.32, 1),
+                            )
+                            .fadeIn(duration: 200.ms, delay: 180.ms),
                       ],
                     ),
                   ),
@@ -385,8 +401,12 @@ class DebtsTab extends ConsumerWidget {
       ),
     )
     .animate()
-    .fade(duration: 500.ms)
-    .slideY(begin: 0.08, curve: Curves.easeOutCubic);
+    .fade(duration: 260.ms)
+    .slideY(
+      begin: 0.06,
+      duration: 280.ms,
+      curve: const Cubic(0.23, 1, 0.32, 1),
+    );
   }
 
 
@@ -667,17 +687,18 @@ class DebtCard extends StatelessWidget {
     );
 
     if (showEntranceAnimations) {
+      final delay = Duration(milliseconds: 40 * index);
       content = content
           .animate()
           .slideY(
-            begin: 0.15,
-            delay: Duration(milliseconds: 80 * index),
-            duration: 350.ms,
-            curve: Curves.easeOutCubic,
+            begin: 0.07,
+            delay: delay,
+            duration: 240.ms,
+            curve: const Cubic(0.23, 1, 0.32, 1),
           )
           .fadeIn(
-            delay: Duration(milliseconds: 80 * index),
-            duration: 350.ms,
+            delay: delay,
+            duration: 200.ms,
           );
     }
 

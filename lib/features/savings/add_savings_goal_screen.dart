@@ -13,6 +13,9 @@ import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 
@@ -141,7 +144,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
 
   String _getDailyEstimate() {
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0 || _totalDays <= 0) return '—';
+    if (amount == null || amount <= 0 || _totalDays <= 0) return 'â€”';
     final settings = ref.read(settingsProvider);
     final fmt = NumberFormat.simpleCurrency(name: settings.currency.code);
     return fmt.format(amount / _totalDays);
@@ -289,6 +292,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                         accounts,
                         _selectedAccountId,
                       )?.iconCodePoint,
+                      selectedLogoAsset: _accountById(
+                        accounts,
+                        _selectedAccountId,
+                      )?.logoAsset,
                       placeholder: 'None',
                       onTap: () => _openAccountPicker(
                         context,
@@ -609,9 +616,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Selection Row
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildSelectionRow(
     BuildContext context, {
     required IconData fallbackIcon,
@@ -737,9 +744,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Picker helper methods
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Future<void> _openAccountPicker(
     BuildContext context,
     List<Account> accounts, {
@@ -748,29 +755,39 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     required String? selectedId,
     required void Function(String?) onSelected,
   }) async {
-    final id = await _showPremiumSelectionSheet<String>(
+    final stats = ref.read(dashboardStatsProvider);
+    final currency = ref.read(settingsProvider).currency;
+    final id = await showSelectSheet<String>(
       context: context,
       title: title,
       subtitle: subtitle,
       itemCount: accounts.length + 1, // +1 for "None"
       itemBuilder: (context, index) {
         if (index == 0) {
-          return _PremiumSheetItem(
+          return SelectSheetItem(
             name: 'No Linked Account',
             accentColor: AppTheme.textLightColor(context),
             iconCodePoint: Icons.link_off_rounded.codePoint,
             selected: selectedId == null,
-            onTap: () =>
-                Navigator.pop(context, ''), // empty string represents None
+            onTap: () => Navigator.pop(context, ''),
           );
         }
-        final acc = accounts[index - 1];
-        return _PremiumSheetItem(
-          name: acc.name,
-          accentColor: acc.color,
-          iconCodePoint: acc.iconCodePoint,
-          selected: acc.id == selectedId,
-          onTap: () => Navigator.pop(context, acc.id),
+        return Consumer(
+          builder: (context, ref, _) {
+            final liveAccounts = ref.watch(accountProvider).value ?? [];
+            final acc = liveAccounts.firstWhere(
+              (a) => a.id == accounts[index - 1].id,
+              orElse: () => accounts[index - 1],
+            );
+            final balance = stats.accountBalances[acc.id] ?? 0.0;
+            return AccountItem(
+              account: acc,
+              balance: balance,
+              currencySymbol: currency.symbol,
+              isSelected: acc.id == selectedId,
+              onTap: () => Navigator.pop(context, acc.id),
+            );
+          },
         );
       },
     );
@@ -779,242 +796,5 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
         onSelected(id.isEmpty ? null : id);
       }
     }
-  }
-
-  Future<T?> _showPremiumSelectionSheet<T>({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required int itemCount,
-    required Widget Function(BuildContext context, int index) itemBuilder,
-  }) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final primaryColor = AppTheme.primaryColor(context);
-
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(sheetContext).padding.top + 12,
-          ),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: Container(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(sheetContext),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(sheetContext),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 32,
-                      offset: const Offset(0, -8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Gap(10),
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(sheetContext),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const Gap(10),
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.6,
-                                  color: AppTheme.textColor(sheetContext),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Gap(4),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 14),
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                height: 1.35,
-                                color: AppTheme.textLightColor(sheetContext),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          16 + bottomInset,
-                        ),
-                        itemCount: itemCount,
-                        separatorBuilder: (context, index) => const Gap(8),
-                        itemBuilder: (context, index) {
-                          return itemBuilder(context, index)
-                              .animate()
-                              .fadeIn(delay: (index * 40).ms, duration: 250.ms)
-                              .slideX(
-                                begin: 0.04,
-                                duration: 250.ms,
-                                curve: Curves.easeOutCubic,
-                              );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PremiumSheetItem extends StatelessWidget {
-  const _PremiumSheetItem({
-    required this.name,
-    required this.accentColor,
-    required this.iconCodePoint,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String name;
-  final Color accentColor;
-  final int iconCodePoint;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = AppTheme.primaryColor(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticService.selection();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected
-                  ? primary.withValues(alpha: 0.45)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.65),
-              width: selected ? 1.5 : 1,
-            ),
-            color: selected
-                ? primary.withValues(alpha: 0.08)
-                : AppTheme.surfaceLightColor(context).withValues(alpha: 0.45),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  IconUtils.getIcon(iconCodePoint),
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle_rounded, color: primary, size: 26)
-              else
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.dividerColor(context),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

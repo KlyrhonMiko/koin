@@ -5,8 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/debt.dart';
 import 'package:koin/core/models/account.dart';
+import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
@@ -35,6 +41,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   late DebtType _selectedType;
   DateTime _startDate = DateTime.now();
   String? _selectedAccountId;
+  String? _selectedCategoryId;
   InstallmentFrequency _selectedFrequency = InstallmentFrequency.monthly;
   bool _frequencyUserSet = false;
   late TabController _tabController;
@@ -55,6 +62,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       _selectedFrequency = d.frequency;
       _frequencyUserSet = true;
       _selectedAccountId = d.accountId;
+      _selectedCategoryId = d.categoryId;
     } else {
       _selectedType = DebtType.owedToMe;
     }
@@ -114,6 +122,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       frequency: _selectedFrequency,
       currentAmount: currentAmount,
       accountId: _selectedAccountId,
+      categoryId: _selectedCategoryId,
     );
 
     if (isEdit) {
@@ -140,6 +149,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     final isEdit = widget.debt != null;
     final primaryColor = AppTheme.primaryColor(context);
     final accountsState = ref.watch(accountProvider);
+    final categoriesState = ref.watch(categoriesProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -238,12 +248,55 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             loading: () => null,
                             error: (_, stackTrace) => null,
                           ),
+                          selectedLogoAsset: accountsState.when(
+                            data: (accounts) => accounts
+                                .where((a) => a.id == _selectedAccountId)
+                                .firstOrNull
+                                ?.logoAsset,
+                            loading: () => null,
+                            error: (_, stackTrace) => null,
+                          ),
                           placeholder: 'Select Account',
                           onTap: () => accountsState.whenData(
                             (accounts) => _openAccountPicker(context, accounts),
                           ),
                         ),
-                        const Gap(16),
+                        const Gap(12),
+                        // Category Picker (Optional)
+                        _buildSelectionRow(
+                          context,
+                          fallbackIcon: Icons.category_rounded,
+                          label: 'Link to Category (Optional)',
+                          selectedName: categoriesState.when(
+                            data: (cats) => cats
+                                .where((c) => c.id == _selectedCategoryId)
+                                .firstOrNull
+                                ?.name,
+                            loading: () => null,
+                            error: (_, _) => null,
+                          ),
+                          selectedColor: categoriesState.when(
+                            data: (cats) => cats
+                                .where((c) => c.id == _selectedCategoryId)
+                                .firstOrNull
+                                ?.color,
+                            loading: () => null,
+                            error: (_, _) => null,
+                          ),
+                          selectedIconCodePoint: categoriesState.when(
+                            data: (cats) => cats
+                                .where((c) => c.id == _selectedCategoryId)
+                                .firstOrNull
+                                ?.iconCodePoint,
+                            loading: () => null,
+                            error: (_, _) => null,
+                          ),
+                          placeholder: 'Select Category',
+                          onTap: () => categoriesState.whenData(
+                            (cats) => _openCategoryPicker(context, cats),
+                          ),
+                        ),
+                        const Gap(12),
                         // Notes Input
                         _buildNotesInput(context),
                       ],
@@ -1033,23 +1086,67 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     );
   }
 
+  Future<void> _openCategoryPicker(
+    BuildContext context,
+    List<TransactionCategory> categories,
+  ) async {
+    // Filter by the relevant type: income for "owed to me", expense for "I owe"
+    final categoryType = _selectedType == DebtType.owedToMe
+        ? TransactionType.income
+        : TransactionType.expense;
+    final filtered = categories.where((c) => c.type == categoryType).toList();
+
+    final id = await _showPremiumSelectionSheet<String>(
+      context: context,
+      title: 'Category',
+      subtitle: _selectedType == DebtType.owedToMe
+          ? 'Link an income category to this debt'
+          : 'Link an expense category to this debt',
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final cat = filtered[index];
+        return _PremiumSheetItem(
+          name: cat.name,
+          accentColor: cat.color,
+          iconCodePoint: cat.iconCodePoint,
+          selected: cat.id == _selectedCategoryId,
+          onTap: () => Navigator.pop(context, cat.id),
+        );
+      },
+    );
+    if (id != null && mounted) {
+      setState(() => _selectedCategoryId = id);
+    }
+  }
+
   Future<void> _openAccountPicker(
     BuildContext context,
     List<Account> accounts,
   ) async {
-    final id = await _showPremiumSelectionSheet<String>(
+    final stats = ref.read(dashboardStatsProvider);
+    final currency = ref.read(settingsProvider).currency;
+    final id = await showSelectSheet<String>(
       context: context,
       title: 'Account',
       subtitle: 'Where is this money from/going?',
       itemCount: accounts.length,
       itemBuilder: (context, index) {
-        final acc = accounts[index];
-        return _PremiumSheetItem(
-          name: acc.name,
-          accentColor: acc.color,
-          iconCodePoint: acc.iconCodePoint,
-          selected: acc.id == _selectedAccountId,
-          onTap: () => Navigator.pop(context, acc.id),
+        return Consumer(
+          builder: (context, ref, _) {
+            final liveAccounts = ref.watch(accountProvider).value ?? [];
+            final acc = liveAccounts.firstWhere(
+              (a) => a.id == accounts[index].id,
+              orElse: () => accounts[index],
+            );
+            final balance = stats.accountBalances[acc.id] ?? 0.0;
+            return AccountItem(
+              account: acc,
+              balance: balance,
+              currencySymbol: currency.symbol,
+              isSelected: acc.id == _selectedAccountId,
+              onTap: () => Navigator.pop(context, acc.id),
+            );
+          },
         );
       },
     );
