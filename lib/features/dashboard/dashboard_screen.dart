@@ -17,6 +17,10 @@ import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/models/planned_payment.dart';
+import 'package:koin/core/models/debt.dart';
+import 'package:koin/core/providers/debt_provider.dart';
+import 'package:koin/features/debts/debt_details_screen.dart';
+import 'package:koin/features/dashboard/upcoming_screen.dart';
 import 'package:koin/features/planned_payments/add_edit_planned_payment_screen.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -1622,6 +1626,7 @@ class DashboardScreen extends ConsumerWidget {
     Currency currency,
   ) {
     final paymentsAsync = ref.watch(plannedPaymentProvider);
+    final debtsAsync = ref.watch(debtsProvider);
     final categories = ref.watch(categoriesProvider).value ?? [];
 
     Widget content = Column(
@@ -1631,45 +1636,69 @@ class DashboardScreen extends ConsumerWidget {
           context,
           ref,
           title: 'Upcoming',
-          buttonLabel: 'Planned',
+          buttonLabel: 'View All',
           onTap: () {
             HapticService.light();
-            ref.read(portfolioTabProvider.notifier).setIndex(4);
-            ref.read(navigationProvider.notifier).setIndex(3);
+            Navigator.push(
+              context,
+              SlideUpRoute(page: const UpcomingScreen()),
+            );
           },
         ),
         const Gap(16),
         paymentsAsync.when(
           data: (payments) {
-            if (payments.isEmpty) {
+            final debts = debtsAsync.value ?? [];
+            final upcomingDebts = debts
+                .where((d) => d.totalInstallments > 0 && d.currentAmount < d.amount)
+                .toList();
+
+            final List<dynamic> allUpcoming = [...payments, ...upcomingDebts];
+
+            if (allUpcoming.isEmpty) {
               return _buildEmptyUpcoming(context, ref);
             }
 
-            final sortedPayments = List<PlannedPayment>.from(payments)
-              ..sort((a, b) => a.nextDate.compareTo(b.nextDate));
+            allUpcoming.sort((a, b) {
+              final dateA =
+                  a is PlannedPayment ? a.nextDate : ((a as Debt).dueDate ?? a.startDate);
+              final dateB =
+                  b is PlannedPayment ? b.nextDate : ((b as Debt).dueDate ?? b.startDate);
+              return dateA.compareTo(dateB);
+            });
 
-            final upcoming = sortedPayments.take(3).toList();
+            final upcoming = allUpcoming.take(3).toList();
 
             return Column(
-              children: upcoming.map((payment) {
-                final category =
-                    categories.any((c) => c.id == payment.categoryId)
-                    ? categories.firstWhere((c) => c.id == payment.categoryId)
-                    : (categories.isNotEmpty ? categories.first : null);
+              children: upcoming.map((item) {
+                Widget child;
+                String trackId;
 
-                Widget item = _buildUpcomingPaymentItem(
-                  context,
-                  ref,
-                  payment,
-                  category,
-                  currency,
-                );
+                if (item is PlannedPayment) {
+                  trackId = 'dash_pp_${item.id}';
+                  final category =
+                      categories.any((c) => c.id == item.categoryId)
+                          ? categories.firstWhere((c) => c.id == item.categoryId)
+                          : (categories.isNotEmpty ? categories.first : null);
 
-                if (!AnimationTracker.hasSeen('dash_pp_${payment.id}')) {
-                  item = item.animate().fadeIn().slideY(begin: 0.1);
+                  child = _buildUpcomingPaymentItem(
+                    context,
+                    ref,
+                    item,
+                    category,
+                    currency,
+                  );
+                } else {
+                  final debt = item as Debt;
+                  trackId = 'dash_debt_${debt.id}';
+                  child = _buildUpcomingDebtItem(context, ref, debt, currency);
                 }
 
-                return item;
+                if (!AnimationTracker.hasSeen(trackId)) {
+                  child = child.animate().fadeIn().slideY(begin: 0.1);
+                }
+
+                return child;
               }).toList(),
             );
           },
@@ -1760,7 +1789,9 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const Gap(4),
                   Text(
-                    '${DateFormat.MMMMd().format(payment.nextDate)} • ${payment.frequency.name}',
+                    payment.frequency == PaymentFrequency.flexible
+                        ? 'Anytime • Flexible'
+                        : '${DateFormat.MMMMd().format(payment.nextDate)} • ${payment.frequency.name}',
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
                       fontSize: 12,
@@ -1825,6 +1856,99 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(
                 color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
                 fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcomingDebtItem(
+    BuildContext context,
+    WidgetRef ref,
+    Debt debt,
+    Currency currency,
+  ) {
+    final isOwedToMe = debt.type == DebtType.owedToMe;
+    final amountColor = isOwedToMe
+        ? AppTheme.incomeColor(context)
+        : AppTheme.expenseColor(context);
+
+    final remaining = debt.amount - debt.currentAmount;
+
+    return PressableScale(
+      onTap: () {
+        HapticService.light();
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => AddRepaymentSheet(
+            debt: debt,
+            isIncrease: false,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: amountColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isOwedToMe ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                color: amountColor,
+                size: 20,
+              ),
+            ),
+            const Gap(14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    debt.personName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    '${DateFormat.MMMMd().format(debt.dueDate ?? debt.startDate)} • Debt',
+                    style: TextStyle(
+                      color: AppTheme.textLightColor(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              "${!isOwedToMe ? '-' : '+'}${NumberFormat.currency(symbol: currency.symbol).format(remaining)}",
+              style: TextStyle(
+                color: amountColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
               ),
             ),
           ],
