@@ -7,6 +7,7 @@ import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:koin/core/models/debt.dart';
+import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/debt_repayment.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -29,7 +30,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 25,
+      version: 27,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -231,6 +232,28 @@ CREATE TABLE app_settings (
         // Column might already exist
       }
     }
+    if (oldVersion < 26) {
+      await db.execute('''
+CREATE TABLE debt_items (
+  id TEXT PRIMARY KEY,
+  debtId TEXT NOT NULL,
+  name TEXT NOT NULL,
+  amount REAL NOT NULL,
+  totalInstallments INTEGER NOT NULL,
+  firstPaymentDate TEXT NOT NULL,
+  FOREIGN KEY (debtId) REFERENCES debts (id) ON DELETE CASCADE
+)
+''');
+    }
+    if (oldVersion < 27) {
+      try {
+        await db.execute(
+          'ALTER TABLE debt_items ADD COLUMN categoryId TEXT',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
   }
 
   Future _createPlannedPaymentsTable(Database db) async {
@@ -290,6 +313,19 @@ CREATE TABLE debt_repayments (
   note TEXT,
   accountId TEXT,
   isIncrease INTEGER DEFAULT 0,
+  FOREIGN KEY (debtId) REFERENCES debts (id) ON DELETE CASCADE
+)
+''');
+
+    await db.execute('''
+CREATE TABLE debt_items (
+  id $idType,
+  debtId $textType,
+  name $textType,
+  amount $realType,
+  totalInstallments INTEGER NOT NULL,
+  firstPaymentDate $textType,
+  categoryId TEXT,
   FOREIGN KEY (debtId) REFERENCES debts (id) ON DELETE CASCADE
 )
 ''');
@@ -515,6 +551,7 @@ CREATE TABLE transactions (
       await txn.delete('categories');
       await txn.delete('accounts');
       await txn.delete('planned_payments');
+      await txn.delete('debt_items');
       await txn.delete('debt_repayments');
       await txn.delete('debts');
       await txn.delete('app_settings');
@@ -942,7 +979,20 @@ CREATE TABLE transactions (
       }
       result = await db.query('debts', orderBy: 'startDate DESC');
     }
-    return result.map((json) => Debt.fromMap(json)).toList();
+    
+    final debts = result.map((json) => Debt.fromMap(json)).toList();
+    
+    try {
+      final itemsResult = await db.query('debt_items');
+      final Map<String, List<DebtItem>> itemsMap = {};
+      for (var row in itemsResult) {
+        final item = DebtItem.fromMap(row);
+        itemsMap.putIfAbsent(item.debtId, () => []).add(item);
+      }
+      return debts.map((d) => d.copyWith(items: itemsMap[d.id] ?? [])).toList();
+    } catch (e) {
+      return debts;
+    }
   }
 
   Future<int> updateDebt(Debt debt) async {
@@ -958,6 +1008,24 @@ CREATE TABLE transactions (
   Future<int> deleteDebt(String id) async {
     final db = await instance.database;
     return await db.delete('debts', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Debt Items commands
+  Future<DebtItem> insertDebtItem(DebtItem item) async {
+    final db = await instance.database;
+    await db.insert('debt_items', item.toMap());
+    return item;
+  }
+
+  Future<void> updateDebtItem(DebtItem oldItem, DebtItem newItem) async {
+    final db = await instance.database;
+    await db.update('debt_items', newItem.toMap(), where: 'id = ?', whereArgs: [newItem.id]);
+  }
+
+  Future<int> deleteDebtItem(DebtItem item) async {
+    final db = await instance.database;
+    final res = await db.delete('debt_items', where: 'id = ?', whereArgs: [item.id]);
+    return res;
   }
 
   // Debt Repayments commands

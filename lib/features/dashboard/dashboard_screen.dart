@@ -1665,9 +1665,9 @@ class DashboardScreen extends ConsumerWidget {
 
             allUpcoming.sort((a, b) {
               final dateA =
-                  a is PlannedPayment ? a.nextDate : ((a as Debt).dueDate ?? a.startDate);
+                  a is PlannedPayment ? a.nextDate : (a as Debt).nextDueDate;
               final dateB =
-                  b is PlannedPayment ? b.nextDate : ((b as Debt).dueDate ?? b.startDate);
+                  b is PlannedPayment ? b.nextDate : (b as Debt).nextDueDate;
               return dateA.compareTo(dateB);
             });
 
@@ -1879,8 +1879,6 @@ class DashboardScreen extends ConsumerWidget {
         ? AppTheme.incomeColor(context)
         : AppTheme.expenseColor(context);
 
-    final remaining = debt.amount - debt.currentAmount;
-
     return PressableScale(
       onTap: () {
         HapticService.light();
@@ -1937,7 +1935,7 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const Gap(4),
                   Text(
-                    '${DateFormat.MMMMd().format(debt.dueDate ?? debt.startDate)} • Debt',
+                    '${DateFormat.MMMMd().format(debt.nextDueDate)} • Credit/IOU',
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
                       fontSize: 12,
@@ -1948,7 +1946,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             Text(
-              "${!isOwedToMe ? '-' : '+'}${NumberFormat.currency(symbol: currency.symbol).format(remaining)}",
+              "${!isOwedToMe ? '-' : '+'}${NumberFormat.currency(symbol: currency.symbol).format(debt.upcomingPaymentAmount)}",
               style: TextStyle(
                 color: amountColor,
                 fontWeight: FontWeight.w800,

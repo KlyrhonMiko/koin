@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/debt.dart';
+import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/debt_repayment.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
@@ -36,6 +37,21 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
 
   Future<void> deleteDebt(String id) async {
     await DatabaseHelper.instance.deleteDebt(id);
+    await loadDebts();
+  }
+
+  Future<void> addDebtItem(DebtItem item) async {
+    await DatabaseHelper.instance.insertDebtItem(item);
+    await loadDebts();
+  }
+
+  Future<void> updateDebtItem(DebtItem oldItem, DebtItem newItem) async {
+    await DatabaseHelper.instance.updateDebtItem(oldItem, newItem);
+    await loadDebts();
+  }
+
+  Future<void> deleteDebtItem(DebtItem item) async {
+    await DatabaseHelper.instance.deleteDebtItem(item);
     await loadDebts();
   }
 

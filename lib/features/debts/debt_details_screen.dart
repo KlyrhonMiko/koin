@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/debt.dart';
+import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/debt_repayment.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
@@ -12,6 +13,9 @@ import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/features/debts/add_edit_debt_screen.dart';
+import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/account_provider.dart';
@@ -48,10 +52,10 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
   Future<void> _showDeleteConfirmation(Debt debt) async {
     final confirmed = await ConfirmationSheet.show(
       context: context,
-      title: 'Delete Debt?',
+      title: 'Delete Credit/IOU?',
       description:
-          'Are you sure you want to delete this debt? This action cannot be undone and will delete all associated payment history.',
-      confirmLabel: 'Delete Debt',
+          'Are you sure you want to delete this credit/IOU? This action cannot be undone and will delete all associated payment history.',
+      confirmLabel: 'Delete',
       confirmColor: AppTheme.errorColor(context),
       icon: Icons.delete_outline_rounded,
       isDanger: true,
@@ -84,7 +88,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             orElse: () => null,
           );
           if (debt == null) {
-            return const Center(child: Text('Debt not found'));
+            return const Center(child: Text('Credit/IOU not found'));
           }
 
           final progress = (debt.currentAmount / debt.amount).clamp(0.0, 1.0);
@@ -112,7 +116,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       const Gap(16),
                       Expanded(
                         child: Text(
-                          'Debt Details',
+                          'Credit Details',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -148,6 +152,10 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         // ── Quick Actions ──
                         _buildQuickActions(context, debt, color),
                         const Gap(32),
+
+                        _buildItemsSection(context, debt, currencyFormat, color),
+                        const Gap(32),
+
                         // ── Payment History ──
                         _buildPaymentHistorySection(
                           context,
@@ -457,6 +465,198 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     );
   }
 
+  Widget _buildItemsSection(
+    BuildContext context,
+    Debt debt,
+    NumberFormat currencyFormat,
+    Color color,
+  ) {
+    final items = debt.items;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
+          children: [
+            Text(
+              'Sub-Plans / Purchases',
+              style: TextStyle(
+                color: AppTheme.textColor(context),
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+              ),
+            ),
+            const Gap(10),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${items.length}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const Gap(16),
+        // Item tiles
+        ...items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return PressableScale(
+            onTap: () async {
+              HapticService.light();
+              final categories = ref.read(categoriesProvider).value ?? [];
+              final updatedItem = await showAddPurchaseSheet(
+                context: context,
+                debtType: debt.type,
+                primaryColor: color,
+                categories: categories,
+                defaultDate: DateTime.now(),
+                existingItem: item,
+              );
+              
+              if (updatedItem != null) {
+                await ref.read(debtsProvider.notifier).updateDebtItem(item, updatedItem);
+                
+                final newItems = debt.items.map((i) => i.id == item.id ? updatedItem : i).toList();
+                final newAmount = newItems.fold(0.0, (sum, i) => sum + i.amount);
+                
+                final updatedDebt = debt.copyWith(
+                  amount: newAmount,
+                  items: newItems,
+                );
+                await ref.read(debtsProvider.notifier).updateDebt(updatedDebt);
+                
+                if (context.mounted) {
+                  KoinSnackBar.success(context, 'Purchase Updated');
+                }
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.shopping_bag_outlined, color: color, size: 20),
+                  ),
+                  const Gap(16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          style: TextStyle(
+                            color: AppTheme.textColor(context),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          '${item.totalInstallments} payments • Starts ${DateFormat.yMMMd().format(item.firstPaymentDate)}',
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(context),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    currencyFormat.format(item.amount),
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ).animate().fadeIn(delay: Duration(milliseconds: 100 + 50 * index)).slideY(begin: 0.1);
+        }),
+        const Gap(6),
+        PressableScale(
+          onTap: () async {
+            HapticService.light();
+            final categories = ref.read(categoriesProvider).value ?? [];
+            final newItem = await showAddPurchaseSheet(
+              context: context,
+              debtType: debt.type,
+              primaryColor: color,
+              categories: categories,
+              defaultDate: DateTime.now(),
+            );
+            
+            if (newItem != null) {
+              final newDebtItem = newItem.copyWith(debtId: debt.id);
+              await ref.read(debtsProvider.notifier).addDebtItem(newDebtItem);
+              
+              final updatedDebt = debt.copyWith(
+                amount: debt.amount + newDebtItem.amount,
+                items: [...debt.items, newDebtItem],
+              );
+              await ref.read(debtsProvider.notifier).updateDebt(updatedDebt);
+              
+              if (context.mounted) {
+                KoinSnackBar.success(context, 'Purchase Added');
+              }
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add_circle_outline_rounded, color: color, size: 20),
+                const Gap(8),
+                Text('Add Purchase / Sub-Plan', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 15)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPaymentHistorySection(
     BuildContext context, {
     required AsyncValue<List<DebtRepayment>> repaymentsAsync,
@@ -531,7 +731,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             Row(
               children: [
                 Text(
-                  'Debt Activity',
+                  'Credit Activity',
                   style: TextStyle(
                     color: AppTheme.textColor(context),
                     fontSize: 19,
@@ -706,7 +906,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                                     repayment.isIncrease
                                         ? (repayment.note?.isNotEmpty == true
                                             ? repayment.note!
-                                            : 'Increased Debt')
+                                            : 'Increased Credit')
                                         : (repayment.note?.isNotEmpty == true
                                             ? repayment.note!
                                             : 'Payment'),
@@ -785,7 +985,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   void initState() {
     super.initState();
     if (!widget.isIncrease && widget.debt.totalInstallments > 0) {
-      final payment = widget.debt.amount / widget.debt.totalInstallments;
+      final payment = widget.debt.upcomingPaymentAmount;
       var paymentStr = payment.toStringAsFixed(2);
       if (paymentStr.endsWith('.00')) {
         paymentStr = paymentStr.substring(0, paymentStr.length - 3);
@@ -872,12 +1072,12 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
 
             // ── Title ──
             Text(
-              widget.isIncrease ? 'Add to Debt' : 'Log Payment',
+              widget.isIncrease ? 'Increase Credit' : 'Log Payment',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.3,
+                letterSpacing: -0.5,
               ),
             ),
             const Gap(32),
@@ -1079,8 +1279,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                       categoryId: widget.debt.categoryId ?? (isExpense ? 'cat_others' : 'cat_others_inc'),
                       accountId: repayment.accountId!,
                       note: widget.isIncrease
-                          ? 'Added to Debt: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}'
-                          : 'Debt Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
+                          ? 'Increased Credit: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}'
+                          : 'Credit Payment: ${widget.debt.personName}${repayment.note != null ? ' - ${repayment.note}' : ''}',
                     );
 
                     await ref.read(transactionProvider.notifier).addTransaction(
@@ -1091,7 +1291,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   if (context.mounted) {
                     KoinSnackBar.success(
                       context,
-                      widget.isIncrease ? 'Debt Increased' : 'Payment Logged',
+                      widget.isIncrease ? 'Credit Increased' : 'Payment Logged',
                       subtitle: 'Transaction added to ${selectedAccount?.name ?? 'Account'}',
                     );
                     Navigator.pop(context);

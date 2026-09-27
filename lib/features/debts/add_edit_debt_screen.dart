@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/models/debt.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
@@ -20,6 +21,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
 import 'package:uuid/uuid.dart';
 
 class AddEditDebtScreen extends ConsumerStatefulWidget {
@@ -45,6 +47,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   InstallmentFrequency _selectedFrequency = InstallmentFrequency.monthly;
   bool _frequencyUserSet = false;
   late TabController _tabController;
+  List<DebtItem> _items = [];
 
   @override
   void initState() {
@@ -63,6 +66,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       _frequencyUserSet = true;
       _selectedAccountId = d.accountId;
       _selectedCategoryId = d.categoryId;
+      _items = List.from(d.items);
     } else {
       _selectedType = DebtType.owedToMe;
     }
@@ -111,10 +115,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       installments = int.tryParse(installmentsText) ?? 0;
     }
 
+    final finalAmount = _items.isNotEmpty ? _items.fold(0.0, (sum, i) => sum + i.amount) : amount;
+
     final debt = Debt(
       id: id,
       personName: name,
-      amount: amount,
+      amount: finalAmount,
       type: _selectedType,
       startDate: _startDate,
       description: notes.isEmpty ? null : notes,
@@ -123,19 +129,37 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       currentAmount: currentAmount,
       accountId: _selectedAccountId,
       categoryId: _selectedCategoryId,
+      items: _items,
     );
 
     if (isEdit) {
       await ref.read(debtsProvider.notifier).updateDebt(debt);
+      final oldItems = widget.debt!.items;
+      for (var oldItem in oldItems) {
+        if (!_items.any((i) => i.id == oldItem.id)) {
+          await ref.read(debtsProvider.notifier).deleteDebtItem(oldItem);
+        }
+      }
+      for (var newItem in _items) {
+        final existing = oldItems.where((i) => i.id == newItem.id).firstOrNull;
+        if (existing == null) {
+          await ref.read(debtsProvider.notifier).addDebtItem(newItem.copyWith(debtId: id));
+        } else if (existing.amount != newItem.amount || existing.name != newItem.name || existing.totalInstallments != newItem.totalInstallments || existing.firstPaymentDate != newItem.firstPaymentDate || existing.categoryId != newItem.categoryId) {
+          await ref.read(debtsProvider.notifier).updateDebtItem(existing, newItem.copyWith(debtId: id));
+        }
+      }
       if (mounted) {
         KoinSnackBar.success(
           context,
-          'Debt updated',
+          'Record updated',
           subtitle: 'Your record has been saved successfully',
         );
       }
     } else {
       await ref.read(debtsProvider.notifier).addDebt(debt);
+      for (var item in _items) {
+        await ref.read(debtsProvider.notifier).addDebtItem(item.copyWith(debtId: id));
+      }
     }
 
     if (mounted) {
@@ -166,7 +190,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Type Selector
-                    _buildSectionTitle(context, 'Debt Type'),
+                    _buildSectionTitle(context, 'Type'),
                     const Gap(12),
                     _buildPremiumTypeSwitcher(
                       context,
@@ -183,13 +207,17 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
                     const Gap(32),
 
+                    // Purchases / Sub-Items
+                    _buildPurchasesSection(context, primaryColor, categoriesState.value ?? []).animate().fade(delay: 110.ms).slideY(begin: 0.1),
+                    const Gap(32),
+
                     // Date
                     _buildSectionTitle(
                       context,
                       int.tryParse(_installmentsController.text) != null &&
                               int.parse(_installmentsController.text) > 0
                           ? 'Start Payment Date'
-                          : 'Debt Date',
+                          : 'Record Date',
                     ),
                     const Gap(12),
                     _buildDateSelector(
@@ -197,7 +225,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       label: int.tryParse(_installmentsController.text) != null &&
                               int.parse(_installmentsController.text) > 0
                           ? 'Start Payment Date'
-                          : 'Debt Date',
+                          : 'Record Date',
                       date: _startDate,
                       icon: Icons.calendar_today_rounded,
                       onTap: () async {
@@ -332,7 +360,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             ),
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: Text(
-              isEdit ? 'Update Debt' : 'Create Debt',
+              isEdit ? 'Update' : 'Create',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
@@ -1112,8 +1140,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       context: context,
       title: 'Category',
       subtitle: _selectedType == DebtType.owedToMe
-          ? 'Link an income category to this debt'
-          : 'Link an expense category to this debt',
+          ? 'Link an income category'
+          : 'Link an expense category',
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final cat = filtered[index];
@@ -1313,6 +1341,328 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+  Widget _buildPurchasesSection(BuildContext context, Color primaryColor, List<TransactionCategory> categories) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle(context, 'Purchases / Sub-Plans (Optional)'),
+        const Gap(12),
+        if (_items.isNotEmpty)
+          ..._items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: PressableScale(
+              onTap: () async {
+                HapticService.light();
+                final updatedItem = await showAddPurchaseSheet(
+                  context: context,
+                  debtType: _selectedType,
+                  primaryColor: primaryColor,
+                  categories: categories,
+                  defaultDate: _startDate,
+                  existingItem: item,
+                );
+                if (updatedItem != null) {
+                  setState(() {
+                    final index = _items.indexOf(item);
+                    if (index != -1) {
+                      _items[index] = updatedItem;
+                      _updateAmountFromItems();
+                    }
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.6)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.name, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textColor(context))),
+                          const Gap(4),
+                          Text('${item.totalInstallments} months • Starts ${DateFormat.yMMMd().format(item.firstPaymentDate)}', 
+                               style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Text(NumberFormat.simpleCurrency(name: ref.read(settingsProvider).currency.code).format(item.amount),
+                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: primaryColor)),
+                    const Gap(12),
+                    GestureDetector(
+                      onTap: () {
+                        HapticService.light();
+                        setState(() {
+                           _items.remove(item);
+                           _updateAmountFromItems();
+                        });
+                      },
+                      child: Icon(Icons.remove_circle_outline_rounded, color: AppTheme.expenseColor(context), size: 24),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )),
+        
+        PressableScale(
+          onTap: () async {
+            HapticService.light();
+            final newItem = await showAddPurchaseSheet(
+              context: context,
+              debtType: _selectedType,
+              primaryColor: primaryColor,
+              categories: categories,
+              defaultDate: _startDate,
+            );
+            if (newItem != null) {
+              setState(() {
+                _items.add(newItem);
+                _updateAmountFromItems();
+              });
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add_circle_outline_rounded, color: primaryColor, size: 20),
+                const Gap(8),
+                Text('Add Purchase / Sub-Plan', style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _updateAmountFromItems() {
+    if (_items.isNotEmpty) {
+      final total = _items.fold(0.0, (sum, i) => sum + i.amount);
+      _amountController.text = total.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '');
+    }
+  }
+
+  void _showAddPurchaseSheet(BuildContext context, Color primaryColor, List<TransactionCategory> categories) {
+    String name = '';
+    String amountStr = '';
+    String installmentsStr = '';
+    DateTime firstDate = DateTime.now();
+    TransactionCategory? selectedCategory;
+    
+    final pDate = _startDate;
+    firstDate = DateTime(pDate.year, pDate.month, pDate.day);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    bool didAdd = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor(ctx),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                      blurRadius: 32,
+                      offset: const Offset(0, -8),
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.paddingOf(ctx).bottom),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 48,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppTheme.dividerColor(ctx),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const Gap(24),
+                      Text(
+                        'Add Purchase', 
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textColor(ctx), letterSpacing: -0.5),
+                        textAlign: TextAlign.center,
+                      ),
+                      const Gap(24),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Item Name (e.g. Phone)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: AppTheme.surfaceColor(ctx),
+                      ),
+                      style: TextStyle(color: AppTheme.textColor(ctx)),
+                      minLines: 1,
+                      maxLines: 3,
+                      keyboardType: TextInputType.multiline,
+                      onChanged: (v) => name = v,
+                    ),
+                    const Gap(16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Total Amount',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: AppTheme.surfaceColor(ctx),
+                      ),
+                      style: TextStyle(color: AppTheme.textColor(ctx)),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (v) => amountStr = v,
+                    ),
+                    const Gap(16),
+                    _buildSelectionRow(
+                      ctx,
+                      fallbackIcon: Icons.category_rounded,
+                      label: 'Category (Optional)',
+                      selectedName: selectedCategory?.name,
+                      selectedColor: selectedCategory?.color,
+                      selectedIconCodePoint: selectedCategory?.iconCodePoint,
+                      placeholder: 'Select Category',
+                      onTap: () async {
+                        final categoryType = _selectedType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+                        final filtered = categories.where((c) => c.type == categoryType).toList();
+                        
+                        final id = await _showPremiumSelectionSheet<String>(
+                          context: ctx,
+                          title: 'Category',
+                          subtitle: _selectedType == DebtType.owedToMe
+                              ? 'Link an income category'
+                              : 'Link an expense category',
+                          itemCount: filtered.length,
+                          itemBuilder: (c, index) {
+                            final cat = filtered[index];
+                            return _PremiumSheetItem(
+                              name: cat.name,
+                              accentColor: cat.color,
+                              iconCodePoint: cat.iconCodePoint,
+                              selected: cat.id == selectedCategory?.id,
+                              onTap: () => Navigator.pop(c, cat.id),
+                            );
+                          },
+                        );
+                        if (id != null) {
+                          setSheetState(() => selectedCategory = categories.firstWhere((c) => c.id == id));
+                        }
+                      },
+                    ),
+                    const Gap(16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Installments',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                              fillColor: AppTheme.surfaceColor(ctx),
+                            ),
+                            style: TextStyle(color: AppTheme.textColor(ctx)),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v) => installmentsStr = v,
+                          ),
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              final dt = await showDatePicker(
+                                context: ctx,
+                                initialDate: firstDate,
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (dt != null) setSheetState(() => firstDate = dt);
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'First Payment',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                filled: true,
+                                fillColor: AppTheme.surfaceColor(ctx),
+                                suffixIcon: Icon(Icons.calendar_month, color: primaryColor, size: 20),
+                              ),
+                              child: Text(
+                                DateFormat.yMMMd().format(firstDate),
+                                style: TextStyle(color: AppTheme.textColor(ctx), fontSize: 15),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(24),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 0;
+                        final inst = int.tryParse(installmentsStr) ?? 1;
+                        if (name.isNotEmpty && amt > 0 && inst > 0) {
+                          didAdd = true;
+                          HapticService.light();
+                          setState(() {
+                            _items.add(DebtItem(
+                              id: const Uuid().v4(),
+                              debtId: '',
+                              name: name,
+                              amount: amt,
+                              totalInstallments: inst,
+                              firstPaymentDate: firstDate,
+                              categoryId: selectedCategory?.id,
+                            ));
+                            _updateAmountFromItems();
+                          });
+                          Navigator.pop(ctx);
+                        }
+                      },
+                      child: const Text('Add to Plan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          },
         );
       },
     );

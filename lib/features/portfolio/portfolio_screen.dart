@@ -50,7 +50,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   final GlobalKey _headerKey = GlobalKey();
 
   // Add more tabs here in the future (e.g., 'Investments')
-  static const _tabs = ['Accounts', 'Goals', 'Debts', 'Planned', 'Incomes'];
+  static const _tabs = ['Accounts', 'Goals', 'Credit & IOUs', 'Planned', 'Incomes'];
 
   @override
   void initState() {

@@ -116,6 +116,8 @@ class _PaymentConfirmationSheetState
     final selectedCategory = _categoryById(categories, _selectedCategoryId);
     final selectedAccount = _accountById(accounts, _selectedAccountId);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -123,76 +125,44 @@ class _PaymentConfirmationSheetState
       child: Container(
         padding: EdgeInsets.fromLTRB(
           0,
-          12,
+          16,
           0,
-          MediaQuery.of(context).padding.bottom + 16,
+          MediaQuery.of(context).padding.bottom + 24,
         ),
         decoration: BoxDecoration(
           color: AppTheme.backgroundColor(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 40,
-              offset: const Offset(0, -10),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+              blurRadius: 32,
+              offset: const Offset(0, -8),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Handle ──
+            // ── Minimal Handle ──
             Container(
-              width: 40,
+              width: 48,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
+                color: AppTheme.dividerColor(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const Gap(16),
 
             // ── Title bar ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticService.light();
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppTheme.textLightColor(context),
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    widget.payment.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textLightColor(context),
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 40),
-                ],
+            Text(
+              widget.payment.title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textColor(context),
+                letterSpacing: -0.5,
               ),
             ),
             const Gap(24),

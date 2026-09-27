@@ -1,3 +1,5 @@
+import 'package:koin/core/models/debt_item.dart';
+
 enum InstallmentFrequency { weekly, biweekly, monthly, yearly }
 
 enum DebtType { owedToMe, iOwe }
@@ -16,6 +18,7 @@ class Debt {
   final String? categoryId; // Connected category for transactions
   final double currentAmount; // Derived from repayments and initial amount
   final int sortOrder; // Added for custom reordering
+  final List<DebtItem> items;
 
   Debt({
     required this.id,
@@ -31,6 +34,7 @@ class Debt {
     this.categoryId,
     this.currentAmount = 0.0,
     this.sortOrder = 0,
+    this.items = const [],
   });
 
   Debt copyWith({
@@ -47,6 +51,7 @@ class Debt {
     String? categoryId,
     double? currentAmount,
     int? sortOrder,
+    List<DebtItem>? items,
   }) {
     return Debt(
       id: id ?? this.id,
@@ -62,6 +67,7 @@ class Debt {
       categoryId: categoryId ?? this.categoryId,
       currentAmount: currentAmount ?? this.currentAmount,
       sortOrder: sortOrder ?? this.sortOrder,
+      items: items ?? this.items,
     );
   }
 
@@ -104,4 +110,75 @@ class Debt {
       sortOrder: map['sortOrder'] ?? 0,
     );
   }
+
+  double get remainingAmount => (amount - currentAmount).clamp(0.0, amount);
+
+  double get upcomingPaymentAmount {
+    if (items.isNotEmpty) {
+      double totalInstallment = 0;
+      final targetDate = nextDueDate;
+      for (var item in items) {
+        if (item.totalInstallments > 0) {
+           bool hasStarted = targetDate.year > item.firstPaymentDate.year || 
+                             (targetDate.year == item.firstPaymentDate.year && targetDate.month >= item.firstPaymentDate.month);
+           if (hasStarted) {
+               totalInstallment += item.amount / item.totalInstallments;
+           }
+        }
+      }
+      return remainingAmount < totalInstallment ? remainingAmount : totalInstallment;
+    }
+
+    if (totalInstallments > 0) {
+      final perInstallment = amount / totalInstallments;
+      return remainingAmount < perInstallment ? remainingAmount : perInstallment;
+    }
+    return remainingAmount;
+  }
+
+  DateTime get nextDueDate {
+    if (dueDate != null) return dueDate!;
+    if (totalInstallments <= 0) return startDate;
+
+    final singleInstallment = amount / totalInstallments;
+    final installmentsPaid = singleInstallment > 0
+        ? (currentAmount / singleInstallment).floor()
+        : 0;
+
+    DateTime next = startDate;
+    for (int i = 0; i < installmentsPaid; i++) {
+      switch (frequency) {
+        case InstallmentFrequency.weekly:
+          next = next.add(const Duration(days: 7));
+          break;
+        case InstallmentFrequency.biweekly:
+          next = next.add(const Duration(days: 14));
+          break;
+        case InstallmentFrequency.monthly:
+          int newYear = next.year;
+          int newMonth = next.month + 1;
+          if (newMonth > 12) {
+            newYear += (newMonth - 1) ~/ 12;
+            newMonth = ((newMonth - 1) % 12) + 1;
+          }
+          final daysInNewMonth = DateTime(newYear, newMonth + 1, 0).day;
+          final newDay =
+              startDate.day > daysInNewMonth ? daysInNewMonth : startDate.day;
+          next = DateTime(newYear, newMonth, newDay);
+          break;
+        case InstallmentFrequency.yearly:
+          final isLeapDay = startDate.month == 2 && startDate.day == 29;
+          final targetYear = next.year + 1;
+          final isTargetLeapYear =
+              (targetYear % 4 == 0 && targetYear % 100 != 0) ||
+                  (targetYear % 400 == 0);
+          final newDay =
+              (isLeapDay && !isTargetLeapYear) ? 28 : startDate.day;
+          next = DateTime(targetYear, startDate.month, newDay);
+          break;
+      }
+    }
+    return next;
+  }
 }
+

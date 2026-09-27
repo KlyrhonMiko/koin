@@ -80,7 +80,7 @@ class DebtsTab extends ConsumerWidget {
                             .fadeIn(duration: 220.ms),
                         const SizedBox(height: 24),
                         Text(
-                              'No debts or loans',
+                              'No credit or IOUs',
                               style: TextStyle(
                                 color: AppTheme.textColor(context),
                                 fontSize: 20,
@@ -98,7 +98,7 @@ class DebtsTab extends ConsumerWidget {
                             .fadeIn(duration: 200.ms, delay: 100.ms),
                         const SizedBox(height: 8),
                         Text(
-                              'Keep track of money you owe\nor money owed to you.',
+                              'Track BNPL, credit cards, and\nmoney you owe or are owed.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: AppTheme.textLightColor(context),
@@ -146,7 +146,7 @@ class DebtsTab extends ConsumerWidget {
                                     color: Colors.white,
                                   ),
                                   label: const Text(
-                                    'Add Your First Debt',
+                                    'Add Your First Account',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,
@@ -440,7 +440,7 @@ class DebtsTab extends ConsumerWidget {
             ),
             const Gap(10),
             Text(
-              'Add New Debt',
+              'Add Credit / IOU',
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
                 fontWeight: FontWeight.w600,
@@ -460,10 +460,10 @@ class DebtsTab extends ConsumerWidget {
   ) async {
     return await ConfirmationSheet.show(
       context: context,
-      title: 'Delete Debt?',
+      title: 'Delete Credit/IOU?',
       description:
-          'Are you sure you want to delete this debt with "${debt.personName}"? This action cannot be undone.',
-      confirmLabel: 'Delete Debt',
+          'Are you sure you want to delete "${debt.personName}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
       confirmColor: AppTheme.expenseColor(context),
       icon: Icons.delete_outline_rounded,
       isDanger: true,
