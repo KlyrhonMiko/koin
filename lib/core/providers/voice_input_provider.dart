@@ -116,13 +116,13 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
       onResult: (result) {
         state = state.copyWith(lastWords: result.recognizedWords);
       },
-      localeId: preferredLocaleId,
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 5),
       listenOptions: SpeechListenOptions(
         listenMode: ListenMode.dictation,
         partialResults: true,
         cancelOnError: true,
+        localeId: preferredLocaleId,
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 5),
       ),
     );
   }
