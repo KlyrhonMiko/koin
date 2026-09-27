@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
@@ -80,8 +81,8 @@ class ReportService {
       ]);
     }
 
-    String csv = const ListToCsvConverter().convert(rows);
-    return Uint8List.fromList(csv.codeUnits);
+    final String csvContent = csv.encode(rows);
+    return Uint8List.fromList(utf8.encode(csvContent));
   }
 
   static Future<Uint8List> generatePDF({

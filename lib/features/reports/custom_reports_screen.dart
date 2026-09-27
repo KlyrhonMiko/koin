@@ -763,7 +763,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         extension = 'csv';
       }
 
-      final String? outputPath = await FilePicker.platform.saveFile(
+      final Uri? outputUri = await FilePicker.saveFile(
         dialogTitle: 'Select report destination',
         fileName: defaultFileName,
         type: FileType.custom,
@@ -771,22 +771,25 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         bytes: bytes,
       );
 
-      if (outputPath == null) {
+      if (outputUri == null) {
         if (mounted) {
           setState(() => _isExporting = false);
         }
         return;
       }
 
-      // On Desktop, FilePicker only returns the path, so we must write manually.
-      // On Mobile (Android/iOS), providing bytes to saveFile already saves the file.
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        final File file = File(outputPath);
-        await file.writeAsBytes(bytes);
+      // Ensure file writing if on desktop or local file scheme
+      if (outputUri.scheme == 'file') {
+        final File file = File(outputUri.toFilePath());
+        if (!await file.exists() || await file.length() == 0) {
+          await file.writeAsBytes(bytes);
+        }
       }
 
       if (!context.mounted) return;
-      final String fileName = outputPath.split('/').last.split('\\').last;
+      final String fileName = outputUri.pathSegments.isNotEmpty
+          ? outputUri.pathSegments.last
+          : defaultFileName;
       KoinSnackBar.success(context, 'Report Saved', subtitle: fileName);
     } catch (e) {
       debugPrint('Export error: $e');

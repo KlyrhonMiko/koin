@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:koin/core/database_helper.dart';
 import 'dart:io';
 import 'package:koin/core/models/currency.dart';
@@ -537,67 +539,84 @@ class SettingsScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final success = await DatabaseHelper.instance.restoreDatabase(path);
-
-        if (success) {
-          // Restore settings from db to SharedPreferences
-          final settingsFromDb = await DatabaseHelper.instance
-              .loadSettingsFromDb();
-          final prefs = ref.read(sharedPreferencesProvider);
-          if (settingsFromDb.containsKey('currency_code')) {
-            await prefs.setString(
-              'currency_code',
-              settingsFromDb['currency_code']!,
-            );
-          }
-          if (settingsFromDb.containsKey('theme_color') &&
-              settingsFromDb['theme_color']!.isNotEmpty) {
-            await prefs.setInt(
-              'theme_color',
-              int.parse(settingsFromDb['theme_color']!),
-            );
-          }
-          if (settingsFromDb.containsKey('theme_mode') &&
-              settingsFromDb['theme_mode']!.isNotEmpty) {
-            await prefs.setInt(
-              'theme_mode',
-              int.parse(settingsFromDb['theme_mode']!),
-            );
-          }
-          if (settingsFromDb.containsKey('analysis_filter_index') &&
-              settingsFromDb['analysis_filter_index']!.isNotEmpty) {
-            await prefs.setInt(
-              'analysis_filter_index',
-              int.parse(settingsFromDb['analysis_filter_index']!),
-            );
+      final file = await FilePicker.pickFile();
+      if (file != null) {
+        String? path = file.path;
+        File? tempFile;
+        try {
+          if (path == null) {
+            final bytes = await file.readAsBytes();
+            final tempDir = await getTemporaryDirectory();
+            tempFile = File(p.join(tempDir.path, file.name));
+            await tempFile.writeAsBytes(bytes);
+            path = tempFile.path;
           }
 
-          if (!context.mounted) return;
+          final success = await DatabaseHelper.instance.restoreDatabase(path);
 
-          ref.invalidate(settingsProvider);
-          ref.invalidate(transactionProvider);
-          ref.invalidate(accountProvider);
-          ref.invalidate(categoriesProvider);
-          ref.invalidate(savingsGoalsProvider);
-          ref.invalidate(debtsProvider);
-          ref.invalidate(plannedPaymentProvider);
-          // ignore: unused_result
-          ref.refresh(dashboardStatsProvider);
-          KoinSnackBar.success(
-            context,
-            'Data restored successfully!',
-            subtitle: 'App will now refresh with your data',
-          );
-        } else {
-          if (!context.mounted) return;
-          KoinSnackBar.error(
-            context,
-            'Failed to restore data.',
-            subtitle: 'The backup file might be corrupted',
-          );
+          if (success) {
+            // Restore settings from db to SharedPreferences
+            final settingsFromDb = await DatabaseHelper.instance
+                .loadSettingsFromDb();
+            final prefs = ref.read(sharedPreferencesProvider);
+            if (settingsFromDb.containsKey('currency_code')) {
+              await prefs.setString(
+                'currency_code',
+                settingsFromDb['currency_code']!,
+              );
+            }
+            if (settingsFromDb.containsKey('theme_color') &&
+                settingsFromDb['theme_color']!.isNotEmpty) {
+              await prefs.setInt(
+                'theme_color',
+                int.parse(settingsFromDb['theme_color']!),
+              );
+            }
+            if (settingsFromDb.containsKey('theme_mode') &&
+                settingsFromDb['theme_mode']!.isNotEmpty) {
+              await prefs.setInt(
+                'theme_mode',
+                int.parse(settingsFromDb['theme_mode']!),
+              );
+            }
+            if (settingsFromDb.containsKey('analysis_filter_index') &&
+                settingsFromDb['analysis_filter_index']!.isNotEmpty) {
+              await prefs.setInt(
+                'analysis_filter_index',
+                int.parse(settingsFromDb['analysis_filter_index']!),
+              );
+            }
+
+            if (!context.mounted) return;
+
+            ref.invalidate(settingsProvider);
+            ref.invalidate(transactionProvider);
+            ref.invalidate(accountProvider);
+            ref.invalidate(categoriesProvider);
+            ref.invalidate(savingsGoalsProvider);
+            ref.invalidate(debtsProvider);
+            ref.invalidate(plannedPaymentProvider);
+            // ignore: unused_result
+            ref.refresh(dashboardStatsProvider);
+            KoinSnackBar.success(
+              context,
+              'Data restored successfully!',
+              subtitle: 'App will now refresh with your data',
+            );
+          } else {
+            if (!context.mounted) return;
+            KoinSnackBar.error(
+              context,
+              'Failed to restore data.',
+              subtitle: 'The backup file might be corrupted',
+            );
+          }
+        } finally {
+          if (tempFile != null && await tempFile.exists()) {
+            try {
+              await tempFile.delete();
+            } catch (_) {}
+          }
         }
       }
     } catch (e) {
