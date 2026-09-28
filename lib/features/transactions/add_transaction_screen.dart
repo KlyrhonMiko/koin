@@ -57,6 +57,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   String? _selectedCategoryId;
   String? _selectedAccountId;
   String? _selectedToAccountId;
+  bool _isTransferFeePercentage = false;
   String _currentExpression = '';
 
   late AnimationController _colorAnimController;
@@ -147,13 +148,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   void _onAmountChanged() {
     _onNoteChanged();
-    if (_selectedType == TransactionType.transfer && _selectedAccountId != null) {
-      final accounts = ref.read(accountProvider).value ?? [];
-      final acc = _accountById(accounts, _selectedAccountId);
-      if (acc != null && acc.isTransferFeePercentage) {
-        _updateTransferFee(acc);
-      }
-    }
   }
   
   void _updateTransferFee(Account? account) {
@@ -162,21 +156,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
     
+    if (mounted) {
+      setState(() {
+        _isTransferFeePercentage = account.isTransferFeePercentage;
+      });
+    }
+
     if (account.transferFeeAmount > 0) {
-      if (account.isTransferFeePercentage) {
-        final double amount = double.tryParse(_amountController.text) ?? 0.0;
-        final fee = amount * (account.transferFeeAmount / 100);
-        if (fee == fee.truncateToDouble()) {
-          _feeController.text = fee.toInt().toString();
-        } else {
-          _feeController.text = fee.toStringAsFixed(2);
-        }
+      if (account.transferFeeAmount == account.transferFeeAmount.truncateToDouble()) {
+        _feeController.text = account.transferFeeAmount.toInt().toString();
       } else {
-        if (account.transferFeeAmount == account.transferFeeAmount.truncateToDouble()) {
-          _feeController.text = account.transferFeeAmount.toInt().toString();
-        } else {
-          _feeController.text = account.transferFeeAmount.toString();
-        }
+        _feeController.text = account.transferFeeAmount.toString();
       }
     } else {
       _feeController.text = '';
@@ -270,33 +260,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
 
-    final newTransaction = AppTransaction(
-      id: widget.editingTransaction?.id ?? const Uuid().v4(),
-      note: _noteController.text,
-      amount: amount,
-      date: _selectedDate,
-      type: _selectedType,
-      categoryId: isTransfer ? 'cat_others' : _selectedCategoryId!,
-      accountId: _selectedAccountId!,
-      toAccountId: isTransfer ? _selectedToAccountId : null,
-    );
-
-    // Feed the ultimate categorization decision back into the engine
-    final signedAmount = _selectedType == TransactionType.expense ? -amount : amount;
-    _categorizationEngine.processFeedback(
-      rawText: _noteController.text,
-      amount: signedAmount,
-      originId: _selectedAccountId!,
-      destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
-    );
-
+    double transferAmount = amount;
+    double feeAmount = 0.0;
     AppTransaction? feeTransaction;
+
     if (isTransfer) {
-      final feeAmount = double.tryParse(_feeController.text) ?? 0.0;
+      final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
+      feeAmount = _isTransferFeePercentage 
+          ? (amount * (enteredFee / 100))
+          : enteredFee;
+      
+      if (feeAmount >= amount) {
+        HapticService.error();
+        _showErrorSnackbar(
+          'Invalid fee amount',
+          subtitle: 'The transfer fee cannot be greater than or equal to the total amount',
+        );
+        return;
+      }
+      
       if (feeAmount > 0) {
+        transferAmount = amount - feeAmount;
         feeTransaction = AppTransaction(
           id: const Uuid().v4(),
-          note: 'Transfer Fee: ${_noteController.text.isNotEmpty ? _noteController.text : "Transfer"}',
+          note: _noteController.text.isNotEmpty ? 'Transfer Fee: ${_noteController.text}' : 'Transfer Fee',
           amount: feeAmount,
           date: _selectedDate,
           type: TransactionType.expense,
@@ -305,6 +292,26 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         );
       }
     }
+
+    final newTransaction = AppTransaction(
+      id: widget.editingTransaction?.id ?? const Uuid().v4(),
+      note: _noteController.text,
+      amount: transferAmount,
+      date: _selectedDate,
+      type: _selectedType,
+      categoryId: isTransfer ? 'cat_others' : _selectedCategoryId!,
+      accountId: _selectedAccountId!,
+      toAccountId: isTransfer ? _selectedToAccountId : null,
+    );
+
+    // Feed the ultimate categorization decision back into the engine
+    final signedAmount = _selectedType == TransactionType.expense ? -transferAmount : transferAmount;
+    _categorizationEngine.processFeedback(
+      rawText: _noteController.text,
+      amount: signedAmount,
+      originId: _selectedAccountId!,
+      destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
+    );
 
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
@@ -968,7 +975,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      Icons.payments_rounded,
+                      _isTransferFeePercentage ? Icons.percent_rounded : Icons.payments_rounded,
                       size: 17,
                       color: AppTheme.textLightColor(context),
                     ),
@@ -984,7 +991,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         color: AppTheme.textColor(context),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Transfer Fee (Optional)',
+                        hintText: _isTransferFeePercentage ? 'Percentage Fee (e.g. 0.5)' : 'Fixed Fee (e.g. 10.00)',
                         hintStyle: TextStyle(
                           color: AppTheme.textLightColor(
                             context,
@@ -998,6 +1005,81 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         filled: false,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.dividerColor(context).withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.all(3),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    if (_isTransferFeePercentage) {
+                                      setState(() => _isTransferFeePercentage = false);
+                                      HapticService.light();
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: !_isTransferFeePercentage ? AppTheme.surfaceColor(context) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: !_isTransferFeePercentage ? [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        )
+                                      ] : null,
+                                    ),
+                                    child: Text(
+                                      'Fixed',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: !_isTransferFeePercentage ? FontWeight.w700 : FontWeight.w500,
+                                        color: !_isTransferFeePercentage ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (!_isTransferFeePercentage) {
+                                      setState(() => _isTransferFeePercentage = true);
+                                      HapticService.light();
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: _isTransferFeePercentage ? AppTheme.surfaceColor(context) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: _isTransferFeePercentage ? [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        )
+                                      ] : null,
+                                    ),
+                                    child: Text(
+                                      '%',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: _isTransferFeePercentage ? FontWeight.w700 : FontWeight.w500,
+                                        color: _isTransferFeePercentage ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

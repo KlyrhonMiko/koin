@@ -313,12 +313,13 @@ class TransactionsListScreen extends ConsumerWidget {
                                                 ? Icons.arrow_downward_rounded
                                                 : Icons.arrow_upward_rounded));
 
-                                final categoryName =
-                                    categories
+                                final categoryName = isTransfer 
+                                    ? 'Transfer'
+                                    : (categories
                                         .where((c) => c.id == tx.categoryId)
                                         .map((c) => c.name)
                                         .firstOrNull ??
-                                    'Others';
+                                    'Others');
 
                                 final accountName = accountsAsync.when(
                                   data: (accounts) =>
@@ -330,13 +331,31 @@ class TransactionsListScreen extends ConsumerWidget {
                                   loading: () => '...',
                                   error: (error, stack) => 'Error',
                                 );
+                                
+                                final toAccountName = isTransfer 
+                                    ? accountsAsync.when(
+                                        data: (accounts) =>
+                                            accounts
+                                                .where((a) => a.id == tx.toAccountId)
+                                                .map((a) => a.name)
+                                                .firstOrNull ??
+                                            'Account',
+                                        loading: () => '...',
+                                        error: (error, stack) => 'Error',
+                                      )
+                                    : null;
 
                                 final displayTitle = tx.note.isEmpty
                                     ? categoryName
                                     : tx.note;
-                                final displaySubtitle = tx.note.isEmpty
-                                    ? accountName
-                                    : '$categoryName • $accountName';
+                                
+                                final displaySubtitle = isTransfer
+                                    ? (tx.note.isEmpty 
+                                        ? '$accountName → $toAccountName' 
+                                        : 'Transfer • $accountName → $toAccountName')
+                                    : (tx.note.isEmpty
+                                        ? accountName
+                                        : '$categoryName • $accountName');
 
                                 final listItem = PressableScale(
                                   onTap: () {
