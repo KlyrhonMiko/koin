@@ -52,6 +52,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   late TabController _tabController;
   List<DebtItem> _items = [];
   Timer? _debounceTimer;
+  int _autoCatKey = 0;
 
   @override
   void initState() {
@@ -125,13 +126,16 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         final categories = ref.read(categoriesProvider).value ?? [];
         final matchedCat = categories.where((c) => c.id == result.destinationId).firstOrNull;
         if (matchedCat != null) {
-          HapticService.light();
-          setState(() {
-            _selectedCategoryId = matchedCat.id;
-            if (_selectedAccountId == null && result.originId.isNotEmpty) {
-              _selectedAccountId = result.originId;
-            }
-          });
+          if (_selectedCategoryId != matchedCat.id || (_selectedAccountId == null && result.originId.isNotEmpty)) {
+            HapticService.light();
+            setState(() {
+              if (_selectedCategoryId != matchedCat.id) _autoCatKey++;
+              _selectedCategoryId = matchedCat.id;
+              if (_selectedAccountId == null && result.originId.isNotEmpty) {
+                _selectedAccountId = result.originId;
+              }
+            });
+          }
         }
       }
     } catch (_) {}
@@ -342,38 +346,66 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                         ),
                         const Gap(12),
                         // Category Picker (Optional)
-                        _buildSelectionRow(
-                          context,
-                          fallbackIcon: Icons.category_rounded,
-                          label: 'Link to Category (Optional)',
-                          selectedName: categoriesState.when(
-                            data: (cats) => cats
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.name,
-                            loading: () => null,
-                            error: (_, _) => null,
-                          ),
-                          selectedColor: categoriesState.when(
-                            data: (cats) => cats
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.color,
-                            loading: () => null,
-                            error: (_, _) => null,
-                          ),
-                          selectedIconCodePoint: categoriesState.when(
-                            data: (cats) => cats
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.iconCodePoint,
-                            loading: () => null,
-                            error: (_, _) => null,
-                          ),
-                          placeholder: 'Select Category',
-                          onTap: () => categoriesState.whenData(
-                            (cats) => _openCategoryPicker(context, cats),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            Widget child = _buildSelectionRow(
+                              context,
+                              fallbackIcon: Icons.category_rounded,
+                              label: 'Link to Category (Optional)',
+                              selectedName: categoriesState.when(
+                                data: (cats) => cats
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.name,
+                                loading: () => null,
+                                error: (_, _) => null,
+                              ),
+                              selectedColor: categoriesState.when(
+                                data: (cats) => cats
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.color,
+                                loading: () => null,
+                                error: (_, _) => null,
+                              ),
+                              selectedIconCodePoint: categoriesState.when(
+                                data: (cats) => cats
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.iconCodePoint,
+                                loading: () => null,
+                                error: (_, _) => null,
+                              ),
+                              placeholder: 'Select Category',
+                              onTap: () => categoriesState.whenData(
+                                (cats) => _openCategoryPicker(context, cats),
+                              ),
+                            );
+
+                            if (_autoCatKey > 0) {
+                              child = child
+                                  .animate(key: ValueKey(_autoCatKey))
+                                  .shimmer(
+                                    duration: 400.ms,
+                                    color: AppTheme.primaryColor(context)
+                                        .withValues(alpha: 0.2),
+                                  )
+                                  .scale(
+                                    duration: 150.ms,
+                                    curve: Curves.easeOut,
+                                    begin: const Offset(1, 1),
+                                    end: const Offset(1.02, 1.02),
+                                  )
+                                  .then()
+                                  .scale(
+                                    duration: 250.ms,
+                                    curve: Curves.easeOutBack,
+                                    begin: const Offset(1.02, 1.02),
+                                    end: const Offset(1, 1),
+                                  );
+                            }
+                            return child;
+                          },
                         ),
                         const Gap(12),
                         // Notes Input

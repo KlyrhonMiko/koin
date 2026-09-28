@@ -12,6 +12,7 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 Future<DebtItem?> showAddPurchaseSheet({
   required BuildContext context,
@@ -31,6 +32,7 @@ Future<DebtItem?> showAddPurchaseSheet({
 
   Timer? debounceTimer;
   final engine = CategorizationEngine();
+  int autoCatKey = 0;
 
   void runAutoCategorize(void Function(void Function()) setSheetState) {
     debounceTimer?.cancel();
@@ -56,10 +58,13 @@ Future<DebtItem?> showAddPurchaseSheet({
               .where((c) => c.id == result.destinationId && c.type == targetType)
               .firstOrNull;
           if (matched != null) {
-            HapticService.light();
-            setSheetState(() {
-              selectedCategory = matched;
-            });
+            if (selectedCategory?.id != matched.id) {
+              HapticService.light();
+              setSheetState(() {
+                autoCatKey++;
+                selectedCategory = matched;
+              });
+            }
           }
         }
       } catch (_) {}
@@ -149,39 +154,66 @@ Future<DebtItem?> showAddPurchaseSheet({
                       },
                     ),
                     const Gap(16),
-                    _buildSelectionRow(
-                      ctx,
-                      fallbackIcon: Icons.category_rounded,
-                      label: 'Category (Optional)',
-                      selectedName: selectedCategory?.name,
-                      selectedColor: selectedCategory?.color,
-                      selectedIconCodePoint: selectedCategory?.iconCodePoint,
-                      placeholder: 'Select Category',
-                      onTap: () async {
-                        final categoryType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-                        final filtered = categories.where((c) => c.type == categoryType).toList();
+                    Builder(
+                      builder: (ctx) {
+                        Widget child = _buildSelectionRow(
+                          ctx,
+                          fallbackIcon: Icons.category_rounded,
+                          label: 'Category (Optional)',
+                          selectedName: selectedCategory?.name,
+                          selectedColor: selectedCategory?.color,
+                          selectedIconCodePoint: selectedCategory?.iconCodePoint,
+                          placeholder: 'Select Category',
+                          onTap: () async {
+                            final categoryType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+                            final filtered = categories.where((c) => c.type == categoryType).toList();
 
-                        final id = await showSelectSheet<String>(
-                          context: ctx,
-                          title: 'Category',
-                          subtitle: debtType == DebtType.owedToMe
-                              ? 'Link an income category'
-                              : 'Link an expense category',
-                          itemCount: filtered.length,
-                          itemBuilder: (c, index) {
-                            final cat = filtered[index];
-                            return SelectSheetItem(
-                              name: cat.name,
-                              accentColor: cat.color,
-                              iconCodePoint: cat.iconCodePoint,
-                              selected: cat.id == selectedCategory?.id,
-                              onTap: () => Navigator.pop(c, cat.id),
+                            final id = await showSelectSheet<String>(
+                              context: ctx,
+                              title: 'Category',
+                              subtitle: debtType == DebtType.owedToMe
+                                  ? 'Link an income category'
+                                  : 'Link an expense category',
+                              itemCount: filtered.length,
+                              itemBuilder: (c, index) {
+                                final cat = filtered[index];
+                                return SelectSheetItem(
+                                  name: cat.name,
+                                  accentColor: cat.color,
+                                  iconCodePoint: cat.iconCodePoint,
+                                  selected: cat.id == selectedCategory?.id,
+                                  onTap: () => Navigator.pop(c, cat.id),
+                                );
+                              },
                             );
+                            if (id != null) {
+                              setSheetState(() => selectedCategory = categories.firstWhere((c) => c.id == id));
+                            }
                           },
                         );
-                        if (id != null) {
-                          setSheetState(() => selectedCategory = categories.firstWhere((c) => c.id == id));
+
+                        if (autoCatKey > 0) {
+                          child = child
+                              .animate(key: ValueKey(autoCatKey))
+                              .shimmer(
+                                duration: 400.ms,
+                                color: primaryColor.withValues(alpha: 0.2),
+                              )
+                              .scale(
+                                duration: 150.ms,
+                                curve: Curves.easeOut,
+                                begin: const Offset(1, 1),
+                                end: const Offset(1.02, 1.02),
+                              )
+                              .then()
+                              .scale(
+                                duration: 250.ms,
+                                curve: Curves.easeOutBack,
+                                begin: const Offset(1.02, 1.02),
+                                end: const Offset(1, 1),
+                              );
                         }
+                        return child;
                       },
                     ),
                     const Gap(16),

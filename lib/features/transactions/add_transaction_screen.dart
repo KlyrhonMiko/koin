@@ -27,6 +27,7 @@ import 'package:koin/core/utils/voice_command_parser.dart';
 import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
 import 'package:koin/core/widgets/select_sheet.dart';
 import 'package:koin/core/widgets/account_item.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
@@ -59,6 +60,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   String? _selectedToAccountId;
   bool _isTransferFeePercentage = false;
   String _currentExpression = '';
+  int _autoCatKey = 0;
 
   late AnimationController _colorAnimController;
   late AnimationController _pulseController;
@@ -198,20 +200,38 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       );
 
       if (result != null && mounted) {
-        HapticService.light();
-        setState(() {
-          _selectedType = result.type;
-          if (result.type == TransactionType.transfer) {
-            _selectedToAccountId = result.destinationId;
-            _selectedAccountId = result.originId;
-            _selectedCategoryId = null;
-          } else {
-            _selectedCategoryId = result.destinationId;
-            _selectedAccountId = result.originId;
-            _selectedToAccountId = null;
+        bool changed = false;
+        bool categoryChanged = false;
+        if (result.type != _selectedType) changed = true;
+        
+        if (result.type == TransactionType.transfer) {
+          if (_selectedToAccountId != result.destinationId) changed = true;
+          if (_selectedAccountId != result.originId) changed = true;
+        } else {
+          if (_selectedCategoryId != result.destinationId) {
+            changed = true;
+            categoryChanged = true;
           }
-        });
-        _onTypeChanged(_selectedType, ref.read(categoriesProvider).value ?? []);
+          if (_selectedAccountId != result.originId) changed = true;
+        }
+
+        if (changed) {
+          HapticService.light();
+          setState(() {
+            if (categoryChanged) _autoCatKey++;
+            _selectedType = result.type;
+            if (result.type == TransactionType.transfer) {
+              _selectedToAccountId = result.destinationId;
+              _selectedAccountId = result.originId;
+              _selectedCategoryId = null;
+            } else {
+              _selectedCategoryId = result.destinationId;
+              _selectedAccountId = result.originId;
+              _selectedToAccountId = null;
+            }
+          });
+          _onTypeChanged(_selectedType, ref.read(categoriesProvider).value ?? []);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1119,53 +1139,81 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ? Column(
                         key: const ValueKey('cat_section'),
                         children: [
-                          _buildSelectionRow(
-                            context,
-                            fallbackIcon: Icons.category_rounded,
-                            label: 'Category',
-                            selectedName: _categoryById(
-                              categories,
-                              _selectedCategoryId,
-                            )?.name,
-                            selectedColor: _categoryById(
-                              categories,
-                              _selectedCategoryId,
-                            )?.color,
-                            selectedIconCodePoint: _categoryById(
-                              categories,
-                              _selectedCategoryId,
-                            )?.iconCodePoint,
-                            placeholder: 'Select category',
-                            onTap: () =>
-                                _openCategoryPicker(context, categories),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceLightColor(context),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: IconButton(
-                                tooltip: 'Manage categories',
-                                onPressed: () {
-                                  HapticService.light();
-                                  Navigator.push(
-                                    context,
-                                    SlideUpRoute(
-                                      page: const CategoryManagerScreen(),
+                          Builder(
+                            builder: (context) {
+                              Widget child = _buildSelectionRow(
+                                context,
+                                fallbackIcon: Icons.category_rounded,
+                                label: 'Category',
+                                selectedName: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.name,
+                                selectedColor: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.color,
+                                selectedIconCodePoint: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.iconCodePoint,
+                                placeholder: 'Select category',
+                                onTap: () =>
+                                    _openCategoryPicker(context, categories),
+                                trailing: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceLightColor(context),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: IconButton(
+                                    tooltip: 'Manage categories',
+                                    onPressed: () {
+                                      HapticService.light();
+                                      Navigator.push(
+                                        context,
+                                        SlideUpRoute(
+                                          page: const CategoryManagerScreen(),
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      Icons.tune_rounded,
+                                      size: 18,
+                                      color: AppTheme.textLightColor(context),
                                     ),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.tune_rounded,
-                                  size: 18,
-                                  color: AppTheme.textLightColor(context),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
                                 ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 36,
-                                  minHeight: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
+                              );
+
+                              if (_autoCatKey > 0) {
+                                child = child
+                                    .animate(key: ValueKey(_autoCatKey))
+                                    .shimmer(
+                                      duration: 400.ms,
+                                      color: AppTheme.primaryColor(context)
+                                          .withValues(alpha: 0.2),
+                                    )
+                                    .scale(
+                                      duration: 150.ms,
+                                      curve: Curves.easeOut,
+                                      begin: const Offset(1, 1),
+                                      end: const Offset(1.02, 1.02),
+                                    )
+                                    .then()
+                                    .scale(
+                                      duration: 250.ms,
+                                      curve: Curves.easeOutBack,
+                                      begin: const Offset(1.02, 1.02),
+                                      end: const Offset(1, 1),
+                                    );
+                              }
+                              return child;
+                            },
                           ),
                           _buildDivider(context),
                         ],

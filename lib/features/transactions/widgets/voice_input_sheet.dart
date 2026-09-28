@@ -37,6 +37,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   ParsedTransactionData? _parsedData;
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
+  int _autoCatKey = 0;
 
   @override
   void initState() {
@@ -114,7 +115,13 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             cat = null;
           } else {
             try { acc = accounts.firstWhere((a) => a.id == mlResult.originId); } catch (_) {}
-            try { cat = categories.firstWhere((c) => c.id == mlResult.destinationId); } catch (_) {}
+            try { 
+              final newCat = categories.firstWhere((c) => c.id == mlResult.destinationId);
+              if (newCat != cat) {
+                cat = newCat;
+                _autoCatKey++;
+              }
+            } catch (_) {}
             toAcc = null;
           }
           
@@ -786,57 +793,85 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
           // Category row (only if not transfer)
           if (data.type != TransactionType.transfer) ...[
-            _buildPreviewRow(
-              context,
-              onTap: _editCategory,
-              icon: data.category != null
-                  ? IconUtils.getIcon(data.category!.iconCodePoint)
-                  : Icons.category_rounded,
-              iconColor: data.category?.color,
-              label: 'Category',
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (data.category != null) ...[
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: data.category!.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      data.category!.name,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-                  ] else
-                    Text(
-                      'Not detected',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+            Builder(
+              builder: (context) {
+                Widget child = _buildPreviewRow(
+                  context,
+                  onTap: _editCategory,
+                  icon: data.category != null
+                      ? IconUtils.getIcon(data.category!.iconCodePoint)
+                      : Icons.category_rounded,
+                  iconColor: data.category?.color,
+                  label: 'Category',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (data.category != null) ...[
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: data.category!.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const Gap(8),
+                        Text(
+                          data.category!.name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textColor(context),
+                          ),
+                        ),
+                      ] else
+                        Text(
+                          'Not detected',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textLightColor(
+                              context,
+                            ).withValues(alpha: 0.5),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      const Gap(8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
                         color: AppTheme.textLightColor(
                           context,
-                        ).withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
+                        ).withValues(alpha: 0.3),
                       ),
-                    ),
-                  const Gap(8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.3),
+                    ],
                   ),
-                ],
-              ),
+                );
+
+                if (_autoCatKey > 0) {
+                  child = child
+                      .animate(key: ValueKey(_autoCatKey))
+                      .shimmer(
+                        duration: 400.ms,
+                        color: AppTheme.primaryColor(context)
+                            .withValues(alpha: 0.2),
+                      )
+                      .scale(
+                        duration: 150.ms,
+                        curve: Curves.easeOut,
+                        begin: const Offset(1, 1),
+                        end: const Offset(1.02, 1.02),
+                      )
+                      .then()
+                      .scale(
+                        duration: 250.ms,
+                        curve: Curves.easeOutBack,
+                        begin: const Offset(1.02, 1.02),
+                        end: const Offset(1, 1),
+                      );
+                }
+                return child;
+              },
             ),
             _buildPreviewDivider(context),
           ],

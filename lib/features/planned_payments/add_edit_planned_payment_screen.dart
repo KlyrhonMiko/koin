@@ -50,6 +50,7 @@ class _AddEditPlannedPaymentScreenState
   PaymentFrequency _selectedFrequency = PaymentFrequency.flexible;
   bool _isAutoProcess = false;
   Timer? _debounceTimer;
+  int _autoCatKey = 0;
 
   @override
   void initState() {
@@ -99,13 +100,16 @@ class _AddEditPlannedPaymentScreenState
           final categories = ref.read(categoriesProvider).value ?? [];
           final matchingCat = categories.where((c) => c.id == result.destinationId && c.type == TransactionType.expense).firstOrNull;
           if (matchingCat != null) {
-            HapticService.light();
-            setState(() {
-              _selectedCategoryId = matchingCat.id;
-              if (result.originId.isNotEmpty) {
-                _selectedAccountId = result.originId;
-              }
-            });
+            if (_selectedCategoryId != matchingCat.id || (_selectedAccountId != result.originId && result.originId.isNotEmpty)) {
+              HapticService.light();
+              setState(() {
+                if (_selectedCategoryId != matchingCat.id) _autoCatKey++;
+                _selectedCategoryId = matchingCat.id;
+                if (result.originId.isNotEmpty) {
+                  _selectedAccountId = result.originId;
+                }
+              });
+            }
           }
         }
       }
@@ -927,39 +931,67 @@ class _AddEditPlannedPaymentScreenState
                     Column(
                       children: [
                         // Category Picker
-                        _buildSelectionRow(
-                          context,
-                          fallbackIcon: Icons.category_rounded,
-                          label: 'Category',
-                          selectedName: categoriesState.when(
-                            data: (categories) => categories
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.name,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedColor: categoriesState.when(
-                            data: (categories) => categories
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.color,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedIconCodePoint: categoriesState.when(
-                            data: (categories) => categories
-                                .where((c) => c.id == _selectedCategoryId)
-                                .firstOrNull
-                                ?.iconCodePoint,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          placeholder: 'Select Category',
-                          onTap: () => categoriesState.whenData(
-                            (categories) =>
-                                _openCategoryPicker(context, categories),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            Widget child = _buildSelectionRow(
+                              context,
+                              fallbackIcon: Icons.category_rounded,
+                              label: 'Category',
+                              selectedName: categoriesState.when(
+                                data: (categories) => categories
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.name,
+                                loading: () => null,
+                                error: (_, stackTrace) => null,
+                              ),
+                              selectedColor: categoriesState.when(
+                                data: (categories) => categories
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.color,
+                                loading: () => null,
+                                error: (_, stackTrace) => null,
+                              ),
+                              selectedIconCodePoint: categoriesState.when(
+                                data: (categories) => categories
+                                    .where((c) => c.id == _selectedCategoryId)
+                                    .firstOrNull
+                                    ?.iconCodePoint,
+                                loading: () => null,
+                                error: (_, stackTrace) => null,
+                              ),
+                              placeholder: 'Select Category',
+                              onTap: () => categoriesState.whenData(
+                                (categories) =>
+                                    _openCategoryPicker(context, categories),
+                              ),
+                            );
+
+                            if (_autoCatKey > 0) {
+                              child = child
+                                  .animate(key: ValueKey(_autoCatKey))
+                                  .shimmer(
+                                    duration: 400.ms,
+                                    color: AppTheme.primaryColor(context)
+                                        .withValues(alpha: 0.2),
+                                  )
+                                  .scale(
+                                    duration: 150.ms,
+                                    curve: Curves.easeOut,
+                                    begin: const Offset(1, 1),
+                                    end: const Offset(1.02, 1.02),
+                                  )
+                                  .then()
+                                  .scale(
+                                    duration: 250.ms,
+                                    curve: Curves.easeOutBack,
+                                    begin: const Offset(1.02, 1.02),
+                                    end: const Offset(1, 1),
+                                  );
+                            }
+                            return child;
+                          },
                         ),
                         const Gap(12),
                         // Account Picker
