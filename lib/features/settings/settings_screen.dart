@@ -379,12 +379,11 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Column(children: children),
@@ -754,7 +753,7 @@ class SettingsScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Gap(24),
+            const SizedBox(height: 24),
             Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -773,7 +772,7 @@ class SettingsScreen extends ConsumerWidget {
                     size: 32,
                   ),
                 ),
-            const Gap(20),
+            const SizedBox(height: 20),
             Text(
                   title,
                   style: const TextStyle(
@@ -781,7 +780,7 @@ class SettingsScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-            const Gap(12),
+            const SizedBox(height: 12),
             Text(
                   message,
                   textAlign: TextAlign.center,
@@ -791,7 +790,7 @@ class SettingsScreen extends ConsumerWidget {
                     height: 1.5,
                   ),
                 ),
-            const Gap(32),
+            const SizedBox(height: 32),
             Row(
                   children: [
                     Expanded(
@@ -893,11 +892,6 @@ class SettingsScreen extends ConsumerWidget {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.08)
-                          : AppTheme.surfaceLightColor(context),
                       borderRadius: BorderRadius.circular(16),
                       border: isSelected
                           ? Border.all(
@@ -907,7 +901,11 @@ class SettingsScreen extends ConsumerWidget {
                           : Border.all(color: AppTheme.dividerColor(context)),
                     ),
                     child: Material(
-                      color: Colors.transparent,
+                      color: isSelected
+                          ? AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.08)
+                          : AppTheme.surfaceLightColor(context),
                       borderRadius: BorderRadius.circular(16),
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
@@ -1052,7 +1050,7 @@ class SettingsScreen extends ConsumerWidget {
                             isSelected: currentMode == ThemeMode.system,
                           ),
                 ),
-                const Gap(12),
+                const SizedBox(width: 12),
                 Expanded(
                   child:
                       _buildThemeOption(
@@ -1064,7 +1062,7 @@ class SettingsScreen extends ConsumerWidget {
                             isSelected: currentMode == ThemeMode.light,
                           ),
                 ),
-                const Gap(12),
+                const SizedBox(width: 12),
                 Expanded(
                   child:
                       _buildThemeOption(

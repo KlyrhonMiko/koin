@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/utils/icon_utils.dart';
 
 class PremiumSelectionSheet {
   static Future<T?> show<T>({
@@ -173,7 +174,7 @@ class PremiumSheetItem extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                IconData(iconCodePoint, fontFamily: 'MaterialIcons'),
+                IconUtils.getIcon(iconCodePoint),
                 color: accentColor,
                 size: 20,
               ),

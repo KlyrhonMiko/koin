@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/bank_templates.dart';
 import 'package:koin/core/providers/account_provider.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
@@ -70,8 +71,18 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     final isEditing = widget.account != null;
     nameController = TextEditingController(text: widget.account?.name)
       ..addListener(_onInputChanged);
+      
+    String amountText = '';
+    if (isEditing) {
+      final dashboardStats = ref.read(dashboardStatsProvider);
+      double currentBalance = dashboardStats.accountBalances[widget.account!.id] ?? widget.account!.initialBalance;
+      amountText = currentBalance == currentBalance.truncateToDouble() 
+          ? currentBalance.toInt().toString() 
+          : currentBalance.toString();
+    }
+    
     balanceController = TextEditingController(
-      text: isEditing ? widget.account!.initialBalance.toString() : '',
+      text: amountText,
     )..addListener(_onInputChanged);
     selectedIcon =
         widget.account?.iconCodePoint ??
@@ -248,10 +259,19 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final cardHex = selectedCardColor == null
           ? null
           : '#${selectedCardColor!.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+          
+      double newInitialBalance = double.tryParse(balanceController.text) ?? 0.0;
+      if (isEditing) {
+        final dashboardStats = ref.read(dashboardStatsProvider);
+        final currentBalance = dashboardStats.accountBalances[widget.account!.id] ?? widget.account!.initialBalance;
+        final difference = newInitialBalance - currentBalance;
+        newInitialBalance = widget.account!.initialBalance + difference;
+      }
+      
       final updatedAccount = Account(
         id: isEditing ? widget.account!.id : const Uuid().v4(),
         name: nameController.text,
-        initialBalance: double.tryParse(balanceController.text) ?? 0.0,
+        initialBalance: newInitialBalance,
         iconCodePoint: selectedIcon,
         colorHex:
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
@@ -1194,22 +1214,25 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
                 ),
               ),
-              child: SwitchListTile(
-                title: const Text(
-                  'Make Account Private',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'This will obfuscate the balance and exclude it from the total balance amount',
-                  style: TextStyle(fontSize: 12),
-                ),
-                value: excludeFromTotal,
+              child: Material(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: SwitchListTile(
+                  title: const Text(
+                    'Make Account Private',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'This will obfuscate the balance and exclude it from the total balance amount',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: excludeFromTotal,
                 onChanged: (value) {
                   HapticService.light();
                   setState(() => excludeFromTotal = value);
@@ -1224,7 +1247,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 ),
               ),
             ),
-            const Gap(40),
+          ),
+          const Gap(40),
 
             SizedBox(
               width: double.infinity,
