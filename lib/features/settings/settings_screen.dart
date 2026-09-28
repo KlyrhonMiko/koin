@@ -767,14 +767,7 @@ class SettingsScreen extends ConsumerWidget {
                         : AppTheme.primaryColor(context),
                     size: 32,
                   ),
-                )
-                .animate()
-                .scale(
-                  begin: const Offset(0.5, 0.5),
-                  duration: 400.ms,
-                  curve: Curves.easeOutBack,
-                )
-                .fadeIn(duration: 300.ms),
+                ),
             const Gap(20),
             Text(
                   title,
@@ -782,13 +775,6 @@ class SettingsScreen extends ConsumerWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
-                )
-                .animate()
-                .fadeIn(delay: 100.ms, duration: 300.ms)
-                .slideY(
-                  begin: 0.15,
-                  duration: 300.ms,
-                  curve: Curves.easeOutCubic,
                 ),
             const Gap(12),
             Text(
@@ -799,13 +785,6 @@ class SettingsScreen extends ConsumerWidget {
                     color: AppTheme.textLightColor(context),
                     height: 1.5,
                   ),
-                )
-                .animate()
-                .fadeIn(delay: 180.ms, duration: 300.ms)
-                .slideY(
-                  begin: 0.15,
-                  duration: 300.ms,
-                  curve: Curves.easeOutCubic,
                 ),
             const Gap(32),
             Row(
@@ -851,16 +830,15 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
-                )
-                .animate()
-                .fadeIn(delay: 260.ms, duration: 300.ms)
-                .slideY(
-                  begin: 0.2,
-                  duration: 300.ms,
-                  curve: Curves.easeOutCubic,
                 ),
-            const Gap(8),
-          ],
+          ]
+          .animate(interval: 40.ms)
+          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+          .scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 250.ms,
+            curve: Curves.easeOutCubic,
+          ),
         ),
       ),
     );
@@ -1062,10 +1040,7 @@ class SettingsScreen extends ConsumerWidget {
                             icon: Icons.brightness_auto_rounded,
                             mode: ThemeMode.system,
                             isSelected: currentMode == ThemeMode.system,
-                          )
-                          .animate()
-                          .fadeIn(delay: 50.ms)
-                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                          ),
                 ),
                 const Gap(12),
                 Expanded(
@@ -1077,10 +1052,7 @@ class SettingsScreen extends ConsumerWidget {
                             icon: Icons.light_mode_rounded,
                             mode: ThemeMode.light,
                             isSelected: currentMode == ThemeMode.light,
-                          )
-                          .animate()
-                          .fadeIn(delay: 100.ms)
-                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                          ),
                 ),
                 const Gap(12),
                 Expanded(
@@ -1092,12 +1064,16 @@ class SettingsScreen extends ConsumerWidget {
                             icon: Icons.dark_mode_rounded,
                             mode: ThemeMode.dark,
                             isSelected: currentMode == ThemeMode.dark,
-                          )
-                          .animate()
-                          .fadeIn(delay: 150.ms)
-                          .slideY(begin: 0.2, curve: Curves.easeOutQuad),
+                          ),
                 ),
-              ],
+              ]
+              .animate(interval: 40.ms)
+              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+              .scale(
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: Curves.easeOutCubic,
+              ),
             ),
           ],
         ),

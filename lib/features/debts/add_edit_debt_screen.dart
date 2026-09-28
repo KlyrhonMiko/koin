@@ -196,7 +196,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     _buildPremiumTypeSwitcher(
                       context,
                       primaryColor,
-                    ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     // Installment Plan
@@ -205,11 +205,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     _buildInstallmentsCard(
                       context,
                       primaryColor,
-                    ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     // Purchases / Sub-Items
-                    _buildPurchasesSection(context, primaryColor, categoriesState.value ?? []).animate().fade(delay: 110.ms).slideY(begin: 0.1),
+                    _buildPurchasesSection(context, primaryColor, categoriesState.value ?? []).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     // Date
@@ -240,7 +240,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                           setState(() => _startDate = dt);
                         }
                       },
-                    ).animate().fade(delay: 125.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     // Details Section
@@ -329,7 +329,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                         // Notes Input
                         _buildNotesInput(context),
                       ],
-                    ).animate().fade(delay: 150.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -372,7 +372,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             ),
           ),
         ),
-      ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
+      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );
   }
 

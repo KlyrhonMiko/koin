@@ -62,10 +62,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHeader(context)
-                      .animate()
-                      .fade(duration: 500.ms)
-                      .slideY(begin: -0.1, curve: Curves.easeOutCubic),
+                  _buildHeader(context),
                   const Gap(32),
                   DateRangeSelector(
                     initialDateRange: _dateRange,
@@ -74,49 +71,48 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                         setState(() => _dateRange = range);
                       }
                     },
-                  ).animate().fade(delay: 100.ms, duration: 500.ms),
+                  ),
                   const Gap(24),
-                  _buildSummaryCard(context, ref, currencySymbol)
-                      .animate()
-                      .fade(delay: 200.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  _buildSummaryCard(context, ref, currencySymbol),
                   const Gap(28),
                   _buildSectionHeader(
                     'Transaction Type',
                     subtitle: 'Filter by income or expense',
-                  ).animate().fade(delay: 250.ms, duration: 500.ms),
+                  ),
                   const Gap(12),
-                  _buildTypeSelector(context)
-                      .animate()
-                      .fade(delay: 300.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  _buildTypeSelector(context),
                   const Gap(28),
                   _buildSectionHeader(
                     'Categories',
                     subtitle: 'Narrow down by spending categories',
-                  ).animate().fade(delay: 350.ms, duration: 500.ms),
+                  ),
                   const Gap(12),
-                  _buildCategorySelector(context, categories)
-                      .animate()
-                      .fade(delay: 400.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  _buildCategorySelector(context, categories),
                   const Gap(28),
                   _buildSectionHeader(
                     'Accounts',
                     subtitle: 'Select specific accounts to include',
-                  ).animate().fade(delay: 450.ms, duration: 500.ms),
+                  ),
                   const Gap(12),
-                  _buildAccountSelector(context, accounts)
-                      .animate()
-                      .fade(delay: 500.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, curve: Curves.easeOutCubic),
-                ],
+                  _buildAccountSelector(context, accounts),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
             _buildSummaryCard(context, ref, currencySymbol, getCountOnly: true)
                 .animate()
-                .fade(delay: 600.ms, duration: 500.ms)
-                .slideY(begin: 0.2, curve: Curves.easeOutCubic),
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
             if (_isExporting)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),

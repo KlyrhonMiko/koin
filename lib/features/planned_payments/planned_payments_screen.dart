@@ -33,7 +33,7 @@ class PlannedPaymentsScreen extends ConsumerWidget {
 
     final transaction = AppTransaction(
       id: const Uuid().v4(),
-      note: '${payment.title} (Subscription)',
+      note: payment.title,
       amount: result.amount,
       type: payment.type,
       date: DateTime.now(),

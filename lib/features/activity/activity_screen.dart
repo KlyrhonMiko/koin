@@ -94,52 +94,50 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
                       ),
-                    ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                          'Activity & Flow',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                            color: AppTheme.textColor(context),
-                          ),
-                        )
-                        .animate()
-                        .fade(duration: 400.ms, delay: 100.ms)
-                        .slideY(begin: -0.2),
+                      'Activity & Flow',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: AppTheme.textColor(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
               IconButton(
-                    onPressed: () {
-                      HapticService.light();
-                      Navigator.push(
-                        context,
-                        SlideUpRoute(page: const CustomReportsScreen()),
-                      );
-                    },
-                    icon: Icon(
-                      Icons.summarize_outlined,
-                      color: AppTheme.textColor(context),
-                    ),
-                    tooltip: 'Custom Reports',
-                  )
-                  .animate()
-                  .fade(duration: 400.ms, delay: 200.ms)
-                  .scale(begin: const Offset(0.8, 0.8)),
+                onPressed: () {
+                  HapticService.light();
+                  Navigator.push(
+                    context,
+                    SlideUpRoute(page: const CustomReportsScreen()),
+                  );
+                },
+                icon: Icon(
+                  Icons.summarize_outlined,
+                  color: AppTheme.textColor(context),
+                ),
+                tooltip: 'Custom Reports',
+              ),
             ],
           ),
           const SizedBox(height: 20),
           KoinSegmentedControl(
-                controller: _tabController,
-                leftLabel: 'Analysis',
-                rightLabel: 'Transactions',
-              )
-              .animate()
-              .fade(delay: 100.ms)
-              .scale(begin: const Offset(0.95, 0.95)),
-        ],
+            controller: _tabController,
+            leftLabel: 'Analysis',
+            rightLabel: 'Transactions',
+          ),
+        ]
+        .animate(interval: 40.ms)
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
   }

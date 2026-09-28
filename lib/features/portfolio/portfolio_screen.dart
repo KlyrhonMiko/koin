@@ -546,8 +546,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     if (_showEntranceAnimations) {
       return button
           .animate()
-          .fade(delay: 300.ms, duration: 400.ms)
-          .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
+          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+          .scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 250.ms,
+            curve: Curves.easeOutCubic,
+          );
     }
     return button;
   }
@@ -1051,8 +1055,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
           ),
         )
         .animate()
-        .fade(delay: 300.ms, duration: 400.ms)
-        .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 
   // ═══════════════════════════════════════════════════════
@@ -1100,14 +1108,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                             context,
                           ).withValues(alpha: 0.6),
                         ),
-                      )
-                      .animate()
-                      .scale(
-                        delay: 200.ms,
-                        curve: Curves.easeOutBack,
-                        duration: 600.ms,
-                      )
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 24),
                   Text(
                         title,
@@ -1117,10 +1118,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 8),
                   Text(
                         subtitle,
@@ -1130,10 +1128,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                           fontSize: 14,
                           height: 1.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 36),
                   SizedBox(
                         width: double.infinity,
@@ -1175,11 +1170,15 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                             ),
                           ),
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 500.ms, duration: 400.ms)
-                      .fadeIn(),
-                ],
+                      ),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
           ),

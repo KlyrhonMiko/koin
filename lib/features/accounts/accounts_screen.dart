@@ -88,15 +88,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                         context,
                                       ).withValues(alpha: 0.6),
                                     ),
-                                  )
-                                  .animate()
-                                  .scale(
-                                    delay: 200.ms,
-                                    curve: Curves.easeOutBack,
-                                    duration: 600.ms,
-                                  )
-                                  .fadeIn(),
-                              const SizedBox(height: 24),
+                      ),
+                  const SizedBox(height: 24),
                               Text(
                                     'No accounts yet',
                                     style: TextStyle(
@@ -105,14 +98,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.5,
                                     ),
-                                  )
-                                  .animate()
-                                  .slideY(
-                                    begin: 0.2,
-                                    delay: 300.ms,
-                                    duration: 400.ms,
-                                  )
-                                  .fadeIn(),
+                                  ),
                               const SizedBox(height: 8),
                               Text(
                                     'Add your first account to see it here',
@@ -121,14 +107,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                       color: AppTheme.textLightColor(context),
                                       fontSize: 14,
                                     ),
-                                  )
-                                  .animate()
-                                  .slideY(
-                                    begin: 0.2,
-                                    delay: 400.ms,
-                                    duration: 400.ms,
-                                  )
-                                  .fadeIn(),
+                                  ),
                               const SizedBox(height: 36),
                               SizedBox(
                                     width: double.infinity,
@@ -179,15 +158,15 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                         ),
                                       ),
                                     ),
-                                  )
-                                  .animate()
-                                  .slideY(
-                                    begin: 0.2,
-                                    delay: 500.ms,
-                                    duration: 400.ms,
-                                  )
-                                  .fadeIn(),
-                            ],
+                                  ),
+                            ]
+                            .animate(interval: 40.ms)
+                            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                            .scale(
+                              begin: const Offset(0.95, 0.95),
+                              duration: 250.ms,
+                              curve: Curves.easeOutCubic,
+                            ),
                           ),
                         ),
                       ),

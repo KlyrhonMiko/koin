@@ -112,10 +112,7 @@ class BudgetsScreen extends ConsumerWidget {
                                     progress: overallProgress,
                                     percent: overallPercent,
                                     currency: currency,
-                                  )
-                                  .animate()
-                                  .fade(duration: 400.ms)
-                                  .slideY(begin: 0.08),
+                                  ),
 
                             if (budgeted.isNotEmpty) const Gap(28),
 
@@ -129,7 +126,7 @@ class BudgetsScreen extends ConsumerWidget {
                                   color: AppTheme.textColor(context),
                                   letterSpacing: -0.3,
                                 ),
-                              ).animate().fade(delay: 100.ms),
+                              ),
                               const Gap(12),
                               ...budgeted.asMap().entries.map((entry) {
                                 final index = entry.key;
@@ -145,10 +142,7 @@ class BudgetsScreen extends ConsumerWidget {
                                       index: index,
                                       resolvedBudget: resolvedBudget(category),
                                       totalIncome: totalIncome,
-                                    )
-                                    .animate()
-                                    .fade(delay: (150 + index * 60).ms)
-                                    .slideY(begin: 0.06);
+                                    );
                               }),
                               if (unbudgeted.isNotEmpty) const Gap(24),
                             ],
@@ -165,8 +159,6 @@ class BudgetsScreen extends ConsumerWidget {
                                   color: AppTheme.textColor(context),
                                   letterSpacing: -0.3,
                                 ),
-                              ).animate().fade(
-                                delay: budgeted.isEmpty ? 100.ms : 300.ms,
                               ),
                               if (budgeted.isEmpty)
                                 Padding(
@@ -178,7 +170,7 @@ class BudgetsScreen extends ConsumerWidget {
                                       fontSize: 13,
                                     ),
                                   ),
-                                ).animate().fade(delay: 150.ms),
+                                ),
                               const Gap(12),
                               Builder(
                                 builder: (context) {
@@ -275,22 +267,9 @@ class BudgetsScreen extends ConsumerWidget {
                                               category,
                                               currency,
                                               totalIncome,
-                                            )
-                                            .animate()
-                                            .fade(
-                                              delay:
-                                                  ((budgeted.isEmpty
-                                                              ? 200
-                                                              : 350) +
-                                                          item['originalIndex'] *
-                                                              50)
-                                                      .ms,
-                                            )
-                                            .scale(
-                                              begin: const Offset(0.92, 0.92),
                                             );
                                       }
-                                    }).toList(),
+                                    }).toList().animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                                   );
                                 },
                               ),
@@ -345,9 +324,16 @@ class BudgetsScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
-                            ).animate().fade(delay: 400.ms),
+                            ),
                             const Gap(64),
-                          ],
+                          ]
+                          .animate(interval: 40.ms)
+                          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                          .scale(
+                            begin: const Offset(0.95, 0.95),
+                            duration: 250.ms,
+                            curve: Curves.easeOutCubic,
+                          ),
                         ),
                       ),
                     ),
@@ -386,7 +372,7 @@ class BudgetsScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
                   ),
-                ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+                ),
                 const SizedBox(height: 4),
                 Text(
                       'Monthly Budgets',
@@ -396,10 +382,7 @@ class BudgetsScreen extends ConsumerWidget {
                         letterSpacing: -0.5,
                         color: AppTheme.textColor(context),
                       ),
-                    )
-                    .animate()
-                    .fade(duration: 400.ms, delay: 100.ms)
-                    .slideY(begin: -0.2),
+                    ),
               ],
             ),
           ),
@@ -413,11 +396,15 @@ class BudgetsScreen extends ConsumerWidget {
                     SlideUpRoute(page: const CategoryManagerScreen()),
                   );
                 },
-              )
-              .animate()
-              .fade(duration: 400.ms, delay: 200.ms)
-              .scale(begin: const Offset(0.8, 0.8)),
-        ],
+              ),
+        ]
+        .animate(interval: 40.ms)
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
   }
@@ -457,15 +444,8 @@ class BudgetsScreen extends ConsumerWidget {
                             context,
                           ).withValues(alpha: 0.6),
                         ),
-                      )
-                      .animate()
-                      .scale(
-                        delay: 200.ms,
-                        curve: Curves.easeOutBack,
-                        duration: 600.ms,
-                      )
-                      .fadeIn(),
-                  const SizedBox(height: 24),
+                        ),
+                    const SizedBox(height: 24),
                   Text(
                         'No categories yet',
                         style: TextStyle(
@@ -474,10 +454,7 @@ class BudgetsScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 8),
                   Text(
                         'Create categories first to set budgets',
@@ -486,10 +463,7 @@ class BudgetsScreen extends ConsumerWidget {
                           color: AppTheme.textLightColor(context),
                           fontSize: 14,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 36),
                   SizedBox(
                         width: double.infinity,
@@ -536,11 +510,15 @@ class BudgetsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 500.ms, duration: 400.ms)
-                      .fadeIn(),
-                ],
+                      ),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
           ),

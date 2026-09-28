@@ -236,7 +236,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           ),
                         ),
                       ],
-                    ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     if (_amountController.text.isNotEmpty) ...[
                       const Gap(12),
                       Container(
@@ -271,7 +271,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             ),
                           ],
                         ),
-                      ).animate().fade(delay: 100.ms).slideY(begin: 0.1),
+                      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                       const Gap(32),
                     ] else ...[
                       const Gap(32),
@@ -312,7 +312,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                         onSelected: (id) =>
                             setState(() => _selectedAccountId = id),
                       ),
-                    ).animate().fade(delay: 150.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(16),
 
                     // Notes
@@ -385,7 +385,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           ],
                         ),
                       ),
-                    ).animate().fade(delay: 200.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -424,7 +424,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
             ),
           ),
         ),
-      ).animate().fade(delay: 300.ms).slideY(begin: 0.2),
+      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );
   }
 

@@ -218,60 +218,38 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
               children: [
                 // Transaction Type
-                _buildSectionTitle('Transaction Type', Icons.swap_vert_rounded)
-                    .animate()
-                    .fadeIn(delay: 100.ms, duration: 300.ms)
-                    .slideX(
-                      begin: -0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                _buildSectionTitle('Transaction Type', Icons.swap_vert_rounded),
                 const Gap(12),
                 SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildTypeChip(null, 'All', Icons.grid_view_rounded),
-                          const Gap(8),
-                          _buildTypeChip(
-                            TransactionType.income,
-                            'Income',
-                            Icons.arrow_downward_rounded,
-                          ),
-                          const Gap(8),
-                          _buildTypeChip(
-                            TransactionType.expense,
-                            'Expense',
-                            Icons.arrow_upward_rounded,
-                          ),
-                          const Gap(8),
-                          _buildTypeChip(
-                            TransactionType.transfer,
-                            'Transfer',
-                            Icons.swap_horiz_rounded,
-                          ),
-                        ],
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildTypeChip(null, 'All', Icons.grid_view_rounded),
+                      const Gap(8),
+                      _buildTypeChip(
+                        TransactionType.income,
+                        'Income',
+                        Icons.arrow_downward_rounded,
                       ),
-                    )
-                    .animate()
-                    .fadeIn(delay: 150.ms, duration: 300.ms)
-                    .slideX(
-                      begin: 0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
+                      const Gap(8),
+                      _buildTypeChip(
+                        TransactionType.expense,
+                        'Expense',
+                        Icons.arrow_upward_rounded,
+                      ),
+                      const Gap(8),
+                      _buildTypeChip(
+                        TransactionType.transfer,
+                        'Transfer',
+                        Icons.swap_horiz_rounded,
+                      ),
+                    ],
+                  ),
+                ),
                 const Gap(28),
 
                 // Date Range
-                _buildSectionTitle('Date Range', Icons.calendar_today_rounded)
-                    .animate()
-                    .fadeIn(delay: 200.ms, duration: 300.ms)
-                    .slideX(
-                      begin: -0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                _buildSectionTitle('Date Range', Icons.calendar_today_rounded),
                 const Gap(12),
                 DateRangeSelector(
                   initialDateRange: _filter.dateRange,
@@ -284,19 +262,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       );
                     });
                   },
-                ).animate().fadeIn(delay: 250.ms, duration: 300.ms),
-
+                ),
                 const Gap(28),
 
                 // Categories
-                _buildSectionTitle('Categories', Icons.category_rounded)
-                    .animate()
-                    .fadeIn(delay: 300.ms, duration: 300.ms)
-                    .slideX(
-                      begin: -0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                _buildSectionTitle('Categories', Icons.category_rounded),
                 const Gap(12),
                 Wrap(
                   spacing: 8,
@@ -304,40 +274,24 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   children: categories
                       .map((c) => _buildCategoryChip(c))
                       .toList(),
-                ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
-
+                ),
                 const Gap(28),
 
                 // Accounts
                 _buildSectionTitle(
-                      'Accounts',
-                      Icons.account_balance_wallet_rounded,
-                    )
-                    .animate()
-                    .fadeIn(delay: 400.ms, duration: 300.ms)
-                    .slideX(
-                      begin: -0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                  'Accounts',
+                  Icons.account_balance_wallet_rounded,
+                ),
                 const Gap(12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 10,
                   children: accounts.map((a) => _buildAccountChip(a)).toList(),
-                ).animate().fadeIn(delay: 450.ms, duration: 300.ms),
-
+                ),
                 const Gap(28),
 
                 // Amount Range
-                _buildSectionTitle('Amount Range', Icons.payments_rounded)
-                    .animate()
-                    .fadeIn(delay: 500.ms, duration: 300.ms)
-                    .slideX(
-                      begin: -0.05,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                _buildSectionTitle('Amount Range', Icons.payments_rounded),
                 const Gap(12),
                 Row(
                   children: [
@@ -368,8 +322,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                     ),
                   ],
-                ).animate().fadeIn(delay: 550.ms, duration: 300.ms),
-              ],
+                ),
+              ]
+              .animate(interval: 40.ms)
+              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+              .scale(
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: Curves.easeOutCubic,
+              ),
             ),
           ),
 

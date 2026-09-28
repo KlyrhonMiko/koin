@@ -419,9 +419,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         ),
       ],
     )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 400.ms)
-        .slideY(begin: 0.1, curve: Curves.easeOutCubic);
+        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
   }
 
   Widget _buildActionItem(
@@ -739,9 +737,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         ),
                       ],
                     )
-                    .animate()
-                    .fadeIn(delay: 300.ms, duration: 400.ms)
-                    .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                    .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
           );
         }
 
@@ -1248,7 +1244,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
+            ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
 
             const Gap(32),
 
@@ -1336,7 +1332,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   ),
                 ),
               ),
-            ).animate().fadeIn(delay: 200.ms, duration: 300.ms).slideY(begin: 0.1, curve: Curves.easeOutCubic),
+            ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
           ],
         ),
       ),

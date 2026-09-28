@@ -810,7 +810,7 @@ class _AddEditRecurringIncomeScreenState
                           );
                         },
                       ),
-                    ).animate().fade(delay: 50.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     AnimatedSize(
@@ -948,7 +948,7 @@ class _AddEditRecurringIncomeScreenState
                         // Notes field
                         _buildNotesInput(context),
                       ],
-                    ).animate().fade(delay: 150.ms).slideY(begin: 0.1),
+                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -991,7 +991,7 @@ class _AddEditRecurringIncomeScreenState
             ),
           ),
         ),
-      ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
+      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );
   }
 

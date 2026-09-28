@@ -62,11 +62,10 @@ class DashboardScreen extends ConsumerWidget {
     if (result == null || !context.mounted) return;
 
     final isExpense = payment.type == TransactionType.expense;
-    final noteSuffix = isExpense ? ' (Subscription)' : ' (Recurring Income)';
 
     final transaction = AppTransaction(
       id: const Uuid().v4(),
-      note: '${payment.title}$noteSuffix',
+      note: payment.title,
       amount: result.amount,
       type: payment.type,
       date: DateTime.now(),
@@ -153,54 +152,15 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(context)
-                  .animate()
-                  .fade(duration: 500.ms)
-                  .slideY(
-                    begin: -0.1,
-                    duration: 500.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              _buildHeader(context),
               const Gap(24),
-              _buildBalanceCard(context, ref, stats, settings)
-                  .animate()
-                  .fade(duration: 600.ms, delay: 100.ms)
-                  .slideY(
-                    begin: 0.12,
-                    duration: 600.ms,
-                    delay: 100.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              _buildBalanceCard(context, ref, stats, settings),
               const Gap(24),
-              _buildQuickActions(context, ref)
-                  .animate()
-                  .fade(delay: 200.ms, duration: 500.ms)
-                  .slideY(
-                    begin: 0.1,
-                    delay: 200.ms,
-                    duration: 500.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              _buildQuickActions(context, ref),
               const Gap(28),
-              _buildAccountsList(context, ref, stats, currency)
-                  .animate()
-                  .fade(delay: 300.ms, duration: 500.ms)
-                  .slideY(
-                    begin: 0.1,
-                    delay: 300.ms,
-                    duration: 500.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              _buildAccountsList(context, ref, stats, currency),
               const Gap(28),
-              _buildBudgetSection(context, ref, stats, currency)
-                  .animate()
-                  .fade(delay: 400.ms, duration: 500.ms)
-                  .slideY(
-                    begin: 0.1,
-                    delay: 400.ms,
-                    duration: 500.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              _buildBudgetSection(context, ref, stats, currency),
               const Gap(32),
               _buildSectionHeader(
                 context,
@@ -212,22 +172,14 @@ class DashboardScreen extends ConsumerWidget {
                   ref.read(activityTabProvider.notifier).setIndex(0);
                   ref.read(navigationProvider.notifier).setIndex(1);
                 },
-              ).animate().fade(delay: 500.ms, duration: 500.ms),
+              ),
               const Gap(16),
               _buildChartSection(
-                    context,
-                    stats,
-                    currency,
-                    transactionsAsync.value ?? [],
-                  )
-                  .animate()
-                  .fade(delay: 550.ms, duration: 600.ms)
-                  .scale(
-                    begin: const Offset(0.96, 0.96),
-                    delay: 550.ms,
-                    duration: 600.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+                context,
+                stats,
+                currency,
+                transactionsAsync.value ?? [],
+              ),
               const Gap(28),
               _buildUpcomingPayments(context, ref, currency),
               const Gap(32),
@@ -241,24 +193,23 @@ class DashboardScreen extends ConsumerWidget {
                   ref.read(activityTabProvider.notifier).setIndex(1);
                   ref.read(navigationProvider.notifier).setIndex(1);
                 },
-              ).animate().fade(delay: 600.ms, duration: 500.ms),
+              ),
               const Gap(12),
               _buildRecentTransactions(
-                    context,
-                    ref,
-                    transactionsAsync,
-                    currency,
-                  )
-                  .animate()
-                  .fade(delay: 650.ms, duration: 500.ms)
-                  .slideY(
-                    begin: 0.08,
-                    delay: 650.ms,
-                    duration: 500.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+                context,
+                ref,
+                transactionsAsync,
+                currency,
+              ),
               const Gap(100),
-            ],
+            ]
+            .animate(interval: 40.ms)
+            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+            .scale(
+              begin: const Offset(0.95, 0.95),
+              duration: 250.ms,
+              curve: Curves.easeOutCubic,
+            ),
           ),
         ),
       ),
@@ -509,6 +460,7 @@ class DashboardScreen extends ConsumerWidget {
                     )
                   : AnimatedCounter(
                       value: stats.currentBalance,
+                      lastValueToken: 'dashboard_total_balance',
                       formatter: (v) => NumberFormat.currency(
                         symbol: currency.symbol,
                       ).format(v),
@@ -549,6 +501,7 @@ class DashboardScreen extends ConsumerWidget {
                         const Gap(4),
                         AnimatedCounter(
                           value: netChange.abs(),
+                          lastValueToken: 'dashboard_net_change',
                           formatter: (v) => settings.hideBalance
                               ? '•••••• this month'
                               : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
@@ -726,7 +679,7 @@ class DashboardScreen extends ConsumerWidget {
               }
               final account = stats.accounts[index];
               final balance = stats.accountBalances[account.id] ?? 0;
-              return GestureDetector(
+              return PressableScale(
                 onTap: () {
                   HapticService.light();
                   Navigator.push(
@@ -762,20 +715,16 @@ class DashboardScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             baseColor.withValues(alpha: 0.95),
-            baseColor.withValues(alpha: 0.85),
+            baseColor,
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: baseColor.withValues(alpha: 0.3),
-            blurRadius: 16,
+            color: baseColor.withValues(alpha: 0.25),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 0.5,
-        ),
       );
     } else {
       decoration = BoxDecoration(
@@ -783,17 +732,18 @@ class DashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppTheme.dividerColor(context).withValues(alpha: 0.6),
-          width: 1.2,
+              ? Colors.white.withValues(alpha: 0.05)
+              : AppTheme.dividerColor(context).withValues(alpha: 0.4),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            spreadRadius: -2,
+            offset: const Offset(0, 6),
           ),
         ],
       );
@@ -910,29 +860,22 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           ...backgroundShapes,
           Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: account.logoAsset == null
                             ? (isColored
-                                  ? Colors.white.withValues(alpha: 0.15)
-                                  : account.color.withValues(alpha: 0.1))
-                            : null,
-                        border: account.logoAsset == null
-                            ? Border.all(
-                                color: isColored
-                                    ? Colors.white.withValues(alpha: 0.2)
-                                    : account.color.withValues(alpha: 0.15),
-                                width: 1,
-                              )
-                            : null,
+                                  ? Colors.white.withValues(alpha: 0.2)
+                                  : account.color.withValues(alpha: 0.12))
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: account.logoAsset != null
@@ -951,17 +894,17 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                     ),
-                    const Gap(12),
+                    const Gap(10),
                     Expanded(
                       child: Text(
                         account.name,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: 14,
                           color: isColored
-                              ? Colors.white.withValues(alpha: 0.85)
-                              : AppTheme.textLightColor(context),
-                          letterSpacing: -0.1,
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : AppTheme.textColor(context),
+                          letterSpacing: -0.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -969,7 +912,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const Spacer(),
                 account.excludeFromTotal
                     ? Text(
                         '••••••',
@@ -978,18 +920,19 @@ class DashboardScreen extends ConsumerWidget {
                               ? Colors.white
                               : AppTheme.textColor(context),
                           fontWeight: FontWeight.w800,
-                          fontSize: 18,
+                          fontSize: 22,
                           letterSpacing: 2,
                         ),
                       )
                     : AnimatedCounter(
                         value: balance,
+                        lastValueToken: 'account_card_${account.id}',
                         formatter: (v) => NumberFormat.currency(
                           symbol: currency.symbol,
                         ).format(v),
                         style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
                           letterSpacing: -0.5,
                           color: isColored
                               ? Colors.white
@@ -1230,42 +1173,47 @@ class DashboardScreen extends ConsumerWidget {
                 final isNearLimit = progress > 0.8 && !isOver;
 
                 return Container(
-                  width: 230,
-                  padding: const EdgeInsets.all(18),
+                  width: 240,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceColor(context),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: isOver
                           ? AppTheme.errorColor(context).withValues(alpha: 0.3)
-                          : AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.3),
-                      width: 0.5,
+                          : Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.white.withValues(alpha: 0.05) 
+                              : AppTheme.dividerColor(context).withValues(alpha: 0.4),
+                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withValues(alpha: 0.2)
+                            : Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
                               color: category.color.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               IconUtils.getIcon(category.iconCodePoint),
                               color: category.color,
-                              size: 16,
+                              size: 18,
                             ),
                           ),
                           const Gap(10),
@@ -1273,74 +1221,97 @@ class DashboardScreen extends ConsumerWidget {
                             child: Text(
                               category.name,
                               style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                letterSpacing: -0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text(
-                            '$percent%',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
                               color: isOver
-                                  ? AppTheme.expenseColor(context)
+                                  ? AppTheme.errorColor(context).withValues(alpha: 0.1)
                                   : (isNearLimit
-                                        ? Colors.amber.shade700
-                                        : AppTheme.primaryColor(context)),
-                              fontSize: 13,
+                                      ? Colors.amber.shade700.withValues(alpha: 0.1)
+                                      : category.color.withValues(alpha: 0.1)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$percent%',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: isOver
+                                    ? AppTheme.errorColor(context)
+                                    : (isNearLimit
+                                          ? Colors.amber.shade800
+                                          : category.color),
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      Text(
-                        isOver
-                            ? 'Exceeded by ${NumberFormat.compactCurrency(symbol: currency.symbol).format(spent - budget)}'
-                            : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(budget - spent)} left',
-                        style: TextStyle(
-                          color: isOver
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.textLightColor(context),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(10),
-                      // Custom gradient progress bar
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: progress),
-                        duration: const Duration(milliseconds: 1000),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, animValue, child) {
-                          return Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: AppTheme.dividerColor(context),
-                              borderRadius: BorderRadius.circular(3),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isOver
+                                ? 'Exceeded by ${NumberFormat.compactCurrency(symbol: currency.symbol).format(spent - budget)}'
+                                : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(budget - spent)} left',
+                            style: TextStyle(
+                              color: isOver
+                                  ? AppTheme.errorColor(context)
+                                  : AppTheme.textLightColor(context),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: animValue,
-                              child: Container(
+                          ),
+                          const Gap(10),
+                          // Custom gradient progress bar
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: progress),
+                            duration: const Duration(milliseconds: 1000),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animValue, child) {
+                              return Container(
+                                height: 8,
                                 decoration: BoxDecoration(
-                                  gradient: isOver
-                                      ? AppTheme.dangerGradient
-                                      : LinearGradient(
-                                          colors: [
-                                            category.color.withValues(
-                                              alpha: 0.7,
-                                            ),
-                                            category.color,
-                                          ],
-                                        ),
-                                  borderRadius: BorderRadius.circular(3),
+                                  color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                              ),
-                            ),
-                          );
-                        },
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: animValue,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: isOver
+                                          ? AppTheme.dangerGradient
+                                          : LinearGradient(
+                                              colors: [
+                                                category.color.withValues(
+                                                  alpha: 0.7,
+                                                ),
+                                                category.color,
+                                              ],
+                                            ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: isOver ? AppTheme.errorColor(context).withValues(alpha: 0.3) : category.color.withValues(alpha: 0.3),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),

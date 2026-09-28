@@ -730,9 +730,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             ),
           ],
         )
-        .animate()
-        .fade(delay: 150.ms, duration: 400.ms)
-        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
   }
 
   Widget _buildNeededCard(
@@ -815,9 +813,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             ),
           ],
         )
-        .animate()
-        .fade(delay: 250.ms, duration: 400.ms)
-        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
   }
 
   Widget _buildLinkedActivitySection(
@@ -883,9 +879,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             ),
           ],
         )
-        .animate()
-        .fade(delay: 250.ms, duration: 400.ms)
-        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
   }
 
   Widget _buildEmptyActivity(BuildContext context) {

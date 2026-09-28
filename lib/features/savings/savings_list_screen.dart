@@ -109,7 +109,7 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
             ),
-          ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+          ),
           const SizedBox(height: 4),
           Text(
             'Savings Tracker',
@@ -119,8 +119,15 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
               letterSpacing: -0.5,
               color: AppTheme.textColor(context),
             ),
-          ).animate().fade(duration: 400.ms, delay: 100.ms).slideY(begin: -0.2),
-        ],
+          ),
+        ]
+        .animate(interval: 40.ms)
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
   }
@@ -308,8 +315,12 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
           ),
         )
         .animate()
-        .fade(duration: 500.ms)
-        .slideY(begin: 0.08, curve: Curves.easeOutCubic);
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 
   Widget _buildHeroStatAnimated(String label, double amount, NumberFormat fmt) {
@@ -380,14 +391,7 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
                             context,
                           ).withValues(alpha: 0.5),
                         ),
-                      )
-                      .animate()
-                      .scale(
-                        delay: 200.ms,
-                        curve: Curves.easeOutBack,
-                        duration: 600.ms,
-                      )
-                      .fadeIn(),
+                      ),
                   const Gap(28),
                   Text(
                         'No goals yet',
@@ -397,10 +401,7 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const Gap(8),
                   Text(
                         'Start your savings journey by\ncreating your first goal',
@@ -410,10 +411,7 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
                           fontSize: 14,
                           height: 1.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const Gap(36),
                   PressableScale(
                         onTap: () {
@@ -460,11 +458,15 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
                             ),
                           ),
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 500.ms, duration: 400.ms)
-                      .fadeIn(),
-                ],
+                      ),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
           ),
@@ -515,8 +517,12 @@ class _SavingsListScreenState extends ConsumerState<SavingsListScreen> {
           ),
         )
         .animate()
-        .fade(delay: 300.ms, duration: 400.ms)
-        .slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutCubic);
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 
   Widget _buildGoalCard(

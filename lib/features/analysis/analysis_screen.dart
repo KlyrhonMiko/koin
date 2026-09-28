@@ -187,14 +187,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         _buildChartSection(
-                              context,
-                              filteredTransactions,
-                              categories,
-                              currency,
-                            )
-                            .animate()
-                            .fade(duration: 600.ms, delay: 100.ms)
-                            .slideY(begin: 0.1),
+                          context,
+                          filteredTransactions,
+                          categories,
+                          currency,
+                        ),
                         const Gap(32),
                         Row(
                           children: [
@@ -208,7 +205,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                               ),
                             ),
                           ],
-                        ).animate().fade(delay: 200.ms),
+                        ),
                         const Gap(16),
                         _buildTopCategoriesList(
                           context,
@@ -216,7 +213,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           filteredTransactions,
                           categories,
                           currency,
-                        ).animate().fade(delay: 300.ms).slideY(begin: 0.1),
+                        ),
                         const Gap(32),
                         Center(
                           child: Container(
@@ -229,9 +226,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                        ).animate().fade(delay: 400.ms),
+                        ),
                         const Gap(64),
-                      ]),
+                      ]
+                      .animate(interval: 40.ms)
+                      .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                      .scale(
+                        begin: const Offset(0.95, 0.95),
+                        duration: 250.ms,
+                        curve: Curves.easeOutCubic,
+                      )),
                     ),
                   ),
               ],
@@ -318,7 +322,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                           ),
-                        ).animate().fade(delay: 100.ms),
+                        ),
                         _buildGlassFilterControl(context),
                       ],
                     ),
@@ -336,7 +340,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         letterSpacing: -1.5,
                         height: 1.1,
                       ),
-                    ).animate().fade(delay: 150.ms).slideX(begin: -0.05),
+                    ),
                     const Gap(12),
                     Row(
                       children: [
@@ -346,11 +350,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           _buildTrendBadge(
                             totalExpense,
                             previousExpense,
-                          ).animate().fade(delay: 200.ms),
+                          ),
                         ],
                       ],
                     ),
-                  ],
+                  ]
+                  .animate(interval: 40.ms)
+                  .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                  .scale(
+                    begin: const Offset(0.95, 0.95),
+                    duration: 250.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
                 ),
               ),
             ],

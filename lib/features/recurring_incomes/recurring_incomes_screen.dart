@@ -35,7 +35,7 @@ class RecurringIncomesTab extends ConsumerWidget {
 
     final transaction = AppTransaction(
       id: const Uuid().v4(),
-      note: '${payment.title} (Recurring Income)',
+      note: payment.title,
       amount: result.amount,
       type: payment.type,
       date: DateTime.now(),
@@ -140,14 +140,7 @@ class RecurringIncomesTab extends ConsumerWidget {
                             context,
                           ).withValues(alpha: 0.6),
                         ),
-                      )
-                      .animate()
-                      .scale(
-                        delay: 200.ms,
-                        curve: Curves.easeOutBack,
-                        duration: 600.ms,
-                      )
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 24),
                   Text(
                         title,
@@ -157,10 +150,7 @@ class RecurringIncomesTab extends ConsumerWidget {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 8),
                   Text(
                         subtitle,
@@ -170,10 +160,7 @@ class RecurringIncomesTab extends ConsumerWidget {
                           fontSize: 14,
                           height: 1.5,
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-                      .fadeIn(),
+                      ),
                   const SizedBox(height: 36),
                   SizedBox(
                         width: double.infinity,
@@ -215,11 +202,15 @@ class RecurringIncomesTab extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      )
-                      .animate()
-                      .slideY(begin: 0.2, delay: 500.ms, duration: 400.ms)
-                      .fadeIn(),
-                ],
+                      ),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
           ),
