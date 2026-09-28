@@ -30,7 +30,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 29,
+      version: 31,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -268,6 +268,24 @@ CREATE TABLE debt_items (
         // Tables might already exist
       }
     }
+    if (oldVersion < 30) {
+      try {
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN transferFeeAmount REAL DEFAULT 0.0',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
+    if (oldVersion < 31) {
+      try {
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN isTransferFeePercentage INTEGER DEFAULT 0',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
   }
 
   Future _createCategorizationTables(Database db) async {
@@ -416,6 +434,8 @@ CREATE TABLE accounts (
   initialBalance $realType,
   excludeFromTotal INTEGER DEFAULT 0,
   position INTEGER DEFAULT 0,
+  transferFeeAmount REAL DEFAULT 0.0,
+  isTransferFeePercentage INTEGER DEFAULT 0,
   logoAsset TEXT,
   cardColorHex TEXT,
   cardShapeType INTEGER

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
@@ -28,9 +29,11 @@ class AccountFormScreen extends ConsumerStatefulWidget {
 class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late final TextEditingController nameController;
   late final TextEditingController balanceController;
+  late final TextEditingController transferFeeController;
   late int selectedIcon;
   late Color selectedColor;
   late bool excludeFromTotal;
+  late bool isTransferFeePercentage;
   String? selectedLogoAsset;
   String? selectedTemplateId;
   bool _colorInitialized = false;
@@ -84,10 +87,17 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     balanceController = TextEditingController(
       text: amountText,
     )..addListener(_onInputChanged);
+    
+    transferFeeController = TextEditingController(
+      text: widget.account?.transferFeeAmount != null && widget.account!.transferFeeAmount > 0 
+          ? widget.account!.transferFeeAmount.toString() 
+          : '',
+    )..addListener(_onInputChanged);
     selectedIcon =
         widget.account?.iconCodePoint ??
         Icons.account_balance_wallet_rounded.codePoint;
     excludeFromTotal = widget.account?.excludeFromTotal ?? false;
+    isTransferFeePercentage = widget.account?.isTransferFeePercentage ?? false;
     selectedLogoAsset = widget.account?.logoAsset;
     selectedCardColor = widget.account?.cardColor;
     selectedCardShape = widget.account?.cardShapeType;
@@ -226,6 +236,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   void dispose() {
     nameController.dispose();
     balanceController.dispose();
+    transferFeeController.dispose();
     _iconScrollController.dispose();
     _colorScrollController.dispose();
     _cardColorScrollController.dispose();
@@ -276,6 +287,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         colorHex:
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
         excludeFromTotal: excludeFromTotal,
+        transferFeeAmount: double.tryParse(transferFeeController.text) ?? 0.0,
+        isTransferFeePercentage: isTransferFeePercentage,
         position: isEditing
             ? widget.account!.position
             : ref.read(accountProvider).value?.length ?? 0,
@@ -1248,6 +1261,90 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               ),
             ),
           ),
+          const Gap(24),
+
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
+                ),
+              ),
+              child: Material(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: SwitchListTile(
+                  title: const Text(
+                    'Use Percentage Fee',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Calculate fee as a % of the transfer amount',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: isTransferFeePercentage,
+                  onChanged: (value) {
+                    HapticService.light();
+                    setState(() => isTransferFeePercentage = value);
+                  },
+                  activeColor: AppTheme.primaryColor(context),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const Gap(16),
+            TextFormField(
+              controller: transferFeeController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textColor(context),
+              ),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: AppTheme.surfaceColor(context),
+                prefixIcon: Icon(
+                  isTransferFeePercentage ? Icons.percent_rounded : Icons.payments_rounded,
+                  color: AppTheme.textLightColor(context).withValues(alpha: 0.8),
+                ),
+                labelText: isTransferFeePercentage ? 'Percentage Fee (e.g. 0.5)' : 'Fixed Fee (e.g. 10.00)',
+                labelStyle: TextStyle(
+                  color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: AppTheme.primaryColor(context),
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              ),
+            ),
           const Gap(40),
 
             SizedBox(

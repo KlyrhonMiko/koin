@@ -12,6 +12,8 @@ class Account {
 
   final int position;
   final int? cardShapeType;
+  final double transferFeeAmount;
+  final bool isTransferFeePercentage;
 
   Account({
     required this.id,
@@ -21,6 +23,8 @@ class Account {
     this.initialBalance = 0.0,
     this.excludeFromTotal = false,
     this.position = 0,
+    this.transferFeeAmount = 0.0,
+    this.isTransferFeePercentage = false,
     this.logoAsset,
     this.cardColorHex,
     this.cardShapeType,
@@ -34,6 +38,8 @@ class Account {
     double? initialBalance,
     bool? excludeFromTotal,
     int? position,
+    double? transferFeeAmount,
+    bool? isTransferFeePercentage,
     String? Function()? logoAsset,
     String? Function()? cardColorHex,
     int? Function()? cardShapeType,
@@ -46,6 +52,8 @@ class Account {
       initialBalance: initialBalance ?? this.initialBalance,
       excludeFromTotal: excludeFromTotal ?? this.excludeFromTotal,
       position: position ?? this.position,
+      transferFeeAmount: transferFeeAmount ?? this.transferFeeAmount,
+      isTransferFeePercentage: isTransferFeePercentage ?? this.isTransferFeePercentage,
       logoAsset: logoAsset != null ? logoAsset() : this.logoAsset,
       cardColorHex: cardColorHex != null ? cardColorHex() : this.cardColorHex,
       cardShapeType: cardShapeType != null
@@ -63,6 +71,8 @@ class Account {
       'initialBalance': initialBalance,
       'excludeFromTotal': excludeFromTotal ? 1 : 0,
       'position': position,
+      'transferFeeAmount': transferFeeAmount,
+      'isTransferFeePercentage': isTransferFeePercentage ? 1 : 0,
       'logoAsset': logoAsset,
       'cardColorHex': cardColorHex,
       'cardShapeType': cardShapeType,
@@ -78,6 +88,8 @@ class Account {
       initialBalance: (map['initialBalance'] as num?)?.toDouble() ?? 0.0,
       excludeFromTotal: map['excludeFromTotal'] == 1,
       position: map['position'] ?? 0,
+      transferFeeAmount: (map['transferFeeAmount'] as num?)?.toDouble() ?? 0.0,
+      isTransferFeePercentage: map['isTransferFeePercentage'] == 1,
       logoAsset: map['logoAsset'],
       cardColorHex: map['cardColorHex'],
       cardShapeType: map['cardShapeType'],

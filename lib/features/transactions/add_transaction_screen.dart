@@ -47,6 +47,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     with TickerProviderStateMixin {
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
+  final _feeController = TextEditingController();
   final _noteFocusNode = FocusNode();
   
   final CategorizationEngine _categorizationEngine = CategorizationEngine();
@@ -77,7 +78,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       if (mounted) setState(() {});
     });
     _noteController.addListener(_onNoteChanged);
-    _amountController.addListener(_onNoteChanged);
+    _amountController.addListener(_onAmountChanged);
     _colorAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -122,10 +123,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   void dispose() {
     _debounceTimer?.cancel();
     _noteController.removeListener(_onNoteChanged);
-    _amountController.removeListener(_onNoteChanged);
+    _amountController.removeListener(_onAmountChanged);
     _noteFocusNode.dispose();
     _noteController.dispose();
     _amountController.dispose();
+    _feeController.dispose();
     _colorAnimController.dispose();
     _pulseController.dispose();
     super.dispose();
@@ -141,6 +143,44 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       _runAutoCategorization();
     });
+  }
+
+  void _onAmountChanged() {
+    _onNoteChanged();
+    if (_selectedType == TransactionType.transfer && _selectedAccountId != null) {
+      final accounts = ref.read(accountProvider).value ?? [];
+      final acc = _accountById(accounts, _selectedAccountId);
+      if (acc != null && acc.isTransferFeePercentage) {
+        _updateTransferFee(acc);
+      }
+    }
+  }
+  
+  void _updateTransferFee(Account? account) {
+    if (account == null) {
+      _feeController.text = '';
+      return;
+    }
+    
+    if (account.transferFeeAmount > 0) {
+      if (account.isTransferFeePercentage) {
+        final double amount = double.tryParse(_amountController.text) ?? 0.0;
+        final fee = amount * (account.transferFeeAmount / 100);
+        if (fee == fee.truncateToDouble()) {
+          _feeController.text = fee.toInt().toString();
+        } else {
+          _feeController.text = fee.toStringAsFixed(2);
+        }
+      } else {
+        if (account.transferFeeAmount == account.transferFeeAmount.truncateToDouble()) {
+          _feeController.text = account.transferFeeAmount.toInt().toString();
+        } else {
+          _feeController.text = account.transferFeeAmount.toString();
+        }
+      }
+    } else {
+      _feeController.text = '';
+    }
   }
 
   Future<void> _runAutoCategorization() async {
@@ -250,10 +290,32 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
     );
 
+    AppTransaction? feeTransaction;
+    if (isTransfer) {
+      final feeAmount = double.tryParse(_feeController.text) ?? 0.0;
+      if (feeAmount > 0) {
+        feeTransaction = AppTransaction(
+          id: const Uuid().v4(),
+          note: 'Transfer Fee: ${_noteController.text.isNotEmpty ? _noteController.text : "Transfer"}',
+          amount: feeAmount,
+          date: _selectedDate,
+          type: TransactionType.expense,
+          categoryId: 'cat_others',
+          accountId: _selectedAccountId!,
+        );
+      }
+    }
+
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
+      if (feeTransaction != null) {
+        ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
+      }
     } else {
       ref.read(transactionProvider.notifier).addTransaction(newTransaction);
+      if (feeTransaction != null) {
+        ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
+      }
     }
     HapticService.success();
     Navigator.pop(context);
@@ -418,6 +480,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             _selectedType != TransactionType.transfer) {
           _selectedCategoryId = null;
         }
+      }
+      if (_selectedType == TransactionType.transfer && _selectedAccountId != null) {
+        final accounts = ref.read(accountProvider).value ?? [];
+        final acc = _accountById(accounts, _selectedAccountId);
+        _updateTransferFee(acc);
       }
     });
     _prevColor = oldColor;
@@ -800,76 +867,146 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Note field ──
-        Container(
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
+        if (_selectedType != TransactionType.transfer) ...[
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.sticky_note_2_rounded,
-                    size: 17,
-                    color: AppTheme.textLightColor(context),
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: TextField(
-                    controller: _noteController,
-                    focusNode: _noteFocusNode,
-                    onTap: () {
-                      HapticService.light();
-                    },
-                    onTapOutside: (_) => _noteFocusNode.unfocus(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: AppTheme.textColor(context),
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Add a note...',
-                      hintStyle: TextStyle(
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.45),
-                        fontWeight: FontWeight.w400,
-                        fontSize: 15,
-                      ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLightColor(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.sticky_note_2_rounded,
+                      size: 17,
+                      color: AppTheme.textLightColor(context),
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: TextField(
+                      controller: _noteController,
+                      focusNode: _noteFocusNode,
+                      onTap: () {
+                        HapticService.light();
+                      },
+                      onTapOutside: (_) => _noteFocusNode.unfocus(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: AppTheme.textColor(context),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Add a note...',
+                        hintStyle: TextStyle(
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.45),
+                          fontWeight: FontWeight.w400,
+                          fontSize: 15,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+          const Gap(12),
+        ],
 
-        const Gap(12),
+        // ── Transfer Fee field (Transfer only) ──
+        if (_selectedType == TransactionType.transfer) ...[
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLightColor(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.payments_rounded,
+                      size: 17,
+                      color: AppTheme.textLightColor(context),
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: TextField(
+                      controller: _feeController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: AppTheme.textColor(context),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Transfer Fee (Optional)',
+                        hintStyle: TextStyle(
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.45),
+                          fontWeight: FontWeight.w400,
+                          fontSize: 15,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(12),
+        ],
 
         // ── Category & Account card ──
         Container(
@@ -1009,6 +1146,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                 if (_selectedType == TransactionType.transfer &&
                                     _selectedToAccountId == id) {
                                   _selectedToAccountId = null;
+                                }
+                                if (_selectedType == TransactionType.transfer) {
+                                  final acc = _accountById(accounts, id);
+                                  _updateTransferFee(acc);
                                 }
                               }),
                             ),
