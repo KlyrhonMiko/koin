@@ -11,6 +11,9 @@ import 'package:koin/core/utils/voice_command_parser.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/category.dart';
+import 'package:koin/core/models/account.dart';
+import 'package:koin/core/categorization/categorization_engine.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:gap/gap.dart';
@@ -67,14 +70,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     super.dispose();
   }
 
-  void _parseCurrentWords() {
+  Future<void> _parseCurrentWords() async {
     final state = ref.read(voiceInputProvider);
     final categories = ref.read(categoriesProvider).value ?? [];
     final transactions = ref.read(transactionProvider).value ?? [];
     final accounts = ref.read(accountProvider).value ?? [];
 
     if (state.lastWords.isNotEmpty) {
-      final parsed = VoiceCommandParser.parse(
+      var parsed = VoiceCommandParser.parse(
         state.lastWords,
         categories,
         transactions,
@@ -85,9 +88,52 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           '';
       _noteController.text = parsed.note;
 
-      setState(() {
-        _parsedData = parsed;
-      });
+      // Enhance with ML Categorization
+      final engine = CategorizationEngine();
+      final amount = parsed.amount ?? 0.0;
+      // Provide dummy amount if zero to maintain sign for expense
+      final effectiveAmount = amount == 0.0 ? 1.0 : amount;
+      final signedAmount = parsed.type == TransactionType.expense ? -effectiveAmount : effectiveAmount;
+      
+      try {
+        final mlResult = await engine.categorize(
+          rawText: parsed.note,
+          amount: signedAmount,
+          date: DateTime.now(),
+          currentAccountId: parsed.account?.id ?? '',
+        );
+
+        if (mlResult != null) {
+          TransactionCategory? cat = parsed.category;
+          Account? acc = parsed.account;
+          Account? toAcc = parsed.toAccount;
+          
+          if (mlResult.type == TransactionType.transfer) {
+            try { acc = accounts.firstWhere((a) => a.id == mlResult.originId); } catch (_) {}
+            try { toAcc = accounts.firstWhere((a) => a.id == mlResult.destinationId); } catch (_) {}
+            cat = null;
+          } else {
+            try { acc = accounts.firstWhere((a) => a.id == mlResult.originId); } catch (_) {}
+            try { cat = categories.firstWhere((c) => c.id == mlResult.destinationId); } catch (_) {}
+            toAcc = null;
+          }
+          
+          parsed = parsed.copyWith(
+            type: mlResult.type,
+            category: cat,
+            account: acc,
+            toAccount: toAcc,
+          );
+        }
+      } catch (e) {
+        // ML enhancement failed, silently fallback to static parsing
+      }
+
+      if (mounted) {
+        setState(() {
+          _parsedData = parsed;
+        });
+      }
     }
   }
 
@@ -119,6 +165,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (hadFocus) {
       await Future.delayed(const Duration(milliseconds: 150));
     }
+    if (!mounted) return;
     final categories = ref.read(categoriesProvider).value ?? [];
     final filteredCategories = categories
         .where((c) => c.type == _parsedData!.type)
@@ -154,6 +201,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (hadFocus) {
       await Future.delayed(const Duration(milliseconds: 150));
     }
+    if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
     final id = await showSelectSheet<String>(
@@ -197,6 +245,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (hadFocus) {
       await Future.delayed(const Duration(milliseconds: 150));
     }
+    if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
     final id = await showSelectSheet<String>(

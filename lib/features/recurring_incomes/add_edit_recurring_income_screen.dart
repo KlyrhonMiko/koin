@@ -22,6 +22,8 @@ import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/categorization/categorization_engine.dart';
+import 'dart:async';
 
 class AddEditRecurringIncomeScreen extends ConsumerStatefulWidget {
   final PlannedPayment? payment;
@@ -47,6 +49,7 @@ class _AddEditRecurringIncomeScreenState
   DateTime? _endDate;
   PaymentFrequency _selectedFrequency = PaymentFrequency.flexible;
   bool _isAutoProcess = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -67,8 +70,53 @@ class _AddEditRecurringIncomeScreenState
     }
   }
 
+  void _onTitleChanged() {
+    if (widget.payment != null) return;
+    
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), _runAutoCategorization);
+  }
+
+  Future<void> _runAutoCategorization() async {
+    if (!mounted) return;
+    if (_titleController.text.trim().isEmpty) return;
+    
+    double amount = double.tryParse(_amountController.text) ?? 1.0;
+    if (amount == 0.0) amount = 1.0;
+    final signedAmount = amount; // Always positive for recurring income
+    
+    try {
+      final engine = CategorizationEngine();
+      final result = await engine.categorize(
+        rawText: _titleController.text,
+        amount: signedAmount,
+        date: _startDate,
+        currentAccountId: _selectedAccountId ?? '',
+      );
+
+      if (result != null && mounted) {
+        if (result.type != TransactionType.transfer) {
+          final categories = ref.read(categoriesProvider).value ?? [];
+          final matchingCat = categories.where((c) => c.id == result.destinationId && c.type == TransactionType.income).firstOrNull;
+          if (matchingCat != null) {
+            HapticService.light();
+            setState(() {
+              _selectedCategoryId = matchingCat.id;
+              if (result.originId.isNotEmpty) {
+                _selectedAccountId = result.originId;
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _titleController.dispose();
     _amountController.dispose();
     _notesController.dispose();
@@ -162,6 +210,15 @@ class _AddEditRecurringIncomeScreenState
           .read(plannedPaymentProvider.notifier)
           .updatePlannedPayment(newPayment);
     }
+
+    final engine = CategorizationEngine();
+    final signedAmount = amount; // Always positive for income
+    engine.processFeedback(
+      rawText: _titleController.text,
+      amount: signedAmount,
+      originId: _selectedAccountId!,
+      destinationId: _selectedCategoryId!,
+    );
 
     if (mounted) {
       Navigator.pop(context);
@@ -462,7 +519,10 @@ class _AddEditRecurringIncomeScreenState
                   ).withValues(alpha: 0.4),
                 ),
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                setState(() {});
+                _onTitleChanged();
+              },
             ),
           ),
 
@@ -512,7 +572,10 @@ class _AddEditRecurringIncomeScreenState
                       color: primaryColor.withValues(alpha: 0.35),
                     ),
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) {
+                    setState(() {});
+                    _onTitleChanged();
+                  },
                 ),
               ),
             ],

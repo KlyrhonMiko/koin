@@ -30,7 +30,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 27,
+      version: 29,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -254,6 +254,46 @@ CREATE TABLE debt_items (
         // Column might already exist
       }
     }
+    if (oldVersion < 28) {
+      try {
+        await _createCategorizationTables(db);
+      } catch (_) {
+        // Tables might already exist
+      }
+    }
+    if (oldVersion < 29) {
+      try {
+        await _createCategorizationTables(db);
+      } catch (_) {
+        // Tables might already exist
+      }
+    }
+  }
+
+  Future _createCategorizationTables(Database db) async {
+    const idType = 'TEXT PRIMARY KEY';
+    const textType = 'TEXT NOT NULL';
+    const intType = 'INTEGER NOT NULL';
+
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS categorization_rules (
+  id $idType,
+  search_string $textType,
+  originId $textType,
+  destinationId $textType
+)
+''');
+
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS ml_frequency_dictionary (
+  id $idType,
+  token $textType,
+  originId $textType,
+  destinationId $textType,
+  sign $intType,
+  occurrences $intType
+)
+''');
   }
 
   Future _createPlannedPaymentsTable(Database db) async {
@@ -435,6 +475,7 @@ CREATE TABLE transactions (
     await _createSavingsTables(db);
     await _createPlannedPaymentsTable(db);
     await _createDebtsTables(db);
+    await _createCategorizationTables(db);
 
     // Insert default data
     await _insertDefaultCategories(db);
@@ -554,6 +595,8 @@ CREATE TABLE transactions (
       await txn.delete('debt_items');
       await txn.delete('debt_repayments');
       await txn.delete('debts');
+      await txn.delete('categorization_rules');
+      await txn.delete('ml_frequency_dictionary');
       await txn.delete('app_settings');
     });
   }

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:koin/core/categorization/categorization_engine.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -46,6 +48,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteFocusNode = FocusNode();
+  
+  final CategorizationEngine _categorizationEngine = CategorizationEngine();
+  Timer? _debounceTimer;
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
   String? _selectedCategoryId;
@@ -71,6 +76,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _noteFocusNode.addListener(() {
       if (mounted) setState(() {});
     });
+    _noteController.addListener(_onNoteChanged);
+    _amountController.addListener(_onNoteChanged);
     _colorAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -113,6 +120,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _noteController.removeListener(_onNoteChanged);
+    _amountController.removeListener(_onNoteChanged);
     _noteFocusNode.dispose();
     _noteController.dispose();
     _amountController.dispose();
@@ -122,8 +132,70 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   // ═══════════════════════════════════════════════════════
-  // Save
+  // Save & ML
   // ═══════════════════════════════════════════════════════
+  void _onNoteChanged() {
+    if (widget.editingTransaction != null) return; // Skip auto-categorize if editing
+    
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _runAutoCategorization();
+    });
+  }
+
+  Future<void> _runAutoCategorization() async {
+    if (!mounted) return;
+    if (_noteController.text.trim().isEmpty) return;
+    
+    double amount = double.tryParse(_amountController.text) ?? 0.0;
+    
+    // We need an account ID to process internal transfers properly
+    if (amount == 0.0 && _selectedAccountId == null) return;
+    
+    // Fix: Dart treats -0.0 >= 0 as true. If amount is empty (0.0), 
+    // the CategorizationEngine will misinterpret expenses as income.
+    // We pass a dummy amount of 1.0 just to preserve the correct mathematical sign.
+    if (amount == 0.0) amount = 1.0;
+    
+    final signedAmount = _selectedType == TransactionType.expense ? -amount : amount;
+    
+    try {
+      final result = await _categorizationEngine.categorize(
+        rawText: _noteController.text,
+        amount: signedAmount,
+        date: _selectedDate,
+        currentAccountId: _selectedAccountId ?? '',
+      );
+
+      if (result != null && mounted) {
+        HapticService.light();
+        setState(() {
+          _selectedType = result.type;
+          if (result.type == TransactionType.transfer) {
+            _selectedToAccountId = result.destinationId;
+            _selectedAccountId = result.originId;
+            _selectedCategoryId = null;
+          } else {
+            _selectedCategoryId = result.destinationId;
+            _selectedAccountId = result.originId;
+            _selectedToAccountId = null;
+          }
+        });
+        _onTypeChanged(_selectedType, ref.read(categoriesProvider).value ?? []);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Auto-categorize Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
   void _saveTransaction() {
     final isTransfer = _selectedType == TransactionType.transfer;
 
@@ -167,6 +239,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       categoryId: isTransfer ? 'cat_others' : _selectedCategoryId!,
       accountId: _selectedAccountId!,
       toAccountId: isTransfer ? _selectedToAccountId : null,
+    );
+
+    // Feed the ultimate categorization decision back into the engine
+    final signedAmount = _selectedType == TransactionType.expense ? -amount : amount;
+    _categorizationEngine.processFeedback(
+      rawText: _noteController.text,
+      amount: signedAmount,
+      originId: _selectedAccountId!,
+      destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
     );
 
     if (widget.editingTransaction != null) {
@@ -232,6 +313,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     if (hadFocus) {
       await Future.delayed(const Duration(milliseconds: 150));
     }
+    if (!mounted) return;
     HapticService.light();
     final pickedDate = await showDatePicker(
       context: context,
@@ -274,6 +356,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     if (hadFocus) {
       await Future.delayed(const Duration(milliseconds: 150));
     }
+    if (!mounted) return;
     HapticService.light();
     final pickedTime = await showTimePicker(
       context: context,
