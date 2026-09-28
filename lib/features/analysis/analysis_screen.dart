@@ -343,17 +343,21 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       ),
                     ),
                     const Gap(12),
-                    Row(
-                      children: [
-                        _buildInlinePeriodSelector(),
-                        if (previousExpense != null) ...[
-                          const Gap(10),
-                          _buildTrendBadge(
-                            totalExpense,
-                            previousExpense,
-                          ),
+                    SizedBox(
+                      height: 24,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildInlinePeriodSelector(),
+                          if (previousExpense != null) ...[
+                            const Gap(10),
+                            _buildTrendBadge(
+                              totalExpense,
+                              previousExpense,
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                     const Gap(24),
                     _buildIntegratedForecast(context, currency),
@@ -388,13 +392,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: badgeColor, size: 14),
-          const Gap(4),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, color: badgeColor, size: 14),
+        const Gap(4),
           Text(
             '${percent.toStringAsFixed(1)}%',
             style: TextStyle(
@@ -407,124 +410,145 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               ],
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
   Widget _buildIntegratedForecast(BuildContext context, Currency currency) {
     final forecastAsync = ref.watch(forecastProvider(_selectedFilterIndex));
-    return forecastAsync.when(
-      data: (forecast) {
-        if (forecast.forecastedInflow == 0 && forecast.forecastedOutflow == 0) {
-          return const SizedBox.shrink();
-        }
-        
-        final isWarning = forecast.isWarning;
 
-        return Column(
-          children: [
-            Container(
-              height: 1,
-              width: double.infinity,
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
-            const Gap(16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Expected Inflow',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+    Widget buildRow({
+      required String inflowStr,
+      required String outflowStr,
+      required String netStr,
+      bool isWarning = false,
+    }) {
+      return Column(
+        children: [
+          Container(
+            height: 1,
+            width: double.infinity,
+            color: Colors.white.withValues(alpha: 0.15),
+          ),
+          const Gap(16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Inflow',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const Gap(4),
-                      Text(
-                        NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedInflow),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      inflowStr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ],
-                  ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Expected Outflow',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Outflow',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const Gap(4),
-                      Text(
-                        NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedOutflow),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      outflowStr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ],
-                  ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isWarning) ...[
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              color: Colors.redAccent.shade100,
-                              size: 12,
-                            ),
-                            const Gap(4),
-                          ],
-                          Text(
-                            'Predicted Net',
-                            style: TextStyle(
-                              color: isWarning ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.7),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isWarning) ...[
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.redAccent.shade100,
+                            size: 14,
                           ),
+                          const Gap(4),
                         ],
-                      ),
-                      const Gap(4),
-                      Text(
-                        NumberFormat.currency(symbol: currency.symbol).format(forecast.predictedNetBalance),
-                        style: TextStyle(
-                          color: isWarning ? Colors.redAccent.shade100 : Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
+                        Text(
+                          'Net Balance',
+                          style: TextStyle(
+                            color: isWarning ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
+                      ],
+                    ),
+                    const Gap(4),
+                    Text(
+                      netStr,
+                      style: TextStyle(
+                        color: isWarning ? Colors.redAccent.shade100 : Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ],
-                  ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (e, st) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: forecastAsync.when(
+        data: (forecast) {
+          if (forecast.forecastedInflow == 0 && forecast.forecastedOutflow == 0) {
+            return const SizedBox.shrink();
+          }
+          return buildRow(
+            inflowStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedInflow),
+            outflowStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedOutflow),
+            netStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.predictedNetBalance),
+            isWarning: forecast.isWarning,
+          );
+        },
+        loading: () => buildRow(
+          inflowStr: '...',
+          outflowStr: '...',
+          netStr: '...',
+        ),
+        error: (e, st) => const SizedBox.shrink(),
+      ),
     );
   }
 

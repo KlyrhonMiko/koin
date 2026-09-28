@@ -88,6 +88,6 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((ref, filterIn
     forecastedOutflow: forecastedOutflow,
     currentBaseline: currentBaseline,
     predictedNetBalance: predictedNetBalance,
-    isWarning: forecastedOutflow > forecastedInflow,
+    isWarning: predictedNetBalance < 0,
   );
 });
