@@ -22,6 +22,7 @@ import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
+import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:uuid/uuid.dart';
 
 class AddEditDebtScreen extends ConsumerStatefulWidget {
@@ -1388,23 +1389,47 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.name, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textColor(context))),
+                          Text(
+                            item.name, 
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textColor(context)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           const Gap(4),
-                          Text('${item.totalInstallments} months • Starts ${DateFormat.yMMMd().format(item.firstPaymentDate)}', 
-                               style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12)),
+                          Text(
+                            '${item.totalInstallments} months • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}', 
+                            style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
-                    Text(NumberFormat.simpleCurrency(name: ref.read(settingsProvider).currency.code).format(item.amount),
-                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: primaryColor)),
+                    const Gap(12),
+                    Text(
+                      NumberFormat.simpleCurrency(name: ref.read(settingsProvider).currency.code).format(item.amount),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: primaryColor),
+                      textAlign: TextAlign.right,
+                    ),
                     const Gap(12),
                     GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         HapticService.light();
-                        setState(() {
-                           _items.remove(item);
-                           _updateAmountFromItems();
-                        });
+                        final confirm = await ConfirmationSheet.show(
+                          context: context,
+                          title: 'Remove Purchase?',
+                          description: 'Are you sure you want to remove "${item.name}"? This will not update your existing credit limit.',
+                          confirmLabel: 'Remove',
+                          confirmColor: AppTheme.expenseColor(context),
+                          icon: Icons.delete_outline_rounded,
+                          isDanger: true,
+                        );
+                        if (confirm == true) {
+                          setState(() {
+                             _items.remove(item);
+                             _updateAmountFromItems();
+                          });
+                        }
                       },
                       child: Icon(Icons.remove_circle_outline_rounded, color: AppTheme.expenseColor(context), size: 24),
                     ),

@@ -23,6 +23,7 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/models/category.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/widgets/select_sheet.dart';
@@ -562,13 +563,27 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.shopping_bag_outlined, color: color, size: 20),
+                  Builder(
+                    builder: (context) {
+                      final categories = ref.read(categoriesProvider).value ?? [];
+                      final category = categories.cast<TransactionCategory?>().firstWhere(
+                        (c) => c?.id == item.categoryId,
+                        orElse: () => null,
+                      );
+                      
+                      return Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: (category?.color ?? color).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          category != null ? IconUtils.getIcon(category.iconCodePoint) : Icons.shopping_bag_outlined, 
+                          color: category?.color ?? color, 
+                          size: 20,
+                        ),
+                      );
+                    },
                   ),
                   const Gap(16),
                   Expanded(
@@ -582,19 +597,24 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const Gap(4),
                         Text(
-                          '${item.totalInstallments} payments • Starts ${DateFormat.yMMMd().format(item.firstPaymentDate)}',
+                          '${item.totalInstallments} payments • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
                           style: TextStyle(
                             color: AppTheme.textLightColor(context),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
+                  const Gap(12),
                   Text(
                     currencyFormat.format(item.amount),
                     style: TextStyle(
@@ -602,6 +622,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
                     ),
+                    textAlign: TextAlign.right,
                   ),
                 ],
               ),
