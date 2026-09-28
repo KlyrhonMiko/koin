@@ -383,7 +383,12 @@ class SettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
-      child: Column(children: children),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: children),
+      ),
     );
   }
 
@@ -901,9 +906,13 @@ class SettingsScreen extends ConsumerWidget {
                             )
                           : Border.all(color: AppTheme.dividerColor(context)),
                     ),
-                    child: ListTile(
-                      onTap: () {
-                        HapticService.light();
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        onTap: () {
+                          HapticService.light();
                         ref
                             .read(settingsProvider.notifier)
                             .setCurrency(currency);
@@ -959,6 +968,7 @@ class SettingsScreen extends ConsumerWidget {
                               size: 22,
                             )
                           : null,
+                      ),
                     ),
                   );
                 },
