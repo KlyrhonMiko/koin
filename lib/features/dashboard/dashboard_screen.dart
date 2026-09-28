@@ -530,6 +530,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+
   // ─── Quick Actions ──────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context, WidgetRef ref) {
     return Row(

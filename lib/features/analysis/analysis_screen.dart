@@ -9,6 +9,7 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/providers/forecast_provider.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/currency.dart';
 import 'package:koin/core/utils/icon_utils.dart';
@@ -354,6 +355,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         ],
                       ],
                     ),
+                    const Gap(24),
+                    _buildIntegratedForecast(context, currency),
                   ]
                   .animate(interval: 40.ms)
                   .fade(duration: 250.ms, curve: Curves.easeOutCubic)
@@ -406,6 +409,122 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildIntegratedForecast(BuildContext context, Currency currency) {
+    final forecastAsync = ref.watch(forecastProvider(_selectedFilterIndex));
+    return forecastAsync.when(
+      data: (forecast) {
+        if (forecast.forecastedInflow == 0 && forecast.forecastedOutflow == 0) {
+          return const SizedBox.shrink();
+        }
+        
+        final isWarning = forecast.isWarning;
+
+        return Column(
+          children: [
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+            const Gap(16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Expected Inflow',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedInflow),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Expected Outflow',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedOutflow),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isWarning) ...[
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.redAccent.shade100,
+                              size: 12,
+                            ),
+                            const Gap(4),
+                          ],
+                          Text(
+                            'Predicted Net',
+                            style: TextStyle(
+                              color: isWarning ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(4),
+                      Text(
+                        NumberFormat.currency(symbol: currency.symbol).format(forecast.predictedNetBalance),
+                        style: TextStyle(
+                          color: isWarning ? Colors.redAccent.shade100 : Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, st) => const SizedBox.shrink(),
     );
   }
 
