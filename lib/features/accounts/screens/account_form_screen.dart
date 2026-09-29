@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
@@ -1288,7 +1287,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     HapticService.light();
                     setState(() => isTransferFeePercentage = value);
                   },
-                  activeColor: AppTheme.primaryColor(context),
+                  activeThumbColor: AppTheme.primaryColor(context),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 4,
