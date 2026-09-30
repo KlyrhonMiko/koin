@@ -89,8 +89,14 @@ class SavingsGoal {
     return remainingAmount! / remainingDays!;
   }
 
-  double? get weeklyNeeded => dailyNeeded != null ? dailyNeeded! * 7 : null;
-  double? get monthlyNeeded => dailyNeeded != null ? dailyNeeded! * 30 : null;
+  double? get weeklyNeeded {
+    if (dailyNeeded == null || remainingAmount == null) return null;
+    return (dailyNeeded! * 7).clamp(0, remainingAmount!);
+  }
+  double? get monthlyNeeded {
+    if (dailyNeeded == null || remainingAmount == null) return null;
+    return (dailyNeeded! * 30).clamp(0, remainingAmount!);
+  }
 
   double get progress {
     if (targetAmount == null || targetAmount! <= 0) return 0.0;

@@ -441,10 +441,10 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   children: [
                     _buildGaugeHeader(context, goal, currencyFormat),
                     const Gap(16),
-                    _buildCoachInsightButton(context, goal, currencyFormat),
-                    const Gap(28),
                     _buildSavingsNeededSection(context, goal, currencyFormat),
-                    const Gap(28),
+                    const Gap(24),
+                    _buildCoachInsightButton(context, goal, currencyFormat),
+                    const Gap(32),
                     _buildActivitySection(
                       context,
                       goal,
@@ -796,104 +796,111 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     NumberFormat currencyFormat,
   ) {
     if (goal.dailyNeeded == null) return const SizedBox.shrink();
+    
     return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Savings Needed',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textColor(context),
-                letterSpacing: -0.4,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Savings Needed',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textColor(context),
+            letterSpacing: -0.3,
+          ),
+        ).animate().fade(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
+        const Gap(12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const Gap(14),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNeededCard(
-                    context,
-                    label: 'Daily',
-                    value: goal.dailyNeeded!,
-                    formatter: currencyFormat.format,
-                    color: const Color(0xFF3B82F6),
-                  ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildPlainMetric(
+                  context,
+                  label: 'Daily',
+                  value: goal.dailyNeeded!,
+                  formatter: currencyFormat.format,
+                  delayMs: 100,
                 ),
-                const Gap(10),
-                Expanded(
-                  child: _buildNeededCard(
-                    context,
-                    label: 'Weekly',
-                    value: goal.weeklyNeeded!,
-                    formatter: currencyFormat.format,
-                    color: const Color(0xFF6366F1),
-                  ),
+              ),
+              Expanded(
+                child: _buildPlainMetric(
+                  context,
+                  label: 'Weekly',
+                  value: goal.weeklyNeeded!,
+                  formatter: currencyFormat.format,
+                  delayMs: 160,
                 ),
-                const Gap(10),
-                Expanded(
-                  child: _buildNeededCard(
-                    context,
-                    label: 'Monthly',
-                    value: goal.monthlyNeeded!,
-                    formatter: currencyFormat.format,
-                    color: const Color(0xFF8B5CF6),
-                  ),
+              ),
+              Expanded(
+                child: _buildPlainMetric(
+                  context,
+                  label: 'Monthly',
+                  value: goal.monthlyNeeded!,
+                  formatter: currencyFormat.format,
+                  delayMs: 220,
                 ),
-              ],
-            ),
-          ],
-        )
-        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _buildNeededCard(
+  Widget _buildPlainMetric(
     BuildContext context, {
     required String label,
     required double value,
     required String Function(double) formatter,
-    required Color color,
+    required int delayMs,
   }) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+            letterSpacing: 0.2,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
+        ),
+        const Gap(2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: AnimatedCounter(
+            value: value,
+            formatter: formatter,
+            duration: const Duration(milliseconds: 1400),
+            curve: Curves.easeOutCubic,
             style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textColor(context),
+              letterSpacing: -0.4,
             ),
           ),
-          const Gap(6),
-          FittedBox(
-            child: AnimatedCounter(
-              value: value,
-              formatter: formatter,
-              duration: const Duration(milliseconds: 1000),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ).animate().fade(delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.15, delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic);
   }
 
   Widget _buildActivitySection(
