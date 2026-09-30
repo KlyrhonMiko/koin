@@ -202,6 +202,7 @@ void main() {
 
       expect(find.text('Swipe Me'), findsOneWidget);
       expect(find.byType(Dismissible), findsOneWidget);
+      expect(deleted, isFalse);
     });
 
     testWidgets('koinReorderProxyDecorator wraps child in elevation and scale transform', (tester) async {
