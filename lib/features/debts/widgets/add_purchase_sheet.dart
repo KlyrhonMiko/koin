@@ -7,7 +7,7 @@ import 'package:koin/core/models/debt.dart';
 import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/categorization/categorization_engine.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
@@ -30,45 +30,44 @@ Future<DebtItem?> showAddPurchaseSheet({
       ? categories.where((c) => c.id == existingItem!.categoryId).firstOrNull 
       : null;
 
-  Timer? debounceTimer;
-  final engine = CategorizationEngine();
+  final suggester = HybridMlSuggesterAdapter();
+  final coordinator = DebouncedSuggesterCoordinator(
+    suggester: suggester,
+    debounceDuration: const Duration(milliseconds: 350),
+  );
   int autoCatKey = 0;
 
   void runAutoCategorize(void Function(void Function()) setSheetState) {
-    debounceTimer?.cancel();
-    debounceTimer = Timer(const Duration(milliseconds: 350), () async {
-      final trimmed = name.trim();
-      if (trimmed.isEmpty) return;
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
 
-      final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 1.0;
-      final effectiveAmt = amt == 0.0 ? 1.0 : amt;
-      final targetType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-      final signedAmount = targetType == TransactionType.expense ? -effectiveAmt : effectiveAmt;
+    final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 1.0;
+    final effectiveAmt = amt == 0.0 ? 1.0 : amt;
+    final targetType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
 
-      try {
-        final result = await engine.categorize(
-          rawText: trimmed,
-          amount: signedAmount,
-          date: firstDate,
-          currentAccountId: '',
-        );
-
-        if (result != null) {
-          final matched = categories
-              .where((c) => c.id == result.destinationId && c.type == targetType)
-              .firstOrNull;
-          if (matched != null) {
-            if (selectedCategory?.id != matched.id) {
-              HapticService.light();
-              setSheetState(() {
-                autoCatKey++;
-                selectedCategory = matched;
-              });
-            }
+    coordinator.run(
+      context: SuggestionContext(
+        text: trimmed,
+        amount: effectiveAmt,
+        type: targetType,
+        date: firstDate,
+        currentAccountId: '',
+      ),
+      onSuggested: (suggestion) {
+        final matched = categories
+            .where((c) => c.id == suggestion.categoryId && c.type == targetType)
+            .firstOrNull;
+        if (matched != null) {
+          if (selectedCategory?.id != matched.id) {
+            HapticService.light();
+            setSheetState(() {
+              autoCatKey++;
+              selectedCategory = matched;
+            });
           }
         }
-      } catch (_) {}
-    });
+      },
+    );
   }
 
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -274,15 +273,15 @@ Future<DebtItem?> showAddPurchaseSheet({
                         final inst = int.tryParse(installmentsStr) ?? 1;
                         if (name.isNotEmpty && amt > 0 && inst > 0) {
                           HapticService.light();
-                          debounceTimer?.cancel();
+                          coordinator.cancel();
 
                           if (selectedCategory != null) {
                             final targetType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-                            final signedAmount = targetType == TransactionType.expense ? -amt : amt;
-                            engine.processFeedback(
-                              rawText: name.trim(),
-                              amount: signedAmount,
-                              originId: '',
+                            suggester.recordFeedback(
+                              text: name.trim(),
+                              amount: amt,
+                              type: targetType,
+                              originAccountId: '',
                               destinationId: selectedCategory!.id,
                             );
                           }
@@ -312,7 +311,7 @@ Future<DebtItem?> showAddPurchaseSheet({
         },
       );
     },
-  ).whenComplete(() => debounceTimer?.cancel());
+  ).whenComplete(() => coordinator.dispose());
 }
 
 Widget _buildSelectionRow(

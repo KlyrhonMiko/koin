@@ -60,4 +60,7 @@ class DebtItem {
       categoryId: categoryId ?? this.categoryId,
     );
   }
+
+  double get perInstallmentAmount =>
+      totalInstallments > 0 ? amount / totalInstallments : amount;
 }

@@ -64,4 +64,25 @@ class PlannedPayment {
       isAutoProcess: map['isAutoProcess'] == 1,
     );
   }
+
+  /// Calculates the previous due date when an auto-processed or linked transaction is rolled back.
+  DateTime computePreviousDate() {
+    DateTime prevDate = nextDate;
+    switch (frequency) {
+      case PaymentFrequency.daily:
+        return prevDate.subtract(const Duration(days: 1));
+      case PaymentFrequency.weekly:
+        return prevDate.subtract(const Duration(days: 7));
+      case PaymentFrequency.biWeekly:
+        return prevDate.subtract(const Duration(days: 14));
+      case PaymentFrequency.monthly:
+        return DateTime(prevDate.year, prevDate.month - 1, prevDate.day);
+      case PaymentFrequency.quarterly:
+        return DateTime(prevDate.year, prevDate.month - 3, prevDate.day);
+      case PaymentFrequency.yearly:
+        return DateTime(prevDate.year - 1, prevDate.month, prevDate.day);
+      case PaymentFrequency.flexible:
+        return prevDate;
+    }
+  }
 }

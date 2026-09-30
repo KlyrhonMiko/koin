@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:koin/core/categorization/categorization_engine.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -51,7 +51,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   final _feeController = TextEditingController();
   final _noteFocusNode = FocusNode();
   
-  final CategorizationEngine _categorizationEngine = CategorizationEngine();
   Timer? _debounceTimer;
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
@@ -189,44 +188,46 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     // We pass a dummy amount of 1.0 just to preserve the correct mathematical sign.
     if (amount == 0.0) amount = 1.0;
     
-    final signedAmount = _selectedType == TransactionType.expense ? -amount : amount;
-    
     try {
-      final result = await _categorizationEngine.categorize(
-        rawText: _noteController.text,
-        amount: signedAmount,
-        date: _selectedDate,
-        currentAccountId: _selectedAccountId ?? '',
+      final suggester = ref.read(categorySuggesterProvider);
+      final suggestion = await suggester.suggest(
+        SuggestionContext(
+          text: _noteController.text,
+          amount: amount,
+          type: _selectedType,
+          date: _selectedDate,
+          currentAccountId: _selectedAccountId ?? '',
+        ),
       );
 
-      if (result != null && mounted) {
+      if (suggestion != null && mounted) {
         bool changed = false;
         bool categoryChanged = false;
-        if (result.type != _selectedType) changed = true;
+        if (suggestion.type != _selectedType) changed = true;
         
-        if (result.type == TransactionType.transfer) {
-          if (_selectedToAccountId != result.destinationId) changed = true;
-          if (_selectedAccountId != result.originId) changed = true;
+        if (suggestion.isTransfer) {
+          if (_selectedToAccountId != suggestion.destinationAccountId) changed = true;
+          if (_selectedAccountId != suggestion.originAccountId) changed = true;
         } else {
-          if (_selectedCategoryId != result.destinationId) {
+          if (_selectedCategoryId != suggestion.categoryId) {
             changed = true;
             categoryChanged = true;
           }
-          if (_selectedAccountId != result.originId) changed = true;
+          if (_selectedAccountId != suggestion.originAccountId) changed = true;
         }
 
         if (changed) {
           HapticService.light();
           setState(() {
             if (categoryChanged) _autoCatKey++;
-            _selectedType = result.type;
-            if (result.type == TransactionType.transfer) {
-              _selectedToAccountId = result.destinationId;
-              _selectedAccountId = result.originId;
+            _selectedType = suggestion.type;
+            if (suggestion.isTransfer) {
+              _selectedToAccountId = suggestion.destinationAccountId;
+              _selectedAccountId = suggestion.originAccountId;
               _selectedCategoryId = null;
             } else {
-              _selectedCategoryId = result.destinationId;
-              _selectedAccountId = result.originId;
+              _selectedCategoryId = suggestion.categoryId;
+              _selectedAccountId = suggestion.originAccountId;
               _selectedToAccountId = null;
             }
           });
@@ -324,12 +325,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       toAccountId: isTransfer ? _selectedToAccountId : null,
     );
 
-    // Feed the ultimate categorization decision back into the engine
-    final signedAmount = _selectedType == TransactionType.expense ? -transferAmount : transferAmount;
-    _categorizationEngine.processFeedback(
-      rawText: _noteController.text,
-      amount: signedAmount,
-      originId: _selectedAccountId!,
+    // Feed the ultimate categorization decision back into the suggester
+    ref.read(categorySuggesterProvider).recordFeedback(
+      text: _noteController.text,
+      amount: transferAmount,
+      type: _selectedType,
+      originAccountId: _selectedAccountId!,
       destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
     );
 

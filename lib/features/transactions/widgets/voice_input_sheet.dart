@@ -13,7 +13,7 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/account.dart';
-import 'package:koin/core/categorization/categorization_engine.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:gap/gap.dart';
@@ -89,34 +89,35 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           '';
       _noteController.text = parsed.note;
 
-      // Enhance with ML Categorization
-      final engine = CategorizationEngine();
+      // Enhance with CategorySuggester Seam
+      final suggester = ref.read(categorySuggesterProvider);
       final amount = parsed.amount ?? 0.0;
-      // Provide dummy amount if zero to maintain sign for expense
       final effectiveAmount = amount == 0.0 ? 1.0 : amount;
-      final signedAmount = parsed.type == TransactionType.expense ? -effectiveAmount : effectiveAmount;
       
       try {
-        final mlResult = await engine.categorize(
-          rawText: parsed.note,
-          amount: signedAmount,
-          date: DateTime.now(),
-          currentAccountId: parsed.account?.id ?? '',
+        final suggestion = await suggester.suggest(
+          SuggestionContext(
+            text: parsed.note,
+            amount: effectiveAmount,
+            type: parsed.type,
+            date: DateTime.now(),
+            currentAccountId: parsed.account?.id ?? '',
+          ),
         );
 
-        if (mlResult != null) {
+        if (suggestion != null) {
           TransactionCategory? cat = parsed.category;
           Account? acc = parsed.account;
           Account? toAcc = parsed.toAccount;
           
-          if (mlResult.type == TransactionType.transfer) {
-            try { acc = accounts.firstWhere((a) => a.id == mlResult.originId); } catch (_) {}
-            try { toAcc = accounts.firstWhere((a) => a.id == mlResult.destinationId); } catch (_) {}
+          if (suggestion.isTransfer) {
+            try { acc = accounts.firstWhere((a) => a.id == suggestion.originAccountId); } catch (_) {}
+            try { toAcc = accounts.firstWhere((a) => a.id == suggestion.destinationAccountId); } catch (_) {}
             cat = null;
           } else {
-            try { acc = accounts.firstWhere((a) => a.id == mlResult.originId); } catch (_) {}
+            try { acc = accounts.firstWhere((a) => a.id == suggestion.originAccountId); } catch (_) {}
             try { 
-              final newCat = categories.firstWhere((c) => c.id == mlResult.destinationId);
+              final newCat = categories.firstWhere((c) => c.id == suggestion.categoryId);
               if (newCat != cat) {
                 cat = newCat;
                 _autoCatKey++;
@@ -126,14 +127,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           }
           
           parsed = parsed.copyWith(
-            type: mlResult.type,
+            type: suggestion.type,
             category: cat,
             account: acc,
             toAccount: toAcc,
           );
         }
       } catch (e) {
-        // ML enhancement failed, silently fallback to static parsing
+        // Suggester enhancement failed, silently fallback to static parsing
       }
 
       if (mounted) {

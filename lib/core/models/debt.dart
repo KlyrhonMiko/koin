@@ -113,6 +113,21 @@ class Debt {
 
   double get remainingAmount => (amount - currentAmount).clamp(0.0, amount);
 
+  double get progress => amount <= 0.0 ? 1.0 : (currentAmount / amount).clamp(0.0, 1.0);
+
+  bool get isSettled => progress >= 1.0;
+
+  double get totalItemizedAmount => items.fold(0.0, (sum, item) => sum + item.amount);
+
+  double get perInstallmentAmount =>
+      totalInstallments > 0 ? amount / totalInstallments : amount;
+
+  int get paidInstallmentsCount =>
+      perInstallmentAmount > 0 ? (currentAmount / perInstallmentAmount).floor() : 0;
+
+  int get remainingInstallmentsCount =>
+      (totalInstallments - paidInstallmentsCount).clamp(0, totalInstallments);
+
   double get upcomingPaymentAmount {
     if (items.isNotEmpty) {
       double totalInstallment = 0;

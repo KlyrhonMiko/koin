@@ -91,12 +91,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             return const Center(child: Text('Credit/IOU not found'));
           }
 
-          final progress = (debt.currentAmount / debt.amount).clamp(0.0, 1.0);
-          final isSettled = progress >= 1.0;
-          final remaining = (debt.amount - debt.currentAmount).clamp(
-            0.0,
-            debt.amount,
-          );
+          final progress = debt.progress;
+          final isSettled = debt.isSettled;
+          final remaining = debt.remainingAmount;
           final color = debt.type == DebtType.owedToMe
               ? AppTheme.incomeColor(context)
               : AppTheme.expenseColor(context);

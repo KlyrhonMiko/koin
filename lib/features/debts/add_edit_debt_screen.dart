@@ -9,7 +9,7 @@ import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/debt_item.dart';
 import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/categorization/categorization_engine.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
@@ -111,28 +111,30 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     final amt = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
     final targetType = _selectedType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-    final signedAmount = targetType == TransactionType.expense ? -effectiveAmt : effectiveAmt;
 
     try {
-      final engine = CategorizationEngine();
-      final result = await engine.categorize(
-        rawText: notes,
-        amount: signedAmount,
-        date: _startDate,
-        currentAccountId: _selectedAccountId ?? '',
+      final suggester = ref.read(categorySuggesterProvider);
+      final suggestion = await suggester.suggest(
+        SuggestionContext(
+          text: notes,
+          amount: effectiveAmt,
+          type: targetType,
+          date: _startDate,
+          currentAccountId: _selectedAccountId ?? '',
+        ),
       );
 
-      if (result != null && mounted) {
+      if (suggestion != null && mounted) {
         final categories = ref.read(categoriesProvider).value ?? [];
-        final matchedCat = categories.where((c) => c.id == result.destinationId).firstOrNull;
+        final matchedCat = categories.where((c) => c.id == suggestion.categoryId).firstOrNull;
         if (matchedCat != null) {
-          if (_selectedCategoryId != matchedCat.id || (_selectedAccountId == null && result.originId.isNotEmpty)) {
+          if (_selectedCategoryId != matchedCat.id || (_selectedAccountId == null && suggestion.originAccountId != null && suggestion.originAccountId!.isNotEmpty)) {
             HapticService.light();
             setState(() {
               if (_selectedCategoryId != matchedCat.id) _autoCatKey++;
               _selectedCategoryId = matchedCat.id;
-              if (_selectedAccountId == null && result.originId.isNotEmpty) {
-                _selectedAccountId = result.originId;
+              if (_selectedAccountId == null && suggestion.originAccountId != null && suggestion.originAccountId!.isNotEmpty) {
+                _selectedAccountId = suggestion.originAccountId;
               }
             });
           }
@@ -208,11 +210,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
 
     if (_selectedCategoryId != null && notes.isNotEmpty) {
       final targetType = _selectedType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-      final signedAmount = targetType == TransactionType.expense ? -finalAmount : finalAmount;
-      CategorizationEngine().processFeedback(
-        rawText: notes,
-        amount: signedAmount,
-        originId: _selectedAccountId ?? '',
+      ref.read(categorySuggesterProvider).recordFeedback(
+        text: notes,
+        amount: finalAmount,
+        type: targetType,
+        originAccountId: _selectedAccountId ?? '',
         destinationId: _selectedCategoryId!,
       );
     }
