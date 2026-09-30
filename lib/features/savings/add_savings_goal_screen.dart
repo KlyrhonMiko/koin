@@ -8,14 +8,12 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
-import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 
@@ -287,8 +285,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     const Gap(12),
 
                     // Linked Account
-                    _buildSelectionRow(
-                      context,
+                    SelectionTile(
                       fallbackIcon: Icons.account_balance_wallet_rounded,
                       label: 'Linked Account (Optional)',
                       selectedName: _accountById(
@@ -710,135 +707,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Selection Row
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  Widget _buildSelectionRow(
-    BuildContext context, {
-    required IconData fallbackIcon,
-    required String label,
-    required String? selectedName,
-    required Color? selectedColor,
-    required int? selectedIconCodePoint,
-    String? selectedLogoAsset,
-    required String placeholder,
-    required VoidCallback onTap,
-  }) {
-    final hasSelection =
-        selectedName != null &&
-        selectedColor != null &&
-        selectedIconCodePoint != null;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            HapticService.light();
-            final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-            FocusManager.instance.primaryFocus?.unfocus();
-            if (hadFocus) {
-              await Future.delayed(const Duration(milliseconds: 150));
-            }
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Builder(builder: (context) {
-
-                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      selectedLogoAsset,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                }
-
-                  return Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: hasSelection
-                        ? selectedColor.withValues(alpha: 0.12)
-                        : AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    hasSelection
-                        ? IconUtils.getIcon(selectedIconCodePoint)
-                        : fallbackIcon,
-                    size: 17,
-                    color: hasSelection
-                        ? selectedColor
-                        : AppTheme.textLightColor(context),
-                  ),
-                );
-
-                }),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.65),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const Gap(2),
-                      Text(
-                        hasSelection ? selectedName : placeholder,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: hasSelection
-                              ? AppTheme.textColor(context)
-                              : AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.4),
-                  size: 22,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Picker helper methods
@@ -851,46 +719,18 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     required String? selectedId,
     required void Function(String?) onSelected,
   }) async {
-    final stats = ref.read(dashboardStatsProvider);
-    final currency = ref.read(settingsProvider).currency;
-    final id = await showSelectSheet<String>(
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: selectedId,
       title: title,
       subtitle: subtitle,
-      itemCount: accounts.length + 1, // +1 for "None"
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return SelectSheetItem(
-            name: 'No Linked Account',
-            accentColor: AppTheme.textLightColor(context),
-            iconCodePoint: Icons.link_off_rounded.codePoint,
-            selected: selectedId == null,
-            onTap: () => Navigator.pop(context, ''),
-          );
-        }
-        return Consumer(
-          builder: (context, ref, _) {
-            final liveAccounts = ref.watch(accountProvider).value ?? [];
-            final acc = liveAccounts.firstWhere(
-              (a) => a.id == accounts[index - 1].id,
-              orElse: () => accounts[index - 1],
-            );
-            final balance = stats.accountBalances[acc.id] ?? 0.0;
-            return AccountItem(
-              account: acc,
-              balance: balance,
-              currencySymbol: currency.symbol,
-              isSelected: acc.id == selectedId,
-              onTap: () => Navigator.pop(context, acc.id),
-            );
-          },
-        );
-      },
+      allowNone: true,
+      noneLabel: 'No Linked Account',
+      accountsOverride: accounts,
     );
-    if (id != null) {
-      if (mounted) {
-        onSelected(id.isEmpty ? null : id);
-      }
+    if (id != null && mounted) {
+      onSelected(id.isEmpty ? null : id);
     }
   }
 }

@@ -25,10 +25,9 @@ import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:uuid/uuid.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
-import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
 
 class DebtDetailsScreen extends ConsumerStatefulWidget {
   final String debtId;
@@ -1181,8 +1180,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
               ),
               child: Column(
                 children: [
-                  _buildSelectionRow(
-                    context,
+                  SelectionTile(
+                    asCard: false,
                     fallbackIcon: Icons.account_balance_wallet_rounded,
                     label: isAccountRequired ? 'Account' : 'Account (Optional)',
                     selectedName: selectedAccount?.name,
@@ -1379,171 +1378,22 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     Navigator.pop(context);
   }
 
-  Widget _buildSelectionRow(
-    BuildContext context, {
-    required IconData fallbackIcon,
-    required String label,
-    required String? selectedName,
-    required Color? selectedColor,
-    required int? selectedIconCodePoint,
-    String? selectedLogoAsset,
-    required String placeholder,
-    required VoidCallback onTap,
-  }) {
-    final hasSelection =
-        selectedName != null &&
-        selectedColor != null &&
-        selectedIconCodePoint != null;
-
-    Widget iconWidget;
-    if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
-      iconWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.asset(
-          selectedLogoAsset,
-          width: 36,
-          height: 36,
-          fit: BoxFit.cover,
-        ),
-      );
-    } else {
-      iconWidget = Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: hasSelection
-              ? selectedColor.withValues(alpha: 0.12)
-              : AppTheme.surfaceLightColor(context),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          hasSelection
-              ? IconUtils.getIcon(selectedIconCodePoint)
-              : fallbackIcon,
-          size: 17,
-          color: hasSelection
-              ? selectedColor
-              : AppTheme.textLightColor(context),
-        ),
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          HapticService.light();
-          final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-          FocusManager.instance.primaryFocus?.unfocus();
-          if (hadFocus) {
-            await Future.delayed(const Duration(milliseconds: 150));
-          }
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              iconWidget,
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.65),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const Gap(2),
-                    Text(
-                      hasSelection ? selectedName : placeholder,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: hasSelection
-                            ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(4),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _openAccountPicker(
     BuildContext context,
     List<Account> accounts,
   ) async {
-    final stats = ref.read(dashboardStatsProvider);
-    final currency = ref.read(settingsProvider).currency;
-
-    final id = await showSelectSheet<String?>(
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: _selectedAccountId,
       title: 'Account',
       subtitle: widget.isIncrease ? 'Which account was used?' : 'Choose the account for this payment',
-      itemCount: accounts.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return SelectSheetItem(
-            name: 'No Account (Balance only)',
-            accentColor: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-            iconCodePoint: Icons.money_off_rounded.codePoint,
-            selected: _selectedAccountId == null,
-            onTap: () => Navigator.pop(context, 'none'),
-          );
-        }
-
-        final accIndex = index - 1;
-        return Consumer(
-          builder: (context, ref, _) {
-            final liveAccounts = ref.watch(accountProvider).value ?? [];
-            final acc = liveAccounts.firstWhere(
-              (a) => a.id == accounts[accIndex].id,
-              orElse: () => accounts[accIndex],
-            );
-            final balance = stats.accountBalances[acc.id];
-            final isSelected = acc.id == _selectedAccountId;
-
-            return AccountItem(
-              account: acc,
-              balance: balance ?? 0,
-              currencySymbol: currency.symbol,
-              isSelected: isSelected,
-              onTap: () => Navigator.pop(context, acc.id),
-              onPrivateToggle: () {
-                final updatedAccount = acc.copyWith(
-                  excludeFromTotal: !acc.excludeFromTotal,
-                );
-                ref.read(accountProvider.notifier).updateAccount(updatedAccount);
-              },
-            );
-          },
-        );
-      },
+      allowNone: widget.isIncrease,
+      noneLabel: 'No Account (Balance only)',
+      accountsOverride: accounts,
     );
     if (id != null && mounted) {
-      setState(() => _selectedAccountId = id == 'none' ? null : id);
+      setState(() => _selectedAccountId = id.isEmpty ? null : id);
     }
   }
 }

@@ -11,10 +11,11 @@ class PremiumSelectionSheet {
     required String subtitle,
     required int itemCount,
     required Widget Function(BuildContext context, int index) itemBuilder,
+    Color? indicatorColor,
   }) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final typeColor = AppTheme.primaryColor(context);
+    final typeColor = indicatorColor ?? AppTheme.primaryColor(context);
 
     return showModalBottomSheet<T>(
       context: context,

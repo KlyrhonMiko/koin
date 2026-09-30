@@ -6,7 +6,6 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/utils/voice_command_parser.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
@@ -17,9 +16,9 @@ import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:gap/gap.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
 import 'package:koin/core/widgets/transaction_type_selector.dart';
-import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/widgets/category_picker_sheet.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
 
 class VoiceInputSheet extends ConsumerStatefulWidget {
   const VoiceInputSheet({super.key});
@@ -175,25 +174,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     }
     if (!mounted) return;
     final categories = ref.read(categoriesProvider).value ?? [];
-    final filteredCategories = categories
-        .where((c) => c.type == _parsedData!.type)
-        .toList();
 
-    final id = await showSelectSheet<String>(
+    final id = await showCategoryPickerSheet(
       context: context,
-      title: 'Category',
-      subtitle: 'Choose a category for this transaction',
-      itemCount: filteredCategories.length,
-      itemBuilder: (context, index) {
-        final cat = filteredCategories[index];
-        return SelectSheetItem(
-          name: cat.name,
-          accentColor: cat.color,
-          iconCodePoint: cat.iconCodePoint,
-          selected: cat.id == _parsedData!.category?.id,
-          onTap: () => Navigator.pop(context, cat.id),
-        );
-      },
+      ref: ref,
+      selectedCategoryId: _parsedData!.category?.id,
+      type: _parsedData!.type,
+      categoriesOverride: categories,
+      indicatorColor: _getTypeColor(context, _parsedData!.type),
     );
     if (id != null && mounted) {
       final category = categories.firstWhere((c) => c.id == id);
@@ -212,32 +200,13 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
-    final id = await showSelectSheet<String>(
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: _parsedData!.account?.id,
       title: 'Account',
       subtitle: 'Choose an account for this transaction',
-      itemCount: accounts.length,
-      itemBuilder: (context, index) {
-        final acc = accounts[index];
-        final isSelected = acc.id == _parsedData!.account?.id;
-        final stats = ref.read(dashboardStatsProvider);
-        final currency = ref.read(settingsProvider).currency;
-        final balance = stats.accountBalances[acc.id] ?? 0;
-
-        return AccountItem(
-          account: acc,
-          balance: balance,
-          currencySymbol: currency.symbol,
-          isSelected: isSelected,
-          onTap: () => Navigator.pop(context, acc.id),
-          onPrivateToggle: () {
-            final updatedAccount = acc.copyWith(
-              excludeFromTotal: !acc.excludeFromTotal,
-            );
-            ref.read(accountProvider.notifier).updateAccount(updatedAccount);
-          },
-        );
-      },
+      accountsOverride: accounts,
     );
     if (id != null && mounted) {
       final account = accounts.firstWhere((a) => a.id == id);
@@ -256,32 +225,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
-    final id = await showSelectSheet<String>(
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: _parsedData!.toAccount?.id,
       title: 'Destination Account',
       subtitle: 'Choose where the money arrives',
-      itemCount: accounts.length,
-      itemBuilder: (context, index) {
-        final acc = accounts[index];
-        final isSelected = acc.id == _parsedData!.toAccount?.id;
-        final stats = ref.read(dashboardStatsProvider);
-        final currency = ref.read(settingsProvider).currency;
-        final balance = stats.accountBalances[acc.id] ?? 0;
-
-        return AccountItem(
-          account: acc,
-          balance: balance,
-          currencySymbol: currency.symbol,
-          isSelected: isSelected,
-          onTap: () => Navigator.pop(context, acc.id),
-          onPrivateToggle: () {
-            final updatedAccount = acc.copyWith(
-              excludeFromTotal: !acc.excludeFromTotal,
-            );
-            ref.read(accountProvider.notifier).updateAccount(updatedAccount);
-          },
-        );
-      },
+      accountsOverride: accounts,
+      excludeAccountId: _parsedData!.account?.id,
     );
     if (id != null && mounted) {
       final account = accounts.firstWhere((a) => a.id == id);

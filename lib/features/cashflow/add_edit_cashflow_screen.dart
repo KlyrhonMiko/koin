@@ -8,22 +8,19 @@ import 'package:uuid/uuid.dart';
 
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/account.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/categorization/category_suggester.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
-import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
+import 'package:koin/core/widgets/category_picker_sheet.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 
 /// Deep Cashflow Module: Unified management for scheduled cash movements
@@ -307,135 +304,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     );
   }
 
-  Widget _buildSelectionRow(
-    BuildContext context, {
-    required IconData fallbackIcon,
-    required String label,
-    required String? selectedName,
-    required Color? selectedColor,
-    required int? selectedIconCodePoint,
-    String? selectedLogoAsset,
-    required String placeholder,
-    required VoidCallback onTap,
-    Widget? trailing,
-  }) {
-    final hasSelection =
-        selectedName != null &&
-        selectedColor != null &&
-        selectedIconCodePoint != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            HapticService.light();
-            final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-            FocusManager.instance.primaryFocus?.unfocus();
-            if (hadFocus) {
-              await Future.delayed(const Duration(milliseconds: 150));
-            }
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: hasSelection
-                        ? selectedColor.withValues(alpha: 0.15)
-                        : AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: selectedLogoAsset != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(
-                            selectedLogoAsset,
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              IconUtils.getIcon(selectedIconCodePoint!),
-                              color: selectedColor,
-                              size: 22,
-                            ),
-                          ),
-                        )
-                      : Icon(
-                          hasSelection
-                              ? IconUtils.getIcon(selectedIconCodePoint)
-                              : fallbackIcon,
-                          color: hasSelection
-                              ? selectedColor
-                              : AppTheme.textLightColor(context),
-                          size: 22,
-                        ),
-                ),
-                const Gap(14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.7),
-                        ),
-                      ),
-                      const Gap(2),
-                      Text(
-                        selectedName ?? placeholder,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: hasSelection
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: hasSelection
-                              ? AppTheme.textColor(context)
-                              : AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ?trailing,
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildDateSelector(
     BuildContext context, {
@@ -641,196 +510,31 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     );
   }
 
-  Future<void> _openCategoryPicker(
-    BuildContext context,
-    List<TransactionCategory> categories,
-  ) async {
-    final filteredCategories = categories
-        .where((c) => c.type == _selectedType)
-        .toList();
-
-    final id = await _showPremiumSelectionSheet<String>(
+  Future<void> _openCategoryPicker(BuildContext context) async {
+    final id = await showCategoryPickerSheet(
       context: context,
+      ref: ref,
+      selectedCategoryId: _selectedCategoryId,
+      type: _selectedType,
       title: 'Category',
       subtitle: 'Choose a category for this ${_domainNoun.toLowerCase()}',
-      itemCount: filteredCategories.length,
-      itemBuilder: (context, index) {
-        final cat = filteredCategories[index];
-        return _PremiumSheetItem(
-          name: cat.name,
-          accentColor: cat.color,
-          iconCodePoint: cat.iconCodePoint,
-          selected: cat.id == _selectedCategoryId,
-          onTap: () => Navigator.pop(context, cat.id),
-        );
-      },
     );
     if (id != null && mounted) {
       setState(() => _selectedCategoryId = id);
     }
   }
 
-  Future<void> _openAccountPicker(
-    BuildContext context,
-    List<Account> accounts,
-  ) async {
-    final stats = ref.read(dashboardStatsProvider);
-    final currency = ref.read(settingsProvider).currency;
-    final id = await showSelectSheet<String>(
+  Future<void> _openAccountPicker(BuildContext context) async {
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: _selectedAccountId,
       title: 'Account',
       subtitle: _isIncome ? 'Choose receiving account' : 'Choose payment account',
-      itemCount: accounts.length,
-      itemBuilder: (context, index) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final liveAccounts = ref.watch(accountProvider).value ?? [];
-            final acc = liveAccounts.firstWhere(
-              (a) => a.id == accounts[index].id,
-              orElse: () => accounts[index],
-            );
-            final balance = stats.accountBalances[acc.id] ?? 0.0;
-            return AccountItem(
-              account: acc,
-              balance: balance,
-              currencySymbol: currency.symbol,
-              isSelected: acc.id == _selectedAccountId,
-              onTap: () => Navigator.pop(context, acc.id),
-            );
-          },
-        );
-      },
     );
     if (id != null && mounted) {
       setState(() => _selectedAccountId = id);
     }
-  }
-
-  Future<T?> _showPremiumSelectionSheet<T>({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required int itemCount,
-    required Widget Function(BuildContext context, int index) itemBuilder,
-  }) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final typeColor = _isIncome
-        ? AppTheme.incomeColor(context)
-        : AppTheme.primaryColor(context);
-
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: MediaQuery.paddingOf(sheetContext).top + 12,
-          ),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: Container(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(sheetContext),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(sheetContext),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Gap(10),
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(sheetContext),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: typeColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const Gap(10),
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.6,
-                                  color: AppTheme.textColor(sheetContext),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Gap(4),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 14),
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                height: 1.35,
-                                color: AppTheme.textLightColor(sheetContext),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          16 + bottomInset,
-                        ),
-                        itemCount: itemCount,
-                        separatorBuilder: (context, index) => const Gap(8),
-                        itemBuilder: (context, index) {
-                          return itemBuilder(context, index)
-                              .animate()
-                              .fadeIn(delay: (index * 40).ms, duration: 250.ms)
-                              .slideX(
-                                begin: 0.04,
-                                duration: 250.ms,
-                                curve: Curves.easeOutCubic,
-                              );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -973,8 +677,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         // Category Picker
                         Builder(
                           builder: (context) {
-                            Widget child = _buildSelectionRow(
-                              context,
+                            Widget child = SelectionTile(
                               fallbackIcon: Icons.category_rounded,
                               label: 'Category',
                               selectedName: categoriesState.when(
@@ -1002,10 +705,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                                 error: (_, stackTrace) => null,
                               ),
                               placeholder: 'Select Category',
-                              onTap: () => categoriesState.whenData(
-                                (categories) =>
-                                    _openCategoryPicker(context, categories),
-                              ),
+                              onTap: () => _openCategoryPicker(context),
                             );
 
                             if (_autoCatKey > 0) {
@@ -1034,8 +734,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         ),
                         const Gap(12),
                         // Account Picker
-                        _buildSelectionRow(
-                          context,
+                        SelectionTile(
                           fallbackIcon: Icons.account_balance_wallet_rounded,
                           label: _isIncome ? 'Receiving Account' : 'Payment Account',
                           selectedName: accountsState.when(
@@ -1071,9 +770,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                             error: (_, stackTrace) => null,
                           ),
                           placeholder: 'Select Account',
-                          onTap: () => accountsState.whenData(
-                            (accounts) => _openAccountPicker(context, accounts),
-                          ),
+                          onTap: () => _openAccountPicker(context),
                         ),
                         const Gap(12),
                         // Auto Process Toggle
@@ -1285,109 +982,4 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 }
 
-class _PremiumSheetItem extends StatelessWidget {
-  const _PremiumSheetItem({
-    required this.name,
-    required this.accentColor,
-    required this.iconCodePoint,
-    required this.selected,
-    required this.onTap,
-  });
 
-  final String name;
-  final Color accentColor;
-  final int iconCodePoint;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = AppTheme.primaryColor(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticService.selection();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected
-                  ? primary.withValues(alpha: 0.45)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.65),
-              width: selected ? 1.5 : 1,
-            ),
-            color: selected
-                ? primary.withValues(alpha: 0.08)
-                : AppTheme.surfaceLightColor(context).withValues(alpha: 0.45),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  IconUtils.getIcon(iconCodePoint),
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle_rounded, color: primary, size: 26)
-              else
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.25),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

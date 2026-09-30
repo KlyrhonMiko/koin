@@ -10,8 +10,8 @@ import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
+import 'package:koin/core/widgets/category_picker_sheet.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 Future<DebtItem?> showAddPurchaseSheet({
@@ -155,8 +155,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                     const Gap(16),
                     Builder(
                       builder: (ctx) {
-                        Widget child = _buildSelectionRow(
-                          ctx,
+                        Widget child = SelectionTile(
                           fallbackIcon: Icons.category_rounded,
                           label: 'Category (Optional)',
                           selectedName: selectedCategory?.name,
@@ -165,25 +164,14 @@ Future<DebtItem?> showAddPurchaseSheet({
                           placeholder: 'Select Category',
                           onTap: () async {
                             final categoryType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-                            final filtered = categories.where((c) => c.type == categoryType).toList();
-
-                            final id = await showSelectSheet<String>(
+                            final id = await showCategoryPickerSheet(
                               context: ctx,
-                              title: 'Category',
+                              type: categoryType,
+                              selectedCategoryId: selectedCategory?.id,
                               subtitle: debtType == DebtType.owedToMe
                                   ? 'Link an income category'
                                   : 'Link an expense category',
-                              itemCount: filtered.length,
-                              itemBuilder: (c, index) {
-                                final cat = filtered[index];
-                                return SelectSheetItem(
-                                  name: cat.name,
-                                  accentColor: cat.color,
-                                  iconCodePoint: cat.iconCodePoint,
-                                  selected: cat.id == selectedCategory?.id,
-                                  onTap: () => Navigator.pop(c, cat.id),
-                                );
-                              },
+                              categoriesOverride: categories,
                             );
                             if (id != null) {
                               setSheetState(() => selectedCategory = categories.firstWhere((c) => c.id == id));
@@ -312,122 +300,4 @@ Future<DebtItem?> showAddPurchaseSheet({
       );
     },
   ).whenComplete(() => coordinator.dispose());
-}
-
-Widget _buildSelectionRow(
-  BuildContext context, {
-  required IconData fallbackIcon,
-  required String label,
-  required String? selectedName,
-  required Color? selectedColor,
-  required int? selectedIconCodePoint,
-  String? selectedLogoAsset,
-  required String placeholder,
-  required VoidCallback onTap,
-  Widget? trailing,
-}) {
-  final hasSelection =
-      selectedName != null &&
-      selectedColor != null &&
-      selectedIconCodePoint != null;
-
-  return InkWell(
-    onTap: () async {
-      HapticService.light();
-      final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-      FocusManager.instance.primaryFocus?.unfocus();
-      if (hadFocus) {
-        await Future.delayed(const Duration(milliseconds: 150));
-      }
-      onTap();
-    },
-    borderRadius: BorderRadius.circular(12),
-    child: InputDecorator(
-      decoration: InputDecoration(
-        contentPadding: EdgeInsets.zero,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppTheme.surfaceColor(context),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-        children: [
-            Builder(builder: (context) {
-              if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    selectedLogoAsset,
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.cover,
-                  ),
-                );
-              }
-
-              return Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: hasSelection
-                    ? selectedColor.withValues(alpha: 0.12)
-                    : AppTheme.surfaceLightColor(context),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                hasSelection
-                    ? IconUtils.getIcon(selectedIconCodePoint)
-                    : fallbackIcon,
-                size: 17,
-                color: hasSelection
-                    ? selectedColor
-                    : AppTheme.textLightColor(context),
-              ),
-            );
-            }),
-            const Gap(12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textLightColor(
-                        context,
-                      ).withValues(alpha: 0.65),
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const Gap(2),
-                  Text(
-                    hasSelection ? selectedName : placeholder,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: hasSelection
-                          ? AppTheme.textColor(context)
-                          : AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) ...[const Gap(8), trailing],
-            const Gap(4),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

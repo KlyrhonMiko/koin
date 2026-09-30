@@ -5,7 +5,6 @@ import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:koin/core/utils/icon_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/models/account.dart';
 import 'package:koin/core/models/category.dart';
@@ -13,7 +12,6 @@ import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/numpad.dart';
@@ -25,8 +23,9 @@ import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/utils/voice_command_parser.dart';
 import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
-import 'package:koin/core/widgets/account_item.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
+import 'package:koin/core/widgets/category_picker_sheet.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -1142,8 +1141,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         children: [
                           Builder(
                             builder: (context) {
-                              Widget child = _buildSelectionRow(
-                                context,
+                              Widget child = SelectionTile(
+                                asCard: false,
                                 fallbackIcon: Icons.category_rounded,
                                 label: 'Category',
                                 selectedName: _categoryById(
@@ -1229,17 +1228,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
                   return accountsAsync.when(
                     data: (accounts) {
-                      final stats = ref.watch(dashboardStatsProvider);
-                      final currency = ref.watch(settingsProvider).currency;
-
                       if (_selectedAccountId == null && accounts.isNotEmpty) {
                         _selectedAccountId = accounts.first.id;
                       }
 
                       return Column(
                         children: [
-                          _buildSelectionRow(
-                            context,
+                          SelectionTile(
+                            asCard: false,
                             fallbackIcon: Icons.account_balance_wallet_rounded,
                             label: _selectedType == TransactionType.transfer
                                 ? 'From'
@@ -1270,8 +1266,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                   ? 'Choose where the money leaves from'
                                   : 'Choose the account for this transaction',
                               selectedId: _selectedAccountId,
-                              accountBalances: stats.accountBalances,
-                              currencySymbol: currency.symbol,
                               onSelected: (id) => setState(() {
                                 _selectedAccountId = id;
                                 if (_selectedType == TransactionType.transfer &&
@@ -1300,8 +1294,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     key: const ValueKey('to_acc'),
                                     children: [
                                       _buildDivider(context),
-                                      _buildSelectionRow(
-                                        context,
+                                      SelectionTile(
+                                        asCard: false,
                                         fallbackIcon: Icons
                                             .account_balance_wallet_rounded,
                                         label: 'To',
@@ -1329,9 +1323,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                           subtitle:
                                               'Choose where the money arrives',
                                           selectedId: _selectedToAccountId,
-                                          accountBalances:
-                                              stats.accountBalances,
-                                          currencySymbol: currency.symbol,
                                           excludeAccountId: _selectedAccountId,
                                           onSelected: (id) => setState(() {
                                             if (_selectedAccountId == id) {
@@ -1383,120 +1374,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Selection Row — two-line label + value with icon
   // ═══════════════════════════════════════════════════════
-  Widget _buildSelectionRow(
-    BuildContext context, {
-    required IconData fallbackIcon,
-    required String label,
-    required String? selectedName,
-    required Color? selectedColor,
-    required int? selectedIconCodePoint,
-    String? selectedLogoAsset,
-    required String placeholder,
-    required VoidCallback onTap,
-    Widget? trailing,
-  }) {
-    final hasSelection =
-        selectedName != null &&
-        selectedColor != null &&
-        selectedIconCodePoint != null;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          HapticService.light();
-          final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-          FocusManager.instance.primaryFocus?.unfocus();
-          if (hadFocus) {
-            await Future.delayed(const Duration(milliseconds: 150));
-          }
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Builder(builder: (context) {
-                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      selectedLogoAsset,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                }
-
-                return Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: hasSelection
-                      ? selectedColor.withValues(alpha: 0.12)
-                      : AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  hasSelection
-                      ? IconUtils.getIcon(selectedIconCodePoint)
-                      : fallbackIcon,
-                  size: 17,
-                  color: hasSelection
-                      ? selectedColor
-                      : AppTheme.textLightColor(context),
-                ),
-              );
-
-              }),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.65),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const Gap(2),
-                    Text(
-                      hasSelection ? selectedName : placeholder,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: hasSelection
-                            ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (trailing != null) ...[const Gap(8), trailing],
-              const Gap(4),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildDivider(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1514,25 +1391,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     BuildContext context,
     List<TransactionCategory> categories,
   ) async {
-    final filteredCategories = categories
-        .where((c) => c.type == _selectedType)
-        .toList();
-
-    final id = await showSelectSheet<String>(
+    final id = await showCategoryPickerSheet(
       context: context,
-      title: 'Category',
-      subtitle: 'Choose a category for this transaction',
-      itemCount: filteredCategories.length,
-      itemBuilder: (context, index) {
-        final cat = filteredCategories[index];
-        return SelectSheetItem(
-          name: cat.name,
-          accentColor: cat.color,
-          iconCodePoint: cat.iconCodePoint,
-          selected: cat.id == _selectedCategoryId,
-          onTap: () => Navigator.pop(context, cat.id),
-        );
-      },
+      ref: ref,
+      selectedCategoryId: _selectedCategoryId,
+      type: _selectedType,
+      categoriesOverride: categories,
+      indicatorColor: _getTypeColor(context),
     );
     if (id != null && mounted) {
       setState(() => _selectedCategoryId = id);
@@ -1546,48 +1411,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     required String subtitle,
     required String? selectedId,
     required void Function(String?) onSelected,
-    Map<String, double>? accountBalances,
-    String? currencySymbol,
     String? excludeAccountId,
   }) async {
-    final filtered = excludeAccountId == null
-        ? accounts
-        : accounts.where((a) => a.id != excludeAccountId).toList();
-    final id = await showSelectSheet<String>(
+    final id = await showAccountPickerSheet(
       context: context,
+      ref: ref,
+      selectedAccountId: selectedId,
       title: title,
       subtitle: subtitle,
-      itemCount: filtered.length,
-      emptyMessage: filtered.isEmpty ? 'No other accounts available' : null,
-      itemBuilder: (context, index) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final liveAccounts = ref.watch(accountProvider).value ?? [];
-            final acc = liveAccounts.firstWhere(
-              (a) => a.id == filtered[index].id,
-              orElse: () => filtered[index],
-            );
-            final balance = accountBalances?[acc.id];
-            final isSelected = acc.id == selectedId;
-
-            return AccountItem(
-              account: acc,
-              balance: balance ?? 0,
-              currencySymbol: currencySymbol ?? '',
-              isSelected: isSelected,
-              onTap: () => Navigator.pop(context, acc.id),
-              onPrivateToggle: () {
-                final updatedAccount = acc.copyWith(
-                  excludeFromTotal: !acc.excludeFromTotal,
-                );
-                ref
-                    .read(accountProvider.notifier)
-                    .updateAccount(updatedAccount);
-              },
-            );
-          },
-        );
-      },
+      accountsOverride: accounts,
+      excludeAccountId: excludeAccountId,
+      emptyMessage: 'No other accounts available',
     );
     if (id != null && mounted) {
       onSelected(id);

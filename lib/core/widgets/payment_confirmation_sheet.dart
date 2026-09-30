@@ -7,15 +7,14 @@ import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/account_picker_sheet.dart';
+import 'package:koin/core/widgets/category_picker_sheet.dart';
+import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/numpad.dart';
-import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/icon_utils.dart';
 
 class PaymentConfirmationResult {
   final double amount;
@@ -265,8 +264,8 @@ class _PaymentConfirmationSheetState
                     child: Column(
                       children: [
                         // Category row
-                        _buildSelectionRow(
-                          context,
+                        SelectionTile(
+                          asCard: false,
                           fallbackIcon: Icons.category_rounded,
                           label: 'Category',
                           selectedName: selectedCategory?.name,
@@ -274,7 +273,7 @@ class _PaymentConfirmationSheetState
                           selectedIconCodePoint:
                               selectedCategory?.iconCodePoint,
                           placeholder: 'Select category',
-                          onTap: () => _openCategoryPicker(context, categories),
+                          onTap: () => _openCategoryPicker(context),
                         ),
                         // Divider
                         Padding(
@@ -287,8 +286,8 @@ class _PaymentConfirmationSheetState
                           ),
                         ),
                         // Account row
-                        _buildSelectionRow(
-                          context,
+                        SelectionTile(
+                          asCard: false,
                           fallbackIcon: Icons.account_balance_wallet_rounded,
                           label: 'Account',
                           selectedName: selectedAccount?.name,
@@ -296,7 +295,7 @@ class _PaymentConfirmationSheetState
                           selectedIconCodePoint: selectedAccount?.iconCodePoint,
                           selectedLogoAsset: selectedAccount?.logoAsset,
                           placeholder: 'Select account',
-                          onTap: () => _openAccountPicker(context, accounts),
+                          onTap: () => _openAccountPicker(context),
                         ),
                       ],
                     ),
@@ -343,426 +342,30 @@ class _PaymentConfirmationSheetState
   }
 
   // ═══════════════════════════════════════════════════════
-  // Selection Row — matching Add Transaction screen
+  // Pickers
   // ═══════════════════════════════════════════════════════
-  Widget _buildSelectionRow(
-    BuildContext context, {
-    required IconData fallbackIcon,
-    required String label,
-    required String? selectedName,
-    required Color? selectedColor,
-    required int? selectedIconCodePoint,
-    String? selectedLogoAsset,
-    required String placeholder,
-    required VoidCallback onTap,
-  }) {
-    final hasSelection =
-        selectedName != null &&
-        selectedColor != null &&
-        selectedIconCodePoint != null;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticService.light();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Builder(builder: (context) {
-
-                if (hasSelection && selectedLogoAsset != null && selectedLogoAsset.isNotEmpty) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      selectedLogoAsset,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                }
-
-                return Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: hasSelection
-                      ? selectedColor.withValues(alpha: 0.12)
-                      : AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  hasSelection
-                      ? IconUtils.getIcon(selectedIconCodePoint)
-                      : fallbackIcon,
-                  size: 17,
-                  color: hasSelection
-                      ? selectedColor
-                      : AppTheme.textLightColor(context),
-                ),
-              );
-
-              }),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.65),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const Gap(2),
-                    Text(
-                      hasSelection ? selectedName : placeholder,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: hasSelection
-                            ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(4),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════
-  // Amount Editor Dialog
-  // ═══════════════════════════════════════════════════════
-  // ═══════════════════════════════════════════════════════
-  // Pickers — matching premium sheet style
-  // ═══════════════════════════════════════════════════════
-  Future<void> _openCategoryPicker(
-    BuildContext context,
-    List<TransactionCategory> categories,
-  ) async {
-    final filtered = categories
-        .where((c) => c.type == widget.payment.type)
-        .toList();
-
-    final id = await _showPremiumSelectionSheet<String>(
+  Future<void> _openCategoryPicker(BuildContext context) async {
+    final id = await showCategoryPickerSheet(
       context: context,
-      title: 'Category',
-      subtitle: 'Choose a category for this payment',
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final cat = filtered[index];
-        return _PremiumSheetItem(
-          name: cat.name,
-          accentColor: cat.color,
-          iconCodePoint: cat.iconCodePoint,
-          selected: cat.id == _selectedCategoryId,
-          onTap: () => Navigator.pop(context, cat.id),
-        );
-      },
+      ref: ref,
+      selectedCategoryId: _selectedCategoryId,
+      type: widget.payment.type,
+      indicatorColor: _getTypeColor(context),
     );
     if (id != null && mounted) {
       setState(() => _selectedCategoryId = id);
     }
   }
 
-  Future<void> _openAccountPicker(
-    BuildContext context,
-    List<Account> accounts,
-  ) async {
-    final stats = ref.read(dashboardStatsProvider);
-    final currency = ref.read(settingsProvider).currency;
-    final id = await showSelectSheet<String>(
+  Future<void> _openAccountPicker(BuildContext context) async {
+    final id = await showAccountPickerSheet(
       context: context,
-      title: 'Account',
+      ref: ref,
+      selectedAccountId: _selectedAccountId,
       subtitle: 'Choose the account for this payment',
-      itemCount: accounts.length,
-      itemBuilder: (context, index) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final liveAccounts = ref.watch(accountProvider).value ?? [];
-            final acc = liveAccounts.firstWhere(
-              (a) => a.id == accounts[index].id,
-              orElse: () => accounts[index],
-            );
-            final balance = stats.accountBalances[acc.id] ?? 0.0;
-            return AccountItem(
-              account: acc,
-              balance: balance,
-              currencySymbol: currency.symbol,
-              isSelected: acc.id == _selectedAccountId,
-              onTap: () => Navigator.pop(context, acc.id),
-            );
-          },
-        );
-      },
     );
     if (id != null && mounted) {
       setState(() => _selectedAccountId = id);
     }
-  }
-
-  Future<T?> _showPremiumSelectionSheet<T>({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required int itemCount,
-    required Widget Function(BuildContext context, int index) itemBuilder,
-  }) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final typeColor = _getTypeColor(context);
-
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(sheetContext).padding.top + 12,
-          ),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: Container(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(sheetContext),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(sheetContext),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 32,
-                      offset: const Offset(0, -8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Gap(10),
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(sheetContext),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: typeColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const Gap(10),
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.6,
-                                  color: AppTheme.textColor(sheetContext),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Gap(4),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 14),
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                height: 1.35,
-                                color: AppTheme.textLightColor(sheetContext),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          16 + bottomInset,
-                        ),
-                        itemCount: itemCount,
-                        separatorBuilder: (context, index) => const Gap(8),
-                        itemBuilder: (context, index) {
-                          return itemBuilder(context, index)
-                              .animate()
-                              .fadeIn(delay: (index * 40).ms, duration: 250.ms)
-                              .slideX(
-                                begin: 0.04,
-                                duration: 250.ms,
-                                curve: Curves.easeOutCubic,
-                              );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// Premium Sheet Item — identical to Add Transaction
-// ═══════════════════════════════════════════════════════
-class _PremiumSheetItem extends StatelessWidget {
-  const _PremiumSheetItem({
-    required this.name,
-    required this.accentColor,
-    required this.iconCodePoint,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String name;
-  final Color accentColor;
-  final int iconCodePoint;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = AppTheme.primaryColor(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticService.selection();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected
-                  ? primary.withValues(alpha: 0.45)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.65),
-              width: selected ? 1.5 : 1,
-            ),
-            color: selected
-                ? primary.withValues(alpha: 0.08)
-                : AppTheme.surfaceLightColor(context).withValues(alpha: 0.45),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  IconUtils.getIcon(iconCodePoint),
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle_rounded, color: primary, size: 26)
-              else
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.25),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
