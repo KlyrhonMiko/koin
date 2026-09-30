@@ -13,6 +13,7 @@ import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/widgets/koin_empty_state.dart';
 import 'package:koin/core/widgets/koin_reorder_proxy.dart';
+import 'package:koin/core/widgets/koin_summary_card.dart';
 import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/features/debts/add_edit_debt_screen.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
@@ -156,64 +157,18 @@ class DebtsTab extends ConsumerWidget {
         ? AppTheme.expenseColor(context) 
         : AppTheme.primaryColor(context);
 
-    return Container(
+    return KoinSummaryCard(
       margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(28),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            cardColor.withValues(alpha: 0.95),
-            cardColor.withValues(alpha: 0.85),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: cardColor.withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
+      glowColor: cardColor,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          cardColor.withValues(alpha: 0.95),
+          cardColor.withValues(alpha: 0.85),
         ],
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Decorative circles overlay for depth
-          Positioned(
-            top: -40,
-            right: -20,
-            child: Transform.rotate(
-              angle: -0.2,
-              child: Container(
-                width: 140,
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -60,
-            left: -30,
-            child: Transform.rotate(
-              angle: 0.3,
-              child: Container(
-                width: 160,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-          ),
-          
-          Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -297,8 +252,6 @@ class DebtsTab extends ConsumerWidget {
               ),
             ],
           ),
-        ],
-      ),
     )
     .animate()
     .fade(duration: 250.ms, curve: Curves.easeOutCubic)

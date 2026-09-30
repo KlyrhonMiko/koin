@@ -13,7 +13,9 @@ import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/color_palette_grid.dart';
+import 'package:koin/core/widgets/icon_palette_grid.dart';
 import 'package:koin/core/widgets/koin_primary_button.dart';
+import 'package:koin/core/widgets/transaction_type_selector.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
@@ -365,138 +367,23 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   Widget _buildIconGrid(BuildContext context, Color selectedColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 6,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-        ),
-        itemCount: _availableIcons.length,
-        itemBuilder: (context, index) {
-          final iconCode = _availableIcons[index];
-          final isSelected = _selectedIconCodePoint == iconCode;
-          return GestureDetector(
-            onTap: () {
-              HapticService.light();
-              setState(() => _selectedIconCodePoint = iconCode);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? selectedColor.withValues(alpha: 0.12)
-                    : AppTheme.surfaceLightColor(context),
-                border: Border.all(
-                  color: isSelected
-                      ? selectedColor
-                      : AppTheme.dividerColor(context),
-                  width: isSelected ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: AnimatedScale(
-                scale: isSelected ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  IconUtils.getIcon(iconCode),
-                  color: isSelected
-                      ? selectedColor
-                      : AppTheme.textLightColor(context),
-                  size: 22,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return IconPaletteGrid(
+      iconCodes: _availableIcons,
+      selectedCodePoint: _selectedIconCodePoint,
+      activeColor: selectedColor,
+      onCodePointSelected: (code) =>
+          setState(() => _selectedIconCodePoint = code),
     );
   }
 
   Widget _buildTypeSelector(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTypeOption(
-              context,
-              'Expense',
-              TransactionType.expense,
-              AppTheme.expenseColor(context),
-              Icons.arrow_upward_rounded,
-            ),
-          ),
-          Expanded(
-            child: _buildTypeOption(
-              context,
-              'Income',
-              TransactionType.income,
-              AppTheme.incomeColor(context),
-              Icons.arrow_downward_rounded,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeOption(
-    BuildContext context,
-    String label,
-    TransactionType type,
-    Color color,
-    IconData icon,
-  ) {
-    final isSelected = _selectedType == type;
-    return GestureDetector(
-      onTap: () {
-        HapticService.selection();
-        setState(() => _selectedType = type);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? Colors.white
-                  : AppTheme.textLightColor(context),
-            ),
-            const Gap(6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : AppTheme.textLightColor(context),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TransactionTypeSelector(
+      selectedType: _selectedType,
+      allowedTypes: const [TransactionType.expense, TransactionType.income],
+      activeColor: _selectedType == TransactionType.expense
+          ? AppTheme.expenseColor(context)
+          : AppTheme.incomeColor(context),
+      onChanged: (type) => setState(() => _selectedType = type),
     );
   }
 

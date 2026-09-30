@@ -14,6 +14,7 @@ import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/koin_empty_state.dart';
+import 'package:koin/core/widgets/koin_summary_card.dart';
 
 class SavingsTab extends ConsumerStatefulWidget {
   final bool showEntranceAnimations;
@@ -134,48 +135,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         ? (totalSaved / totalTarget).clamp(0.0, 1.0)
         : 0.0;
 
-    Widget card = Container(
-      padding: const EdgeInsets.all(28),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient(context),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: -60,
-            right: -40,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -40,
-            left: -30,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Column(
+    Widget card = KoinSummaryCard(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -281,8 +242,6 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               ),
             ],
           ),
-        ],
-      ),
     );
 
     if (widget.showEntranceAnimations) {

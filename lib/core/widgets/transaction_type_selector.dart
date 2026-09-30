@@ -7,28 +7,32 @@ class TransactionTypeSelector extends StatelessWidget {
   final TransactionType selectedType;
   final ValueChanged<TransactionType> onChanged;
   final Color activeColor;
+  final List<TransactionType>? allowedTypes;
 
   const TransactionTypeSelector({
     super.key,
     required this.selectedType,
     required this.onChanged,
     required this.activeColor,
+    this.allowedTypes,
   });
 
+  List<TransactionType> get _effectiveTypes =>
+      allowedTypes ??
+      const [
+        TransactionType.expense,
+        TransactionType.income,
+        TransactionType.transfer,
+      ];
+
   int get _typeIndex {
-    switch (selectedType) {
-      case TransactionType.expense:
-        return 0;
-      case TransactionType.income:
-        return 1;
-      case TransactionType.transfer:
-        return 2;
-    }
+    final idx = _effectiveTypes.indexOf(selectedType);
+    return idx != -1 ? idx : 0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final types = [
+    final allTypes = [
       (
         'Expense',
         TransactionType.expense,
@@ -49,6 +53,10 @@ class TransactionTypeSelector extends StatelessWidget {
       ),
     ];
 
+    final types = allTypes
+        .where((t) => _effectiveTypes.contains(t.$2))
+        .toList();
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -60,7 +68,7 @@ class TransactionTypeSelector extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / 3;
+          final tabWidth = constraints.maxWidth / types.length;
           return Stack(
             children: [
               AnimatedPositioned(

@@ -9,6 +9,7 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/numpad.dart';
@@ -1046,44 +1047,20 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   const Gap(10),
                   // Log card
                   Expanded(
-                    child: Dismissible(
+                    child: SwipeToDeleteTile(
                       key: Key(log.id),
-                      direction: DismissDirection.endToStart,
-                      onUpdate: (details) {
-                        if (details.reached && !details.previousReached) {
-                          HapticService.selection();
-                        }
-                      },
-                      background: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.expenseColor(
-                            context,
-                          ).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 24),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: AppTheme.expenseColor(context),
-                        ),
-                      ),
-                      confirmDismiss: (direction) async {
-                        HapticService.medium();
-                        final confirmed = await ConfirmationSheet.show(
-                          context: context,
-                          title: 'Delete Entry?',
-                          description:
-                              'Are you sure you want to delete this savings entry?',
-                          confirmLabel: 'Delete',
-                          confirmColor: AppTheme.expenseColor(context),
-                          icon: Icons.delete_forever_rounded,
-                          isDanger: true,
-                        );
-                        return confirmed ?? false;
-                      },
-                      onDismissed: (_) {
+                      margin: const EdgeInsets.only(bottom: 10),
+                      borderRadius: BorderRadius.circular(16),
+                      backgroundColor: AppTheme.expenseColor(
+                        context,
+                      ).withValues(alpha: 0.15),
+                      iconColor: AppTheme.expenseColor(context),
+                      icon: Icons.delete_outline_rounded,
+                      confirmTitle: 'Delete Entry?',
+                      confirmDescription:
+                          'Are you sure you want to delete this savings entry?',
+                      confirmLabel: 'Delete',
+                      onDelete: () {
                         ref.read(savingsGoalsProvider.notifier).deleteLog(log);
                       },
                       child: PressableScale(

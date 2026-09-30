@@ -22,6 +22,7 @@ import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:uuid/uuid.dart';
@@ -805,34 +806,17 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required int paymentNumber,
     required bool isLast,
   }) {
-    return Dismissible(
+    return SwipeToDeleteTile(
       key: Key(repayment.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        return await ConfirmationSheet.show(
-          context: context,
-          title: 'Delete Payment?',
-          description:
-              'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
-          confirmLabel: 'Delete Payment',
-          confirmColor: AppTheme.expenseColor(context),
-          icon: Icons.delete_outline_rounded,
-          isDanger: true,
-        );
-      },
-      onDismissed: (direction) {
+      margin: const EdgeInsets.only(bottom: 10),
+      borderRadius: BorderRadius.circular(18),
+      confirmTitle: 'Delete Payment?',
+      confirmDescription:
+          'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
+      confirmLabel: 'Delete Payment',
+      onDelete: () {
         ref.read(debtsProvider.notifier).deleteRepayment(repayment);
       },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.expenseColor(context),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
-      ),
       child:
           IntrinsicHeight(
                 child: Row(

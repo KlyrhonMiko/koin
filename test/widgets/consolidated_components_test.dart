@@ -8,6 +8,10 @@ import 'package:koin/core/widgets/koin_primary_button.dart';
 import 'package:koin/core/widgets/color_palette_grid.dart';
 import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/widgets/koin_reorder_proxy.dart';
+import 'package:koin/core/widgets/icon_palette_grid.dart';
+import 'package:koin/core/widgets/transaction_type_selector.dart';
+import 'package:koin/core/widgets/koin_summary_card.dart';
+import 'package:koin/core/models/transaction.dart';
 
 void main() {
   group('Consolidated Reusable Components Tests', () {
@@ -226,6 +230,71 @@ void main() {
       expect(find.text('Dragging Item'), findsOneWidget);
       final widget = koinReorderProxyDecorator(const Text('Direct'), 0, animationController);
       expect(widget, isA<AnimatedBuilder>());
+    });
+
+    testWidgets('IconPaletteGrid renders icons and triggers selection', (tester) async {
+      final icons = [Icons.home, Icons.star, Icons.person];
+      IconData? selected;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: IconPaletteGrid(
+              icons: icons,
+              selectedIcon: Icons.star,
+              activeColor: Colors.blue,
+              onIconSelected: (i) => selected = i,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.home), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.home));
+      await tester.pump();
+      expect(selected, equals(Icons.home));
+    });
+
+    testWidgets('TransactionTypeSelector renders customized allowedTypes and toggles', (tester) async {
+      TransactionType selected = TransactionType.expense;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TransactionTypeSelector(
+              selectedType: selected,
+              allowedTypes: const [TransactionType.expense, TransactionType.income],
+              activeColor: Colors.red,
+              onChanged: (t) => selected = t,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Expense'), findsOneWidget);
+      expect(find.text('Income'), findsOneWidget);
+      expect(find.text('Transfer'), findsNothing);
+
+      await tester.tap(find.text('Income'));
+      await tester.pump();
+      expect(selected, equals(TransactionType.income));
+    });
+
+    testWidgets('KoinSummaryCard renders child within hero gradient surface', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: KoinSummaryCard(
+              child: Text('Summary Content'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Summary Content'), findsOneWidget);
+      expect(find.byType(KoinSummaryCard), findsOneWidget);
     });
   });
 }

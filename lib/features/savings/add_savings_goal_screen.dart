@@ -15,10 +15,10 @@ import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/account_picker_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/date_selector_tile.dart';
 import 'package:koin/core/widgets/form_section_title.dart';
 import 'package:koin/core/widgets/hero_amount_field.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
 
 class AddSavingsGoalScreen extends ConsumerStatefulWidget {
   final SavingsGoal? goal;
@@ -379,33 +379,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: PressableScale(
-          onTap: _save,
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: AppTheme.primaryGradient(context),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Text(
-              isEditing ? 'Update Goal' : 'Create Goal',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
+        child: KoinPrimaryButton(
+          label: isEditing ? 'Update Goal' : 'Create Goal',
+          onPressed: _save,
+          padding: const EdgeInsets.symmetric(vertical: 18),
         ),
       ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );

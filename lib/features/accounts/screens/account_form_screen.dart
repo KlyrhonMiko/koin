@@ -10,6 +10,7 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/color_palette_grid.dart';
+import 'package:koin/core/widgets/icon_palette_grid.dart';
 import 'package:koin/core/widgets/koin_primary_button.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/account_item.dart';
@@ -802,51 +803,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                           ],
                         ),
                         const Gap(12),
-                        SizedBox(
-                          height: 50,
-                          child: ListView.builder(
-                            controller: _iconScrollController,
-                            scrollDirection: Axis.horizontal,
-                            clipBehavior: Clip.none,
-                            itemCount: icons.length,
-                            itemBuilder: (context, index) {
-                              final icon = icons[index];
-                              final isSelected = selectedIcon == icon.codePoint;
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticService.light();
-                                  setState(() => selectedIcon = icon.codePoint);
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? selectedColor.withValues(alpha: 0.1)
-                                        : AppTheme.dividerColor(
-                                            context,
-                                          ).withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? selectedColor
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    icon,
-                                    color: isSelected
-                                        ? selectedColor
-                                        : AppTheme.textLightColor(
-                                            context,
-                                          ).withValues(alpha: 0.5),
-                                    size: 24,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                        IconPaletteGrid(
+                          icons: icons,
+                          selectedCodePoint: selectedIcon,
+                          activeColor: selectedColor,
+                          isScrollableRow: true,
+                          shape: BoxShape.circle,
+                          scrollController: _iconScrollController,
+                          onCodePointSelected: (code) =>
+                              setState(() => selectedIcon = code),
                         ),
                         const Gap(24),
 

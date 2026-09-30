@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_reorder_proxy.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/accounts/screens/account_form_screen.dart';
 import 'package:koin/core/widgets/account_item.dart';
@@ -427,43 +428,18 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
               key: ValueKey(account.id),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Dismissible(
+                child: SwipeToDeleteTile(
                   key: Key('dismiss_${account.id}'),
-                  direction: DismissDirection.endToStart,
-                  onUpdate: (details) {
-                    if (details.reached && !details.previousReached) {
-                      HapticService.selection();
-                    }
-                  },
-                  background: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorColor(
-                        context,
-                      ).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 24),
-                    child: Icon(
-                      Icons.delete_rounded,
-                      color: AppTheme.errorColor(context),
-                    ),
-                  ),
-                  confirmDismiss: (direction) async {
-                    HapticService.medium();
-                    final confirmed = await ConfirmationSheet.show(
-                      context: context,
-                      title: 'Delete Account?',
-                      description:
-                          'All transactions associated with this account will be unlinked. This cannot be undone.',
-                      confirmLabel: 'Delete',
-                      confirmColor: AppTheme.errorColor(context),
-                      icon: Icons.delete_forever_rounded,
-                      isDanger: true,
-                    );
-                    return confirmed ?? false;
-                  },
-                  onDismissed: (_) {
+                  borderRadius: BorderRadius.circular(20),
+                  backgroundColor: AppTheme.errorColor(
+                    context,
+                  ).withValues(alpha: 0.15),
+                  iconColor: AppTheme.errorColor(context),
+                  icon: Icons.delete_rounded,
+                  confirmTitle: 'Delete Account?',
+                  confirmDescription:
+                      'All transactions associated with this account will be unlinked. This cannot be undone.',
+                  onDelete: () {
                     HapticService.heavy();
                     ref
                         .read(accountProvider.notifier)
@@ -589,42 +565,14 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                     orElse: () =>
                         categories.isNotEmpty ? categories.first : null,
                   );
-              return Dismissible(
+              return SwipeToDeleteTile(
                 key: Key('planned_${payment.id}'),
-                direction: DismissDirection.endToStart,
-                onUpdate: (details) {
-                  if (details.reached && !details.previousReached) {
-                    HapticService.selection();
-                  }
-                },
-                background: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.expenseColor(context),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 28),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                confirmDismiss: (direction) async {
-                  HapticService.medium();
-                  return await ConfirmationSheet.show(
-                    context: context,
-                    title: 'Delete Subscription?',
-                    description:
-                        'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
-                    confirmLabel: 'Delete',
-                    confirmColor: AppTheme.expenseColor(context),
-                    icon: Icons.delete_outline_rounded,
-                    isDanger: true,
-                  );
-                },
-                onDismissed: (_) {
+                margin: const EdgeInsets.only(bottom: 16),
+                borderRadius: BorderRadius.circular(24),
+                confirmTitle: 'Delete Subscription?',
+                confirmDescription:
+                    'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
+                onDelete: () {
                   HapticService.heavy();
                   ref
                       .read(plannedPaymentProvider.notifier)
@@ -1006,47 +954,11 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                         ),
                       ),
                   const SizedBox(height: 36),
-                  SizedBox(
-                        width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: AppTheme.primaryGradient(context),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              HapticService.medium();
-                              onTap();
-                            },
-                            icon: const Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              buttonLabel,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
-                      ),
+                  KoinPrimaryButton(
+                    label: buttonLabel,
+                    icon: Icons.add_rounded,
+                    onPressed: onTap,
+                  ),
                 ]
                 .animate(interval: 40.ms)
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
