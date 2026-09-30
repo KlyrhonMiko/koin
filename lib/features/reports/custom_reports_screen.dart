@@ -21,6 +21,7 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/date_range_selector.dart';
+import 'package:koin/core/widgets/koin_section_header.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -75,22 +76,22 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                   const Gap(24),
                   _buildSummaryCard(context, ref, currencySymbol),
                   const Gap(28),
-                  _buildSectionHeader(
-                    'Transaction Type',
+                  const KoinSectionHeader(
+                    title: 'Transaction Type',
                     subtitle: 'Filter by income or expense',
                   ),
                   const Gap(12),
                   _buildTypeSelector(context),
                   const Gap(28),
-                  _buildSectionHeader(
-                    'Categories',
+                  const KoinSectionHeader(
+                    title: 'Categories',
                     subtitle: 'Narrow down by spending categories',
                   ),
                   const Gap(12),
                   _buildCategorySelector(context, categories),
                   const Gap(28),
-                  _buildSectionHeader(
-                    'Accounts',
+                  const KoinSectionHeader(
+                    title: 'Accounts',
                     subtitle: 'Select specific accounts to include',
                   ),
                   const Gap(12),
@@ -264,33 +265,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, {String? subtitle}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textColor(context),
-            letterSpacing: -0.4,
-          ),
-        ),
-        if (subtitle != null) ...[
-          const Gap(3),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
 
   Widget _buildSummaryItem(
     BuildContext context,

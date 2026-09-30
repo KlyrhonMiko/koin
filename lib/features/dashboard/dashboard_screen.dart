@@ -32,6 +32,7 @@ import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/core/widgets/spending_trend_chart.dart';
 import 'package:koin/core/utils/animation_utils.dart';
+import 'package:koin/core/widgets/koin_section_header.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -162,13 +163,10 @@ class DashboardScreen extends ConsumerWidget {
               const Gap(28),
               _buildBudgetSection(context, ref, stats, currency),
               const Gap(32),
-              _buildSectionHeader(
-                context,
-                ref,
+              KoinSectionHeader(
                 title: 'Spending Overview',
-                buttonLabel: 'Full Analysis',
-                onTap: () {
-                  HapticService.light();
+                actionLabel: 'Full Analysis',
+                onActionTap: () {
                   ref.read(activityTabProvider.notifier).setIndex(0);
                   ref.read(navigationProvider.notifier).setIndex(1);
                 },
@@ -183,13 +181,10 @@ class DashboardScreen extends ConsumerWidget {
               const Gap(28),
               _buildUpcomingPayments(context, ref, currency),
               const Gap(32),
-              _buildSectionHeader(
-                context,
-                ref,
+              KoinSectionHeader(
                 title: 'Recent Transactions',
-                buttonLabel: 'View All',
-                onTap: () {
-                  HapticService.light();
+                actionLabel: 'View All',
+                onActionTap: () {
                   ref.read(activityTabProvider.notifier).setIndex(1);
                   ref.read(navigationProvider.notifier).setIndex(1);
                 },
@@ -213,62 +208,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  // ─── Consistent Section Header ────────────────────────────────────
-  Widget _buildSectionHeader(
-    BuildContext context,
-    WidgetRef ref, {
-    required String title,
-    required String buttonLabel,
-    required VoidCallback onTap,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textColor(context),
-            letterSpacing: -0.4,
-          ),
-        ),
-        GestureDetector(
-          onTap: () {
-            HapticService.light();
-            onTap();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  buttonLabel,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textLightColor(context),
-                  ),
-                ),
-                const Gap(4),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 10,
-                  color: AppTheme.textLightColor(context),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -656,12 +595,10 @@ class DashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          context,
-          ref,
+        KoinSectionHeader(
           title: 'Accounts',
-          buttonLabel: 'View all',
-          onTap: () {
+          actionLabel: 'View all',
+          onActionTap: () {
             ref.read(portfolioTabProvider.notifier).setIndex(0);
             ref.read(navigationProvider.notifier).setIndex(3);
           },
@@ -1063,12 +1000,10 @@ class DashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          context,
-          ref,
+        KoinSectionHeader(
           title: 'Budget Progress',
-          buttonLabel: 'Manage',
-          onTap: () {
+          actionLabel: 'Manage',
+          onActionTap: () {
             Navigator.popUntil(context, (route) => route.isFirst);
             ref.read(navigationProvider.notifier).setIndex(2);
           },
@@ -1608,13 +1543,10 @@ class DashboardScreen extends ConsumerWidget {
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          context,
-          ref,
+        KoinSectionHeader(
           title: 'Upcoming',
-          buttonLabel: 'View All',
-          onTap: () {
-            HapticService.light();
+          actionLabel: 'View All',
+          onActionTap: () {
             Navigator.push(
               context,
               SlideUpRoute(page: const UpcomingScreen()),

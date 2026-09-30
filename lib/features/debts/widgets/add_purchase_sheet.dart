@@ -14,6 +14,7 @@ import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/category_picker_sheet.dart';
 import 'package:koin/core/widgets/date_selector_tile.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 Future<DebtItem?> showAddPurchaseSheet({
   required BuildContext context,
@@ -101,17 +102,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 48,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(ctx),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+                    const KoinBottomSheetHandle(
+                      padding: EdgeInsets.only(bottom: 24),
                     ),
-                    const Gap(24),
                     Text(
                       existingItem != null ? 'Edit Purchase' : 'Add Purchase',
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textColor(ctx), letterSpacing: -0.5),

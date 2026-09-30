@@ -9,6 +9,7 @@ import 'package:koin/features/analysis/analysis_screen.dart';
 import 'package:koin/features/reports/custom_reports_screen.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:koin/core/widgets/koin_segmented_control.dart';
+import 'package:koin/core/widgets/koin_screen_header.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -76,53 +77,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'TIMELINE',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Activity & Flow',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-                  ],
-                ),
+          KoinScreenHeader(
+            tag: 'TIMELINE',
+            title: 'Activity & Flow',
+            padding: EdgeInsets.zero,
+            trailing: IconButton(
+              onPressed: () {
+                HapticService.light();
+                Navigator.push(
+                  context,
+                  SlideUpRoute(page: const CustomReportsScreen()),
+                );
+              },
+              icon: Icon(
+                Icons.summarize_outlined,
+                color: AppTheme.textColor(context),
               ),
-              IconButton(
-                onPressed: () {
-                  HapticService.light();
-                  Navigator.push(
-                    context,
-                    SlideUpRoute(page: const CustomReportsScreen()),
-                  );
-                },
-                icon: Icon(
-                  Icons.summarize_outlined,
-                  color: AppTheme.textColor(context),
-                ),
-                tooltip: 'Custom Reports',
-              ),
-            ],
+              tooltip: 'Custom Reports',
+            ),
           ),
           const SizedBox(height: 20),
           KoinSegmentedControl(

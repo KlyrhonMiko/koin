@@ -23,6 +23,9 @@ import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
+import 'package:koin/core/widgets/koin_grouped_card.dart';
+import 'package:koin/core/widgets/form_section_title.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -126,55 +129,33 @@ class SettingsScreen extends ConsumerWidget {
               const Gap(32),
 
               // ── Appearance ──
-              _buildSectionHeader(context, 'Appearance'),
+              const FormSectionTitle.subhead(
+                title: 'Appearance',
+                padding: EdgeInsets.only(left: 4),
+              ),
               const Gap(12),
-              _buildGroupedCard(
-                context,
+              KoinGroupedCard(
                 children: [
                   // Theme Mode selector
-                  ListTile(
-                    onTap: () {
-                      HapticService.light();
-                      _showThemeModePicker(context, ref, settings.themeMode);
-                    },
+                  KoinSettingTile(
+                    onTap: () =>
+                        _showThemeModePicker(context, ref, settings.themeMode),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 2,
                     ),
-                    leading: _buildIconBox(
-                      context,
-                      settings.themeMode == ThemeMode.system
-                          ? Icons.brightness_auto_rounded
-                          : settings.themeMode == ThemeMode.dark
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                    ),
-                    title: const Text(
-                      'Theme Mode',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    subtitle: Text(
-                      settings.themeMode == ThemeMode.system
-                          ? 'Follow System'
-                          : settings.themeMode == ThemeMode.dark
-                          ? 'Dark Mode'
-                          : 'Light Mode',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppTheme.textLightColor(context),
-                      size: 20,
-                    ),
+                    icon: settings.themeMode == ThemeMode.system
+                        ? Icons.brightness_auto_rounded
+                        : settings.themeMode == ThemeMode.dark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    title: 'Theme Mode',
+                    subtitle: settings.themeMode == ThemeMode.system
+                        ? 'Follow System'
+                        : settings.themeMode == ThemeMode.dark
+                        ? 'Dark Mode'
+                        : 'Light Mode',
                   ),
-                  _buildInlineDivider(context),
                   // Theme Color picker
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
@@ -271,13 +252,14 @@ class SettingsScreen extends ConsumerWidget {
               const Gap(28),
 
               // ── Preferences ──
-              _buildSectionHeader(context, 'Preferences'),
+              const FormSectionTitle.subhead(
+                title: 'Preferences',
+                padding: EdgeInsets.only(left: 4),
+              ),
               const Gap(12),
-              _buildGroupedCard(
-                context,
+              KoinGroupedCard(
                 children: [
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Currency',
                     subtitle:
                         '${settings.currency.name} (${settings.currency.symbol})',
@@ -290,21 +272,20 @@ class SettingsScreen extends ConsumerWidget {
               const Gap(28),
 
               // ── Data Management ──
-              _buildSectionHeader(context, 'Data Management'),
+              const FormSectionTitle.subhead(
+                title: 'Data Management',
+                padding: EdgeInsets.only(left: 4),
+              ),
               const Gap(12),
-              _buildGroupedCard(
-                context,
+              KoinGroupedCard(
                 children: [
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Backup Data',
                     subtitle: 'Export your data to a safe place',
                     icon: Icons.upload_file_rounded,
                     onTap: () => _handleBackup(context, ref),
                   ),
-                  _buildInlineDivider(context),
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Restore Data',
                     subtitle: 'Import data from a backup file',
                     icon: Icons.download_rounded,
@@ -315,31 +296,28 @@ class SettingsScreen extends ConsumerWidget {
               const Gap(28),
 
               // ── Danger Zone ──
-              _buildSectionHeader(context, 'Danger Zone'),
+              const FormSectionTitle.subhead(
+                title: 'Danger Zone',
+                padding: EdgeInsets.only(left: 4),
+              ),
               const Gap(12),
-              _buildGroupedCard(
-                context,
+              KoinGroupedCard(
                 children: [
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Delete All Records',
                     subtitle: 'Clear all your transaction history',
                     icon: Icons.delete_sweep_rounded,
                     isDestructive: true,
                     onTap: () => _handleDeleteAllTransactions(context, ref),
                   ),
-                  _buildInlineDivider(context),
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Delete All Data',
                     subtitle: 'Clear all records, accounts, and categories',
                     icon: Icons.delete_forever_rounded,
                     isDestructive: true,
                     onTap: () => _handleDeleteAllData(context, ref),
                   ),
-                  _buildInlineDivider(context),
-                  _buildSettingTile(
-                    context,
+                  KoinSettingTile(
                     title: 'Factory Reset',
                     subtitle: 'Reset app to its initial state',
                     icon: Icons.restore_rounded,
@@ -356,105 +334,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // ── Helper Widgets ──
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.textLightColor(context),
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGroupedCard(
-    BuildContext context, {
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: Material(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: Column(children: children),
-      ),
-    );
-  }
-
-  Widget _buildInlineDivider(BuildContext context) {
-    return Divider(
-      height: 1,
-      indent: 64,
-      color: AppTheme.dividerColor(context),
-    );
-  }
-
-  Widget _buildIconBox(
-    BuildContext context,
-    IconData icon, {
-    bool isDestructive = false,
-  }) {
-    final color = isDestructive ? Colors.red : AppTheme.primaryColor(context);
-    return Container(
-      padding: const EdgeInsets.all(9),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Icon(icon, color: color, size: 20),
-    );
-  }
-
-  Widget _buildSettingTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    bool isDestructive = false,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      onTap: () {
-        HapticService.light();
-        onTap?.call();
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: _buildIconBox(context, icon, isDestructive: isDestructive),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-          color: isDestructive ? Colors.red : null,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: AppTheme.textLightColor(context),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: onTap != null
-          ? Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.textLightColor(context),
-              size: 20,
-            )
-          : null,
-    );
-  }
 
   Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {
     final confirmed = await _showConfirmationBottomSheet(
@@ -745,15 +624,9 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
+            const KoinBottomSheetHandle(
+              padding: EdgeInsets.only(bottom: 24),
             ),
-            const SizedBox(height: 24),
             Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -866,16 +739,9 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            const Gap(12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
+            const KoinBottomSheetHandle(
+              padding: EdgeInsets.only(top: 12, bottom: 20),
             ),
-            const Gap(20),
             const Text(
               'Select Currency',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
@@ -1009,15 +875,9 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: AppTheme.dividerColor(context),
-                borderRadius: BorderRadius.circular(2.5),
-              ),
+            const KoinBottomSheetHandle(
+              padding: EdgeInsets.only(bottom: 24),
             ),
-            const Gap(24),
             Text(
               'App Appearance',
               style: TextStyle(

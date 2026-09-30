@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 class ConfirmationSheet extends StatelessWidget {
   const ConfirmationSheet({
@@ -75,15 +76,9 @@ class ConfirmationSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          const KoinBottomSheetHandle(
+            padding: EdgeInsets.only(bottom: 32),
           ),
-          const Gap(32),
 
           // Icon with glow
           Container(

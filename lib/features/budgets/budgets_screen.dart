@@ -20,6 +20,8 @@ import 'package:koin/features/categories/category_detail_screen.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_empty_state.dart';
+import 'package:koin/core/widgets/koin_screen_header.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});
@@ -348,64 +350,20 @@ class BudgetsScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.paddingOf(context).top + 12,
-        bottom: 16,
-        left: 20,
-        right: 20,
-      ),
-      decoration: BoxDecoration(color: AppTheme.backgroundColor(context)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'STRATEGY',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                      'Monthly Budgets',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-              ],
-            ),
-          ),
-          IconButton(
-                icon: const Icon(Icons.category_outlined),
-                tooltip: 'Manage Categories',
-                onPressed: () {
-                  HapticService.light();
-                  Navigator.push(
-                    context,
-                    SlideUpRoute(page: const CategoryManagerScreen()),
-                  );
-                },
-              ),
-        ]
-        .animate(interval: 40.ms)
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        ),
+    return KoinScreenHeader(
+      tag: 'STRATEGY',
+      title: 'Monthly Budgets',
+      backgroundColor: AppTheme.backgroundColor(context),
+      trailing: IconButton(
+        icon: const Icon(Icons.category_outlined),
+        tooltip: 'Manage Categories',
+        onPressed: () {
+          HapticService.light();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: const CategoryManagerScreen()),
+          );
+        },
       ),
     );
   }
@@ -997,15 +955,9 @@ class BudgetsScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Drag handle
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.dividerColor(context),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                    const KoinBottomSheetHandle(
+                      padding: EdgeInsets.only(bottom: 20),
                     ),
-                    const Gap(20),
                     // Category header
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),

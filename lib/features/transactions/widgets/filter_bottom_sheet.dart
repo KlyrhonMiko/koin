@@ -15,6 +15,7 @@ import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/date_range_selector.dart';
 import 'package:koin/core/widgets/form_section_title.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
   const FilterBottomSheet({super.key});
@@ -113,16 +114,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       child: Column(
         children: [
           // ── Handle ──
-          const Gap(12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          const KoinBottomSheetHandle(
+            padding: EdgeInsets.only(top: 12, bottom: 20),
           ),
-          const Gap(20),
 
           // ── Header ──
           Padding(

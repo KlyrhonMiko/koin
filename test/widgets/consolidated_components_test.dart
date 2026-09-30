@@ -11,6 +11,10 @@ import 'package:koin/core/widgets/koin_reorder_proxy.dart';
 import 'package:koin/core/widgets/icon_palette_grid.dart';
 import 'package:koin/core/widgets/transaction_type_selector.dart';
 import 'package:koin/core/widgets/koin_summary_card.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
+import 'package:koin/core/widgets/koin_grouped_card.dart';
+import 'package:koin/core/widgets/koin_section_header.dart';
+import 'package:koin/core/widgets/koin_screen_header.dart';
 import 'package:koin/core/models/transaction.dart';
 
 void main() {
@@ -295,6 +299,101 @@ void main() {
 
       expect(find.text('Summary Content'), findsOneWidget);
       expect(find.byType(KoinSummaryCard), findsOneWidget);
+    });
+
+    testWidgets('KoinBottomSheetHandle renders pill container with default dimensions', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: KoinBottomSheetHandle(),
+          ),
+        ),
+      );
+
+      expect(find.byType(KoinBottomSheetHandle), findsOneWidget);
+      expect(find.byType(Container), findsWidgets);
+    });
+
+    testWidgets('KoinGroupedCard and KoinSettingTile render grouped card with auto-dividers and taps', (tester) async {
+      bool tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KoinGroupedCard(
+              children: [
+                KoinSettingTile(
+                  icon: Icons.settings,
+                  title: 'Preferences',
+                  subtitle: 'Change app preferences',
+                  onTap: () => tapped = true,
+                ),
+                const KoinSettingTile(
+                  icon: Icons.delete_outline,
+                  title: 'Danger Item',
+                  isDestructive: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Preferences'), findsOneWidget);
+      expect(find.text('Change app preferences'), findsOneWidget);
+      expect(find.text('Danger Item'), findsOneWidget);
+      expect(find.byType(Divider), findsOneWidget);
+
+      await tester.tap(find.text('Preferences'));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('KoinSectionHeader renders title, subtitle, and interactive action button', (tester) async {
+      bool actionTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KoinSectionHeader(
+              title: 'Recent Activity',
+              subtitle: 'Latest transactions',
+              actionLabel: 'See All',
+              onActionTap: () => actionTapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Recent Activity'), findsOneWidget);
+      expect(find.text('Latest transactions'), findsOneWidget);
+      expect(find.text('See All'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsOneWidget);
+
+      await tester.tap(find.text('See All'));
+      await tester.pump();
+      expect(actionTapped, isTrue);
+    });
+
+    testWidgets('KoinScreenHeader renders uppercase tag, bold title, and trailing actions', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KoinScreenHeader(
+              tag: 'STRATEGY',
+              title: 'Monthly Budgets',
+              trailing: IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('STRATEGY'), findsOneWidget);
+      expect(find.text('Monthly Budgets'), findsOneWidget);
+      expect(find.byIcon(Icons.settings), findsOneWidget);
     });
   });
 }

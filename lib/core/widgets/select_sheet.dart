@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
+import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 class SelectSheetItem extends StatelessWidget {
   const SelectSheetItem({
@@ -242,16 +243,8 @@ Future<T?> showSelectSheet<T>({
                 mainAxisSize: MainAxisSize.max,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Gap(10),
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.dividerColor(sheetContext),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+                  const KoinBottomSheetHandle(
+                    padding: EdgeInsets.only(top: 10),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
