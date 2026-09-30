@@ -25,6 +25,9 @@ import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/date_selector_tile.dart';
+import 'package:koin/core/widgets/form_section_title.dart';
+import 'package:koin/core/widgets/hero_amount_field.dart';
 import 'package:uuid/uuid.dart';
 
 class AddEditDebtScreen extends ConsumerStatefulWidget {
@@ -247,7 +250,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Type Selector
-                    _buildSectionTitle(context, 'Type'),
+                    const FormSectionTitle.subhead(title: 'Type'),
                     const Gap(12),
                     _buildPremiumTypeSwitcher(
                       context,
@@ -256,7 +259,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     const Gap(32),
 
                     // Installment Plan
-                    _buildSectionTitle(context, 'Installment Plan (Optional)'),
+                    const FormSectionTitle.subhead(title: 'Installment Plan (Optional)'),
                     const Gap(12),
                     _buildInstallmentsCard(
                       context,
@@ -269,38 +272,29 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     const Gap(32),
 
                     // Date
-                    _buildSectionTitle(
-                      context,
-                      int.tryParse(_installmentsController.text) != null &&
+                    FormSectionTitle.subhead(
+                      title: int.tryParse(_installmentsController.text) != null &&
                               int.parse(_installmentsController.text) > 0
                           ? 'Start Payment Date'
                           : 'Record Date',
                     ),
                     const Gap(12),
-                    _buildDateSelector(
-                      context,
+                    DateSelectorTile(
                       label: int.tryParse(_installmentsController.text) != null &&
                               int.parse(_installmentsController.text) > 0
                           ? 'Start Payment Date'
                           : 'Record Date',
                       date: _startDate,
                       icon: Icons.calendar_today_rounded,
-                      onTap: () async {
-                        final dt = await showDatePicker(
-                          context: context,
-                          initialDate: _startDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (dt != null) {
-                          setState(() => _startDate = dt);
-                        }
+                      primaryColor: primaryColor,
+                      onDateSelected: (dt) {
+                        setState(() => _startDate = dt);
                       },
                     ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     const Gap(32),
 
                     // Details Section
-                    _buildSectionTitle(context, 'Details'),
+                    const FormSectionTitle.subhead(title: 'Details'),
                     const Gap(12),
                     Column(
                       children: [
@@ -458,17 +452,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title.toUpperCase(),
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: AppTheme.textLightColor(context),
-        letterSpacing: 1.2,
-      ),
-    );
-  }
+
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -528,68 +512,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
 
           const Gap(4),
 
-          // Amount Input
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '${currency.symbol} ',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: primaryColor.withValues(alpha: 0.5),
-                ),
-              ),
-              IntrinsicWidth(
-                child: TextFormField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
-                    color: _amountController.text.isEmpty
-                        ? primaryColor.withValues(alpha: 0.35)
-                        : primaryColor,
-                    letterSpacing: -2,
-                    height: 1.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    fillColor: Colors.transparent,
-                    filled: true,
-                    contentPadding: EdgeInsets.zero,
-                    hintStyle: TextStyle(
-                      color: primaryColor.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-            ],
-          ),
-
-          // Little subtle animated underline
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: _amountController.text.isNotEmpty ? 60 : 40,
-            height: 3,
-            margin: const EdgeInsets.only(top: 8, bottom: 24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
-              color: primaryColor.withValues(
-                alpha: _amountController.text.isNotEmpty ? 0.35 : 0.15,
-              ),
-            ),
+          HeroAmountField(
+            controller: _amountController,
+            currencySymbol: currency.symbol,
+            primaryColor: primaryColor,
+            onChanged: (_) => setState(() {}),
           ),
         ],
       ),
@@ -673,66 +600,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     );
   }
 
-  Widget _buildDateSelector(
-    BuildContext context, {
-    required String label,
-    required DateTime date,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: () async {
-        final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-        FocusManager.instance.primaryFocus?.unfocus();
-        if (hadFocus) {
-          await Future.delayed(const Duration(milliseconds: 150));
-        }
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 14,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.6),
-                ),
-                const Gap(6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(8),
-            Text(
-              DateFormat.yMMMd().format(date),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildInstallmentsCard(BuildContext context, Color primaryColor) {
     final settings = ref.read(settingsProvider);
@@ -1155,7 +1023,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle(context, 'Purchases / Sub-Plans (Optional)'),
+        const FormSectionTitle.subhead(title: 'Purchases / Sub-Plans (Optional)'),
         const Gap(12),
         if (_items.isNotEmpty)
           ..._items.map((item) => Padding(

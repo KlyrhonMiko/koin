@@ -26,6 +26,7 @@ import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
 import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/category_picker_sheet.dart';
 import 'package:koin/core/widgets/account_picker_sheet.dart';
+import 'package:koin/core/widgets/date_selector_tile.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -397,31 +398,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Date picker
   // ═══════════════════════════════════════════════════════
   Future<void> _pickDate() async {
-    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (hadFocus) {
-      await Future.delayed(const Duration(milliseconds: 150));
-    }
-    if (!mounted) return;
-    HapticService.light();
-    final pickedDate = await showDatePicker(
+    final pickedDate = await showThemedDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: _getTypeColor(context),
-              onPrimary: Colors.white,
-              surface: AppTheme.surfaceColor(context),
-              onSurface: AppTheme.textColor(context),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      primaryColor: _getTypeColor(context),
     );
     if (pickedDate != null && mounted) {
       setState(() {

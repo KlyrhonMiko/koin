@@ -12,6 +12,7 @@ import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/core/widgets/koin_empty_state.dart';
 import 'package:koin/features/debts/add_edit_debt_screen.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 
@@ -35,123 +36,58 @@ class DebtsTab extends ConsumerWidget {
     return debtsAsync.when(
       data: (debts) {
         if (debts.isEmpty) {
-          return CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Align(
-                  alignment: const Alignment(0, -0.25),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                              padding: const EdgeInsets.all(36),
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceColor(context),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primaryColor(
-                                      context,
-                                    ).withValues(alpha: 0.1),
-                                    blurRadius: 40,
-                                    spreadRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.handshake_rounded,
-                                size: 56,
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.6),
-                              ),
-                            ),
-                        const SizedBox(height: 24),
-                        Text(
-                              'No credit or IOUs',
-                              style: TextStyle(
-                                color: AppTheme.textColor(context),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                        const SizedBox(height: 8),
-                        Text(
-                              'Track BNPL, credit cards, and\nmoney you owe or are owed.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: 14,
-                                height: 1.5,
-                              ),
-                            ),
-                        const SizedBox(height: 36),
-                        SizedBox(
-                              width: double.infinity,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  gradient: AppTheme.primaryGradient(context),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.3),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    HapticService.medium();
-                                    Navigator.push(
-                                      context,
-                                      SlideUpRoute(
-                                        page: const AddEditDebtScreen(),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.add_rounded,
-                                    color: Colors.white,
-                                  ),
-                                  label: const Text(
-                                    'Add Your First Account',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                      ]
-                      .animate(interval: 40.ms)
-                      .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                      .scale(
-                        begin: const Offset(0.95, 0.95),
-                        duration: 250.ms,
-                        curve: Curves.easeOutCubic,
+          return KoinEmptyState.sliver(
+            icon: Icons.handshake_rounded,
+            title: 'No credit or IOUs',
+            subtitle: 'Track BNPL, credit cards, and\nmoney you owe or are owed.',
+            action: SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: AppTheme.primaryGradient(context),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor(
+                        context,
+                      ).withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    HapticService.medium();
+                    Navigator.push(
+                      context,
+                      SlideUpRoute(
+                        page: const AddEditDebtScreen(),
                       ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Add Your First Account',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           );
         }
 

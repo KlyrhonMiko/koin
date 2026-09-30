@@ -12,6 +12,7 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/category_picker_sheet.dart';
+import 'package:koin/core/widgets/date_selector_tile.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 Future<DebtItem?> showAddPurchaseSheet({
@@ -228,11 +229,12 @@ Future<DebtItem?> showAddPurchaseSheet({
                             initialValue: DateFormat.MMMd().format(firstDate),
                             readOnly: true,
                             onTap: () async {
-                              final dt = await showDatePicker(
+                              final dt = await showThemedDatePicker(
                                 context: ctx,
                                 initialDate: firstDate,
                                 firstDate: DateTime(2000),
                                 lastDate: DateTime(2100),
+                                primaryColor: primaryColor,
                               );
                               if (dt != null) setSheetState(() => firstDate = dt);
                             },

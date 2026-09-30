@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,6 +18,9 @@ import 'package:koin/core/widgets/category_picker_sheet.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/date_selector_tile.dart';
+import 'package:koin/core/widgets/form_section_title.dart';
+import 'package:koin/core/widgets/hero_amount_field.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
@@ -292,80 +294,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     }
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-        color: AppTheme.textColor(context),
-        letterSpacing: -0.3,
-      ),
-    );
-  }
 
-
-
-  Widget _buildDateSelector(
-    BuildContext context, {
-    required String label,
-    required DateTime date,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: () async {
-        final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-        FocusManager.instance.primaryFocus?.unfocus();
-        if (hadFocus) {
-          await Future.delayed(const Duration(milliseconds: 150));
-        }
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 14,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.6),
-                ),
-                const Gap(6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(8),
-            Text(
-              DateFormat.yMMMd().format(date),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -441,69 +370,14 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
 
           const Gap(4),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '${currency.symbol} ',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: primaryColor.withValues(alpha: 0.5),
-                ),
-              ),
-              IntrinsicWidth(
-                child: TextFormField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
-                    color: _amountController.text.isEmpty
-                        ? primaryColor.withValues(alpha: 0.35)
-                        : primaryColor,
-                    letterSpacing: -2,
-                    height: 1.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    fillColor: Colors.transparent,
-                    filled: true,
-                    contentPadding: EdgeInsets.zero,
-                    hintStyle: TextStyle(
-                      color: primaryColor.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  onChanged: (_) {
-                    setState(() {});
-                    _onTitleChanged();
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: _amountController.text.isNotEmpty ? 60 : 40,
-            height: 3,
-            margin: const EdgeInsets.only(top: 8, bottom: 24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
-              color: primaryColor.withValues(
-                alpha: _amountController.text.isNotEmpty ? 0.35 : 0.15,
-              ),
-            ),
+          HeroAmountField(
+            controller: _amountController,
+            currencySymbol: currency.symbol,
+            primaryColor: primaryColor,
+            onChanged: (_) {
+              setState(() {});
+              _onTitleChanged();
+            },
           ),
         ],
       ),
@@ -561,7 +435,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Repeats Section
-                    _buildSectionTitle(context, 'Repeats'),
+                    const FormSectionTitle(title: 'Repeats'),
                     const Gap(12),
                     SizedBox(
                       height: 60,
@@ -634,34 +508,16 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildSectionTitle(context, 'Timeline'),
+                              const FormSectionTitle(title: 'Timeline'),
                               const Gap(12),
-                              _buildDateSelector(
-                                context,
+                              DateSelectorTile(
                                 label: _selectedFrequency == PaymentFrequency.flexible
                                     ? 'Start Date'
                                     : (_isIncome ? 'Next Expected Date' : 'Next Payment Date'),
                                 date: _startDate,
                                 icon: Icons.calendar_month_rounded,
-                                onTap: () async {
-                                  final dt = await showDatePicker(
-                                    context: context,
-                                    initialDate: _startDate,
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2100),
-                                    builder: (context, child) {
-                                      return Theme(
-                                        data: Theme.of(context).copyWith(
-                                          colorScheme: Theme.of(context).colorScheme.copyWith(
-                                            primary: primaryColor,
-                                          ),
-                                        ),
-                                        child: child!,
-                                      );
-                                    },
-                                  );
-                                  if (dt != null) setState(() => _startDate = dt);
-                                },
+                                primaryColor: primaryColor,
+                                onDateSelected: (dt) => setState(() => _startDate = dt),
                               ),
                               const Gap(32),
                             ].animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
@@ -670,7 +526,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                     ),
 
                     // Details Section
-                    _buildSectionTitle(context, 'Details'),
+                    const FormSectionTitle(title: 'Details'),
                     const Gap(12),
                     Column(
                       children: [

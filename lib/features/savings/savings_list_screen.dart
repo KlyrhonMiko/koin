@@ -13,6 +13,7 @@ import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/koin_empty_state.dart';
 
 class SavingsTab extends ConsumerStatefulWidget {
   final bool showEntranceAnimations;
@@ -463,106 +464,50 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    Widget state = CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Align(
-            alignment: const Alignment(0, -0.2),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                          blurRadius: 40,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.savings_outlined,
-                        size: 40,
-                        color: AppTheme.primaryColor(context),
-                      ),
-                    ),
-                  ),
-                  const Gap(32),
-                  Text(
-                    'No dreams yet',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
-                  const Gap(12),
-                  Text(
-                    'Start your financial journey by\nsetting your first savings goal.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: 15,
-                      height: 1.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Gap(40),
-                  PressableScale(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        SlideUpRoute(page: const AddSavingsGoalScreen()),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: AppTheme.primaryColor(context),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
-                          Gap(8),
-                          Text(
-                            'Create First Goal',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+    Widget state = KoinEmptyState.sliver(
+      alignment: const Alignment(0, -0.2),
+      icon: Icons.savings_outlined,
+      iconSize: 40,
+      title: 'No dreams yet',
+      subtitle: 'Start your financial journey by\nsetting your first savings goal.',
+      action: PressableScale(
+        onTap: () {
+          Navigator.push(
+            context,
+            SlideUpRoute(page: const AddSavingsGoalScreen()),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: AppTheme.primaryColor(context),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-            ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+              Gap(8),
+              Text(
+                'Create First Goal',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
 
     if (widget.showEntranceAnimations) {

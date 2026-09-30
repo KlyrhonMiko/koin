@@ -14,6 +14,7 @@ import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/date_range_selector.dart';
+import 'package:koin/core/widgets/form_section_title.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
   const FilterBottomSheet({super.key});
@@ -218,7 +219,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
               children: [
                 // Transaction Type
-                _buildSectionTitle('Transaction Type', Icons.swap_vert_rounded),
+                const FormSectionTitle.subhead(title: 'Transaction Type', icon: Icons.swap_vert_rounded),
                 const Gap(12),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -249,7 +250,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 const Gap(28),
 
                 // Date Range
-                _buildSectionTitle('Date Range', Icons.calendar_today_rounded),
+                const FormSectionTitle.subhead(title: 'Date Range', icon: Icons.calendar_today_rounded),
                 const Gap(12),
                 DateRangeSelector(
                   initialDateRange: _filter.dateRange,
@@ -266,7 +267,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 const Gap(28),
 
                 // Categories
-                _buildSectionTitle('Categories', Icons.category_rounded),
+                const FormSectionTitle.subhead(title: 'Categories', icon: Icons.category_rounded),
                 const Gap(12),
                 Wrap(
                   spacing: 8,
@@ -278,9 +279,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 const Gap(28),
 
                 // Accounts
-                _buildSectionTitle(
-                  'Accounts',
-                  Icons.account_balance_wallet_rounded,
+                const FormSectionTitle.subhead(
+                  title: 'Accounts',
+                  icon: Icons.account_balance_wallet_rounded,
                 ),
                 const Gap(12),
                 Wrap(
@@ -291,7 +292,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 const Gap(28),
 
                 // Amount Range
-                _buildSectionTitle('Amount Range', Icons.payments_rounded),
+                const FormSectionTitle.subhead(title: 'Amount Range', icon: Icons.payments_rounded),
                 const Gap(12),
                 Row(
                   children: [
@@ -409,28 +410,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     );
   }
 
-  // ── Section Title with accent bar ──
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-        ),
-        const Gap(6),
-        Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
+
 
   // ── Type Chip with icon ──
   Widget _buildTypeChip(TransactionType? type, String label, IconData icon) {
