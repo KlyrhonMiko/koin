@@ -9,6 +9,8 @@ import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
+import 'package:koin/core/widgets/color_palette_grid.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/providers/settings_provider.dart';
@@ -870,56 +872,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                           ],
                         ),
                         const Gap(12),
-                        SizedBox(
-                          height: 50,
-                          child: ListView.builder(
-                            controller: _colorScrollController,
-                            scrollDirection: Axis.horizontal,
-                            clipBehavior: Clip.none,
-                            itemCount: colors.length,
-                            itemBuilder: (context, index) {
-                              final c = colors[index];
-                              final isSelected =
-                                  selectedColor.toARGB32() == c.toARGB32();
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticService.light();
-                                  setState(() => selectedColor = c);
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: c,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.transparent,
-                                      width: 3,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: c.withValues(alpha: 0.4),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 22,
-                                        )
-                                      : null,
-                                ),
-                              );
-                            },
-                          ),
+                        ColorPaletteGrid(
+                          colors: colors,
+                          selectedColor: selectedColor,
+                          isScrollableRow: true,
+                          shape: BoxShape.circle,
+                          scrollController: _colorScrollController,
+                          onColorSelected: (c) =>
+                              setState(() => selectedColor = c),
                         ),
                         const Gap(24),
 
@@ -1346,39 +1306,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             ),
           const Gap(40),
 
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: AppTheme.primaryGradient(context),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _saveAccount,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    isEditing ? 'Save Changes' : 'Create Account',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
+            KoinPrimaryButton(
+              label: isEditing ? 'Save Changes' : 'Create Account',
+              onPressed: _saveAccount,
             ),
             const Gap(24),
           ],

@@ -4,6 +4,10 @@ import 'package:koin/core/widgets/date_selector_tile.dart';
 import 'package:koin/core/widgets/hero_amount_field.dart';
 import 'package:koin/core/widgets/form_section_title.dart';
 import 'package:koin/core/widgets/koin_empty_state.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
+import 'package:koin/core/widgets/color_palette_grid.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
+import 'package:koin/core/widgets/koin_reorder_proxy.dart';
 
 void main() {
   group('Consolidated Reusable Components Tests', () {
@@ -114,6 +118,113 @@ void main() {
 
       expect(find.text('Sliver Empty'), findsOneWidget);
       expect(find.text('Sliver Subtitle'), findsOneWidget);
+    });
+
+    testWidgets('KoinPrimaryButton renders label, handles tap, and shows loading indicator', (tester) async {
+      bool tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KoinPrimaryButton(
+              label: 'Submit Action',
+              icon: Icons.check,
+              onPressed: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Submit Action'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+
+      await tester.tap(find.text('Submit Action'));
+      await tester.pump();
+      expect(tapped, isTrue);
+
+      // Loading state
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KoinPrimaryButton(
+              label: 'Submit Action',
+              isLoading: true,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Submit Action'), findsNothing);
+    });
+
+    testWidgets('ColorPaletteGrid renders colors and triggers selection', (tester) async {
+      final colors = [Colors.red, Colors.green, Colors.blue];
+      Color? selected;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ColorPaletteGrid(
+              colors: colors,
+              selectedColor: Colors.green,
+              onColorSelected: (c) => selected = c,
+            ),
+          ),
+        ),
+      );
+
+      // Checkmark on the selected color
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+      // Tap on red
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pump();
+      expect(selected, equals(Colors.red));
+    });
+
+    testWidgets('SwipeToDeleteTile renders child and provides dismiss background', (tester) async {
+      bool deleted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SwipeToDeleteTile(
+              onDelete: () => deleted = true,
+              child: const ListTile(
+                title: Text('Swipe Me'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Swipe Me'), findsOneWidget);
+      expect(find.byType(Dismissible), findsOneWidget);
+    });
+
+    testWidgets('koinReorderProxyDecorator wraps child in elevation and scale transform', (tester) async {
+      final animationController = AnimationController(
+        vsync: const TestVSync(),
+        duration: const Duration(milliseconds: 300),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: koinReorderProxyDecorator(
+              const Text('Dragging Item'),
+              0,
+              animationController,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Dragging Item'), findsOneWidget);
+      final widget = koinReorderProxyDecorator(const Text('Direct'), 0, animationController);
+      expect(widget, isA<AnimatedBuilder>());
     });
   });
 }

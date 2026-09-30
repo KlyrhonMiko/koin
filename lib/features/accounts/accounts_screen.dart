@@ -7,7 +7,9 @@ import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
+import 'package:koin/core/widgets/koin_reorder_proxy.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:koin/features/accounts/screens/account_form_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -109,56 +111,18 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                     ),
                                   ),
                               const SizedBox(height: 36),
-                              SizedBox(
-                                    width: double.infinity,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: AppTheme.primaryGradient(
-                                          context,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppTheme.primaryColor(
-                                              context,
-                                            ).withValues(alpha: 0.3),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 6),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          HapticService.medium();
-                                          Navigator.push(
-                                            context,
-                                            SlideUpRoute(
-                                              page: const AccountFormScreen(),
-                                            ),
-                                          );
-                                        },
-                                        icon: const Icon(
-                                          Icons.add_rounded,
-                                          color: Colors.white,
-                                        ),
-                                        label: const Text(
-                                          'Add Your First Account',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.transparent,
-                                          shadowColor: Colors.transparent,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                      ),
+                              KoinPrimaryButton(
+                                label: 'Add Your First Account',
+                                icon: Icons.add_rounded,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    SlideUpRoute(
+                                      page: const AccountFormScreen(),
                                     ),
-                                  ),
+                                  );
+                                },
+                              ),
                             ]
                             .animate(interval: 40.ms)
                             .fade(duration: 250.ms, curve: Curves.easeOutCubic)
@@ -184,31 +148,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       .read(accountProvider.notifier)
                       .reorderAccounts(oldIndex, newIndex);
                 },
-                proxyDecorator: (child, index, animation) {
-                  return AnimatedBuilder(
-                    animation: animation,
-                    builder: (context, child) {
-                      final elevation =
-                          Curves.easeOut.transform(animation.value) * 16;
-                      final scale =
-                          1.0 +
-                          (Curves.easeOut.transform(animation.value) * 0.03);
-                      return Transform.scale(
-                        scale: scale,
-                        child: Material(
-                          elevation: elevation,
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          shadowColor: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: child,
-                  );
-                },
+                proxyDecorator: koinReorderProxyDecorator,
                 itemBuilder: (context, index) {
                   final account = accounts[index];
                   final balance = stats.accountBalances[account.id] ?? 0;
@@ -262,43 +202,18 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     key: ValueKey(account.id),
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Dismissible(
+                      child: SwipeToDeleteTile(
                         key: Key('dismiss_${account.id}'),
-                        direction: DismissDirection.endToStart,
-                        onUpdate: (details) {
-                          if (details.reached && !details.previousReached) {
-                            HapticService.selection();
-                          }
-                        },
-                        background: Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.errorColor(
-                              context,
-                            ).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 24),
-                          child: Icon(
-                            Icons.delete_rounded,
-                            color: AppTheme.errorColor(context),
-                          ),
-                        ),
-                        confirmDismiss: (direction) async {
-                          HapticService.medium();
-                          final confirmed = await ConfirmationSheet.show(
-                            context: context,
-                            title: 'Delete Account?',
-                            description:
-                                'All transactions associated with this account will be unlinked. This cannot be undone.',
-                            confirmLabel: 'Delete',
-                            confirmColor: AppTheme.errorColor(context),
-                            icon: Icons.delete_forever_rounded,
-                            isDanger: true,
-                          );
-                          return confirmed ?? false;
-                        },
-                        onDismissed: (_) {
+                        borderRadius: BorderRadius.circular(20),
+                        backgroundColor: AppTheme.errorColor(
+                          context,
+                        ).withValues(alpha: 0.15),
+                        iconColor: AppTheme.errorColor(context),
+                        icon: Icons.delete_rounded,
+                        confirmTitle: 'Delete Account?',
+                        confirmDescription:
+                            'All transactions associated with this account will be unlinked. This cannot be undone.',
+                        onDelete: () {
                           HapticService.heavy();
                           ref
                               .read(accountProvider.notifier)

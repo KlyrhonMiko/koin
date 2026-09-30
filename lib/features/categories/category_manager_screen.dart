@@ -10,7 +10,8 @@ import 'package:koin/core/providers/category_provider.dart';
 
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/koin_reorder_proxy.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/koin_segmented_control.dart';
@@ -309,22 +310,6 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
       ),
     ).animate().fade(duration: 400.ms).scale(begin: const Offset(0.95, 0.95));
   }
-
-  Future<bool?> _confirmDelete(
-    BuildContext context,
-    TransactionCategory category,
-  ) {
-    return ConfirmationSheet.show(
-      context: context,
-      title: 'Delete Category?',
-      description:
-          'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
-      confirmLabel: 'Delete',
-      confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_forever_rounded,
-      isDanger: true,
-    );
-  }
 }
 
 class CategoryList extends ConsumerStatefulWidget {
@@ -380,29 +365,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
             .read(categoriesProvider.notifier)
             .reorderCategories(oldIndex, newIndex, widget.type);
       },
-      proxyDecorator: (child, index, animation) {
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) {
-            final elevation = Curves.easeOut.transform(animation.value) * 16;
-            final scale =
-                1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
-            return Transform.scale(
-              scale: scale,
-              child: Material(
-                elevation: elevation,
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                shadowColor: AppTheme.primaryColor(
-                  context,
-                ).withValues(alpha: 0.3),
-                child: child,
-              ),
-            );
-          },
-          child: child,
-        );
-      },
+      proxyDecorator: koinReorderProxyDecorator,
       header:
           Padding(
                 padding: const EdgeInsets.only(bottom: 16),
@@ -495,54 +458,20 @@ class _CategoryListState extends ConsumerState<CategoryList>
       itemBuilder: (context, index) {
         final category = widget.categories[index];
 
-        return Dismissible(
+        return SwipeToDeleteTile(
               key: Key('dismiss_${category.id}'),
-              direction: DismissDirection.endToStart,
-              onUpdate: (details) {
-                if (details.reached && !details.previousReached) {
-                  HapticService.selection();
-                }
-              },
-              confirmDismiss: (_) {
-                HapticService.medium();
-                return context
-                    .findAncestorStateOfType<_CategoryManagerScreenState>()!
-                    ._confirmDelete(context, category);
-              },
-              onDismissed: (_) {
+              margin: const EdgeInsets.only(bottom: 10),
+              borderRadius: BorderRadius.circular(20),
+              confirmTitle: 'Delete Category?',
+              confirmDescription:
+                  'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
+              icon: Icons.delete_forever_rounded,
+              onDelete: () {
                 HapticService.heavy();
                 ref
                     .read(categoriesProvider.notifier)
                     .deleteCategory(category.id);
               },
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 24),
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.dangerGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    Gap(4),
-                    Text(
-                      'Delete',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               child: PressableScale(
                 onTap: () {
                   HapticService.light();

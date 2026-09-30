@@ -15,7 +15,8 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -162,47 +163,11 @@ class RecurringIncomesTab extends ConsumerWidget {
                         ),
                       ),
                   const SizedBox(height: 36),
-                  SizedBox(
-                        width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: AppTheme.primaryGradient(context),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              HapticService.medium();
-                              onTap();
-                            },
-                            icon: const Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              buttonLabel,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
-                      ),
+                  KoinPrimaryButton(
+                    label: buttonLabel,
+                    icon: Icons.add_rounded,
+                    onPressed: onTap,
+                  ),
                 ]
                 .animate(interval: 40.ms)
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
@@ -263,22 +228,7 @@ class RecurringIncomesTab extends ConsumerWidget {
     );
   }
 
-  Future<bool?> _showDeleteConfirmation(
-    BuildContext context,
-    WidgetRef ref,
-    PlannedPayment payment,
-  ) async {
-    return await ConfirmationSheet.show(
-      context: context,
-      title: 'Delete Recurring Income?',
-      description:
-          'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
-      confirmLabel: 'Delete Income',
-      confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_outline_rounded,
-      isDanger: true,
-    );
-  }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -326,29 +276,18 @@ class RecurringIncomesTab extends ConsumerWidget {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: Dismissible(
+                child: SwipeToDeleteTile(
                   key: Key(payment.id),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (direction) =>
-                      _showDeleteConfirmation(context, ref, payment),
-                  onDismissed: (direction) {
+                  borderRadius: BorderRadius.circular(24),
+                  confirmTitle: 'Delete Recurring Income?',
+                  confirmDescription:
+                      'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
+                  confirmLabel: 'Delete Income',
+                  onDelete: () {
                     ref
                         .read(plannedPaymentProvider.notifier)
                         .deletePlannedPayment(payment.id);
                   },
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 28),
-                    decoration: BoxDecoration(
-                      color: AppTheme.expenseColor(context),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
                   child: PressableScale(
                     onTap: () {
                       HapticService.light();

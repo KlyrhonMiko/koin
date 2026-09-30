@@ -10,6 +10,7 @@ import 'package:koin/core/models/category.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/koin_reorder_proxy.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/features/accounts/screens/account_form_screen.dart';
 import 'package:koin/core/widgets/account_item.dart';
@@ -370,30 +371,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                 .read(accountProvider.notifier)
                 .reorderAccounts(oldIndex, newIndex);
           },
-          proxyDecorator: (child, index, animation) {
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                final elevation =
-                    Curves.easeOut.transform(animation.value) * 16;
-                final scale =
-                    1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
-                return Transform.scale(
-                  scale: scale,
-                  child: Material(
-                    elevation: elevation,
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    shadowColor: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.3),
-                    child: child,
-                  ),
-                );
-              },
-              child: child,
-            );
-          },
+          proxyDecorator: koinReorderProxyDecorator,
           itemBuilder: (context, index) {
             final account = accounts[index];
             final balance = stats.accountBalances[account.id] ?? 0;

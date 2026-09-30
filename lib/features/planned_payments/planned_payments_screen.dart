@@ -15,7 +15,8 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/models/planned_payment.dart';
 import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
+import 'package:koin/core/widgets/koin_empty_state.dart';
 
 class PlannedPaymentsScreen extends ConsumerWidget {
   const PlannedPaymentsScreen({super.key});
@@ -96,22 +97,7 @@ class PlannedPaymentsScreen extends ConsumerWidget {
     }
   }
 
-  Future<bool?> _showDeleteConfirmation(
-    BuildContext context,
-    WidgetRef ref,
-    PlannedPayment payment,
-  ) async {
-    return await ConfirmationSheet.show(
-      context: context,
-      title: 'Delete Subscription?',
-      description:
-          'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
-      confirmLabel: 'Delete Subscription',
-      confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_outline_rounded,
-      isDanger: true,
-    );
-  }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,7 +120,11 @@ class PlannedPaymentsScreen extends ConsumerWidget {
         data: (payments) {
           final expenses = payments.where((p) => p.type == TransactionType.expense).toList();
           if (expenses.isEmpty) {
-            return const Center(child: Text('No subscriptions found.'));
+            return const KoinEmptyState(
+              icon: Icons.calendar_today_rounded,
+              title: 'No Subscriptions',
+              subtitle: 'You have no planned subscriptions yet.',
+            );
           }
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -157,29 +147,18 @@ class PlannedPaymentsScreen extends ConsumerWidget {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: Dismissible(
+                child: SwipeToDeleteTile(
                   key: Key(payment.id),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (direction) =>
-                      _showDeleteConfirmation(context, ref, payment),
-                  onDismissed: (direction) {
+                  borderRadius: BorderRadius.circular(24),
+                  confirmTitle: 'Delete Subscription?',
+                  confirmDescription:
+                      'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
+                  confirmLabel: 'Delete Subscription',
+                  onDelete: () {
                     ref
                         .read(plannedPaymentProvider.notifier)
                         .deletePlannedPayment(payment.id);
                   },
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 28),
-                    decoration: BoxDecoration(
-                      color: AppTheme.expenseColor(context),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
                   child: PressableScale(
                     onTap: () {
                       HapticService.light();

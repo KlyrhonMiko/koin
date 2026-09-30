@@ -12,6 +12,8 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
+import 'package:koin/core/widgets/color_palette_grid.dart';
+import 'package:koin/core/widgets/koin_primary_button.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;
@@ -226,44 +228,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
                         const Gap(36),
 
-                        // Save button
-                        SizedBox(
-                          width: double.infinity,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: AppTheme.primaryGradient(context),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryColor(
-                                    context,
-                                  ).withValues(alpha: 0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: () => _save(ref),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 18,
-                                ),
-                              ),
-                              child: Text(
-                                widget.category != null
-                                    ? 'Update Category'
-                                    : 'Create Category',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
+                        KoinPrimaryButton(
+                          label: widget.category != null
+                              ? 'Update Category'
+                              : 'Create Category',
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          onPressed: () => _save(ref),
                         ).animate().fade(delay: 250.ms),
                       ],
                     ),
@@ -531,65 +501,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   Widget _buildColorGrid(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 6,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-        ),
-        itemCount: _availableColors.length,
-        itemBuilder: (context, index) {
-          final colorHex = _availableColors[index];
-          final color = Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
-          final isSelected = _selectedColorHex == colorHex;
-          return GestureDetector(
-            onTap: () {
-              HapticService.light();
-              setState(() => _selectedColorHex = colorHex);
-            },
-            child: AnimatedScale(
-              scale: isSelected ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 200),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected ? Colors.white : Colors.transparent,
-                    width: 2.5,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.45),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      )
-                    : null,
-              ),
-            ),
-          );
-        },
-      ),
+    return ColorPaletteGrid(
+      hexColors: _availableColors,
+      selectedHex: _selectedColorHex,
+      onHexSelected: (hex) => setState(() => _selectedColorHex = hex),
     );
   }
 }

@@ -9,7 +9,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
@@ -451,44 +451,18 @@ class TransactionsListScreen extends ConsumerWidget {
                                   ),
                                 );
 
-                                Widget txAnimated = Dismissible(
+                                Widget txAnimated = SwipeToDeleteTile(
                                   key: Key(tx.id),
-                                  direction: DismissDirection.endToStart,
-                                  onUpdate: (details) {
-                                    if (details.reached &&
-                                        !details.previousReached) {
-                                      HapticService.selection();
-                                    }
-                                  },
-                                  background: Container(
-                                    color: AppTheme.errorColor(context),
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.only(right: 24),
-                                    child: const Icon(
-                                      Icons.delete_outline_rounded,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  onDismissed: (_) {
+                                  borderRadius: BorderRadius.zero,
+                                  backgroundColor: AppTheme.errorColor(context),
+                                  icon: Icons.delete_forever_rounded,
+                                  confirmTitle: 'Delete Transaction?',
+                                  confirmDescription:
+                                      'This transaction will be permanently removed. This action cannot be undone.',
+                                  onDelete: () {
                                     ref
                                         .read(transactionProvider.notifier)
                                         .deleteTransaction(tx.id);
-                                  },
-                                  confirmDismiss: (direction) async {
-                                    HapticService.medium();
-                                    final result = await ConfirmationSheet.show(
-                                      context: context,
-                                      title: 'Delete Transaction?',
-                                      description:
-                                          'This transaction will be permanently removed. This action cannot be undone.',
-                                      confirmLabel: 'Delete',
-                                      confirmColor: AppTheme.errorColor(
-                                        context,
-                                      ),
-                                      icon: Icons.delete_forever_rounded,
-                                      isDanger: true,
-                                    );
-                                    return result ?? false;
                                   },
                                   child: listItem,
                                 ).animate(key: ValueKey('tx_item_${tx.id}'));
