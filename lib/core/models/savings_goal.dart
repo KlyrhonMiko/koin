@@ -1,47 +1,55 @@
 class SavingsGoal {
   final String id;
   final String name;
-  final double targetAmount;
+  final double? targetAmount;
   final double currentAmount;
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate;
   final String? notes;
   final String? linkedAccountId;
+  final bool isStash;
 
   SavingsGoal({
     required this.id,
     required this.name,
-    required this.targetAmount,
+    this.targetAmount,
     this.currentAmount = 0.0,
     required this.startDate,
-    required this.endDate,
+    this.endDate,
     this.notes,
     this.linkedAccountId,
+    this.isStash = false,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'targetAmount': targetAmount,
+      'targetAmount': targetAmount ?? 0.0,
       'currentAmount': currentAmount,
       'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
+      'endDate': endDate?.toIso8601String() ?? DateTime(2099, 12, 31).toIso8601String(),
       'notes': notes,
       'linkedAccountId': linkedAccountId,
+      'isStash': isStash ? 1 : 0,
     };
   }
 
   factory SavingsGoal.fromMap(Map<String, dynamic> map) {
+    final isStash = map['isStash'] == 1;
+    final parsedTarget = (map['targetAmount'] as num).toDouble();
+    final parsedEndDateStr = map['endDate'] as String;
+    
     return SavingsGoal(
       id: map['id'],
       name: map['name'],
-      targetAmount: (map['targetAmount'] as num).toDouble(),
+      targetAmount: (isStash && parsedTarget == 0.0) ? null : parsedTarget,
       currentAmount: (map['currentAmount'] as num).toDouble(),
       startDate: DateTime.parse(map['startDate']),
-      endDate: DateTime.parse(map['endDate']),
+      endDate: (isStash && parsedEndDateStr.startsWith('2099')) ? null : DateTime.parse(parsedEndDateStr),
       notes: map['notes'],
       linkedAccountId: map['linkedAccountId'],
+      isStash: isStash,
     );
   }
 
@@ -54,31 +62,38 @@ class SavingsGoal {
     DateTime? endDate,
     String? notes,
     String? linkedAccountId,
+    bool? isStash,
   }) {
     return SavingsGoal(
       id: id ?? this.id,
       name: name ?? this.name,
-      targetAmount: targetAmount ?? this.targetAmount,
+      // allow nullification of targetAmount and endDate
+      targetAmount: targetAmount != null && targetAmount == -1 ? null : (targetAmount ?? this.targetAmount),
       currentAmount: currentAmount ?? this.currentAmount,
       startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
+      endDate: endDate != null && endDate.year == 1970 ? null : (endDate ?? this.endDate),
       notes: notes ?? this.notes,
       linkedAccountId: linkedAccountId ?? this.linkedAccountId,
+      isStash: isStash ?? this.isStash,
     );
   }
 
   // Calculations
-  int get totalDays => endDate.difference(startDate).inDays;
-  int get remainingDays => endDate.difference(DateTime.now()).inDays;
-  double get remainingAmount => targetAmount - currentAmount;
+  int? get totalDays => endDate?.difference(startDate).inDays;
+  int? get remainingDays => endDate?.difference(DateTime.now()).inDays;
+  double? get remainingAmount => targetAmount != null ? targetAmount! - currentAmount : null;
 
-  double get dailyNeeded {
-    if (remainingDays <= 0) return 0;
-    return remainingAmount / remainingDays;
+  double? get dailyNeeded {
+    if (remainingDays == null || remainingAmount == null) return null;
+    if (remainingDays! <= 0) return 0;
+    return remainingAmount! / remainingDays!;
   }
 
-  double get weeklyNeeded => dailyNeeded * 7;
-  double get monthlyNeeded => dailyNeeded * 30;
+  double? get weeklyNeeded => dailyNeeded != null ? dailyNeeded! * 7 : null;
+  double? get monthlyNeeded => dailyNeeded != null ? dailyNeeded! * 30 : null;
 
-  double get progress => (currentAmount / targetAmount).clamp(0.0, 1.0);
+  double get progress {
+    if (targetAmount == null || targetAmount! <= 0) return 0.0;
+    return (currentAmount / targetAmount!).clamp(0.0, 1.0);
+  }
 }

@@ -37,6 +37,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   late DateTime _startDate;
   late DateTime _endDate;
   String? _selectedAccountId;
+  late bool _isStash;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     _endDate =
         widget.goal?.endDate ?? DateTime.now().add(const Duration(days: 30));
     _selectedAccountId = widget.goal?.linkedAccountId;
+    _isStash = widget.goal?.isStash ?? false;
   }
 
   @override
@@ -115,12 +117,12 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       return;
     }
 
-    final targetAmount = double.tryParse(_amountController.text) ?? 0.0;
-    if (targetAmount <= 0) {
+    final targetAmount = double.tryParse(_amountController.text);
+    if (!_isStash && (targetAmount == null || targetAmount <= 0)) {
       KoinSnackBar.error(
         context,
         'Invalid amount',
-        subtitle: 'Target amount must be greater than zero',
+        subtitle: 'Target amount must be greater than zero for goals',
       );
       return;
     }
@@ -128,12 +130,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final goal = SavingsGoal(
       id: widget.goal?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
-      targetAmount: targetAmount,
+      targetAmount: _isStash && (targetAmount == null || targetAmount <= 0) ? null : (targetAmount ?? 0.0),
       currentAmount: widget.goal?.currentAmount ?? 0.0,
       startDate: _startDate,
-      endDate: _endDate,
+      endDate: _isStash ? null : _endDate,
       notes: _notesController.text.trim(),
       linkedAccountId: _selectedAccountId,
+      isStash: _isStash,
     );
 
     if (widget.goal == null) {
@@ -211,33 +214,35 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             onTap: () => _selectDate(context, true),
                           ),
                         ),
-                        const Gap(12),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceLightColor(context),
-                            shape: BoxShape.circle,
+                        if (!_isStash) ...[
+                          const Gap(12),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceLightColor(context),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 16,
+                              color: AppTheme.textLightColor(context),
+                            ),
                           ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 16,
-                            color: AppTheme.textLightColor(context),
+                          const Gap(12),
+                          Expanded(
+                            child: _buildDateSelector(
+                              context,
+                              label: 'Target Date',
+                              date: _endDate,
+                              icon: Icons.flag_rounded,
+                              onTap: () => _selectDate(context, false),
+                            ),
                           ),
-                        ),
-                        const Gap(12),
-                        Expanded(
-                          child: _buildDateSelector(
-                            context,
-                            label: 'Target Date',
-                            date: _endDate,
-                            icon: Icons.flag_rounded,
-                            onTap: () => _selectDate(context, false),
-                          ),
-                        ),
+                        ],
                       ],
                     ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
-                    if (_amountController.text.isNotEmpty) ...[
+                    if (!_isStash && _amountController.text.isNotEmpty) ...[
                       const Gap(12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -563,6 +568,79 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
               ),
             ),
           ),
+          
+          const Gap(16),
+          // Stash Toggle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: _isStash 
+                    ? primaryColor.withValues(alpha: 0.1) 
+                    : AppTheme.surfaceColor(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isStash 
+                      ? primaryColor.withValues(alpha: 0.3) 
+                      : AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _isStash 
+                          ? primaryColor.withValues(alpha: 0.2) 
+                          : AppTheme.surfaceLightColor(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.savings_rounded,
+                      size: 18,
+                      color: _isStash ? primaryColor : AppTheme.textLightColor(context),
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stash Mode',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: _isStash ? primaryColor : AppTheme.textColor(context),
+                          ),
+                        ),
+                        Text(
+                          'Save without a strict target or date',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isStash,
+                    onChanged: (val) {
+                      HapticService.light();
+                      setState(() => _isStash = val);
+                    },
+                    activeTrackColor: primaryColor.withValues(alpha: 0.5),
+                    activeThumbColor: primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(24),
         ],
       ),
     );

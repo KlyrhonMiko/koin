@@ -151,8 +151,8 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((ref, filterIn
   // 4. Goals Layer: Savings Goals
   if (savingsAsync.value != null) {
     for (var goal in savingsAsync.value!) {
-      if (goal.remainingAmount > 0 && goal.remainingDays > 0) {
-        monthlyOutflow += goal.monthlyNeeded;
+      if (!goal.isStash && (goal.remainingAmount ?? 0) > 0 && (goal.remainingDays ?? 0) > 0) {
+        monthlyOutflow += (goal.monthlyNeeded ?? 0);
       }
     }
   }

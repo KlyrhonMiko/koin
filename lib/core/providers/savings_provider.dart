@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/savings_goal.dart';
 import 'package:koin/core/models/savings_log.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 
 class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
   @override
@@ -59,20 +60,7 @@ final savingsGoalsProvider =
 final computedSavingsGoalsProvider = Provider<AsyncValue<List<SavingsGoal>>>((
   ref,
 ) {
-  final asyncGoals = ref.watch(savingsGoalsProvider);
-  final stats = ref.watch(dashboardStatsProvider);
-
-  return asyncGoals.whenData((goals) {
-    return goals.map((goal) {
-      if (goal.linkedAccountId != null) {
-        final balance = stats.accountBalances[goal.linkedAccountId!];
-        if (balance != null) {
-          return goal.copyWith(currentAmount: balance);
-        }
-      }
-      return goal;
-    }).toList();
-  });
+  return ref.watch(savingsGoalsProvider);
 });
 
 final savingsLogsProvider = FutureProvider.family<List<SavingsLog>, String>((

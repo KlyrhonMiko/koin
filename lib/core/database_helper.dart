@@ -30,7 +30,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 31,
+      version: 32,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -286,6 +286,15 @@ CREATE TABLE debt_items (
         // Column might already exist
       }
     }
+    if (oldVersion < 32) {
+      try {
+        await db.execute(
+          'ALTER TABLE savings_goals ADD COLUMN isStash INTEGER DEFAULT 0',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
   }
 
   Future _createCategorizationTables(Database db) async {
@@ -403,7 +412,8 @@ CREATE TABLE savings_goals (
   startDate $textType,
   endDate $textType,
   notes TEXT,
-  linkedAccountId TEXT
+  linkedAccountId TEXT,
+  isStash INTEGER DEFAULT 0
 )
 ''');
 

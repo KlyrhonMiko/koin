@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -14,14 +13,14 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
+import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/models/account.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';
-import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/utils/icon_utils.dart';
+import 'package:koin/features/savings/coach/coach_screen.dart';
+import 'package:koin/features/savings/coach/coach_engine.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -63,7 +62,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       await ref.read(savingsGoalsProvider.notifier).addLog(log);
 
       final currentAmountAfter = widget.goal.currentAmount + amount;
-      final isNowCompleted = currentAmountAfter >= widget.goal.targetAmount;
+      final isNowCompleted = currentAmountAfter >= (widget.goal.targetAmount ?? 0);
 
       if (!wasCompleted && isNowCompleted) {
         HapticService.success();
@@ -82,7 +81,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     }
   }
 
-  void _showAddLogSheet({SavingsLog? log}) {
+  void _showAddLogSheet({SavingsLog? log, Account? linkedAccount, double? linkedBalance}) {
     String currentExpression = log != null
         ? log.amount.toString().replaceFirst(RegExp(r'\.0$'), '')
         : '';
@@ -100,6 +99,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           final hasAmount =
               currentExpression.isNotEmpty && currentExpression != '0';
           final primaryColor = AppTheme.primaryColor(context);
+          final parsedAmount = double.tryParse(evaluatedResult) ?? 0;
+          final isExceeded = log == null && linkedAccount != null && linkedBalance != null && parsedAmount > linkedBalance;
 
           return Container(
             decoration: BoxDecoration(
@@ -171,9 +172,11 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                             style: TextStyle(
                               fontSize: 44,
                               fontWeight: FontWeight.w800,
-                              color: hasAmount
-                                  ? primaryColor
-                                  : primaryColor.withValues(alpha: 0.3),
+                              color: isExceeded
+                                  ? AppTheme.expenseColor(context)
+                                  : (hasAmount
+                                      ? primaryColor
+                                      : primaryColor.withValues(alpha: 0.3)),
                               letterSpacing: -1.5,
                               height: 1.1,
                             ),
@@ -191,6 +194,22 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      if (linkedAccount != null && linkedBalance != null && log == null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            isExceeded
+                                ? 'Insufficient balance in ${linkedAccount.name}'
+                                : 'Available from ${linkedAccount.name}: ${NumberFormat.currency(symbol: settings.currency.symbol).format(linkedBalance)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isExceeded
+                                  ? AppTheme.expenseColor(context)
+                                  : AppTheme.textLightColor(context).withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -220,8 +239,12 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     });
                   },
                   onDone: () {
-                    if (double.tryParse(_amountController.text) != null &&
-                        double.parse(_amountController.text) > 0) {
+                    final amount = double.tryParse(_amountController.text);
+                    if (amount != null && amount > 0) {
+                      if (log == null && linkedAccount != null && linkedBalance != null && amount > linkedBalance) {
+                        HapticService.error();
+                        return;
+                      }
                       _saveLog(existingLog: log);
                     } else {
                       HapticService.error();
@@ -280,12 +303,15 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         );
       } catch (_) {}
     }
+    final dashboardStats = ref.watch(dashboardStatsProvider);
+    double? linkedBalance;
+    if (linkedAccount != null) {
+      linkedBalance = dashboardStats.accountBalances[linkedAccount.id] ?? 0.0;
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      floatingActionButton: linkedAccount != null
-          ? null
-          : Container(
+      floatingActionButton: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 gradient: AppTheme.primaryGradient(context),
@@ -302,7 +328,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               child: FloatingActionButton.extended(
                 onPressed: () {
                   HapticService.medium();
-                  _showAddLogSheet();
+                  _showAddLogSheet(linkedAccount: linkedAccount, linkedBalance: linkedBalance);
                 },
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -344,11 +370,22 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           const Gap(2),
                           Row(
                             children: [
-                              Icon(
-                                IconUtils.getIcon(linkedAccount.iconCodePoint),
-                                size: 12,
-                                color: linkedAccount.color,
-                              ),
+                              if (linkedAccount.logoAsset != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.asset(
+                                    linkedAccount.logoAsset!,
+                                    width: 14,
+                                    height: 14,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  IconUtils.getIcon(linkedAccount.iconCodePoint),
+                                  size: 14,
+                                  color: linkedAccount.color,
+                                ),
                               const Gap(4),
                               Text(
                                 linkedAccount.name,
@@ -403,24 +440,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildGaugeHeader(context, goal, currencyFormat),
+                    const Gap(16),
+                    _buildCoachInsightButton(context, goal, currencyFormat),
                     const Gap(28),
                     _buildSavingsNeededSection(context, goal, currencyFormat),
                     const Gap(28),
-                    if (linkedAccount != null)
-                      _buildLinkedActivitySection(
-                        context,
-                        goal,
-                        ref.watch(transactionProvider),
-                        currencyFormat,
-                        linkedAccount,
-                      )
-                    else
-                      _buildActivitySection(
-                        context,
-                        goal,
-                        logsAsync,
-                        currencyFormat,
-                      ),
+                    _buildActivitySection(
+                      context,
+                      goal,
+                      logsAsync,
+                      currencyFormat,
+                      linkedAccount,
+                      linkedBalance,
+                    ),
                   ],
                 ),
               ),
@@ -436,193 +468,175 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
-    final primaryColor = AppTheme.primaryColor(context);
-
     return Container(
           padding: const EdgeInsets.all(28),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(28),
+            gradient: AppTheme.primaryGradient(context),
+            borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Column(
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              // Radial gauge with subtle glow
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.08),
-                      blurRadius: 40,
-                      spreadRadius: 8,
+              Positioned(
+                top: -80,
+                right: -40,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      width: 40,
                     ),
-                  ],
+                  ),
                 ),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: goal.progress),
-                  duration: const Duration(milliseconds: 1200),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, animatedProgress, child) {
-                    final animatedPercent = (animatedProgress * 100)
-                        .toStringAsFixed(1);
-                    return SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: CustomPaint(
-                        painter: _RadialGaugePainter(
-                          progress: animatedProgress,
-                          trackColor: AppTheme.dividerColor(context),
-                          progressColor: primaryColor,
-                          strokeWidth: 10,
+              ),
+              Positioned(
+                bottom: -50,
+                left: -50,
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      width: 24,
+                    ),
+                  ),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Saved',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const Gap(6),
+                          AnimatedCounter(
+                            value: goal.currentAmount,
+                            formatter: (v) => currencyFormat.format(v),
+                            duration: const Duration(milliseconds: 1400),
+                            curve: Curves.easeOutCubic,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1.0,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                         child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedCounter(
-                                value: double.parse(animatedPercent),
-                                formatter: (v) =>
-                                    '${v.toStringAsFixed(v >= 100 ? 0 : 1)}%',
-                                duration: const Duration(milliseconds: 400),
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  color: primaryColor,
-                                  letterSpacing: -1,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const Gap(2),
-                              Text(
-                                'completed',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.5),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                                begin: 0, 
+                                end: (goal.isStash && (goal.targetAmount == null || goal.targetAmount == 0)) ? 1.0 : goal.progress,
+                            ),
+                            duration: const Duration(milliseconds: 1400),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, val, child) {
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 56,
+                                    height: 56,
+                                    child: CircularProgressIndicator(
+                                      value: 1.0,
+                                      strokeWidth: 4,
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 56,
+                                    height: 56,
+                                    child: CircularProgressIndicator(
+                                      value: val,
+                                      strokeWidth: 4,
+                                      strokeCap: StrokeCap.round,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(val * 100).toInt()}%',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
+                      ).animate().scale(
+                        begin: const Offset(0.85, 0.85),
+                        end: const Offset(1.0, 1.0),
+                        duration: 600.ms,
+                        curve: Curves.elasticOut,
                       ),
-                    );
-                  },
-                ),
-              ).animate().scale(
-                begin: const Offset(0.85, 0.85),
-                end: const Offset(1.0, 1.0),
-                duration: 600.ms,
-                curve: Curves.elasticOut,
-              ),
-              const Gap(28),
-              // Stats row with colored dots
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: AppTheme.incomeColor(context),
-                      label: 'Saved',
-                      value: goal.currentAmount,
-                      formatter: currencyFormat.format,
-                    ),
+                    ],
                   ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: AppTheme.dividerColor(context),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: primaryColor,
-                      label: 'Target',
-                      value: goal.targetAmount,
-                      formatter: currencyFormat.format,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: AppTheme.dividerColor(context),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      color: AppTheme.expenseColor(context),
-                      label: 'Left',
-                      value: goal.remainingAmount,
-                      formatter: currencyFormat.format,
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(20),
-              // Days remaining pill
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.schedule_rounded,
-                      size: 15,
-                      color: goal.remainingDays <= 7
-                          ? AppTheme.expenseColor(context)
-                          : AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.6),
-                    ),
-                    const Gap(8),
-                    Text(
-                      '${goal.remainingDays} days left',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: goal.remainingDays <= 7
-                            ? AppTheme.expenseColor(context)
-                            : AppTheme.textColor(context),
-                      ),
-                    ),
-                    const Gap(8),
+                  const Gap(24),
+                  if (!goal.isStash || (goal.targetAmount != null && goal.targetAmount! > 0)) ...[
                     Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.15),
                     ),
-                    const Gap(8),
-                    Text(
-                      'ends ${DateFormat.yMMMd().format(goal.endDate)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textLightColor(
+                    const Gap(16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildStatItem(
                           context,
-                        ).withValues(alpha: 0.5),
-                      ),
+                          label: 'Target',
+                          value: goal.targetAmount ?? 0.0,
+                          formatter: currencyFormat.format,
+                          alignment: CrossAxisAlignment.start,
+                        ),
+                        _buildStatItem(
+                          context,
+                          label: goal.remainingDays != null ? 'Left (${goal.remainingDays}d)' : 'Left',
+                          value: goal.remainingAmount ?? 0.0,
+                          formatter: currencyFormat.format,
+                          alignment: CrossAxisAlignment.end,
+                        ),
+                      ],
                     ),
                   ],
-                ),
+                ],
               ),
             ],
           ),
@@ -634,46 +648,145 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
   Widget _buildStatItem(
     BuildContext context, {
-    required Color color,
     required String label,
     required double value,
     required String Function(double) formatter,
+    CrossAxisAlignment alignment = CrossAxisAlignment.center,
   }) {
     return Column(
+      crossAxisAlignment: alignment,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const Gap(6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
         ),
         const Gap(6),
-        FittedBox(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: AnimatedCounter(
-              value: value,
-              formatter: formatter,
-              duration: const Duration(milliseconds: 1000),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-            ),
+        AnimatedCounter(
+          value: value,
+          formatter: formatter,
+          duration: const Duration(milliseconds: 1000),
+          style: const TextStyle(
+            fontSize: 15, 
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCoachInsightButton(BuildContext context, SavingsGoal goal, NumberFormat currencyFormat) {
+    return PressableScale(
+      onTap: () async {
+        HapticService.light();
+        final CoachSimulationResult? result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SavingsCoachScreen(goal: goal),
+            fullscreenDialog: true,
+          ),
+        );
+        if (result != null && mounted) {
+          if (result.newDeadline != goal.endDate || (result.targetAmountOverride != null && result.targetAmountOverride != goal.targetAmount)) {
+            final updatedGoal = SavingsGoal(
+              id: goal.id,
+              name: goal.name,
+              targetAmount: result.targetAmountOverride ?? goal.targetAmount,
+              currentAmount: goal.currentAmount,
+              startDate: goal.startDate,
+              endDate: result.newDeadline,
+              notes: goal.notes,
+              linkedAccountId: goal.linkedAccountId,
+              isStash: goal.isStash,
+            );
+            await ref.read(savingsGoalsProvider.notifier).updateGoal(updatedGoal);
+            
+            if (!context.mounted) return;
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
+            final themeColor = AppTheme.primaryColor(context);
+            
+            final msg = result.targetAmountOverride != null && goal.isStash 
+              ? 'Stash plan updated!' 
+              : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
+            
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text(msg),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: themeColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+          }
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryColor(context).withValues(alpha: 0.1),
+              AppTheme.primaryColor(context).withValues(alpha: 0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryColor(context).withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.tips_and_updates_rounded,
+                size: 20,
+                color: AppTheme.primaryColor(context),
+              ),
+            ),
+            const Gap(16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Savings Coach Insight',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor(context),
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'Run scenarios to hit your goal on time.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textColor(context).withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.primaryColor(context).withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -682,6 +795,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
+    if (goal.dailyNeeded == null) return const SizedBox.shrink();
     return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -701,7 +815,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   child: _buildNeededCard(
                     context,
                     label: 'Daily',
-                    value: goal.dailyNeeded,
+                    value: goal.dailyNeeded!,
                     formatter: currencyFormat.format,
                     color: const Color(0xFF3B82F6),
                   ),
@@ -711,7 +825,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   child: _buildNeededCard(
                     context,
                     label: 'Weekly',
-                    value: goal.weeklyNeeded,
+                    value: goal.weeklyNeeded!,
                     formatter: currencyFormat.format,
                     color: const Color(0xFF6366F1),
                   ),
@@ -721,7 +835,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   child: _buildNeededCard(
                     context,
                     label: 'Monthly',
-                    value: goal.monthlyNeeded,
+                    value: goal.monthlyNeeded!,
                     formatter: currencyFormat.format,
                     color: const Color(0xFF8B5CF6),
                   ),
@@ -787,6 +901,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     SavingsGoal goal,
     AsyncValue<List<SavingsLog>> logsAsync,
     NumberFormat currencyFormat,
+    Account? linkedAccount,
+    double? linkedBalance,
   ) {
     return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,7 +922,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                 if (logs.isEmpty) {
                   return _buildEmptyActivity(context);
                 }
-                return _buildActivityTimeline(context, logs, currencyFormat);
+                return _buildActivityTimeline(context, logs, currencyFormat, linkedAccount, linkedBalance);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Text('Error: $err'),
@@ -816,71 +932,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
   }
 
-  Widget _buildLinkedActivitySection(
-    BuildContext context,
-    SavingsGoal goal,
-    AsyncValue<List<AppTransaction>> transactionsAsync,
-    NumberFormat currencyFormat,
-    Account linkedAccount,
-  ) {
-    return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Account Activity',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textColor(context),
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                const Gap(8),
-                Icon(
-                  Icons.sync_rounded,
-                  size: 16,
-                  color: AppTheme.primaryColor(context),
-                ),
-              ],
-            ),
-            const Gap(6),
-            Text(
-              'Transactions from ${linkedAccount.name}',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-              ),
-            ),
-            const Gap(14),
-            transactionsAsync.when(
-              data: (transactions) {
-                final linkedTxs = transactions
-                    .where(
-                      (t) =>
-                          t.accountId == linkedAccount.id ||
-                          t.toAccountId == linkedAccount.id,
-                    )
-                    .toList();
 
-                if (linkedTxs.isEmpty) {
-                  return _buildEmptyActivity(context);
-                }
-                return _buildTransactionTimeline(
-                  context,
-                  linkedTxs,
-                  currencyFormat,
-                  linkedAccount.id,
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Text('Error: $err'),
-            ),
-          ],
-        )
-        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
-  }
 
   Widget _buildEmptyActivity(BuildContext context) {
     return Container(
@@ -939,6 +991,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     BuildContext context,
     List<SavingsLog> logs,
     NumberFormat currencyFormat,
+    Account? linkedAccount,
+    double? linkedBalance,
   ) {
     return Column(
       children: logs.asMap().entries.map((entry) {
@@ -1028,7 +1082,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       child: PressableScale(
                         onTap: () {
                           HapticService.light();
-                          _showAddLogSheet(log: log);
+                          _showAddLogSheet(log: log, linkedAccount: linkedAccount, linkedBalance: linkedBalance);
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -1116,236 +1170,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildTransactionTimeline(
-    BuildContext context,
-    List<AppTransaction> transactions,
-    NumberFormat currencyFormat,
-    String accountId,
-  ) {
-    return Column(
-      children: transactions.asMap().entries.map((entry) {
-        final index = entry.key;
-        final tx = entry.value;
-        final isLast = index == transactions.length - 1;
 
-        // Determine if it added to or subtracted from the account
-        bool isIncome = false;
-        if (tx.type == TransactionType.income) {
-          isIncome = true;
-        } else if (tx.type == TransactionType.transfer &&
-            tx.toAccountId == accountId) {
-          isIncome = true;
-        } else if (tx.type == TransactionType.transfer &&
-            tx.accountId == accountId) {
-          isIncome = false;
-        } else if (tx.type == TransactionType.expense) {
-          isIncome = false;
-        }
-
-        final amountColor = isIncome
-            ? AppTheme.incomeColor(context)
-            : AppTheme.expenseColor(context);
-        final amountPrefix = isIncome ? '+' : '-';
-        final category = ref
-            .watch(categoriesProvider)
-            .value
-            ?.where((c) => c.id == tx.categoryId)
-            .firstOrNull;
-
-        final amountIcon = isIncome
-            ? (category != null
-                  ? IconUtils.getIcon(category.iconCodePoint)
-                  : Icons.arrow_upward_rounded)
-            : (category != null
-                  ? IconUtils.getIcon(category.iconCodePoint)
-                  : Icons.arrow_downward_rounded);
-
-        return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Timeline connector
-                  SizedBox(
-                    width: 24,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.only(top: 20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.15),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!isLast)
-                          Expanded(
-                            child: Container(
-                              width: 1,
-                              color: AppTheme.dividerColor(context),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const Gap(10),
-                  // Log card
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: amountColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              amountIcon,
-                              color: amountColor,
-                              size: 16,
-                            ),
-                          ),
-                          const Gap(14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tx.note.isEmpty ? 'Transaction' : tx.note,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    color: AppTheme.textColor(context),
-                                  ),
-                                ),
-                                const Gap(4),
-                                Text(
-                                  '$amountPrefix ${currencyFormat.format(tx.amount)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                    color: amountColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                _formatRelativeTime(tx.date),
-                                style: TextStyle(
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.5),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Gap(4),
-                              Text(
-                                DateFormat.MMMd().format(tx.date),
-                                style: TextStyle(
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.4),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-            .animate()
-            .fade(delay: (index * 60).ms, duration: 350.ms)
-            .slideX(begin: 0.04);
-      }).toList(),
-    );
-  }
 }
 
-class _RadialGaugePainter extends CustomPainter {
-  final double progress;
-  final Color trackColor;
-  final Color progressColor;
-  final double strokeWidth;
 
-  _RadialGaugePainter({
-    required this.progress,
-    required this.trackColor,
-    required this.progressColor,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    // Track
-    final trackPaint = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, trackPaint);
-
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final sweepAngle = 2 * pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RadialGaugePainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.progressColor != progressColor ||
-        oldDelegate.trackColor != trackColor;
-  }
-}

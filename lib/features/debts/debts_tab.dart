@@ -264,26 +264,32 @@ class DebtsTab extends ConsumerWidget {
         children: [
           // Decorative circles overlay for depth
           Positioned(
-            top: -50,
-            right: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+            top: -40,
+            right: -20,
+            child: Transform.rotate(
+              angle: -0.2,
+              child: Container(
+                width: 140,
+                height: 180,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(40),
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: -30,
-            left: -20,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+            bottom: -60,
+            left: -30,
+            child: Transform.rotate(
+              angle: 0.3,
+              child: Container(
+                width: 160,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
               ),
             ),
           ),

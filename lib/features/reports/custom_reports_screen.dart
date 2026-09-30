@@ -544,11 +544,21 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     color: acc.color.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    IconUtils.getIcon(acc.iconCodePoint),
-                    color: acc.color,
-                    size: 14,
-                  ),
+                  child: acc.logoAsset != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.asset(
+                            acc.logoAsset!,
+                            width: 14,
+                            height: 14,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          IconUtils.getIcon(acc.iconCodePoint),
+                          color: acc.color,
+                          size: 14,
+                        ),
                 ),
                 const Gap(10),
                 Expanded(
