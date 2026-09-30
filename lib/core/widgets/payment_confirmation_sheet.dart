@@ -11,6 +11,7 @@ import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/widgets/select_sheet.dart';
+import 'package:koin/core/widgets/numpad.dart';
 import 'package:koin/core/widgets/account_item.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -123,11 +124,11 @@ class _PaymentConfirmationSheetState
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           0,
           16,
           0,
-          MediaQuery.of(context).padding.bottom + 24,
+          0,
         ),
         decoration: BoxDecoration(
           color: AppTheme.backgroundColor(context),
@@ -169,94 +170,75 @@ class _PaymentConfirmationSheetState
 
             // ── Hero Amount ──
             Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  Text(
+                    currency.code,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: typeColor.withValues(alpha: 0.5),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const Gap(4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        currency.code,
+                        '${currency.symbol} ',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: typeColor.withValues(alpha: 0.5),
-                          letterSpacing: 1.5,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: typeColor.withValues(alpha: 0.4),
                         ),
                       ),
-                      const Gap(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${currency.symbol} ',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: typeColor.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          IntrinsicWidth(
-                            child: Theme(
-                              data: Theme.of(context).copyWith(
-                                hoverColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                splashColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                              ),
-                              child: TextField(
-                                controller: _amountController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                textAlign: TextAlign.center,
-                                onChanged: (val) =>
-                                    setState(() => _currentExpression = val),
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.w800,
-                                  color: hasAmount
-                                      ? typeColor
-                                      : typeColor.withValues(alpha: 0.35),
-                                  letterSpacing: -2,
-                                  height: 1.1,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  hintStyle: TextStyle(
-                                    color: typeColor.withValues(alpha: 0.35),
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
-                                  filled: false,
-                                  fillColor: Colors.transparent,
-                                  isDense: true,
-                                  isCollapsed: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(8),
-                      Container(
-                        width: hasAmount ? 60 : 40,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: typeColor.withValues(alpha: 0.25),
+                      Text(
+                        _currentExpression.isEmpty ? '0' : _currentExpression,
+                        style: TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w800,
+                          color: hasAmount
+                              ? typeColor
+                              : typeColor.withValues(alpha: 0.3),
+                          letterSpacing: -1.5,
+                          height: 1.1,
                         ),
                       ),
                     ],
                   ),
-                )
-                .animate()
-                .fadeIn(duration: 300.ms)
-                .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                  if (_currentExpression.contains(RegExp(r'[+\-*/]')))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '= ${currency.symbol}${_amountController.text}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  const Gap(12),
+                  Container(
+                    width: 48,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: typeColor.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ],
+              ),
+            )
+            .animate()
+            .fadeIn(duration: 300.ms)
+            .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
             const Gap(28),
 
@@ -324,74 +306,38 @@ class _PaymentConfirmationSheetState
                 .fadeIn(delay: 100.ms, duration: 300.ms)
                 .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
-            const Gap(24),
+            const Gap(16),
 
-            // ── Confirm button ──
-            Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            typeColor,
-                            typeColor.withValues(alpha: 0.85),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: typeColor.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticService.medium();
-                          final amount =
-                              double.tryParse(_amountController.text) ??
-                              widget.payment.amount;
-                          Navigator.pop(
-                            context,
-                            PaymentConfirmationResult(
-                              amount: amount,
-                              categoryId: _selectedCategoryId,
-                              accountId: _selectedAccountId,
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: const Text(
-                          'Confirm Payment',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 300.ms)
-                .slideY(begin: 0.15, curve: Curves.easeOutCubic),
+            NumPad(
+              compact: true,
+              initialValue: _currentExpression,
+              onValueChanged: (expression, result) {
+                setState(() {
+                  _currentExpression = expression;
+                  _amountController.text = result;
+                });
+              },
+              onDone: _submit,
+            ).animate()
+             .fadeIn(delay: 200.ms, duration: 300.ms)
+             .slideY(begin: 0.15, curve: Curves.easeOutCubic),
           ],
         ),
+      ),
+    );
+  }
+
+  void _submit() {
+    HapticService.medium();
+    final amount =
+        double.tryParse(_amountController.text) ??
+        widget.payment.amount;
+    Navigator.pop(
+      context,
+      PaymentConfirmationResult(
+        amount: amount,
+        categoryId: _selectedCategoryId,
+        accountId: _selectedAccountId,
       ),
     );
   }
