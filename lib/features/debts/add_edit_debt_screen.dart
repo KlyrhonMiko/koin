@@ -1109,6 +1109,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     categories: categories,
                     defaultDate: _startDate,
                     existingItem: item,
+                    suggester: ref.read(categorySuggesterProvider),
                   );
                   if (updatedItem != null) {
                     setState(() {
@@ -1215,6 +1216,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
               primaryColor: primaryColor,
               categories: categories,
               defaultDate: _startDate,
+              suggester: ref.read(categorySuggesterProvider),
             );
             if (newItem != null) {
               setState(() {

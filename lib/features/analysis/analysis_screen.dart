@@ -69,82 +69,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               );
             }
 
-            List<AppTransaction> filteredTransactions = transactions
-                .where((t) => t.type == TransactionType.expense)
-                .toList();
-
-            double? previousExpense;
-
-            if (_selectedFilterIndex == 0) {
-              final startOfWeek = _baseDate.subtract(
-                Duration(days: _baseDate.weekday - 1),
-              );
-              final startOfWeekDate = DateTime(
-                startOfWeek.year,
-                startOfWeek.month,
-                startOfWeek.day,
-              );
-              final endOfWeekDate = startOfWeekDate.add(
-                const Duration(days: 7),
-              );
-
-              final prevStartOfWeekDate = startOfWeekDate.subtract(
-                const Duration(days: 7),
-              );
-
-              previousExpense = filteredTransactions
-                  .where(
-                    (t) =>
-                        t.date.isAfter(
-                          prevStartOfWeekDate.subtract(const Duration(days: 1)),
-                        ) &&
-                        t.date.isBefore(startOfWeekDate),
-                  )
-                  .fold<double>(0.0, (sum, t) => sum + t.amount);
-
-              filteredTransactions = filteredTransactions
-                  .where(
-                    (t) =>
-                        t.date.isAfter(
-                          startOfWeekDate.subtract(const Duration(days: 1)),
-                        ) &&
-                        t.date.isBefore(endOfWeekDate),
-                  )
-                  .toList();
-            } else if (_selectedFilterIndex == 1) {
-              final prevMonthDate = DateTime(
-                _baseDate.year,
-                _baseDate.month - 1,
-                1,
-              );
-              previousExpense = filteredTransactions
-                  .where((t) {
-                    return t.date.year == prevMonthDate.year &&
-                        t.date.month == prevMonthDate.month;
-                  })
-                  .fold<double>(0.0, (sum, t) => sum + t.amount);
-
-              filteredTransactions = filteredTransactions.where((t) {
-                return t.date.year == _baseDate.year &&
-                    t.date.month == _baseDate.month;
-              }).toList();
-            } else if (_selectedFilterIndex == 2) {
-              final prevYear = _baseDate.year - 1;
-              previousExpense = filteredTransactions
-                  .where((t) {
-                    return t.date.year == prevYear;
-                  })
-                  .fold<double>(0.0, (sum, t) => sum + t.amount);
-
-              filteredTransactions = filteredTransactions.where((t) {
-                return t.date.year == _baseDate.year;
-              }).toList();
-            }
-
-            double totalExpense = filteredTransactions.fold(
-              0,
-              (sum, t) => sum + t.amount,
+            final period = AnalysisPeriod.fromIndex(_selectedFilterIndex);
+            final analysis = SpendingAnalysis.calculate(
+              transactions: transactions,
+              baseDate: _baseDate,
+              period: period,
             );
+            final filteredTransactions = analysis.filteredTransactions;
+            final previousExpense = analysis.previousExpense;
+            final totalExpense = analysis.totalExpense;
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -549,65 +482,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  String _getPeriodLabel() {
-    if (_selectedFilterIndex == 0) {
-      final startOfWeek = _baseDate.subtract(
-        Duration(days: _baseDate.weekday - 1),
-      );
-      final endOfWeek = startOfWeek.add(const Duration(days: 6));
-      final startLabel = DateFormat('MMM d').format(startOfWeek);
-      final endLabel = DateFormat('MMM d').format(endOfWeek);
-      return '$startLabel - $endLabel';
-    } else if (_selectedFilterIndex == 1) {
-      return DateFormat('MMMM yyyy').format(_baseDate);
-    } else if (_selectedFilterIndex == 2) {
-      return DateFormat('yyyy').format(_baseDate);
-    }
-    return ''; // Should not happen with current filters
-  }
+  AnalysisPeriod get _currentPeriod =>
+      AnalysisPeriod.fromIndex(_selectedFilterIndex);
 
-  DateTimeRange? _getCurrentDateRange() {
-    if (_selectedFilterIndex == 0) {
-      final startOfWeek = _baseDate.subtract(
-        Duration(days: _baseDate.weekday - 1),
-      );
-      final start = DateTime(
-        startOfWeek.year,
-        startOfWeek.month,
-        startOfWeek.day,
-      );
-      final end = start.add(const Duration(days: 6));
-      return DateTimeRange(start: start, end: end);
-    } else if (_selectedFilterIndex == 1) {
-      final start = DateTime(_baseDate.year, _baseDate.month, 1);
-      final end = DateTime(_baseDate.year, _baseDate.month + 1, 0);
-      return DateTimeRange(start: start, end: end);
-    } else if (_selectedFilterIndex == 2) {
-      final start = DateTime(_baseDate.year, 1, 1);
-      final end = DateTime(_baseDate.year, 12, 31);
-      return DateTimeRange(start: start, end: end);
-    }
-    return null;
-  }
+  String _getPeriodLabel() => _currentPeriod.formatPeriod(_baseDate);
+
+  DateTimeRange _getCurrentDateRange() => _currentPeriod.dateRange(_baseDate);
 
   Widget _buildInlinePeriodSelector() {
-    final now = DateTime.now();
-    bool isCurrentPeriod = false;
-    if (_selectedFilterIndex == 0) {
-      final currentStart = now.subtract(Duration(days: now.weekday - 1));
-      final baseStart = _baseDate.subtract(
-        Duration(days: _baseDate.weekday - 1),
-      );
-      isCurrentPeriod =
-          currentStart.year == baseStart.year &&
-          currentStart.month == baseStart.month &&
-          currentStart.day == baseStart.day;
-    } else if (_selectedFilterIndex == 1) {
-      isCurrentPeriod =
-          now.year == _baseDate.year && now.month == _baseDate.month;
-    } else if (_selectedFilterIndex == 2) {
-      isCurrentPeriod = now.year == _baseDate.year;
-    }
+    final period = _currentPeriod;
+    final isCurrentPeriod = period.isCurrentPeriod(_baseDate);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -617,13 +501,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           onTap: () {
             HapticService.selection();
             setState(() {
-              if (_selectedFilterIndex == 0) {
-                _baseDate = _baseDate.subtract(const Duration(days: 7));
-              } else if (_selectedFilterIndex == 1) {
-                _baseDate = DateTime(_baseDate.year, _baseDate.month - 1, 1);
-              } else if (_selectedFilterIndex == 2) {
-                _baseDate = DateTime(_baseDate.year - 1, _baseDate.month, 1);
-              }
+              _baseDate = period.previousPeriod(_baseDate);
             });
           },
           child: const Icon(
@@ -649,21 +527,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               : () {
                   HapticService.selection();
                   setState(() {
-                    if (_selectedFilterIndex == 0) {
-                      _baseDate = _baseDate.add(const Duration(days: 7));
-                    } else if (_selectedFilterIndex == 1) {
-                      _baseDate = DateTime(
-                        _baseDate.year,
-                        _baseDate.month + 1,
-                        1,
-                      );
-                    } else if (_selectedFilterIndex == 2) {
-                      _baseDate = DateTime(
-                        _baseDate.year + 1,
-                        _baseDate.month,
-                        1,
-                      );
-                    }
+                    _baseDate = period.nextPeriod(_baseDate);
                   });
                 },
           child: Icon(

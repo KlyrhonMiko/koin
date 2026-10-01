@@ -68,6 +68,10 @@ abstract class Ledger {
     required AppTransaction transferTransaction,
     AppTransaction? feeTransaction,
   });
+
+  /// Atomically voids a debt repayment or credit increase, reverting the debt balance mutation
+  /// and deleting any associated financial transaction recorded in the ledger.
+  Future<void> voidDebtRepayment(DebtRepayment repayment);
 }
 
 /// Production Adapter: Uses DatabaseHelper and SQLite under an atomic transaction.
@@ -269,6 +273,34 @@ class SqliteLedgerAdapter implements Ledger {
       );
     });
   }
+
+  @override
+  Future<void> voidDebtRepayment(DebtRepayment repayment) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'debt_repayments',
+        where: 'id = ?',
+        whereArgs: [repayment.id],
+      );
+      await txn.delete(
+        'transactions',
+        where: 'debtRepaymentId = ?',
+        whereArgs: [repayment.id],
+      );
+      if (repayment.isIncrease) {
+        await txn.execute('UPDATE debts SET amount = amount - ? WHERE id = ?', [
+          repayment.amount,
+          repayment.debtId,
+        ]);
+      } else {
+        await txn.execute(
+          'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
+          [repayment.amount, repayment.debtId],
+        );
+      }
+    });
+  }
 }
 
 /// In-Memory Test Adapter: Provides deterministic in-memory ledger operations for testing.
@@ -375,6 +407,11 @@ class InMemoryLedgerAdapter implements Ledger {
       transferTransaction: transferTransaction,
       feeTransaction: feeTransaction,
     );
+  }
+
+  @override
+  Future<void> voidDebtRepayment(DebtRepayment repayment) async {
+    _store.removeWhere((_, tx) => tx.debtRepaymentId == repayment.id);
   }
 }
 

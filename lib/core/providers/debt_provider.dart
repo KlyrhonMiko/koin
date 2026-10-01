@@ -81,7 +81,8 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
   }
 
   Future<void> deleteRepayment(DebtRepayment repayment) async {
-    await DatabaseHelper.instance.deleteDebtRepayment(repayment);
+    final ledger = ref.read(ledgerProvider);
+    await ledger.voidDebtRepayment(repayment);
     ref.invalidate(debtRepaymentsProvider(repayment.debtId));
     ref.invalidate(transactionProvider);
     await loadDebts();

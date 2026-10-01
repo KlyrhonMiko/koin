@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class SavingsGoal {
   final String id;
   final String name;
@@ -122,4 +124,51 @@ class SavingsGoal {
   /// Whether adding [additionalAmount] to current savings will achieve or exceed the target.
   bool willComplete(double additionalAmount) =>
       hasTarget && (currentAmount + additionalAmount) >= targetAmount!;
+
+  // ═══════════════════════════════════════════════════════
+  // Coach & Pace Analytics
+  // ═══════════════════════════════════════════════════════
+
+  /// Elapsed days from [startDate] up to [today].
+  int elapsedDays(DateTime today) {
+    final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+    final todayDay = DateTime(today.year, today.month, today.day);
+    return max(0, todayDay.difference(startDay).inDays);
+  }
+
+  /// Total duration in days from start to target end date.
+  int totalGoalDays() {
+    if (endDate == null) return 1;
+    final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+    final endDay = DateTime(endDate!.year, endDate!.month, endDate!.day);
+    return max(1, endDay.difference(startDay).inDays);
+  }
+
+  /// Expected accumulation amount at [today] according to linear milestone pacing.
+  double expectedAmountToday(DateTime today) {
+    if (targetAmount == null || targetAmount! <= 0) return 0.0;
+    final eDays = elapsedDays(today);
+    final tDays = totalGoalDays();
+    if (eDays >= tDays) return targetAmount!;
+    return targetAmount! * (eDays / tDays);
+  }
+
+  /// The amount user is trailing behind expected linear pace.
+  double goalGap(DateTime today) {
+    final expected = expectedAmountToday(today);
+    return max(0.0, expected - currentAmount);
+  }
+
+  /// Current historical weekly savings pace.
+  double currentWeeklyPace(DateTime today) {
+    final target = targetAmount ?? 0.0;
+    final eDays = elapsedDays(today);
+    if (eDays < 7) {
+      final tWeeks = totalGoalDays() / 7.0;
+      if (tWeeks == 0) return target;
+      return target / tWeeks;
+    }
+    final eWeeks = eDays / 7.0;
+    return currentAmount / eWeeks;
+  }
 }

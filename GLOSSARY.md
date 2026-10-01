@@ -35,3 +35,9 @@ A savings accumulation target tracking progress toward a financial milestone, op
 ### Cashflow Forecaster
 A predictive projection engine that combines historical variable cashflow (using exponential moving average - EMA), fixed recurring cashflow schedules (`PlannedPayment`), debt amortization schedules, and savings target timelines to project net cashflow balances across weekly, monthly, and yearly horizons.
 
+### Spending Analysis
+A time-series spending aggregation and comparative analysis engine (`SpendingAnalysis`, `AnalysisPeriod`). Encapsulates inclusive date boundaries for weekly, monthly, and yearly horizons, prior-period baseline comparisons, trend deltas, and ranked category spending breakdowns.
+
+### Budget Overview
+A centralized budget calculation module (`BudgetOverview`). Evaluates category fixed and percentage spending limits against aggregate income and category expense totals, determining overall progress, category remaining balances, and over-budget states.
+

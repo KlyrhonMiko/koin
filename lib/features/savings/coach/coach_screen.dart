@@ -46,14 +46,13 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
 
   void _initEngine() {
     try {
-      final cg = CoachGoal.fromSavingsGoal(widget.goal);
-      _engine = CoachEngine(goal: cg);
+      _engine = CoachEngine(goal: widget.goal);
       _baseline = _engine.simulate();
       _sliderMax = _engine.calculateSliderMax();
       _presets = _engine.generatePresets(_sliderMax);
 
       // Determine the fixed axis for the timeline
-      DateTime latest = _engine.goal.endDate;
+      DateTime latest = _engine.targetDeadline;
       if (_baseline.projectedFinish != null &&
           _baseline.projectedFinish!.isAfter(latest)) {
         latest = _baseline.projectedFinish!;

@@ -93,59 +93,8 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<AppTransaction>>>(
 
     return transactionsAsync.whenData((transactions) {
       if (filter.isEmpty) return transactions;
-
-      return transactions.where((tx) {
-        // Query filter (note or category name)
-        if (filter.query.isNotEmpty) {
-          final query = filter.query.toLowerCase();
-          final categoryName =
-              categories
-                  .where((c) => c.id == tx.categoryId)
-                  .map((c) => c.name.toLowerCase())
-                  .firstOrNull ??
-              '';
-          final matchesNote = tx.note.toLowerCase().contains(query);
-          final matchesCategory = categoryName.contains(query);
-          if (!matchesNote && !matchesCategory) return false;
-        }
-
-        // Date range filter
-        if (filter.dateRange != null) {
-          if (tx.date.isBefore(filter.dateRange!.start) ||
-              tx.date.isAfter(
-                filter.dateRange!.end.add(const Duration(days: 1)),
-              )) {
-            return false;
-          }
-        }
-
-        // Category filter
-        if (filter.categoryIds.isNotEmpty &&
-            !filter.categoryIds.contains(tx.categoryId)) {
-          return false;
-        }
-
-        // Account filter
-        if (filter.accountIds.isNotEmpty &&
-            !filter.accountIds.contains(tx.accountId)) {
-          return false;
-        }
-
-        // Amount filter
-        if (filter.minAmount != null && tx.amount < filter.minAmount!) {
-          return false;
-        }
-        if (filter.maxAmount != null && tx.amount > filter.maxAmount!) {
-          return false;
-        }
-
-        // Type filter
-        if (filter.type != null && tx.type != filter.type) {
-          return false;
-        }
-
-        return true;
-      }).toList();
+      final categoryNamesById = {for (final c in categories) c.id: c.name};
+      return filter.apply(transactions, categoryNamesById: categoryNamesById);
     });
   },
 );

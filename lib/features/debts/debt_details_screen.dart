@@ -507,6 +507,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     categories: categories,
                     defaultDate: DateTime.now(),
                     existingItem: item,
+                    suggester: ref.read(categorySuggesterProvider),
                   );
 
                   if (updatedItem != null) {
@@ -643,6 +644,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               primaryColor: color,
               categories: categories,
               defaultDate: DateTime.now(),
+              suggester: ref.read(categorySuggesterProvider),
             );
 
             if (newItem != null) {

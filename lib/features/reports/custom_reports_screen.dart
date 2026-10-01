@@ -29,6 +29,13 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   final Set<String> _selectedAccountIds = {};
   bool _isExporting = false;
 
+  TransactionFilter get _currentReportFilter => TransactionFilter(
+    dateRange: _dateRange,
+    type: _selectedType,
+    categoryIds: _selectedCategoryIds,
+    accountIds: _selectedAccountIds,
+  );
+
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider).value ?? [];
@@ -131,24 +138,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     final transactionsAsync = ref.watch(transactionProvider);
     if (transactionsAsync.value == null) return const SizedBox.shrink();
 
-    final filtered = transactionsAsync.value!.where((tx) {
-      final dateInRange =
-          tx.date.isAfter(
-            _dateRange.start.subtract(const Duration(seconds: 1)),
-          ) &&
-          tx.date.isBefore(_dateRange.end.add(const Duration(days: 1)));
-      if (!dateInRange) return false;
-      if (_selectedType != null && tx.type != _selectedType) return false;
-      if (_selectedCategoryIds.isNotEmpty &&
-          !_selectedCategoryIds.contains(tx.categoryId)) {
-        return false;
-      }
-      if (_selectedAccountIds.isNotEmpty &&
-          !_selectedAccountIds.contains(tx.accountId)) {
-        return false;
-      }
-      return true;
-    }).toList();
+    final filtered = _currentReportFilter.apply(transactionsAsync.value!);
 
     if (getCountOnly) {
       return _buildExportActions(
@@ -666,29 +656,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     try {
       final allTransactions = transactionsAsync.value!;
 
-      // Filter transactions
-      final filteredTransactions = allTransactions.where((tx) {
-        final dateInRange =
-            tx.date.isAfter(
-              _dateRange.start.subtract(const Duration(seconds: 1)),
-            ) &&
-            tx.date.isBefore(_dateRange.end.add(const Duration(days: 1)));
-        if (!dateInRange) return false;
-
-        if (_selectedType != null && tx.type != _selectedType) return false;
-
-        if (_selectedCategoryIds.isNotEmpty &&
-            !_selectedCategoryIds.contains(tx.categoryId)) {
-          return false;
-        }
-
-        if (_selectedAccountIds.isNotEmpty &&
-            !_selectedAccountIds.contains(tx.accountId)) {
-          return false;
-        }
-
-        return true;
-      }).toList();
+      // Filter transactions using deep TransactionFilter
+      final filteredTransactions = _currentReportFilter.apply(allTransactions);
 
       if (filteredTransactions.isEmpty) {
         if (mounted) {

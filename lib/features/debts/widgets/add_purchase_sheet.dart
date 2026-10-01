@@ -13,6 +13,7 @@ Future<DebtItem?> showAddPurchaseSheet({
   required List<TransactionCategory> categories,
   required DateTime defaultDate,
   DebtItem? existingItem,
+  CategorySuggester? suggester,
 }) {
   String name = existingItem?.name ?? '';
   String amountStr =
@@ -25,9 +26,9 @@ Future<DebtItem?> showAddPurchaseSheet({
       ? categories.where((c) => c.id == existingItem!.categoryId).firstOrNull
       : null;
 
-  final suggester = HybridMlSuggesterAdapter();
+  final effectiveSuggester = suggester ?? HybridMlSuggesterAdapter();
   final coordinator = DebouncedSuggesterCoordinator(
-    suggester: suggester,
+    suggester: effectiveSuggester,
     debounceDuration: const Duration(milliseconds: 350),
   );
   int autoCatKey = 0;
@@ -295,7 +296,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                             final targetType = debtType == DebtType.owedToMe
                                 ? TransactionType.income
                                 : TransactionType.expense;
-                            suggester.recordFeedback(
+                            effectiveSuggester.recordFeedback(
                               text: name.trim(),
                               amount: amt,
                               type: targetType,

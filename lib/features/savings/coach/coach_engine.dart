@@ -11,73 +11,6 @@ enum CoachStatus {
   behind,
 }
 
-class CoachGoal {
-  final String id;
-  final String name;
-  final double target;
-  final double current;
-  final DateTime startDate;
-  final DateTime endDate;
-
-  CoachGoal({
-    required this.id,
-    required this.name,
-    required this.target,
-    required this.current,
-    required this.startDate,
-    required this.endDate,
-  });
-
-  static DateTime dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
-
-  factory CoachGoal.fromSavingsGoal(SavingsGoal goal) {
-    if (goal.isStash || goal.targetAmount == null || goal.endDate == null) {
-      throw Exception("Stash goals cannot use the coach feature");
-    }
-    return CoachGoal(
-      id: goal.id,
-      name: goal.name,
-      target: goal.targetAmount!,
-      current: goal.currentAmount,
-      startDate: dateOnly(goal.startDate),
-      endDate: dateOnly(goal.endDate!),
-    );
-  }
-
-  double get remaining => max(0.0, target - current);
-
-  int elapsedDays(DateTime today) {
-    return max(0, dateOnly(today).difference(startDate).inDays);
-  }
-
-  int totalDays() {
-    return max(1, endDate.difference(startDate).inDays);
-  }
-
-  double expectedAmountToday(DateTime today) {
-    final eDays = elapsedDays(today);
-    final tDays = totalDays();
-    if (eDays >= tDays) return target;
-    return target * (eDays / tDays);
-  }
-
-  double gap(DateTime today) {
-    final expected = expectedAmountToday(today);
-    return max(0.0, expected - current);
-  }
-
-  double currentWeeklyPace(DateTime today) {
-    final eDays = elapsedDays(today);
-    if (eDays < 7) {
-      final tWeeks = totalDays() / 7;
-      if (tWeeks == 0) return target;
-      return target / tWeeks;
-    }
-    final eWeeks = eDays / 7.0;
-    return current / eWeeks;
-  }
-}
-
 class CoachSimulationResult {
   final DateTime newDeadline;
   final double weeklyPace;
@@ -102,18 +35,28 @@ class CoachSimulationResult {
   });
 }
 
+/// Deep Domain Module: Simulates savings goal timelines, deadline shifts,
+/// required weekly contributions, and goal completion projections.
 class CoachEngine {
-  final CoachGoal goal;
+  final SavingsGoal goal;
   final DateTime today;
 
   CoachEngine({required this.goal, DateTime? today})
-    : today = CoachGoal.dateOnly(today ?? DateTime.now());
+    : today = _dateOnly(today ?? DateTime.now());
+
+  static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  DateTime get targetDeadline =>
+      goal.endDate != null ? _dateOnly(goal.endDate!) : today.add(const Duration(days: 30));
+
+  double get remainingAmount =>
+      max(0.0, (goal.targetAmount ?? 0.0) - goal.currentAmount);
 
   CoachSimulationResult simulate({
     double extraSavedPerWeek = 0.0,
     int deadlineShiftWeeks = 0,
   }) {
-    final newDeadline = goal.endDate.add(
+    final newDeadline = targetDeadline.add(
       Duration(days: deadlineShiftWeeks * 7),
     );
     final pace = max(0.0, goal.currentWeeklyPace(today) + extraSavedPerWeek);
@@ -121,13 +64,13 @@ class CoachEngine {
     DateTime? projectedFinish;
     int? daysLate;
 
-    if (goal.remaining <= 0) {
+    if (remainingAmount <= 0) {
       projectedFinish = today;
       daysLate = projectedFinish.difference(newDeadline).inDays;
     } else if (pace <= 0) {
       projectedFinish = null;
     } else {
-      final weeksToFinish = goal.remaining / pace;
+      final weeksToFinish = remainingAmount / pace;
       final daysToFinish = (weeksToFinish * 7).round();
       if (daysToFinish > 36500) {
         projectedFinish = null;
@@ -144,16 +87,16 @@ class CoachEngine {
     final weeksLeft = daysLeft / 7.0;
     double weeklyAmountRequired = 0;
     if (weeksLeft > 0) {
-      weeklyAmountRequired = goal.remaining / weeksLeft;
+      weeklyAmountRequired = remainingAmount / weeksLeft;
     } else {
-      weeklyAmountRequired = goal.remaining;
+      weeklyAmountRequired = remainingAmount;
     }
 
     // Classify status
     CoachStatus status;
-    final goalTotalDays = max(1, newDeadline.difference(goal.startDate).inDays);
+    final goalTotalDays = max(1, newDeadline.difference(_dateOnly(goal.startDate)).inDays);
 
-    if (goal.remaining <= 0) {
+    if (remainingAmount <= 0) {
       status = CoachStatus.completed;
     } else if (today.isAfter(newDeadline)) {
       status = CoachStatus.overdue;
@@ -224,10 +167,10 @@ class CoachEngine {
 
     List<double> presets = [];
     for (int daysEarly in targetsDaysEarly) {
-      final availableDays = goal.endDate.difference(today).inDays - daysEarly;
+      final availableDays = targetDeadline.difference(today).inDays - daysEarly;
       if (availableDays <= 0) continue;
       final availableWeeks = availableDays / 7.0;
-      final extraNeeded = (goal.remaining / availableWeeks) - currentPace;
+      final extraNeeded = (remainingAmount / availableWeeks) - currentPace;
       if (extraNeeded <= 0) continue;
 
       final friendly = _roundToFriendly(extraNeeded);
@@ -240,14 +183,14 @@ class CoachEngine {
   }
 
   double calculateSliderMax() {
-    if (today.isAfter(goal.endDate)) {
-      return _roundToFriendly(goal.remaining / 4.0);
+    if (today.isAfter(targetDeadline)) {
+      return _roundToFriendly(remainingAmount / 4.0);
     }
-    final daysLeft = goal.endDate.difference(today).inDays;
+    final daysLeft = targetDeadline.difference(today).inDays;
     final weeksLeft = daysLeft / 7.0;
     final requiredWeekly = weeksLeft > 0
-        ? goal.remaining / weeksLeft
-        : goal.remaining;
+        ? remainingAmount / weeksLeft
+        : remainingAmount;
     final currentPace = goal.currentWeeklyPace(today);
     final larger = max(requiredWeekly, currentPace);
     return _roundToFriendly(larger * 1.5);

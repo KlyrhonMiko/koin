@@ -19,27 +19,17 @@ class BudgetsScreen extends ConsumerWidget {
     return categoriesAsync.when(
       data: (categories) {
         final totalIncome = stats.totalIncome;
-
-        final budgeted = categories
-            .where((c) => c.type == TransactionType.expense && c.hasBudget)
-            .toList();
-        final unbudgeted = categories
-            .where((c) => c.type == TransactionType.expense && !c.hasBudget)
-            .toList();
-
-        // Calculate totals
-        double totalBudget = 0;
-        double totalSpent = 0;
-        for (var cat in budgeted) {
-          totalBudget += cat.resolvedBudget(totalIncome);
-          totalSpent += stats.categorySpending[cat.id] ?? 0;
-        }
-        final overallProgress = totalBudget > 0
-            ? (totalSpent / totalBudget).clamp(0.0, 1.0)
-            : 0.0;
-        final overallPercent = totalBudget > 0
-            ? (totalSpent / totalBudget * 100).toStringAsFixed(0)
-            : '0';
+        final overview = BudgetOverview.calculate(
+          categories: categories,
+          categorySpending: stats.categorySpending,
+          totalIncome: totalIncome,
+        );
+        final budgeted = overview.budgetedCategories;
+        final unbudgeted = overview.unbudgetedCategories;
+        final totalBudget = overview.totalBudget;
+        final totalSpent = overview.totalSpent;
+        final overallProgress = overview.overallProgress;
+        final overallPercent = overview.overallPercent;
 
         return Column(
           children: [
