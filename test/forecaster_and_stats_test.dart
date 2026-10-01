@@ -254,6 +254,166 @@ void main() {
         expect(stats.currentBalance, 700.0);
       },
     );
+
+    test(
+      'filters monthly category spending and income/expense to reference month while keeping lifetime account balances',
+      () {
+        final accounts = [
+          Account(
+            id: 'acc_main',
+            name: 'Main Account',
+            initialBalance: 1000.0,
+            excludeFromTotal: false,
+            iconCodePoint: 1,
+            colorHex: '#000000',
+          ),
+        ];
+
+        final transactions = [
+          // Previous month (September 2026)
+          AppTransaction(
+            id: 'tx_sep_income',
+            amount: 500.0,
+            date: DateTime(2026, 9, 15),
+            type: TransactionType.income,
+            categoryId: 'cat_salary',
+            accountId: 'acc_main',
+          ),
+          AppTransaction(
+            id: 'tx_sep_food',
+            amount: 80.0,
+            date: DateTime(2026, 9, 20),
+            type: TransactionType.expense,
+            categoryId: 'cat_food',
+            accountId: 'acc_main',
+          ),
+          // Current month (October 2026)
+          AppTransaction(
+            id: 'tx_oct_income',
+            amount: 200.0,
+            date: DateTime(2026, 10, 1),
+            type: TransactionType.income,
+            categoryId: 'cat_salary',
+            accountId: 'acc_main',
+          ),
+          AppTransaction(
+            id: 'tx_oct_food',
+            amount: 50.0,
+            date: DateTime(2026, 10, 1),
+            type: TransactionType.expense,
+            categoryId: 'cat_food',
+            accountId: 'acc_main',
+          ),
+        ];
+
+        // Calculate for October 2026
+        final octStats = DashboardStats.calculate(
+          accounts: accounts,
+          transactions: transactions,
+          referenceDate: DateTime(2026, 10, 1),
+        );
+
+        // October monthly income and expense should NOT include September
+        expect(octStats.totalIncome, 200.0);
+        expect(octStats.totalExpense, 50.0);
+        // October food category spending MUST only count October ($50), NOT September ($80)
+        expect(octStats.categorySpending['cat_food'], 50.0);
+
+        // But account balance MUST be cumulative across all history:
+        // 1000 + 500 - 80 + 200 - 50 = 1570.0
+        expect(octStats.accountBalances['acc_main'], 1570.0);
+        expect(octStats.currentBalance, 1570.0);
+
+        // All-time totals retain complete history
+        expect(octStats.allTimeIncome, 700.0);
+        expect(octStats.allTimeExpense, 130.0);
+        expect(octStats.allTimeCategorySpending['cat_food'], 130.0);
+
+        // Calculate for September 2026
+        final sepStats = DashboardStats.calculate(
+          accounts: accounts,
+          transactions: transactions,
+          referenceDate: DateTime(2026, 9, 1),
+        );
+
+        expect(sepStats.totalIncome, 500.0);
+        expect(sepStats.totalExpense, 80.0);
+        expect(sepStats.categorySpending['cat_food'], 80.0);
+        // Account balance remains current cumulative balance
+        expect(sepStats.currentBalance, 1570.0);
+      },
+    );
+
+    test(
+      'BudgetOverview.calculateForMonth isolates category spending to requested month',
+      () {
+        final categories = [
+          TransactionCategory(
+            id: 'cat_food',
+            name: 'Food',
+            iconCodePoint: 1,
+            colorHex: '#00D09E',
+            type: TransactionType.expense,
+            budget: 100.0,
+          ),
+        ];
+
+        final accounts = [
+          Account(
+            id: 'acc_main',
+            name: 'Main Account',
+            initialBalance: 1000.0,
+            excludeFromTotal: false,
+            iconCodePoint: 1,
+            colorHex: '#000000',
+          ),
+        ];
+
+        final transactions = [
+          AppTransaction(
+            id: 'tx_sep',
+            amount: 80.0,
+            date: DateTime(2026, 9, 28),
+            type: TransactionType.expense,
+            categoryId: 'cat_food',
+            accountId: 'acc_main',
+          ),
+          AppTransaction(
+            id: 'tx_oct',
+            amount: 30.0,
+            date: DateTime(2026, 10, 1),
+            type: TransactionType.expense,
+            categoryId: 'cat_food',
+            accountId: 'acc_main',
+          ),
+        ];
+
+        final octOverview = BudgetOverview.calculateForMonth(
+          categories: categories,
+          transactions: transactions,
+          accounts: accounts,
+          month: DateTime(2026, 10, 1),
+        );
+
+        final octFoodMetric = octOverview.metricsByCategory['cat_food']!;
+        expect(octFoodMetric.spent, 30.0);
+        expect(octFoodMetric.budget, 100.0);
+        expect(octFoodMetric.remaining, 70.0);
+        expect(octFoodMetric.isOverBudget, isFalse);
+
+        final sepOverview = BudgetOverview.calculateForMonth(
+          categories: categories,
+          transactions: transactions,
+          accounts: accounts,
+          month: DateTime(2026, 9, 1),
+        );
+
+        final sepFoodMetric = sepOverview.metricsByCategory['cat_food']!;
+        expect(sepFoodMetric.spent, 80.0);
+        expect(sepFoodMetric.remaining, 20.0);
+        expect(sepFoodMetric.isOverBudget, isFalse);
+      },
+    );
   });
 
   group('Atomic Transfer & Seam Tests', () {

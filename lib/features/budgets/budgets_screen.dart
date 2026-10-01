@@ -6,14 +6,28 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/categories/categories.dart';
 
-class BudgetsScreen extends ConsumerWidget {
+class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BudgetsScreen> createState() => _BudgetsScreenState();
+}
+
+class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
+  late DateTime _selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final settings = ref.watch(settingsProvider);
-    final stats = ref.watch(dashboardStatsProvider);
+    final stats = ref.watch(monthlyDashboardStatsProvider(_selectedMonth));
     final currency = settings.currency;
 
     return categoriesAsync.when(
@@ -412,6 +426,88 @@ class BudgetsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildInlineMonthSelector({bool isDark = false}) {
+    final now = DateTime.now();
+    final isCurrentMonth = _selectedMonth.year == now.year &&
+        _selectedMonth.month == now.month;
+    final monthLabel = DateFormat('MMMM yyyy').format(_selectedMonth);
+    final textColor = isDark ? AppTheme.textColor(context) : Colors.white;
+    final chevronColor = isDark ? AppTheme.textColor(context) : Colors.white;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticService.selection();
+            setState(() {
+              _selectedMonth = DateTime(
+                _selectedMonth.year,
+                _selectedMonth.month - 1,
+              );
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+            child: Icon(
+              Icons.chevron_left_rounded,
+              color: chevronColor,
+              size: 18,
+            ),
+          ),
+        ),
+        const Gap(6),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: isCurrentMonth
+              ? null
+              : () {
+                  HapticService.selection();
+                  setState(() {
+                    _selectedMonth = DateTime(now.year, now.month);
+                  });
+                },
+          child: Text(
+            monthLabel,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        const Gap(6),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: isCurrentMonth
+              ? null
+              : () {
+                  HapticService.selection();
+                  setState(() {
+                    _selectedMonth = DateTime(
+                      _selectedMonth.year,
+                      _selectedMonth.month + 1,
+                    );
+                  });
+                },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+            child: Icon(
+              Icons.chevron_right_rounded,
+              color: chevronColor.withValues(
+                alpha: isCurrentMonth ? 0.4 : 1.0,
+              ),
+              size: 18,
+            ),
+          ),
+        ),
+      ],
+    ).animate().fade(delay: 150.ms);
+  }
+
   Widget _buildSummaryCard(
     BuildContext context, {
     required double totalBudget,
@@ -440,7 +536,7 @@ class BudgetsScreen extends ConsumerWidget {
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -451,11 +547,11 @@ class BudgetsScreen extends ConsumerWidget {
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
                       ),
                     ),
-                    const Gap(8),
+                    const Gap(4),
                     AnimatedCounter(
                       value: totalBudget,
                       formatter: (v) => fmt.format(v),
@@ -464,93 +560,128 @@ class BudgetsScreen extends ConsumerWidget {
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -1.5,
+                        height: 1.1,
                       ),
+                    ),
+                    const Gap(16),
+                    Transform.translate(
+                      offset: const Offset(-6, 0),
+                      child: _buildInlineMonthSelector(),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
+                  shape: BoxShape.circle,
                   color: isOver
-                      ? Colors.red.withValues(alpha: 0.25)
-                      : Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
+                      ? Colors.red.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.1),
                 ),
-                child: AnimatedCounter(
-                  value: double.tryParse(percent) ?? 0,
-                  formatter: (v) => '${v.toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: progress),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, val, child) {
+                      final targetPercent = double.tryParse(percent) ?? 0;
+                      final displayPercent = (targetPercent * (progress > 0 ? (val / progress) : 0)).round();
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 88,
+                            height: 88,
+                            child: CircularProgressIndicator(
+                              value: 1.0,
+                              strokeWidth: 6,
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 88,
+                            height: 88,
+                            child: CircularProgressIndicator(
+                              value: val,
+                              strokeWidth: 6,
+                              strokeCap: StrokeCap.round,
+                              color: isOver
+                                  ? const Color(0xFFFF8A80)
+                                  : Colors.white,
+                            ),
+                          ),
+                          Text(
+                            '$displayPercent%',
+                            style: TextStyle(
+                              color: isOver
+                                  ? const Color(0xFFFFCDD2)
+                                  : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
             ],
           ),
-          const Gap(20),
-          // Progress bar
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: progress.toDouble()),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutCubic,
-            builder: (context, animatedProgress, _) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: animatedProgress,
-                  minHeight: 8,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isOver ? const Color(0xFFFF8A80) : Colors.white,
-                  ),
-                ),
-              );
-            },
-          ),
-          const Gap(14),
+          const Gap(24),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
+          const Gap(16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Spent ',
+                    'Spent',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const Gap(4),
                   AnimatedCounter(
                     value: totalSpent,
                     formatter: (v) => fmt.format(v),
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  AnimatedCounter(
-                    value: isOver ? (totalSpent - totalBudget) : remaining,
-                    formatter: (v) {
-                      final val = fmt.format(v);
-                      return isOver ? 'Over by $val' : '$val left';
-                    },
+                  Text(
+                    isOver ? 'Over Budget' : 'Remaining',
                     style: TextStyle(
                       color: isOver
                           ? const Color(0xFFFFCDD2)
-                          : Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
+                          : Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Gap(4),
+                  AnimatedCounter(
+                    value: isOver ? (totalSpent - totalBudget) : remaining,
+                    formatter: (v) => fmt.format(v),
+                    style: TextStyle(
+                      color: isOver
+                          ? const Color(0xFFFFCDD2)
+                          : Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],

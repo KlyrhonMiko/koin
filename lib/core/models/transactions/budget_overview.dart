@@ -1,3 +1,4 @@
+import 'package:koin/core/models/accounts/account.dart';
 import 'package:koin/core/models/transactions/category.dart';
 import 'package:koin/core/models/transactions/transaction.dart';
 
@@ -94,4 +95,55 @@ class BudgetOverview {
       metricsByCategory: metrics,
     );
   }
+
+  /// Factory calculating budget metrics for a given [month] directly from [transactions] and optional [accounts].
+  factory BudgetOverview.calculateForMonth({
+    required List<TransactionCategory> categories,
+    required List<AppTransaction> transactions,
+    List<Account> accounts = const [],
+    DateTime? month,
+  }) {
+    final targetMonth = month ?? DateTime.now();
+    final includedAccountIds = accounts.isEmpty
+        ? null
+        : accounts
+            .where((a) => !a.excludeFromTotal)
+            .map((a) => a.id)
+            .toSet();
+
+    double totalIncome = 0.0;
+    final Map<String, double> categorySpending = {};
+
+    for (final t in transactions) {
+      if (t.date.year != targetMonth.year || t.date.month != targetMonth.month) {
+        continue;
+      }
+
+      final isSourceIncluded = includedAccountIds == null ||
+          includedAccountIds.contains(t.accountId);
+      final isDestIncluded = t.toAccountId != null &&
+          (includedAccountIds == null ||
+              includedAccountIds.contains(t.toAccountId));
+
+      if (t.type == TransactionType.income) {
+        if (isSourceIncluded) totalIncome += t.amount;
+      } else if (t.type == TransactionType.expense) {
+        if (isSourceIncluded) {
+          categorySpending[t.categoryId] =
+              (categorySpending[t.categoryId] ?? 0.0) + t.amount;
+        }
+      } else if (t.type == TransactionType.transfer) {
+        if (!isSourceIncluded && isDestIncluded) {
+          totalIncome += t.amount;
+        }
+      }
+    }
+
+    return BudgetOverview.calculate(
+      categories: categories,
+      categorySpending: categorySpending,
+      totalIncome: totalIncome,
+    );
+  }
 }
+
