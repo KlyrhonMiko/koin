@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/core.dart';
-import 'package:koin/features/features.dart';
+import 'package:koin/koin.dart';
 
 void main() {
   group('Architecture & Barrel Structure Tests', () {
@@ -61,6 +60,13 @@ void main() {
       expect(DebtsTab, isNotNull);
       expect(SavingsTab, isNotNull);
       expect(TransactionsListScreen, isNotNull);
+    });
+
+    test('koin.dart root barrel exports both core and features layers', () {
+      // Validates that koin.dart cleanly compiles and exports both layers
+      expect(AppTheme, isNotNull);
+      expect(SqliteLedgerAdapter, isNotNull);
+      expect(MainLayout, isNotNull);
     });
   });
 }
