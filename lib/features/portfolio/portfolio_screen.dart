@@ -5,25 +5,11 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/widgets/koin_reorder_proxy.dart';
-import 'package:koin/core/widgets/koin_primary_button.dart';
-import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/features/accounts/account_form_screen.dart';
-import 'package:koin/core/widgets/account_item.dart';
-
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
-
-import 'package:koin/core/widgets/pressable_scale.dart';
-
-import 'package:koin/features/debts/debts_tab.dart';
-import 'package:koin/features/savings/savings_list_screen.dart';
-import 'package:koin/features/cashflow/cashflow_tab.dart';
-import 'package:koin/core/providers/navigation_provider.dart';
+import 'package:koin/core/core.dart';
+import 'package:koin/features/accounts/accounts.dart';
+import 'package:koin/features/cashflow/cashflow.dart';
+import 'package:koin/features/debts/debts.dart';
+import 'package:koin/features/savings/savings.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});

@@ -3,25 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/models/savings_log.dart';
-import 'package:koin/core/providers/savings_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
-import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:uuid/uuid.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/numpad.dart';
-import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/models/account.dart';
-import 'package:koin/core/widgets/animated_counter.dart';
-import 'package:koin/core/utils/icon_utils.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/coach/coach_screen.dart';
 import 'package:koin/features/savings/coach/coach_engine.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;

@@ -2,21 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
-import 'package:koin/core/models/account.dart';
-import 'package:koin/core/models/bank_templates.dart';
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
-import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/color_palette_grid.dart';
-import 'package:koin/core/widgets/icon_palette_grid.dart';
-import 'package:koin/core/widgets/koin_primary_button.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/account_item.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/widgets/card_background_shapes.dart';
+import 'package:koin/core/core.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class AccountFormScreen extends ConsumerStatefulWidget {

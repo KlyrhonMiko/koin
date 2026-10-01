@@ -3,19 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/transaction_filter.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/widgets/date_range_selector.dart';
-import 'package:koin/core/widgets/form_section_title.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
+import 'package:koin/core/core.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
   const FilterBottomSheet({super.key});

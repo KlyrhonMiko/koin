@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/providers/navigation_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/features/transactions/transactions_list_screen.dart';
+import 'package:koin/core/core.dart';
+import 'package:koin/features/transactions/transactions.dart';
 import 'package:koin/features/analysis/analysis_screen.dart';
-import 'package:koin/features/reports/custom_reports_screen.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
-import 'package:koin/core/widgets/koin_segmented_control.dart';
-import 'package:koin/core/widgets/koin_screen_header.dart';
+import 'package:koin/features/reports/reports.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});

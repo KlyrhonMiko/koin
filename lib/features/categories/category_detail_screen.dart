@@ -3,19 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/theme.dart';
 import 'package:uuid/uuid.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/snackbar_utils.dart';
-import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/color_palette_grid.dart';
-import 'package:koin/core/widgets/icon_palette_grid.dart';
-import 'package:koin/core/widgets/koin_primary_button.dart';
-import 'package:koin/core/widgets/transaction_type_selector.dart';
+import 'package:koin/core/core.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final TransactionCategory? category;

@@ -2,24 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/utils/snackbar_utils.dart';
-import 'package:koin/core/models/debt.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/planned_payment_provider.dart';
-import 'package:koin/core/providers/debt_provider.dart';
-import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
-import 'package:koin/features/debts/debt_details_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
-import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
+import 'package:koin/core/core.dart';
+import 'package:koin/features/debts/debts.dart';
+import 'package:koin/features/cashflow/cashflow.dart';
 
 class UpcomingScreen extends ConsumerWidget {
   const UpcomingScreen({super.key});

@@ -1,24 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/widgets/animated_counter.dart';
 import 'package:koin/features/transactions/widgets/filter_bottom_sheet.dart';
-import 'package:koin/core/models/transaction_filter.dart';
 import 'package:gap/gap.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/utils/animation_utils.dart';
 
 // Removed local AnimationTracker as it is now in core/utils/animation_utils.dart
 

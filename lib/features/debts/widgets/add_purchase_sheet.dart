@@ -3,18 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:koin/core/models/debt.dart';
-import 'package:koin/core/models/debt_item.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/categorization/category_suggester.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/selection_tile.dart';
-import 'package:koin/core/widgets/category_picker_sheet.dart';
-import 'package:koin/core/widgets/date_selector_tile.dart';
+import 'package:koin/core/core.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
 
 Future<DebtItem?> showAddPurchaseSheet({
   required BuildContext context,

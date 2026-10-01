@@ -5,27 +5,10 @@ import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:koin/core/database_helper.dart';
 import 'dart:io';
-import 'package:koin/core/models/currency.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
-import 'package:koin/core/providers/account_provider.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/savings_provider.dart';
-import 'package:koin/core/providers/debt_provider.dart';
-import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
-import 'package:koin/core/utils/snackbar_utils.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/widgets/koin_back_button.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
-import 'package:koin/core/widgets/koin_grouped_card.dart';
-import 'package:koin/core/widgets/form_section_title.dart';
+import 'package:koin/core/core.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

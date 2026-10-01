@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/numpad.dart';
-import 'package:koin/features/categories/category_manager_screen.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
-import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/animated_counter.dart';
-import 'package:koin/features/categories/category_detail_screen.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
-import 'package:koin/core/widgets/koin_empty_state.dart';
-import 'package:koin/core/widgets/koin_screen_header.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
+import 'package:koin/core/core.dart';
+import 'package:koin/features/categories/categories.dart';
 
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});

@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/providers/savings_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/animated_counter.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
-import 'package:koin/core/widgets/koin_empty_state.dart';
-import 'package:koin/core/widgets/koin_summary_card.dart';
 
 class SavingsTab extends ConsumerStatefulWidget {
   final bool showEntranceAnimations;

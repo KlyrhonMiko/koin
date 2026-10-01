@@ -1,17 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/theme.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/portfolio/portfolio_screen.dart';
-import 'package:koin/features/dashboard/dashboard_screen.dart';
+import 'package:koin/features/dashboard/dashboard.dart';
 import 'package:koin/features/activity/activity_screen.dart';
 import 'package:koin/features/budgets/budgets_screen.dart';
-import 'package:koin/core/providers/navigation_provider.dart';
-import 'package:koin/features/transactions/add_transaction_screen.dart';
-
-import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/features/transactions/transactions.dart';
 
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});

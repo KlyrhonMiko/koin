@@ -1,21 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/widgets/date_selector_tile.dart';
-import 'package:koin/core/widgets/hero_amount_field.dart';
-import 'package:koin/core/widgets/form_section_title.dart';
-import 'package:koin/core/widgets/koin_empty_state.dart';
-import 'package:koin/core/widgets/koin_primary_button.dart';
-import 'package:koin/core/widgets/color_palette_grid.dart';
-import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
-import 'package:koin/core/widgets/koin_reorder_proxy.dart';
-import 'package:koin/core/widgets/icon_palette_grid.dart';
-import 'package:koin/core/widgets/transaction_type_selector.dart';
-import 'package:koin/core/widgets/koin_summary_card.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
-import 'package:koin/core/widgets/koin_grouped_card.dart';
-import 'package:koin/core/widgets/koin_section_header.dart';
-import 'package:koin/core/widgets/koin_screen_header.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('Consolidated Reusable Components Tests', () {
