@@ -252,7 +252,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   // ═══════════════════════════════════════════════════════
   // ACCOUNTS TAB
   // ═══════════════════════════════════════════════════════
-  Widget _buildAccountsTab(BuildContext context, dynamic currency) {
+  Widget _buildAccountsTab(BuildContext context, Currency currency) {
     final accountsAsync = ref.watch(accountProvider);
     final stats = ref.watch(dashboardStatsProvider);
 

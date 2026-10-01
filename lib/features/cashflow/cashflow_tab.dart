@@ -52,13 +52,6 @@ class CashflowScheduleTab extends ConsumerWidget {
     }
   }
 
-  int _getDaysUntil(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(date.year, date.month, date.day);
-    return target.difference(today).inDays;
-  }
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -249,7 +242,7 @@ class CashflowScheduleTab extends ConsumerWidget {
     String currencySymbol,
   ) {
     final catColor = category?.color ?? AppTheme.primaryColor(context);
-    final isOverdue = _getDaysUntil(payment.nextDate) < 0;
+    final isOverdue = payment.isOverdue();
 
     return PressableScale(
       onTap: () {

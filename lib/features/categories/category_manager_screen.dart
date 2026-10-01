@@ -301,7 +301,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
 class CategoryList extends ConsumerStatefulWidget {
   final List<TransactionCategory> categories;
   final TransactionType type;
-  final dynamic currency;
+  final Currency currency;
 
   const CategoryList({
     super.key,

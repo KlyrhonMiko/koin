@@ -386,7 +386,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   Widget _buildInteractivePreview(
     BuildContext context,
     List<Color> colors,
-    dynamic currency,
+    Currency currency,
   ) {
     final colored = _previewHasColoredBackground;
     final nameEnabled = selectedTemplateId == null;

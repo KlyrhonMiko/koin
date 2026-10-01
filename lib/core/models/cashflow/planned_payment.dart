@@ -115,6 +115,22 @@ class PlannedPayment {
     }
   }
 
+  /// Returns the number of days until the payment's next due date relative to [now].
+  int daysUntilNext([DateTime? now]) {
+    final ref = now ?? DateTime.now();
+    return DateTime(nextDate.year, nextDate.month, nextDate.day)
+        .difference(DateTime(ref.year, ref.month, ref.day))
+        .inDays;
+  }
+
+  /// Whether this recurring commitment is overdue relative to [now].
+  bool isOverdue([DateTime? now]) =>
+      frequency != PaymentFrequency.flexible && daysUntilNext(now) < 0;
+
+  /// Whether this recurring commitment is due today relative to [now].
+  bool isDueToday([DateTime? now]) =>
+      frequency != PaymentFrequency.flexible && daysUntilNext(now) == 0;
+
   PlannedPayment copyWith({
     String? id,
     String? title,

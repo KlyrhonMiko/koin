@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/repositories/category_repository.dart';
 import 'dart:developer' as dev;
 
@@ -109,3 +110,15 @@ final categoriesProvider =
     AsyncNotifierProvider<CategoryNotifier, List<TransactionCategory>>(() {
       return CategoryNotifier();
     });
+
+/// Reactive provider for monthly category budgets and progress metrics.
+final monthlyBudgetOverviewProvider =
+    Provider.family<BudgetOverview, DateTime>((ref, month) {
+  final categories = ref.watch(categoriesProvider).value ?? [];
+  final stats = ref.watch(monthlyDashboardStatsProvider(month));
+  return BudgetOverview.calculate(
+    categories: categories,
+    categorySpending: stats.categorySpending,
+    totalIncome: stats.totalIncome,
+  );
+});

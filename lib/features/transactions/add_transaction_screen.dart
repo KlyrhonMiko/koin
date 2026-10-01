@@ -593,7 +593,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget _buildHeader(
     BuildContext context,
     Color typeColor,
-    dynamic currency,
+    Currency currency,
     bool isDark,
   ) {
     final topPadding = MediaQuery.of(context).padding.top;
@@ -793,7 +793,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   Widget _buildHeroAmount(
     BuildContext context,
-    dynamic currency,
+    Currency currency,
     Color typeColor,
   ) {
     final hasAmount =

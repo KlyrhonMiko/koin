@@ -415,7 +415,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
 
   Widget _buildHeader(
     BuildContext context,
-    dynamic currency,
+    Currency currency,
     Color primaryColor,
   ) {
     final topPadding = MediaQuery.paddingOf(context).top;

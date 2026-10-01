@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/koin.dart';
 
 void main() {
@@ -748,6 +749,191 @@ void main() {
       expect(summary.activeGoalsCount, 1); // g1 active, g2 is stash, g3 is completed
       expect(summary.stashesCount, 1);
       expect(summary.completedGoalsCount, 1);
+    });
+  });
+
+  group('PlannedPayment & Debt Domain Due Status Tests', () {
+    test('PlannedPayment correctly reports daysUntilNext, isDueToday, and isOverdue', () {
+      final now = DateTime(2026, 6, 15, 10, 0);
+
+      final overduePayment = PlannedPayment(
+        id: 'pp_overdue',
+        title: 'Electricity',
+        amount: 80.0,
+        type: TransactionType.expense,
+        frequency: PaymentFrequency.monthly,
+        startDate: DateTime(2026, 1, 1),
+        nextDate: DateTime(2026, 6, 10),
+        categoryId: 'cat_util',
+        accountId: 'acc_1',
+      );
+      expect(overduePayment.daysUntilNext(now), -5);
+      expect(overduePayment.isOverdue(now), isTrue);
+      expect(overduePayment.isDueToday(now), isFalse);
+
+      final dueTodayPayment = PlannedPayment(
+        id: 'pp_today',
+        title: 'Gym',
+        amount: 50.0,
+        type: TransactionType.expense,
+        frequency: PaymentFrequency.monthly,
+        startDate: DateTime(2026, 1, 1),
+        nextDate: DateTime(2026, 6, 15, 23, 59),
+        categoryId: 'cat_gym',
+        accountId: 'acc_1',
+      );
+      expect(dueTodayPayment.daysUntilNext(now), 0);
+      expect(dueTodayPayment.isOverdue(now), isFalse);
+      expect(dueTodayPayment.isDueToday(now), isTrue);
+
+      final futurePayment = PlannedPayment(
+        id: 'pp_future',
+        title: 'Internet',
+        amount: 60.0,
+        type: TransactionType.expense,
+        frequency: PaymentFrequency.monthly,
+        startDate: DateTime(2026, 1, 1),
+        nextDate: DateTime(2026, 6, 20),
+        categoryId: 'cat_internet',
+        accountId: 'acc_1',
+      );
+      expect(futurePayment.daysUntilNext(now), 5);
+      expect(futurePayment.isOverdue(now), isFalse);
+      expect(futurePayment.isDueToday(now), isFalse);
+
+      // Flexible income is never considered overdue or due today
+      final flexibleIncome = PlannedPayment(
+        id: 'pp_flex',
+        title: 'Freelance',
+        amount: 500.0,
+        type: TransactionType.income,
+        frequency: PaymentFrequency.flexible,
+        startDate: DateTime(2026, 1, 1),
+        nextDate: DateTime(2026, 6, 1),
+        categoryId: 'cat_freelance',
+        accountId: 'acc_1',
+      );
+      expect(flexibleIncome.isOverdue(now), isFalse);
+      expect(flexibleIncome.isDueToday(now), isFalse);
+    });
+
+    test('Debt correctly resolves due date and computes overdue status for single and installment debts', () {
+      final now = DateTime(2026, 6, 15);
+
+      final singleDebtOverdue = Debt(
+        id: 'd_single_overdue',
+        personName: 'Bob',
+        amount: 500.0,
+        currentAmount: 200.0,
+        type: DebtType.iOwe,
+        startDate: DateTime(2026, 1, 1),
+        dueDate: DateTime(2026, 6, 10),
+      );
+      expect(singleDebtOverdue.resolvedDueDate, DateTime(2026, 6, 10));
+      expect(singleDebtOverdue.daysUntilDue(now), -5);
+      expect(singleDebtOverdue.isOverdue(now), isTrue);
+
+      // Settled debt is never overdue even if past due date
+      final settledDebt = singleDebtOverdue.copyWith(currentAmount: 500.0);
+      expect(settledDebt.isSettled, isTrue);
+      expect(settledDebt.isOverdue(now), isFalse);
+
+      // Installment debt resolves due date from next installment schedule
+      final installmentDebt = Debt(
+        id: 'd_installment',
+        personName: 'Charlie',
+        amount: 1200.0,
+        currentAmount: 200.0, // 2 installments paid
+        totalInstallments: 12,
+        frequency: InstallmentFrequency.monthly,
+        type: DebtType.owedToMe,
+        startDate: DateTime(2026, 4, 1),
+        // next installment is July 1 (2026, 4, 1 + 2 months = 2026, 6, 1, then next is 2026-06-01)
+      );
+      expect(installmentDebt.resolvedDueDate, DateTime(2026, 6, 1));
+      expect(installmentDebt.isOverdue(now), isTrue); // June 1 is before June 15
+    });
+  });
+
+  group('UnbudgetedChipItem Row Packing & monthlyBudgetOverviewProvider Tests', () {
+    test('UnbudgetedChipItem estimates width and optimizes row packing', () {
+      final categories = [
+        TransactionCategory(
+          id: 'c1',
+          name: 'Groceries',
+          iconCodePoint: 1,
+          colorHex: '#FF0000',
+          type: TransactionType.expense,
+        ),
+        TransactionCategory(
+          id: 'c2',
+          name: 'Entertainment and Activities',
+          iconCodePoint: 2,
+          colorHex: '#00FF00',
+          type: TransactionType.expense,
+        ),
+        TransactionCategory(
+          id: 'c3',
+          name: 'Rent',
+          iconCodePoint: 3,
+          colorHex: '#0000FF',
+          type: TransactionType.expense,
+        ),
+      ];
+
+      final packed = UnbudgetedChipItem.optimizeRowPacking(
+        unbudgeted: categories,
+        maxRowWidth: 300.0,
+        spacing: 10.0,
+      );
+
+      // Should include all categories + the Manage chip
+      expect(packed.length, 4);
+      expect(packed.any((item) => item.isManage), isTrue);
+      expect(packed.where((item) => !item.isManage).length, 3);
+      for (final item in packed) {
+        expect(item.estimatedWidth, greaterThan(0));
+      }
+    });
+
+    test('monthlyBudgetOverviewProvider computes overview reactive to categories and transactions', () async {
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(
+            InMemoryCategoryAdapter(
+              initial: [
+                TransactionCategory(
+                  id: 'cat_dining',
+                  name: 'Dining',
+                  iconCodePoint: 10,
+                  colorHex: '#FF5500',
+                  type: TransactionType.expense,
+                  budget: 300.0,
+                ),
+                TransactionCategory(
+                  id: 'cat_misc',
+                  name: 'Misc',
+                  iconCodePoint: 11,
+                  colorHex: '#888888',
+                  type: TransactionType.expense,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      await container.read(categoriesProvider.future);
+      final targetMonth = DateTime(2026, 7);
+      final overview = container.read(monthlyBudgetOverviewProvider(targetMonth));
+
+      expect(overview.budgetedCategories.length, 1);
+      expect(overview.budgetedCategories.first.name, 'Dining');
+      expect(overview.unbudgetedCategories.length, 1);
+      expect(overview.unbudgetedCategories.first.name, 'Misc');
+      expect(overview.totalBudget, 300.0);
+
+      container.dispose();
     });
   });
 }

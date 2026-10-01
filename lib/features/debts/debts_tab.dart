@@ -454,7 +454,7 @@ class DebtCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: _isDueOverdue(debt.dueDate!)
+                          color: debt.isOverdue()
                               ? Colors.redAccent
                               : AppTheme.textLightColor(
                                   context,
@@ -495,9 +495,5 @@ class DebtCard extends StatelessWidget {
     if (diff == 1) return 'Due tomorrow';
     if (diff <= 30) return '${diff}d left';
     return DateFormat.MMMd().format(dueDate);
-  }
-
-  bool _isDueOverdue(DateTime dueDate) {
-    return dueDate.isBefore(DateTime.now());
   }
 }

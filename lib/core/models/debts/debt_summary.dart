@@ -53,7 +53,7 @@ class DebtSummary {
         settled++;
       } else {
         active++;
-        if (debt.dueDate != null && debt.dueDate!.isBefore(referenceDate)) {
+        if (debt.isOverdue(referenceDate)) {
           overdue++;
         }
       }

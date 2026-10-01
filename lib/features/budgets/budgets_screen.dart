@@ -30,20 +30,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final stats = ref.watch(monthlyDashboardStatsProvider(_selectedMonth));
     final currency = settings.currency;
 
+    final overview = ref.watch(monthlyBudgetOverviewProvider(_selectedMonth));
+    final budgeted = overview.budgetedCategories;
+    final unbudgeted = overview.unbudgetedCategories;
+    final totalBudget = overview.totalBudget;
+    final totalSpent = overview.totalSpent;
+    final overallProgress = overview.overallProgress;
+    final overallPercent = overview.overallPercent;
+    final totalIncome = stats.totalIncome;
+
     return categoriesAsync.when(
       data: (categories) {
-        final totalIncome = stats.totalIncome;
-        final overview = BudgetOverview.calculate(
-          categories: categories,
-          categorySpending: stats.categorySpending,
-          totalIncome: totalIncome,
-        );
-        final budgeted = overview.budgetedCategories;
-        final unbudgeted = overview.unbudgetedCategories;
-        final totalBudget = overview.totalBudget;
-        final totalSpent = overview.totalSpent;
-        final overallProgress = overview.overallProgress;
-        final overallPercent = overview.overallPercent;
 
         return Column(
           children: [
@@ -156,102 +153,29 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               40; // 20 padding each side
                                           const spacing = 10.0;
 
-                                          double estimateWidth(String text) {
-                                            return 92.0 + (text.length * 7.5);
-                                          }
-
-                                          final pendingItems =
-                                              <Map<String, dynamic>>[];
-                                          for (
-                                            int i = 0;
-                                            i < unbudgeted.length;
-                                            i++
-                                          ) {
-                                            pendingItems.add({
-                                              'category': unbudgeted[i],
-                                              'width': estimateWidth(
-                                                unbudgeted[i].name,
-                                              ),
-                                              'isManage': false,
-                                              'originalIndex': i,
-                                            });
-                                          }
-                                          pendingItems.add({
-                                            'category': null,
-                                            'width': estimateWidth('Manage'),
-                                            'isManage': true,
-                                            'originalIndex': unbudgeted.length,
-                                          });
-
                                           final optimallyOrderedItems =
-                                              <Map<String, dynamic>>[];
-
-                                          while (pendingItems.isNotEmpty) {
-                                            // Take the first remaining item
-                                            final firstItem = pendingItems
-                                                .removeAt(0);
-                                            optimallyOrderedItems.add(
-                                              firstItem,
-                                            );
-                                            double currentX =
-                                                firstItem['width'] as double;
-
-                                            // repeatedly look ahead for the largest item that still fits on this row
-                                            bool found = true;
-                                            while (found) {
-                                              found = false;
-                                              int bestIndex = -1;
-                                              double bestWidth = -1;
-
-                                              for (
-                                                int i = 0;
-                                                i < pendingItems.length;
-                                                i++
-                                              ) {
-                                                final w =
-                                                    pendingItems[i]['width']
-                                                        as double;
-                                                if (currentX + spacing + w <=
-                                                    maxRowWidth) {
-                                                  if (w > bestWidth) {
-                                                    bestWidth = w;
-                                                    bestIndex = i;
-                                                  }
-                                                }
-                                              }
-
-                                              if (bestIndex != -1) {
-                                                final fitItem = pendingItems
-                                                    .removeAt(bestIndex);
-                                                optimallyOrderedItems.add(
-                                                  fitItem,
-                                                );
-                                                currentX += spacing + bestWidth;
-                                                found = true;
-                                              }
-                                            }
-                                          }
+                                              UnbudgetedChipItem.optimizeRowPacking(
+                                            unbudgeted: unbudgeted,
+                                            maxRowWidth: maxRowWidth,
+                                            spacing: spacing,
+                                          );
 
                                           return Wrap(
                                             spacing: spacing,
                                             runSpacing: 10,
                                             children: optimallyOrderedItems
                                                 .map((item) {
-                                                  if (item['isManage'] ==
-                                                      true) {
+                                                  if (item.isManage) {
                                                     return _buildManageChip(
                                                       context,
                                                       budgeted.isEmpty,
-                                                      item['originalIndex'],
+                                                      item.originalIndex,
                                                     );
                                                   } else {
-                                                    final category =
-                                                        item['category']
-                                                            as TransactionCategory;
                                                     return _buildUnbudgetedChip(
                                                       context,
                                                       ref,
-                                                      category,
+                                                      item.category!,
                                                       currency,
                                                       totalIncome,
                                                     );

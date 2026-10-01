@@ -204,4 +204,26 @@ class Debt {
     }
     return next;
   }
+
+  /// Resolves the effective next due date, preferring explicitly assigned [dueDate]
+  /// or installment-derived [nextDueDate] when installments are configured.
+  DateTime? get resolvedDueDate =>
+      dueDate ?? (totalInstallments > 0 ? nextDueDate : null);
+
+  /// Number of days until the debt obligation is due relative to [now].
+  int? daysUntilDue([DateTime? now]) {
+    final due = resolvedDueDate;
+    if (due == null) return null;
+    final ref = now ?? DateTime.now();
+    return DateTime(due.year, due.month, due.day)
+        .difference(DateTime(ref.year, ref.month, ref.day))
+        .inDays;
+  }
+
+  /// Whether this unsettled debt has passed its due date relative to [now].
+  bool isOverdue([DateTime? now]) {
+    if (isSettled) return false;
+    final diff = daysUntilDue(now);
+    return diff != null && diff < 0;
+  }
 }

@@ -471,7 +471,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   }
 
   // ── Category Chip with animated checkmark ──
-  Widget _buildCategoryChip(dynamic category) {
+  Widget _buildCategoryChip(TransactionCategory category) {
     final isSelected = _filter.categoryIds.contains(category.id);
     final primary = AppTheme.primaryColor(context);
 
@@ -533,7 +533,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   }
 
   // ── Account Chip with animated checkmark ──
-  Widget _buildAccountChip(dynamic account) {
+  Widget _buildAccountChip(Account account) {
     final isSelected = _filter.accountIds.contains(account.id);
     final primary = AppTheme.primaryColor(context);
 

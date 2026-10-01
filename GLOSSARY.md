@@ -56,3 +56,6 @@ A unified, strongly-typed domain timeline (`UpcomingTimeline`, `UpcomingEntry`) 
 ### Savings Summary
 An immutable domain value model (`SavingsSummary`) computing aggregate savings portfolio metrics (total saved, total target milestones, overall progress percentage, active goals, and stashes) behind a clean domain interface.
 
+### Budget Overview & Layout Packing
+A reactive domain calculation and presentation layout module (`BudgetOverview`, `UnbudgetedChipItem`, `monthlyBudgetOverviewProvider`). Consolidates category-level spending limits, dynamic income percentage resolutions, and progress metrics while encapsulating greedy row bin-packing for unbudgeted category management without leaking untyped collections or algorithms into UI build trees.
+
