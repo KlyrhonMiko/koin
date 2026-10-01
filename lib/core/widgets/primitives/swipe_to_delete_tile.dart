@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/confirmation_sheet.dart';
+import 'package:koin/core/widgets/sheets/confirmation_sheet.dart';
 
 /// Consolidated, deep swipe-to-delete Dismissible tile.
 /// Encapsulates swipe physics, drag-threshold haptics, deletion backgrounds,

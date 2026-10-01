@@ -4,9 +4,7 @@ import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/savings_provider.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/debt.dart';
+import 'package:koin/core/models/models.dart';
 
 class ForecastData {
   final double forecastedInflow;

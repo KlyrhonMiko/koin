@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/categorization/categorization_engine.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 
 /// Context provided by caller when requesting a suggestion.
 class SuggestionContext {

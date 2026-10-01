@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/models/account.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/widgets/account_item.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
+import '../cards/account_item.dart';
+import 'select_sheet.dart';
 
 /// Deep Account Picker Module: Encapsulates account fetching, balance resolution,
 /// currency formatting, and privacy toggling behind a single method call.

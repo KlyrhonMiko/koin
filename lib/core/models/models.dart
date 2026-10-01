@@ -1,12 +1,5 @@
-export 'account.dart';
-export 'category.dart';
-export 'currency.dart';
-export 'debt.dart';
-export 'debt_item.dart';
-export 'debt_repayment.dart';
-export 'planned_payment.dart';
-export 'savings_goal.dart';
-export 'savings_log.dart';
-export 'transaction.dart';
-export 'transaction_filter.dart';
-export 'bank_templates.dart';
+export 'accounts/accounts.dart';
+export 'transactions/transactions.dart';
+export 'debts/debts.dart';
+export 'cashflow/cashflow.dart';
+export 'savings/savings.dart';

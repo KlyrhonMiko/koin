@@ -1,6 +1,5 @@
 import 'dart:math';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 
 class IntentClassifier {
   // Enhanced, comprehensive training corpus mapped to typical transaction types

@@ -1,4 +1,4 @@
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 
 enum PaymentFrequency { flexible, daily, weekly, biWeekly, monthly, quarterly, yearly }
 

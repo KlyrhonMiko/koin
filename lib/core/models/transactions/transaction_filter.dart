@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'transaction.dart';
 
 class TransactionFilter {
   final String query;

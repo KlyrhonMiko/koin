@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
 import 'package:koin/core/database_helper.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/models/savings_log.dart';
+import 'package:koin/core/models/models.dart';
 
 class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
   @override

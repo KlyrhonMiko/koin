@@ -3,14 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/coach/coach_engine.dart';
 import 'package:koin/features/savings/coach/coach_copy.dart';
 import 'package:koin/features/savings/coach/stash_coach_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
 
 class SavingsCoachScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;

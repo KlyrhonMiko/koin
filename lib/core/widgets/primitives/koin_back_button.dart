@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
+import 'pressable_scale.dart';
 
 class KoinBackButton extends StatelessWidget {
   final VoidCallback? onPressed;

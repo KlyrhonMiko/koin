@@ -3,7 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/primitives/pressable_scale.dart';
 
 class DateRangeSelector extends StatefulWidget {
   final DateTimeRange? initialDateRange;

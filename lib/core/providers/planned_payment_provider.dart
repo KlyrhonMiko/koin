@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/ledger/ledger.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 

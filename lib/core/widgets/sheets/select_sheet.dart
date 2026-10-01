@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/widgets/koin_bottom_sheet_handle.dart';
+import '../primitives/koin_bottom_sheet_handle.dart';
 
 class SelectSheetItem extends StatelessWidget {
   const SelectSheetItem({

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
 
 class TransactionTypeSelector extends StatelessWidget {

@@ -1,6 +1,4 @@
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/account.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/categorization/intent_classifier.dart';
 
 class ParsedTransactionData {

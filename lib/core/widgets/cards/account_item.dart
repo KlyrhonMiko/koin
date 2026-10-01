@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:koin/core/models/account.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/animation_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
-import 'package:koin/core/widgets/animated_counter.dart';
-import 'package:koin/core/widgets/card_background_shapes.dart';
-import 'package:koin/core/widgets/pressable_scale.dart';
+import 'package:koin/core/widgets/primitives/animated_counter.dart';
+import 'package:koin/core/widgets/cards/card_background_shapes.dart';
+import 'package:koin/core/widgets/primitives/pressable_scale.dart';
 
 class AccountItem extends StatelessWidget {
   final Account account;

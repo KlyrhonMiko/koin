@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:koin/core/models/savings_goal.dart';
+import 'package:koin/core/models/models.dart';
 
 enum CoachStatus { completed, overdue, tooEarly, atRisk, ahead, onTrack, behind }
 

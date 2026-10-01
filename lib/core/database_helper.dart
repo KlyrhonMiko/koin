@@ -1,14 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/account.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/models/savings_log.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/debt.dart';
-import 'package:koin/core/models/debt_item.dart';
-import 'package:koin/core/models/debt_repayment.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 

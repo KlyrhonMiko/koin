@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
-import 'package:koin/core/models/debt.dart';
-import 'package:koin/core/models/debt_item.dart';
-import 'package:koin/core/models/debt_repayment.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
 class DebtsNotifier extends AsyncNotifier<List<Debt>> {

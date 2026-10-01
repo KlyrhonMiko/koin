@@ -1,4 +1,4 @@
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';

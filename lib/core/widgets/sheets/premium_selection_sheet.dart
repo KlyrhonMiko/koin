@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/widgets/select_sheet.dart';
+import 'select_sheet.dart';
 
-export 'package:koin/core/widgets/select_sheet.dart';
+export 'select_sheet.dart';
 
 /// Backward-compatible adapter for PremiumSelectionSheet delegating to unified select_sheet.
 class PremiumSelectionSheet {

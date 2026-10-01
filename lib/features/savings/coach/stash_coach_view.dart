@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
-import 'package:koin/core/models/savings_goal.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/coach/coach_engine.dart'; // for result
 
 enum StashSimMode { balance, time }

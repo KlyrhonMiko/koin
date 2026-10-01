@@ -1,4 +1,4 @@
-import 'package:koin/core/models/debt_item.dart';
+import 'debt_item.dart';
 
 enum InstallmentFrequency { weekly, biweekly, monthly, yearly }
 

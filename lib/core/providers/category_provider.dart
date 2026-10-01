@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
-import 'package:koin/core/models/category.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/models/models.dart';
 import 'dart:developer' as dev;
 
 class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
