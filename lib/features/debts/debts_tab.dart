@@ -138,6 +138,7 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
+          shapeStyle: SummaryShapeStyle.debts,
           margin: const EdgeInsets.only(bottom: 24),
           glowColor: cardColor,
           gradient: LinearGradient(

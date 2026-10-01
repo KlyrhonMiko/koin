@@ -214,53 +214,13 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settings.currency;
     final netChange = stats.totalIncome - stats.totalExpense;
 
-    return Container(
+    return KoinSummaryCard(
       padding: const EdgeInsets.all(24),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient(context),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
-            blurRadius: 24,
-            spreadRadius: -2,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
+      borderRadius: 28,
+      shapeStyle: SummaryShapeStyle.dashboard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Decorative circles overlay for depth
-          Positioned(
-            top: -40,
-            right: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -30,
-            left: -20,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          // Content
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -395,8 +355,6 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 

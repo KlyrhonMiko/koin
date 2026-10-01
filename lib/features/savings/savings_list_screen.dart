@@ -135,6 +135,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         : 0.0;
 
     Widget card = KoinSummaryCard(
+      shapeStyle: SummaryShapeStyle.savings,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -520,28 +520,19 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final remaining = totalBudget - totalSpent;
     final fmt = NumberFormat.currency(symbol: currency.symbol);
 
-    return Container(
+    return KoinSummaryCard(
+      shapeStyle: SummaryShapeStyle.budgets,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient(context),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+      borderRadius: 28,
       child: Column(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     Text(
                       'Monthly Budget',
                       style: TextStyle(

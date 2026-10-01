@@ -184,54 +184,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       sliver: SliverToBoxAdapter(
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient(context),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
-                blurRadius: 24,
-                spreadRadius: -2,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -40,
-                top: -40,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -30,
-                bottom: -30,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 28,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children:
+        child: KoinSummaryCard(
+          shapeStyle: SummaryShapeStyle.analysis,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children:
                       [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -291,10 +249,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             duration: 250.ms,
                             curve: Curves.easeOutCubic,
                           ),
-                ),
-              ),
-            ],
-          ),
+                  ),
         ),
       ),
     );

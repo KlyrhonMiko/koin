@@ -172,55 +172,19 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required Color color,
     required NumberFormat currencyFormat,
   }) {
-    return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color, color.withValues(alpha: 0.85)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return KoinSummaryCard(
+          shapeStyle: SummaryShapeStyle.debtDetails,
+          borderRadius: 28,
+          padding: const EdgeInsets.all(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color, color.withValues(alpha: 0.85)],
           ),
-          child: Stack(
+          glowColor: color,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Background circle decorations
-              Positioned(
-                right: -20,
-                top: -20,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -40,
-                left: -20,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
                     // Person Name & Badge
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,9 +314,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
+
         )
         .animate()
         .fadeIn(duration: 400.ms)
