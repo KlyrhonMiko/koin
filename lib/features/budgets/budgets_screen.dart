@@ -88,238 +88,286 @@ class BudgetsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Summary card
-                            if (budgeted.isNotEmpty)
-                              _buildSummaryCard(
-                                    context,
-                                    totalBudget: totalBudget,
-                                    totalSpent: totalSpent,
-                                    progress: overallProgress,
-                                    percent: overallPercent,
-                                    currency: currency,
-                                  ),
-
-                            if (budgeted.isNotEmpty) const Gap(28),
-
-                            // Active budgets section
-                            if (budgeted.isNotEmpty) ...[
-                              Text(
-                                'Active Budgets',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textColor(context),
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const Gap(12),
-                              ...budgeted.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final category = entry.value;
-                                final spent =
-                                    stats.categorySpending[category.id] ?? 0;
-                                return _buildBudgetCard(
-                                      context,
-                                      ref,
-                                      category: category,
-                                      spent: spent,
-                                      currency: currency,
-                                      index: index,
-                                      resolvedBudget: resolvedBudget(category),
-                                      totalIncome: totalIncome,
-                                    );
-                              }),
-                              if (unbudgeted.isNotEmpty) const Gap(24),
-                            ],
-
-                            // Unbudgeted categories section
-                            if (unbudgeted.isNotEmpty) ...[
-                              Text(
-                                budgeted.isEmpty
-                                    ? 'Set Monthly Budgets'
-                                    : 'Add More Budgets',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textColor(context),
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              if (budgeted.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Text(
-                                    'Tap a category to set a spending limit',
-                                    style: TextStyle(
-                                      color: AppTheme.textLightColor(context),
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              const Gap(12),
-                              Builder(
-                                builder: (context) {
-                                  final screenWidth = MediaQuery.of(
-                                    context,
-                                  ).size.width;
-                                  final maxRowWidth =
-                                      screenWidth - 40; // 20 padding each side
-                                  const spacing = 10.0;
-
-                                  double estimateWidth(String text) {
-                                    return 92.0 + (text.length * 7.5);
-                                  }
-
-                                  final pendingItems = <Map<String, dynamic>>[];
-                                  for (int i = 0; i < unbudgeted.length; i++) {
-                                    pendingItems.add({
-                                      'category': unbudgeted[i],
-                                      'width': estimateWidth(
-                                        unbudgeted[i].name,
-                                      ),
-                                      'isManage': false,
-                                      'originalIndex': i,
-                                    });
-                                  }
-                                  pendingItems.add({
-                                    'category': null,
-                                    'width': estimateWidth('Manage'),
-                                    'isManage': true,
-                                    'originalIndex': unbudgeted.length,
-                                  });
-
-                                  final optimallyOrderedItems =
-                                      <Map<String, dynamic>>[];
-
-                                  while (pendingItems.isNotEmpty) {
-                                    // Take the first remaining item
-                                    final firstItem = pendingItems.removeAt(0);
-                                    optimallyOrderedItems.add(firstItem);
-                                    double currentX =
-                                        firstItem['width'] as double;
-
-                                    // repeatedly look ahead for the largest item that still fits on this row
-                                    bool found = true;
-                                    while (found) {
-                                      found = false;
-                                      int bestIndex = -1;
-                                      double bestWidth = -1;
-
-                                      for (
-                                        int i = 0;
-                                        i < pendingItems.length;
-                                        i++
-                                      ) {
-                                        final w =
-                                            pendingItems[i]['width'] as double;
-                                        if (currentX + spacing + w <=
-                                            maxRowWidth) {
-                                          if (w > bestWidth) {
-                                            bestWidth = w;
-                                            bestIndex = i;
-                                          }
-                                        }
-                                      }
-
-                                      if (bestIndex != -1) {
-                                        final fitItem = pendingItems.removeAt(
-                                          bestIndex,
-                                        );
-                                        optimallyOrderedItems.add(fitItem);
-                                        currentX += spacing + bestWidth;
-                                        found = true;
-                                      }
-                                    }
-                                  }
-
-                                  return Wrap(
-                                    spacing: spacing,
-                                    runSpacing: 10,
-                                    children: optimallyOrderedItems.map((item) {
-                                      if (item['isManage'] == true) {
-                                        return _buildManageChip(
-                                          context,
-                                          budgeted.isEmpty,
-                                          item['originalIndex'],
-                                        );
-                                      } else {
-                                        final category =
-                                            item['category']
-                                                as TransactionCategory;
-                                        return _buildUnbudgetedChip(
-                                              context,
-                                              ref,
-                                              category,
-                                              currency,
-                                              totalIncome,
-                                            );
-                                      }
-                                    }).toList().animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
-                                  );
-                                },
-                              ),
-                            ],
-
-                            // If unbudgeted is empty but we have expense categories, show the Manage button
-                            if (unbudgeted.isEmpty &&
-                                categories
-                                    .where(
-                                      (c) => c.type == TransactionType.expense,
-                                    )
-                                    .isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Center(
-                                  child: TextButton.icon(
-                                    onPressed: () {
-                                      HapticService.light();
-                                      Navigator.push(
+                          children:
+                              [
+                                    // Summary card
+                                    if (budgeted.isNotEmpty)
+                                      _buildSummaryCard(
                                         context,
-                                        SlideUpRoute(
-                                          page: const CategoryManagerScreen(),
+                                        totalBudget: totalBudget,
+                                        totalSpent: totalSpent,
+                                        progress: overallProgress,
+                                        percent: overallPercent,
+                                        currency: currency,
+                                      ),
+
+                                    if (budgeted.isNotEmpty) const Gap(28),
+
+                                    // Active budgets section
+                                    if (budgeted.isNotEmpty) ...[
+                                      Text(
+                                        'Active Budgets',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.textColor(context),
+                                          letterSpacing: -0.3,
                                         ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.settings_outlined,
-                                      size: 16,
-                                    ),
-                                    label: const Text('Manage Categories'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppTheme.textLightColor(
-                                        context,
                                       ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
+                                      const Gap(12),
+                                      ...budgeted.asMap().entries.map((entry) {
+                                        final index = entry.key;
+                                        final category = entry.value;
+                                        final spent =
+                                            stats.categorySpending[category
+                                                .id] ??
+                                            0;
+                                        return _buildBudgetCard(
+                                          context,
+                                          ref,
+                                          category: category,
+                                          spent: spent,
+                                          currency: currency,
+                                          index: index,
+                                          resolvedBudget: resolvedBudget(
+                                            category,
+                                          ),
+                                          totalIncome: totalIncome,
+                                        );
+                                      }),
+                                      if (unbudgeted.isNotEmpty) const Gap(24),
+                                    ],
+
+                                    // Unbudgeted categories section
+                                    if (unbudgeted.isNotEmpty) ...[
+                                      Text(
+                                        budgeted.isEmpty
+                                            ? 'Set Monthly Budgets'
+                                            : 'Add More Budgets',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.textColor(context),
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      if (budgeted.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 6,
+                                          ),
+                                          child: Text(
+                                            'Tap a category to set a spending limit',
+                                            style: TextStyle(
+                                              color: AppTheme.textLightColor(
+                                                context,
+                                              ),
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      const Gap(12),
+                                      Builder(
+                                        builder: (context) {
+                                          final screenWidth = MediaQuery.of(
+                                            context,
+                                          ).size.width;
+                                          final maxRowWidth =
+                                              screenWidth -
+                                              40; // 20 padding each side
+                                          const spacing = 10.0;
+
+                                          double estimateWidth(String text) {
+                                            return 92.0 + (text.length * 7.5);
+                                          }
+
+                                          final pendingItems =
+                                              <Map<String, dynamic>>[];
+                                          for (
+                                            int i = 0;
+                                            i < unbudgeted.length;
+                                            i++
+                                          ) {
+                                            pendingItems.add({
+                                              'category': unbudgeted[i],
+                                              'width': estimateWidth(
+                                                unbudgeted[i].name,
+                                              ),
+                                              'isManage': false,
+                                              'originalIndex': i,
+                                            });
+                                          }
+                                          pendingItems.add({
+                                            'category': null,
+                                            'width': estimateWidth('Manage'),
+                                            'isManage': true,
+                                            'originalIndex': unbudgeted.length,
+                                          });
+
+                                          final optimallyOrderedItems =
+                                              <Map<String, dynamic>>[];
+
+                                          while (pendingItems.isNotEmpty) {
+                                            // Take the first remaining item
+                                            final firstItem = pendingItems
+                                                .removeAt(0);
+                                            optimallyOrderedItems.add(
+                                              firstItem,
+                                            );
+                                            double currentX =
+                                                firstItem['width'] as double;
+
+                                            // repeatedly look ahead for the largest item that still fits on this row
+                                            bool found = true;
+                                            while (found) {
+                                              found = false;
+                                              int bestIndex = -1;
+                                              double bestWidth = -1;
+
+                                              for (
+                                                int i = 0;
+                                                i < pendingItems.length;
+                                                i++
+                                              ) {
+                                                final w =
+                                                    pendingItems[i]['width']
+                                                        as double;
+                                                if (currentX + spacing + w <=
+                                                    maxRowWidth) {
+                                                  if (w > bestWidth) {
+                                                    bestWidth = w;
+                                                    bestIndex = i;
+                                                  }
+                                                }
+                                              }
+
+                                              if (bestIndex != -1) {
+                                                final fitItem = pendingItems
+                                                    .removeAt(bestIndex);
+                                                optimallyOrderedItems.add(
+                                                  fitItem,
+                                                );
+                                                currentX += spacing + bestWidth;
+                                                found = true;
+                                              }
+                                            }
+                                          }
+
+                                          return Wrap(
+                                            spacing: spacing,
+                                            runSpacing: 10,
+                                            children: optimallyOrderedItems
+                                                .map((item) {
+                                                  if (item['isManage'] ==
+                                                      true) {
+                                                    return _buildManageChip(
+                                                      context,
+                                                      budgeted.isEmpty,
+                                                      item['originalIndex'],
+                                                    );
+                                                  } else {
+                                                    final category =
+                                                        item['category']
+                                                            as TransactionCategory;
+                                                    return _buildUnbudgetedChip(
+                                                      context,
+                                                      ref,
+                                                      category,
+                                                      currency,
+                                                      totalIncome,
+                                                    );
+                                                  }
+                                                })
+                                                .toList()
+                                                .animate(interval: 40.ms)
+                                                .fade(
+                                                  duration: 250.ms,
+                                                  curve: Curves.easeOutCubic,
+                                                )
+                                                .scale(
+                                                  begin: const Offset(
+                                                    0.95,
+                                                    0.95,
+                                                  ),
+                                                  duration: 250.ms,
+                                                  curve: Curves.easeOutCubic,
+                                                ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+
+                                    // If unbudgeted is empty but we have expense categories, show the Manage button
+                                    if (unbudgeted.isEmpty &&
+                                        categories
+                                            .where(
+                                              (c) =>
+                                                  c.type ==
+                                                  TransactionType.expense,
+                                            )
+                                            .isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 12),
+                                        child: Center(
+                                          child: TextButton.icon(
+                                            onPressed: () {
+                                              HapticService.light();
+                                              Navigator.push(
+                                                context,
+                                                SlideUpRoute(
+                                                  page:
+                                                      const CategoryManagerScreen(),
+                                                ),
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.settings_outlined,
+                                              size: 16,
+                                            ),
+                                            label: const Text(
+                                              'Manage Categories',
+                                            ),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  AppTheme.textLightColor(
+                                                    context,
+                                                  ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 12,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    const Gap(32),
+                                    Center(
+                                      child: Container(
+                                        width: 48,
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.dividerColor(
+                                            context,
+                                          ).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
+                                        ),
                                       ),
                                     ),
+                                    const Gap(64),
+                                  ]
+                                  .animate(interval: 40.ms)
+                                  .fade(
+                                    duration: 250.ms,
+                                    curve: Curves.easeOutCubic,
+                                  )
+                                  .scale(
+                                    begin: const Offset(0.95, 0.95),
+                                    duration: 250.ms,
+                                    curve: Curves.easeOutCubic,
                                   ),
-                                ),
-                              ),
-                            const Gap(32),
-                            Center(
-                              child: Container(
-                                width: 48,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.dividerColor(
-                                    context,
-                                  ).withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            const Gap(64),
-                          ]
-                          .animate(interval: 40.ms)
-                          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                          .scale(
-                            begin: const Offset(0.95, 0.95),
-                            duration: 250.ms,
-                            curve: Curves.easeOutCubic,
-                          ),
                         ),
                       ),
                     ),
@@ -365,9 +413,7 @@ class BudgetsScreen extends ConsumerWidget {
             gradient: AppTheme.primaryGradient(context),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor(
-                  context,
-                ).withValues(alpha: 0.3),
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -378,15 +424,10 @@ class BudgetsScreen extends ConsumerWidget {
               HapticService.medium();
               Navigator.push(
                 context,
-                SlideUpRoute(
-                  page: const CategoryDetailScreen(),
-                ),
+                SlideUpRoute(page: const CategoryDetailScreen()),
               );
             },
-            icon: const Icon(
-              Icons.add_rounded,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.add_rounded, color: Colors.white),
             label: const Text(
               'Create Category',
               style: TextStyle(

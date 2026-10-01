@@ -76,9 +76,7 @@ class ConfirmationSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle
-          const KoinBottomSheetHandle(
-            padding: EdgeInsets.only(bottom: 32),
-          ),
+          const KoinBottomSheetHandle(padding: EdgeInsets.only(bottom: 32)),
 
           // Icon with glow
           Container(

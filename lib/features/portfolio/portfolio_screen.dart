@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -26,7 +25,13 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   final GlobalKey _headerKey = GlobalKey();
 
   // Add more tabs here in the future (e.g., 'Investments')
-  static const _tabs = ['Accounts', 'Goals', 'Credit & IOUs', 'Planned', 'Incomes'];
+  static const _tabs = [
+    'Accounts',
+    'Goals',
+    'Credit & IOUs',
+    'Planned',
+    'Incomes',
+  ];
 
   @override
   void initState() {
@@ -36,7 +41,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     _tabController = TabController(
       length: _tabs.length,
       vsync: this,
-      initialIndex: (initialTab >= 0 && initialTab < _tabs.length) ? initialTab : 0,
+      initialIndex: (initialTab >= 0 && initialTab < _tabs.length)
+          ? initialTab
+          : 0,
     );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -55,7 +62,6 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     _tabController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +84,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
         if (_tabController.indexIsChanging) {
           HapticService.selection();
         } else {
-          ref.read(portfolioTabProvider.notifier).setIndex(_tabController.index);
+          ref
+              .read(portfolioTabProvider.notifier)
+              .setIndex(_tabController.index);
         }
       });
     }
@@ -109,8 +117,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                 animationSessionKey: _animationSessionKey,
                 showEntranceAnimations: _showEntranceAnimations,
               ),
-              PlannedPaymentsTab(showEntranceAnimations: _showEntranceAnimations),
-              RecurringIncomesTab(showEntranceAnimations: _showEntranceAnimations),
+              PlannedPaymentsTab(
+                showEntranceAnimations: _showEntranceAnimations,
+              ),
+              RecurringIncomesTab(
+                showEntranceAnimations: _showEntranceAnimations,
+              ),
             ],
           ),
         ),
@@ -413,8 +425,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   // ═══════════════════════════════════════════════════════
   // SAVINGS TAB
   // ═══════════════════════════════════════════════════════
-  
-  
+
   // ═══════════════════════════════════════════════════════
   // FULL EMPTY STATE (centered, for empty tabs)
   // ═══════════════════════════════════════════════════════
@@ -437,64 +448,65 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                        padding: const EdgeInsets.all(36),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
+                children:
+                    [
+                          Container(
+                            padding: const EdgeInsets.all(36),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceColor(context),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryColor(
+                                    context,
+                                  ).withValues(alpha: 0.1),
+                                  blurRadius: 40,
+                                  spreadRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              icon,
+                              size: 56,
                               color: AppTheme.primaryColor(
                                 context,
-                              ).withValues(alpha: 0.1),
-                              blurRadius: 40,
-                              spreadRadius: 10,
+                              ).withValues(alpha: 0.6),
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: AppTheme.textColor(context),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 36),
+                          KoinPrimaryButton(
+                            label: buttonLabel,
+                            icon: Icons.add_rounded,
+                            onPressed: onTap,
+                          ),
+                        ]
+                        .animate(interval: 40.ms)
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                        child: Icon(
-                          icon,
-                          size: 56,
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.6),
-                        ),
-                      ),
-                  const SizedBox(height: 24),
-                  Text(
-                        title,
-                        style: TextStyle(
-                          color: AppTheme.textColor(context),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                  const SizedBox(height: 8),
-                  Text(
-                        subtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      ),
-                  const SizedBox(height: 36),
-                  KoinPrimaryButton(
-                    label: buttonLabel,
-                    icon: Icons.add_rounded,
-                    onPressed: onTap,
-                  ),
-                ]
-                .animate(interval: 40.ms)
-                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                .scale(
-                  begin: const Offset(0.95, 0.95),
-                  duration: 250.ms,
-                  curve: Curves.easeOutCubic,
-                ),
               ),
             ),
           ),
@@ -506,12 +518,11 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   // ═══════════════════════════════════════════════════════
   // SAVINGS HERO CARD (radial gauge summary)
   // ═══════════════════════════════════════════════════════
-  
-  
+
   // ═══════════════════════════════════════════════════════
   // GOAL CARD
   // ═══════════════════════════════════════════════════════
-  }
+}
 
 // ═══════════════════════════════════════════════════════
 // RADIAL PROGRESS PAINTER

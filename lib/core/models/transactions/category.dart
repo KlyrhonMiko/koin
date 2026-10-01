@@ -69,8 +69,8 @@ class TransactionCategory {
       name: map['name'],
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
-      type: map['type'] != null 
-          ? TransactionType.values.byName(map['type']) 
+      type: map['type'] != null
+          ? TransactionType.values.byName(map['type'])
           : TransactionType.expense,
       budget: map['budget']?.toDouble(),
       budgetPercent: map['budgetPercent']?.toDouble(),

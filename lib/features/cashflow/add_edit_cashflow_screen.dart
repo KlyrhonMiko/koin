@@ -20,7 +20,8 @@ class AddEditCashflowScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddEditCashflowScreen> createState() => _AddEditCashflowScreenState();
+  ConsumerState<AddEditCashflowScreen> createState() =>
+      _AddEditCashflowScreenState();
 }
 
 class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
@@ -49,7 +50,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     _titleController = TextEditingController(text: widget.payment?.title ?? '');
     _amountController = TextEditingController(
       text: widget.payment != null
-          ? widget.payment!.amount.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '')
+          ? widget.payment!.amount
+                .toStringAsFixed(2)
+                .replaceAll(RegExp(r'\.00$'), '')
           : '',
     );
     _notesController = TextEditingController(text: widget.payment?.notes ?? '');
@@ -76,7 +79,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   void _onTitleChanged() {
     if (widget.payment != null) return;
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 400), _runAutoCategorization);
+    _debounceTimer = Timer(
+      const Duration(milliseconds: 400),
+      _runAutoCategorization,
+    );
   }
 
   Future<void> _runAutoCategorization() async {
@@ -102,7 +108,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         if (!suggestion.isTransfer) {
           final categories = ref.read(categoriesProvider).value ?? [];
           final matchingCat = categories
-              .where((c) => c.id == suggestion.categoryId && c.type == _selectedType)
+              .where(
+                (c) => c.id == suggestion.categoryId && c.type == _selectedType,
+              )
               .firstOrNull;
 
           if (matchingCat != null) {
@@ -227,7 +235,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       endDate: _endDate,
       nextDate: nextDate,
       frequency: _selectedFrequency,
-      notes: _notesController.text.isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.isEmpty
+          ? null
+          : _notesController.text.trim(),
       isAutoProcess: _isAutoProcess,
     );
 
@@ -241,13 +251,15 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           .updatePlannedPayment(newPayment);
     }
 
-    ref.read(categorySuggesterProvider).recordFeedback(
-      text: _titleController.text,
-      amount: amount,
-      type: _selectedType,
-      originAccountId: _selectedAccountId!,
-      destinationId: _selectedCategoryId!,
-    );
+    ref
+        .read(categorySuggesterProvider)
+        .recordFeedback(
+          text: _titleController.text,
+          amount: amount,
+          type: _selectedType,
+          originAccountId: _selectedAccountId!,
+          destinationId: _selectedCategoryId!,
+        );
 
     if (mounted) {
       Navigator.pop(context);
@@ -275,8 +287,6 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       }
     }
   }
-
-
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -328,7 +338,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 letterSpacing: -0.5,
               ),
               decoration: InputDecoration(
-                hintText: _isIncome ? 'Name your income (e.g. Salary)' : 'Name your subscription / bill',
+                hintText: _isIncome
+                    ? 'Name your income (e.g. Salary)'
+                    : 'Name your subscription / bill',
                 border: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -386,7 +398,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       ref: ref,
       selectedAccountId: _selectedAccountId,
       title: 'Account',
-      subtitle: _isIncome ? 'Choose receiving account' : 'Choose payment account',
+      subtitle: _isIncome
+          ? 'Choose receiving account'
+          : 'Choose payment account',
     );
     if (id != null && mounted) {
       setState(() => _selectedAccountId = id);
@@ -420,66 +434,74 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                     const FormSectionTitle(title: 'Repeats'),
                     const Gap(12),
                     SizedBox(
-                      height: 60,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        clipBehavior: Clip.none,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        itemCount: PaymentFrequency.values.length,
-                        itemBuilder: (context, index) {
-                          final f = PaymentFrequency.values[index];
-                          final isSelected = _selectedFrequency == f;
-                          return GestureDetector(
-                            onTap: () {
-                              HapticService.light();
-                              setState(() => _selectedFrequency = f);
+                          height: 60,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            clipBehavior: Clip.none,
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            itemCount: PaymentFrequency.values.length,
+                            itemBuilder: (context, index) {
+                              final f = PaymentFrequency.values[index];
+                              final isSelected = _selectedFrequency == f;
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticService.light();
+                                  setState(() => _selectedFrequency = f);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.only(right: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? primaryColor
+                                        : AppTheme.surfaceColor(context),
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.transparent
+                                          : AppTheme.dividerColor(context),
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: primaryColor.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: Text(
+                                    f.name[0].toUpperCase() +
+                                        f.name.substring(1),
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppTheme.textColor(context),
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              );
                             },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.only(right: 12),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? primaryColor
-                                    : AppTheme.surfaceColor(context),
-                                borderRadius: BorderRadius.circular(100),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : AppTheme.dividerColor(context),
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: primaryColor.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : [],
-                              ),
-                              child: Text(
-                                f.name[0].toUpperCase() + f.name.substring(1),
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textColor(context),
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                          ),
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(32),
 
                     AnimatedSize(
@@ -487,137 +509,173 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                       curve: Curves.easeOutCubic,
                       alignment: Alignment.topCenter,
                       child: _selectedFrequency != PaymentFrequency.flexible
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const FormSectionTitle(title: 'Timeline'),
-                              const Gap(12),
-                              DateSelectorTile(
-                                label: _selectedFrequency == PaymentFrequency.flexible
-                                    ? 'Start Date'
-                                    : (_isIncome ? 'Next Expected Date' : 'Next Payment Date'),
-                                date: _startDate,
-                                icon: Icons.calendar_month_rounded,
-                                primaryColor: primaryColor,
-                                onDateSelected: (dt) => setState(() => _startDate = dt),
-                              ),
-                              const Gap(32),
-                            ].animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
-                          )
-                        : const SizedBox.shrink(),
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children:
+                                  [
+                                        const FormSectionTitle(
+                                          title: 'Timeline',
+                                        ),
+                                        const Gap(12),
+                                        DateSelectorTile(
+                                          label:
+                                              _selectedFrequency ==
+                                                  PaymentFrequency.flexible
+                                              ? 'Start Date'
+                                              : (_isIncome
+                                                    ? 'Next Expected Date'
+                                                    : 'Next Payment Date'),
+                                          date: _startDate,
+                                          icon: Icons.calendar_month_rounded,
+                                          primaryColor: primaryColor,
+                                          onDateSelected: (dt) =>
+                                              setState(() => _startDate = dt),
+                                        ),
+                                        const Gap(32),
+                                      ]
+                                      .animate(interval: 40.ms)
+                                      .fade(
+                                        duration: 250.ms,
+                                        curve: Curves.easeOutCubic,
+                                      )
+                                      .scale(
+                                        begin: const Offset(0.95, 0.95),
+                                        duration: 250.ms,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
 
                     // Details Section
                     const FormSectionTitle(title: 'Details'),
                     const Gap(12),
                     Column(
-                      children: [
-                        // Category Picker
-                        Builder(
-                          builder: (context) {
-                            Widget child = SelectionTile(
-                              fallbackIcon: Icons.category_rounded,
-                              label: 'Category',
-                              selectedName: categoriesState.when(
-                                data: (categories) => categories
-                                    .where((c) => c.id == _selectedCategoryId)
+                          children: [
+                            // Category Picker
+                            Builder(
+                              builder: (context) {
+                                Widget child = SelectionTile(
+                                  fallbackIcon: Icons.category_rounded,
+                                  label: 'Category',
+                                  selectedName: categoriesState.when(
+                                    data: (categories) => categories
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.name,
+                                    loading: () => null,
+                                    error: (_, stackTrace) => null,
+                                  ),
+                                  selectedColor: categoriesState.when(
+                                    data: (categories) => categories
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.color,
+                                    loading: () => null,
+                                    error: (_, stackTrace) => null,
+                                  ),
+                                  selectedIconCodePoint: categoriesState.when(
+                                    data: (categories) => categories
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.iconCodePoint,
+                                    loading: () => null,
+                                    error: (_, stackTrace) => null,
+                                  ),
+                                  placeholder: 'Select Category',
+                                  onTap: () => _openCategoryPicker(context),
+                                );
+
+                                if (_autoCatKey > 0) {
+                                  child = child
+                                      .animate(key: ValueKey(_autoCatKey))
+                                      .shimmer(
+                                        duration: 400.ms,
+                                        color: primaryColor.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      )
+                                      .scale(
+                                        duration: 150.ms,
+                                        curve: Curves.easeOut,
+                                        begin: const Offset(1, 1),
+                                        end: const Offset(1.02, 1.02),
+                                      )
+                                      .then()
+                                      .scale(
+                                        duration: 250.ms,
+                                        curve: Curves.easeOutBack,
+                                        begin: const Offset(1.02, 1.02),
+                                        end: const Offset(1, 1),
+                                      );
+                                }
+                                return child;
+                              },
+                            ),
+                            const Gap(12),
+                            // Account Picker
+                            SelectionTile(
+                              fallbackIcon:
+                                  Icons.account_balance_wallet_rounded,
+                              label: _isIncome
+                                  ? 'Receiving Account'
+                                  : 'Payment Account',
+                              selectedName: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.name,
                                 loading: () => null,
                                 error: (_, stackTrace) => null,
                               ),
-                              selectedColor: categoriesState.when(
-                                data: (categories) => categories
-                                    .where((c) => c.id == _selectedCategoryId)
+                              selectedColor: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.color,
                                 loading: () => null,
                                 error: (_, stackTrace) => null,
                               ),
-                              selectedIconCodePoint: categoriesState.when(
-                                data: (categories) => categories
-                                    .where((c) => c.id == _selectedCategoryId)
+                              selectedIconCodePoint: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.iconCodePoint,
                                 loading: () => null,
                                 error: (_, stackTrace) => null,
                               ),
-                              placeholder: 'Select Category',
-                              onTap: () => _openCategoryPicker(context),
-                            );
-
-                            if (_autoCatKey > 0) {
-                              child = child
-                                  .animate(key: ValueKey(_autoCatKey))
-                                  .shimmer(
-                                    duration: 400.ms,
-                                    color: primaryColor.withValues(alpha: 0.2),
-                                  )
-                                  .scale(
-                                    duration: 150.ms,
-                                    curve: Curves.easeOut,
-                                    begin: const Offset(1, 1),
-                                    end: const Offset(1.02, 1.02),
-                                  )
-                                  .then()
-                                  .scale(
-                                    duration: 250.ms,
-                                    curve: Curves.easeOutBack,
-                                    begin: const Offset(1.02, 1.02),
-                                    end: const Offset(1, 1),
-                                  );
-                            }
-                            return child;
-                          },
+                              selectedLogoAsset: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
+                                    .firstOrNull
+                                    ?.logoAsset,
+                                loading: () => null,
+                                error: (_, stackTrace) => null,
+                              ),
+                              placeholder: 'Select Account',
+                              onTap: () => _openAccountPicker(context),
+                            ),
+                            const Gap(12),
+                            // Auto Process Toggle
+                            _buildAutoProcessRow(context, primaryColor),
+                            const Gap(12),
+                            // Notes field
+                            _buildNotesInput(context),
+                          ],
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                        const Gap(12),
-                        // Account Picker
-                        SelectionTile(
-                          fallbackIcon: Icons.account_balance_wallet_rounded,
-                          label: _isIncome ? 'Receiving Account' : 'Payment Account',
-                          selectedName: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.name,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedColor: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.color,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedIconCodePoint: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.iconCodePoint,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedLogoAsset: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.logoAsset,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          placeholder: 'Select Account',
-                          onTap: () => _openAccountPicker(context),
-                        ),
-                        const Gap(12),
-                        // Auto Process Toggle
-                        _buildAutoProcessRow(context, primaryColor),
-                        const Gap(12),
-                        // Notes field
-                        _buildNotesInput(context),
-                      ],
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -626,41 +684,52 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: PressableScale(
-          onTap: _savePayment,
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+      floatingActionButton:
+          Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: PressableScale(
+                  onTap: _savePayment,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryColor,
+                          primaryColor.withValues(alpha: 0.85),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    child: Text(
+                      isEditing ? 'Save Changes' : 'Create $_domainNoun',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Text(
-              isEditing ? 'Save Changes' : 'Create $_domainNoun',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 0.5,
+              )
+              .animate()
+              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+              .scale(
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: Curves.easeOutCubic,
               ),
-            ),
-          ),
-        ),
-      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );
   }
 
@@ -819,5 +888,3 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     );
   }
 }
-
-

@@ -317,7 +317,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-
   Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {
     final confirmed = await _showConfirmationBottomSheet(
       context,
@@ -606,99 +605,100 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            const KoinBottomSheetHandle(
-              padding: EdgeInsets.only(bottom: 24),
-            ),
-            Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color:
-                        (isDestructive
-                                ? Colors.red
-                                : AppTheme.primaryColor(context))
-                            .withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isDestructive
-                        ? Colors.red
-                        : AppTheme.primaryColor(context),
-                    size: 32,
-                  ),
-                ),
-            const SizedBox(height: 20),
-            Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-            const SizedBox(height: 12),
-            Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppTheme.textLightColor(context),
-                    height: 1.5,
-                  ),
-                ),
-            const SizedBox(height: 32),
-            Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+          children:
+              [
+                    const KoinBottomSheetHandle(
+                      padding: EdgeInsets.only(bottom: 24),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color:
+                            (isDestructive
+                                    ? Colors.red
+                                    : AppTheme.primaryColor(context))
+                                .withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        color: isDestructive
+                            ? Colors.red
+                            : AppTheme.primaryColor(context),
+                        size: 32,
                       ),
                     ),
-                    const Gap(16),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: isDestructive
-                              ? Colors.red
-                              : AppTheme.primaryColor(context),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          confirmText,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                          ),
-                        ),
+                    const SizedBox(height: 20),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ],
-                ),
-          ]
-          .animate(interval: 40.ms)
-          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-          .scale(
-            begin: const Offset(0.95, 0.95),
-            duration: 250.ms,
-            curve: Curves.easeOutCubic,
-          ),
+                    const SizedBox(height: 12),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppTheme.textLightColor(context),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Gap(16),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: isDestructive
+                                  ? Colors.red
+                                  : AppTheme.primaryColor(context),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              confirmText,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ]
+                  .animate(interval: 40.ms)
+                  .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                  .scale(
+                    begin: const Offset(0.95, 0.95),
+                    duration: 250.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
         ),
       ),
     );
@@ -760,61 +760,61 @@ class SettingsScreen extends ConsumerWidget {
                       child: ListTile(
                         onTap: () {
                           HapticService.light();
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setCurrency(currency);
-                        Navigator.pop(context);
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppTheme.primaryColor(context)
-                              : AppTheme.dividerColor(context),
-                          borderRadius: BorderRadius.circular(10),
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setCurrency(currency);
+                          Navigator.pop(context);
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Text(
-                          currency.symbol,
-                          style: TextStyle(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : AppTheme.textColor(context),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                                ? AppTheme.primaryColor(context)
+                                : AppTheme.dividerColor(context),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            currency.symbol,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textColor(context),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                      title: Text(
-                        currency.name,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w600,
-                          color: isSelected
-                              ? AppTheme.primaryColor(context)
-                              : AppTheme.textColor(context),
-                          fontSize: 15,
+                        title: Text(
+                          currency.name,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? AppTheme.primaryColor(context)
+                                : AppTheme.textColor(context),
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
-                      subtitle: Text(
-                        currency.code,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textLightColor(context),
+                        subtitle: Text(
+                          currency.code,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textLightColor(context),
+                          ),
                         ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle_rounded,
-                              color: AppTheme.primaryColor(context),
-                              size: 22,
-                            )
-                          : null,
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle_rounded,
+                                color: AppTheme.primaryColor(context),
+                                size: 22,
+                              )
+                            : null,
                       ),
                     ),
                   );
@@ -858,9 +858,7 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const KoinBottomSheetHandle(
-              padding: EdgeInsets.only(bottom: 24),
-            ),
+            const KoinBottomSheetHandle(padding: EdgeInsets.only(bottom: 24)),
             Text(
               'App Appearance',
               style: TextStyle(
@@ -881,10 +879,10 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const Gap(32),
             Row(
-              children: [
-                Expanded(
-                  child:
-                      _buildThemeOption(
+              children:
+                  [
+                        Expanded(
+                          child: _buildThemeOption(
                             context,
                             ref,
                             title: 'System',
@@ -892,11 +890,10 @@ class SettingsScreen extends ConsumerWidget {
                             mode: ThemeMode.system,
                             isSelected: currentMode == ThemeMode.system,
                           ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child:
-                      _buildThemeOption(
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildThemeOption(
                             context,
                             ref,
                             title: 'Light',
@@ -904,11 +901,10 @@ class SettingsScreen extends ConsumerWidget {
                             mode: ThemeMode.light,
                             isSelected: currentMode == ThemeMode.light,
                           ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child:
-                      _buildThemeOption(
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildThemeOption(
                             context,
                             ref,
                             title: 'Dark',
@@ -916,15 +912,15 @@ class SettingsScreen extends ConsumerWidget {
                             mode: ThemeMode.dark,
                             isSelected: currentMode == ThemeMode.dark,
                           ),
-                ),
-              ]
-              .animate(interval: 40.ms)
-              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-              .scale(
-                begin: const Offset(0.95, 0.95),
-                duration: 250.ms,
-                curve: Curves.easeOutCubic,
-              ),
+                        ),
+                      ]
+                      .animate(interval: 40.ms)
+                      .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                      .scale(
+                        begin: const Offset(0.95, 0.95),
+                        duration: 250.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
             ),
           ],
         ),

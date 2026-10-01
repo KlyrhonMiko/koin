@@ -62,23 +62,26 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     final isEditing = widget.account != null;
     nameController = TextEditingController(text: widget.account?.name)
       ..addListener(_onInputChanged);
-      
+
     String amountText = '';
     if (isEditing) {
       final dashboardStats = ref.read(dashboardStatsProvider);
-      double currentBalance = dashboardStats.accountBalances[widget.account!.id] ?? widget.account!.initialBalance;
-      amountText = currentBalance == currentBalance.truncateToDouble() 
-          ? currentBalance.toInt().toString() 
+      double currentBalance =
+          dashboardStats.accountBalances[widget.account!.id] ??
+          widget.account!.initialBalance;
+      amountText = currentBalance == currentBalance.truncateToDouble()
+          ? currentBalance.toInt().toString()
           : currentBalance.toString();
     }
-    
-    balanceController = TextEditingController(
-      text: amountText,
-    )..addListener(_onInputChanged);
-    
+
+    balanceController = TextEditingController(text: amountText)
+      ..addListener(_onInputChanged);
+
     transferFeeController = TextEditingController(
-      text: widget.account?.transferFeeAmount != null && widget.account!.transferFeeAmount > 0 
-          ? widget.account!.transferFeeAmount.toString() 
+      text:
+          widget.account?.transferFeeAmount != null &&
+              widget.account!.transferFeeAmount > 0
+          ? widget.account!.transferFeeAmount.toString()
           : '',
     )..addListener(_onInputChanged);
     selectedIcon =
@@ -258,15 +261,17 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final cardHex = selectedCardColor == null
           ? null
           : '#${selectedCardColor!.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-          
+
       double newInitialBalance = double.tryParse(balanceController.text) ?? 0.0;
       if (isEditing) {
         final dashboardStats = ref.read(dashboardStatsProvider);
-        final currentBalance = dashboardStats.accountBalances[widget.account!.id] ?? widget.account!.initialBalance;
+        final currentBalance =
+            dashboardStats.accountBalances[widget.account!.id] ??
+            widget.account!.initialBalance;
         final difference = newInitialBalance - currentBalance;
         newInitialBalance = widget.account!.initialBalance + difference;
       }
-      
+
       final updatedAccount = Account(
         id: isEditing ? widget.account!.id : const Uuid().v4(),
         name: nameController.text,
@@ -766,216 +771,270 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               child: selectedTemplateId == null
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.image_rounded,
-                              size: 16,
-                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                            ),
-                            const Gap(6),
-                            Text(
-                              'Icon',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.7),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(12),
-                        IconPaletteGrid(
-                          icons: icons,
-                          selectedCodePoint: selectedIcon,
-                          activeColor: selectedColor,
-                          isScrollableRow: true,
-                          shape: BoxShape.circle,
-                          scrollController: _iconScrollController,
-                          onCodePointSelected: (code) =>
-                              setState(() => selectedIcon = code),
-                        ),
-                        const Gap(24),
-
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.color_lens_rounded,
-                              size: 16,
-                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                            ),
-                            const Gap(6),
-                            Text(
-                              'Color',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.7),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(12),
-                        ColorPaletteGrid(
-                          colors: colors,
-                          selectedColor: selectedColor,
-                          isScrollableRow: true,
-                          shape: BoxShape.circle,
-                          scrollController: _colorScrollController,
-                          onColorSelected: (c) =>
-                              setState(() => selectedColor = c),
-                        ),
-                        const Gap(24),
-
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.wallpaper_rounded,
-                              size: 16,
-                              color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                            ),
-                            const Gap(6),
-                            Text(
-                              'Card Background',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.7),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(12),
-                        SizedBox(
-                          height: 50,
-                          child: ListView(
-                            controller: _cardColorScrollController,
-                            scrollDirection: Axis.horizontal,
-                            clipBehavior: Clip.none,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  HapticService.light();
-                                  setState(() => selectedCardColor = null);
-                                },
-                                child: Center(
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.only(right: 12),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
+                      children:
+                          [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.image_rounded,
+                                      size: 16,
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.7),
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: selectedCardColor == null
-                                          ? AppTheme.primaryColor(
-                                              context,
-                                            ).withValues(alpha: 0.1)
-                                          : AppTheme.dividerColor(
-                                              context,
-                                            ).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(22),
-                                      border: Border.all(
-                                        color: selectedCardColor == null
-                                            ? AppTheme.primaryColor(context)
-                                            : AppTheme.dividerColor(
-                                                context,
-                                              ).withValues(alpha: 0.3),
-                                        width: selectedCardColor == null ? 2 : 1,
+                                    const Gap(6),
+                                    Text(
+                                      'Icon',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.7),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.format_color_reset_rounded,
-                                          size: 16,
-                                          color: selectedCardColor == null
-                                              ? AppTheme.primaryColor(context)
-                                              : AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.5),
-                                        ),
-                                        const Gap(6),
-                                        Text(
-                                          'Default',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: selectedCardColor == null
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            color: selectedCardColor == null
-                                                ? AppTheme.primaryColor(context)
-                                                : AppTheme.textLightColor(
-                                                    context,
-                                                  ).withValues(alpha: 0.5),
+                                  ],
+                                ),
+                                const Gap(12),
+                                IconPaletteGrid(
+                                  icons: icons,
+                                  selectedCodePoint: selectedIcon,
+                                  activeColor: selectedColor,
+                                  isScrollableRow: true,
+                                  shape: BoxShape.circle,
+                                  scrollController: _iconScrollController,
+                                  onCodePointSelected: (code) =>
+                                      setState(() => selectedIcon = code),
+                                ),
+                                const Gap(24),
+
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.color_lens_rounded,
+                                      size: 16,
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.7),
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      'Color',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.7),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Gap(12),
+                                ColorPaletteGrid(
+                                  colors: colors,
+                                  selectedColor: selectedColor,
+                                  isScrollableRow: true,
+                                  shape: BoxShape.circle,
+                                  scrollController: _colorScrollController,
+                                  onColorSelected: (c) =>
+                                      setState(() => selectedColor = c),
+                                ),
+                                const Gap(24),
+
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.wallpaper_rounded,
+                                      size: 16,
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.7),
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      'Card Background',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.7),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Gap(12),
+                                SizedBox(
+                                  height: 50,
+                                  child: ListView(
+                                    controller: _cardColorScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          HapticService.light();
+                                          setState(
+                                            () => selectedCardColor = null,
+                                          );
+                                        },
+                                        child: Center(
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
+                                            margin: const EdgeInsets.only(
+                                              right: 12,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: selectedCardColor == null
+                                                  ? AppTheme.primaryColor(
+                                                      context,
+                                                    ).withValues(alpha: 0.1)
+                                                  : AppTheme.dividerColor(
+                                                      context,
+                                                    ).withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(22),
+                                              border: Border.all(
+                                                color: selectedCardColor == null
+                                                    ? AppTheme.primaryColor(
+                                                        context,
+                                                      )
+                                                    : AppTheme.dividerColor(
+                                                        context,
+                                                      ).withValues(alpha: 0.3),
+                                                width: selectedCardColor == null
+                                                    ? 2
+                                                    : 1,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons
+                                                      .format_color_reset_rounded,
+                                                  size: 16,
+                                                  color:
+                                                      selectedCardColor == null
+                                                      ? AppTheme.primaryColor(
+                                                          context,
+                                                        )
+                                                      : AppTheme.textLightColor(
+                                                          context,
+                                                        ).withValues(
+                                                          alpha: 0.5,
+                                                        ),
+                                                ),
+                                                const Gap(6),
+                                                Text(
+                                                  'Default',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight:
+                                                        selectedCardColor ==
+                                                            null
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w500,
+                                                    color:
+                                                        selectedCardColor ==
+                                                            null
+                                                        ? AppTheme.primaryColor(
+                                                            context,
+                                                          )
+                                                        : AppTheme.textLightColor(
+                                                            context,
+                                                          ).withValues(
+                                                            alpha: 0.5,
+                                                          ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      ...cardBgColors.map((c) {
+                                        final isSelected =
+                                            selectedCardColor != null &&
+                                            selectedCardColor!.toARGB32() ==
+                                                c.toARGB32();
+                                        return GestureDetector(
+                                          onTap: () {
+                                            HapticService.light();
+                                            setState(
+                                              () => selectedCardColor = c,
+                                            );
+                                          },
+                                          child: Center(
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              margin: const EdgeInsets.only(
+                                                right: 12,
+                                              ),
+                                              width: 44,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                color: c,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                      : Colors.transparent,
+                                                  width: 3,
+                                                ),
+                                                boxShadow: isSelected
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: c.withValues(
+                                                            alpha: 0.4,
+                                                          ),
+                                                          blurRadius: 10,
+                                                          offset: const Offset(
+                                                            0,
+                                                            4,
+                                                          ),
+                                                        ),
+                                                      ]
+                                                    : null,
+                                              ),
+                                              child: isSelected
+                                                  ? const Icon(
+                                                      Icons.check_rounded,
+                                                      color: Colors.white,
+                                                      size: 22,
+                                                    )
+                                                  : null,
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ],
                                   ),
                                 ),
+                                const Gap(24),
+                              ]
+                              .animate(interval: 40.ms)
+                              .fade(
+                                duration: 250.ms,
+                                curve: Curves.easeOutCubic,
+                              )
+                              .scale(
+                                begin: const Offset(0.95, 0.95),
+                                duration: 250.ms,
+                                curve: Curves.easeOutCubic,
                               ),
-                              ...cardBgColors.map((c) {
-                                final isSelected =
-                                    selectedCardColor != null &&
-                                    selectedCardColor!.toARGB32() == c.toARGB32();
-                                return GestureDetector(
-                                  onTap: () {
-                                    HapticService.light();
-                                    setState(() => selectedCardColor = c);
-                                  },
-                                  child: Center(
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      margin: const EdgeInsets.only(right: 12),
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: c,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.transparent,
-                                          width: 3,
-                                        ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color: c.withValues(alpha: 0.4),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 4),
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(
-                                              Icons.check_rounded,
-                                              color: Colors.white,
-                                              size: 22,
-                                            )
-                                          : null,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ),
-                        const Gap(24),
-                      ].animate(interval: 40.ms).fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -1156,22 +1215,22 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     style: TextStyle(fontSize: 12),
                   ),
                   value: excludeFromTotal,
-                onChanged: (value) {
-                  HapticService.light();
-                  setState(() => excludeFromTotal = value);
-                },
-                activeThumbColor: AppTheme.primaryColor(context),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  onChanged: (value) {
+                    HapticService.light();
+                    setState(() => excludeFromTotal = value);
+                  },
+                  activeThumbColor: AppTheme.primaryColor(context),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
             ),
-          ),
-          const Gap(24),
+            const Gap(24),
 
             Container(
               decoration: BoxDecoration(
@@ -1212,7 +1271,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             const Gap(16),
             TextFormField(
               controller: transferFeeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1222,26 +1283,38 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 filled: true,
                 fillColor: AppTheme.surfaceColor(context),
                 prefixIcon: Icon(
-                  isTransferFeePercentage ? Icons.percent_rounded : Icons.payments_rounded,
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.8),
+                  isTransferFeePercentage
+                      ? Icons.percent_rounded
+                      : Icons.payments_rounded,
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.8),
                 ),
-                labelText: isTransferFeePercentage ? 'Percentage Fee (e.g. 0.5)' : 'Fixed Fee (e.g. 10.00)',
+                labelText: isTransferFeePercentage
+                    ? 'Percentage Fee (e.g. 0.5)'
+                    : 'Fixed Fee (e.g. 10.00)',
                 labelStyle: TextStyle(
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -1252,10 +1325,13 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     width: 2,
                   ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
               ),
             ),
-          const Gap(40),
+            const Gap(40),
 
             KoinPrimaryButton(
               label: isEditing ? 'Save Changes' : 'Create Account',

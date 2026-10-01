@@ -44,138 +44,138 @@ class MainLayout extends ConsumerWidget {
               : Brightness.dark,
         ),
         child: Scaffold(
-        extendBody: true,
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.97, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
+          extendBody: true,
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.97, end: 1.0).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
                   ),
+                  child: child,
                 ),
-                child: child,
-              ),
-            );
-          },
-          child: KeyedSubtree(
-            key: ValueKey<int>(currentIndex),
-            child: _getPage(currentIndex),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(currentIndex),
+              child: _getPage(currentIndex),
+            ),
           ),
-        ),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(
-                      context,
-                    ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDarkMode ? 0.4 : 0.08,
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(
+                        context,
+                      ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDarkMode ? 0.4 : 0.08,
+                          ),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
                         ),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
+                      ],
+                      border: Border.all(
+                        color: (isDarkMode ? Colors.white : Colors.black)
+                            .withValues(alpha: isDarkMode ? 0.08 : 0.05),
+                        width: 1,
                       ),
-                    ],
-                    border: Border.all(
-                      color: (isDarkMode ? Colors.white : Colors.black)
-                          .withValues(alpha: isDarkMode ? 0.08 : 0.05),
-                      width: 1,
                     ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildNavItem(
-                            context,
-                            icon: Icons.home_outlined,
-                            activeIcon: Icons.home_rounded,
-                            isActive: currentIndex == 0,
-                            targetIndex: 0,
-                            onTap: onItemTapped,
-                          ),
-                          _buildNavItem(
-                            context,
-                            icon: Icons.receipt_long_outlined,
-                            activeIcon: Icons.receipt_long_rounded,
-                            isActive: currentIndex == 1,
-                            targetIndex: 1,
-                            onTap: onItemTapped,
-                          ),
-                          _buildNavItem(
-                            context,
-                            icon: Icons.savings_outlined,
-                            activeIcon: Icons.savings_rounded,
-                            isActive: currentIndex == 2,
-                            targetIndex: 2,
-                            onTap: onItemTapped,
-                          ),
-                          _buildNavItem(
-                            context,
-                            icon: Icons.account_balance_wallet_outlined,
-                            activeIcon: Icons.account_balance_wallet_rounded,
-                            isActive: currentIndex == 3,
-                            targetIndex: 3,
-                            onTap: onItemTapped,
-                          ),
-                        ],
+                    clipBehavior: Clip.antiAlias,
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildNavItem(
+                              context,
+                              icon: Icons.home_outlined,
+                              activeIcon: Icons.home_rounded,
+                              isActive: currentIndex == 0,
+                              targetIndex: 0,
+                              onTap: onItemTapped,
+                            ),
+                            _buildNavItem(
+                              context,
+                              icon: Icons.receipt_long_outlined,
+                              activeIcon: Icons.receipt_long_rounded,
+                              isActive: currentIndex == 1,
+                              targetIndex: 1,
+                              onTap: onItemTapped,
+                            ),
+                            _buildNavItem(
+                              context,
+                              icon: Icons.savings_outlined,
+                              activeIcon: Icons.savings_rounded,
+                              isActive: currentIndex == 2,
+                              targetIndex: 2,
+                              onTap: onItemTapped,
+                            ),
+                            _buildNavItem(
+                              context,
+                              icon: Icons.account_balance_wallet_outlined,
+                              activeIcon: Icons.account_balance_wallet_rounded,
+                              isActive: currentIndex == 3,
+                              targetIndex: 3,
+                              onTap: onItemTapped,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                AnimatedSlide(
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeOutBack,
-                  offset: Offset.zero,
-                  child: _BreathingGlowFAB(
-                    glowColor: AppTheme.primaryColor(context),
-                    child: SizedBox(
-                      width: 66,
-                      height: 66,
-                      child: FloatingActionButton(
-                        onPressed: () {
-                          HapticService.medium();
-                          Navigator.push(
-                            context,
-                            SlideUpRoute(page: const AddTransactionScreen()),
-                          );
-                        },
-                        elevation: 0,
-                        backgroundColor: AppTheme.primaryColor(context),
-                        foregroundColor: Colors.white,
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.add_rounded, size: 38),
+                  const SizedBox(width: 12),
+                  AnimatedSlide(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutBack,
+                    offset: Offset.zero,
+                    child: _BreathingGlowFAB(
+                      glowColor: AppTheme.primaryColor(context),
+                      child: SizedBox(
+                        width: 66,
+                        height: 66,
+                        child: FloatingActionButton(
+                          onPressed: () {
+                            HapticService.medium();
+                            Navigator.push(
+                              context,
+                              SlideUpRoute(page: const AddTransactionScreen()),
+                            );
+                          },
+                          elevation: 0,
+                          backgroundColor: AppTheme.primaryColor(context),
+                          foregroundColor: Colors.white,
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.add_rounded, size: 38),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _getPage(int index) {
     switch (index) {

@@ -16,7 +16,8 @@ Future<String?> showCategoryPickerSheet({
   Color? indicatorColor,
   List<TransactionCategory>? categoriesOverride,
 }) async {
-  final allCategories = categoriesOverride ?? (ref?.read(categoriesProvider).value ?? []);
+  final allCategories =
+      categoriesOverride ?? (ref?.read(categoriesProvider).value ?? []);
   final filteredCategories = allCategories
       .where((c) => c.type == type)
       .toList();

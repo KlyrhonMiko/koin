@@ -76,7 +76,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
       final suggester = ref.read(categorySuggesterProvider);
       final amount = parsed.amount ?? 0.0;
       final effectiveAmount = amount == 0.0 ? 1.0 : amount;
-      
+
       try {
         final suggestion = await suggester.suggest(
           SuggestionContext(
@@ -92,15 +92,29 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           TransactionCategory? cat = parsed.category;
           Account? acc = parsed.account;
           Account? toAcc = parsed.toAccount;
-          
+
           if (suggestion.isTransfer) {
-            try { acc = accounts.firstWhere((a) => a.id == suggestion.originAccountId); } catch (_) {}
-            try { toAcc = accounts.firstWhere((a) => a.id == suggestion.destinationAccountId); } catch (_) {}
+            try {
+              acc = accounts.firstWhere(
+                (a) => a.id == suggestion.originAccountId,
+              );
+            } catch (_) {}
+            try {
+              toAcc = accounts.firstWhere(
+                (a) => a.id == suggestion.destinationAccountId,
+              );
+            } catch (_) {}
             cat = null;
           } else {
-            try { acc = accounts.firstWhere((a) => a.id == suggestion.originAccountId); } catch (_) {}
-            try { 
-              final newCat = categories.firstWhere((c) => c.id == suggestion.categoryId);
+            try {
+              acc = accounts.firstWhere(
+                (a) => a.id == suggestion.originAccountId,
+              );
+            } catch (_) {}
+            try {
+              final newCat = categories.firstWhere(
+                (c) => c.id == suggestion.categoryId,
+              );
               if (newCat != cat) {
                 cat = newCat;
                 _autoCatKey++;
@@ -108,7 +122,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             } catch (_) {}
             toAcc = null;
           }
-          
+
           parsed = parsed.copyWith(
             type: suggestion.type,
             category: cat,
@@ -789,8 +803,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                       .animate(key: ValueKey(_autoCatKey))
                       .shimmer(
                         duration: 400.ms,
-                        color: AppTheme.primaryColor(context)
-                            .withValues(alpha: 0.2),
+                        color: AppTheme.primaryColor(
+                          context,
+                        ).withValues(alpha: 0.2),
                       )
                       .scale(
                         duration: 150.ms,

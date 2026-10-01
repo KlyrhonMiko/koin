@@ -32,7 +32,10 @@ class ColorPaletteGrid extends StatelessWidget {
     this.shape = BoxShape.rectangle,
     this.itemSize = 44,
     this.scrollController,
-  }) : assert(hexColors != null || colors != null, 'Either hexColors or colors must be provided');
+  }) : assert(
+         hexColors != null || colors != null,
+         'Either hexColors or colors must be provided',
+       );
 
   List<Color> _resolvedColors() {
     if (colors != null) return colors!;
@@ -53,7 +56,9 @@ class ColorPaletteGrid extends StatelessWidget {
 
   void _handleTap(int index, Color color) {
     HapticService.light();
-    if (onHexSelected != null && hexColors != null && index < hexColors!.length) {
+    if (onHexSelected != null &&
+        hexColors != null &&
+        index < hexColors!.length) {
       onHexSelected!(hexColors![index]);
     }
     if (onColorSelected != null) {
@@ -76,7 +81,9 @@ class ColorPaletteGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             shape: shape,
-            borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(14),
+            borderRadius: shape == BoxShape.circle
+                ? null
+                : BorderRadius.circular(14),
             border: Border.all(
               color: isSelected ? Colors.white : Colors.transparent,
               width: shape == BoxShape.circle ? 3 : 2.5,

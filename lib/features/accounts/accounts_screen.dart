@@ -56,70 +56,76 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 40),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                    padding: const EdgeInsets.all(36),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.surfaceColor(context),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
+                            children:
+                                [
+                                      Container(
+                                        padding: const EdgeInsets.all(36),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.surfaceColor(context),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppTheme.primaryColor(
+                                                context,
+                                              ).withValues(alpha: 0.1),
+                                              blurRadius: 40,
+                                              spreadRadius: 10,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          Icons.account_balance_wallet_rounded,
+                                          size: 56,
                                           color: AppTheme.primaryColor(
                                             context,
-                                          ).withValues(alpha: 0.1),
-                                          blurRadius: 40,
-                                          spreadRadius: 10,
+                                          ).withValues(alpha: 0.6),
                                         ),
-                                      ],
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Text(
+                                        'No accounts yet',
+                                        style: TextStyle(
+                                          color: AppTheme.textColor(context),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Add your first account to see it here',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: AppTheme.textLightColor(
+                                            context,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 36),
+                                      KoinPrimaryButton(
+                                        label: 'Add Your First Account',
+                                        icon: Icons.add_rounded,
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            SlideUpRoute(
+                                              page: const AccountFormScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ]
+                                    .animate(interval: 40.ms)
+                                    .fade(
+                                      duration: 250.ms,
+                                      curve: Curves.easeOutCubic,
+                                    )
+                                    .scale(
+                                      begin: const Offset(0.95, 0.95),
+                                      duration: 250.ms,
+                                      curve: Curves.easeOutCubic,
                                     ),
-                                    child: Icon(
-                                      Icons.account_balance_wallet_rounded,
-                                      size: 56,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.6),
-                                    ),
-                      ),
-                  const SizedBox(height: 24),
-                              Text(
-                                    'No accounts yet',
-                                    style: TextStyle(
-                                      color: AppTheme.textColor(context),
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                              const SizedBox(height: 8),
-                              Text(
-                                    'Add your first account to see it here',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: AppTheme.textLightColor(context),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                              const SizedBox(height: 36),
-                              KoinPrimaryButton(
-                                label: 'Add Your First Account',
-                                icon: Icons.add_rounded,
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    SlideUpRoute(
-                                      page: const AccountFormScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ]
-                            .animate(interval: 40.ms)
-                            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                            .scale(
-                              begin: const Offset(0.95, 0.95),
-                              duration: 250.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
                           ),
                         ),
                       ),

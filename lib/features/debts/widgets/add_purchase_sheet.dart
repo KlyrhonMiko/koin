@@ -15,11 +15,14 @@ Future<DebtItem?> showAddPurchaseSheet({
   DebtItem? existingItem,
 }) {
   String name = existingItem?.name ?? '';
-  String amountStr = existingItem?.amount.toString().replaceAll(RegExp(r'\.0$'), '') ?? '';
+  String amountStr =
+      existingItem?.amount.toString().replaceAll(RegExp(r'\.0$'), '') ?? '';
   String installmentsStr = existingItem?.totalInstallments.toString() ?? '';
-  DateTime firstDate = existingItem?.firstPaymentDate ?? DateTime(defaultDate.year, defaultDate.month, defaultDate.day);
-  TransactionCategory? selectedCategory = existingItem?.categoryId != null 
-      ? categories.where((c) => c.id == existingItem!.categoryId).firstOrNull 
+  DateTime firstDate =
+      existingItem?.firstPaymentDate ??
+      DateTime(defaultDate.year, defaultDate.month, defaultDate.day);
+  TransactionCategory? selectedCategory = existingItem?.categoryId != null
+      ? categories.where((c) => c.id == existingItem!.categoryId).firstOrNull
       : null;
 
   final suggester = HybridMlSuggesterAdapter();
@@ -35,7 +38,9 @@ Future<DebtItem?> showAddPurchaseSheet({
 
     final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
-    final targetType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+    final targetType = debtType == DebtType.owedToMe
+        ? TransactionType.income
+        : TransactionType.expense;
 
     coordinator.run(
       context: SuggestionContext(
@@ -77,7 +82,9 @@ Future<DebtItem?> showAddPurchaseSheet({
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.backgroundColor(ctx),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
@@ -86,7 +93,12 @@ Future<DebtItem?> showAddPurchaseSheet({
                   ),
                 ],
               ),
-              padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.paddingOf(ctx).bottom),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                24 + MediaQuery.paddingOf(ctx).bottom,
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -97,7 +109,12 @@ Future<DebtItem?> showAddPurchaseSheet({
                     ),
                     Text(
                       existingItem != null ? 'Edit Purchase' : 'Add Purchase',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textColor(ctx), letterSpacing: -0.5),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textColor(ctx),
+                        letterSpacing: -0.5,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const Gap(24),
@@ -105,7 +122,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                       initialValue: name,
                       decoration: InputDecoration(
                         labelText: 'Item Name (e.g. Phone)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         filled: true,
                         fillColor: AppTheme.surfaceColor(ctx),
                       ),
@@ -123,12 +142,16 @@ Future<DebtItem?> showAddPurchaseSheet({
                       initialValue: amountStr,
                       decoration: InputDecoration(
                         labelText: 'Total Amount',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         filled: true,
                         fillColor: AppTheme.surfaceColor(ctx),
                       ),
                       style: TextStyle(color: AppTheme.textColor(ctx)),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       onChanged: (v) {
                         amountStr = v;
                         if (selectedCategory == null) {
@@ -144,10 +167,13 @@ Future<DebtItem?> showAddPurchaseSheet({
                           label: 'Category (Optional)',
                           selectedName: selectedCategory?.name,
                           selectedColor: selectedCategory?.color,
-                          selectedIconCodePoint: selectedCategory?.iconCodePoint,
+                          selectedIconCodePoint:
+                              selectedCategory?.iconCodePoint,
                           placeholder: 'Select Category',
                           onTap: () async {
-                            final categoryType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+                            final categoryType = debtType == DebtType.owedToMe
+                                ? TransactionType.income
+                                : TransactionType.expense;
                             final id = await showCategoryPickerSheet(
                               context: ctx,
                               type: categoryType,
@@ -158,7 +184,11 @@ Future<DebtItem?> showAddPurchaseSheet({
                               categoriesOverride: categories,
                             );
                             if (id != null) {
-                              setSheetState(() => selectedCategory = categories.firstWhere((c) => c.id == id));
+                              setSheetState(
+                                () => selectedCategory = categories.firstWhere(
+                                  (c) => c.id == id,
+                                ),
+                              );
                             }
                           },
                         );
@@ -196,7 +226,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                             initialValue: installmentsStr,
                             decoration: InputDecoration(
                               labelText: 'Installments',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               filled: true,
                               fillColor: AppTheme.surfaceColor(ctx),
                             ),
@@ -219,14 +251,22 @@ Future<DebtItem?> showAddPurchaseSheet({
                                 lastDate: DateTime(2100),
                                 primaryColor: primaryColor,
                               );
-                              if (dt != null) setSheetState(() => firstDate = dt);
+                              if (dt != null) {
+                                setSheetState(() => firstDate = dt);
+                              }
                             },
                             decoration: InputDecoration(
                               labelText: 'First Payment',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               filled: true,
                               fillColor: AppTheme.surfaceColor(ctx),
-                              suffixIcon: Icon(Icons.calendar_month, color: primaryColor, size: 20),
+                              suffixIcon: Icon(
+                                Icons.calendar_month,
+                                color: primaryColor,
+                                size: 20,
+                              ),
                             ),
                             style: TextStyle(color: AppTheme.textColor(ctx)),
                           ),
@@ -238,18 +278,23 @@ Future<DebtItem?> showAddPurchaseSheet({
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       onPressed: () {
-                        final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 0;
+                        final amt =
+                            double.tryParse(amountStr.replaceAll(',', '')) ?? 0;
                         final inst = int.tryParse(installmentsStr) ?? 1;
                         if (name.isNotEmpty && amt > 0 && inst > 0) {
                           HapticService.light();
                           coordinator.cancel();
 
                           if (selectedCategory != null) {
-                            final targetType = debtType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+                            final targetType = debtType == DebtType.owedToMe
+                                ? TransactionType.income
+                                : TransactionType.expense;
                             suggester.recordFeedback(
                               text: name.trim(),
                               amount: amt,
@@ -272,8 +317,12 @@ Future<DebtItem?> showAddPurchaseSheet({
                         }
                       },
                       child: Text(
-                        existingItem != null ? 'Update Plan' : 'Add to Plan', 
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+                        existingItem != null ? 'Update Plan' : 'Add to Plan',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],

@@ -199,121 +199,140 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-              children: [
-                // Transaction Type
-                const FormSectionTitle.subhead(title: 'Transaction Type', icon: Icons.swap_vert_rounded),
-                const Gap(12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildTypeChip(null, 'All', Icons.grid_view_rounded),
-                      const Gap(8),
-                      _buildTypeChip(
-                        TransactionType.income,
-                        'Income',
-                        Icons.arrow_downward_rounded,
-                      ),
-                      const Gap(8),
-                      _buildTypeChip(
-                        TransactionType.expense,
-                        'Expense',
-                        Icons.arrow_upward_rounded,
-                      ),
-                      const Gap(8),
-                      _buildTypeChip(
-                        TransactionType.transfer,
-                        'Transfer',
-                        Icons.swap_horiz_rounded,
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(28),
+              children:
+                  [
+                        // Transaction Type
+                        const FormSectionTitle.subhead(
+                          title: 'Transaction Type',
+                          icon: Icons.swap_vert_rounded,
+                        ),
+                        const Gap(12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildTypeChip(
+                                null,
+                                'All',
+                                Icons.grid_view_rounded,
+                              ),
+                              const Gap(8),
+                              _buildTypeChip(
+                                TransactionType.income,
+                                'Income',
+                                Icons.arrow_downward_rounded,
+                              ),
+                              const Gap(8),
+                              _buildTypeChip(
+                                TransactionType.expense,
+                                'Expense',
+                                Icons.arrow_upward_rounded,
+                              ),
+                              const Gap(8),
+                              _buildTypeChip(
+                                TransactionType.transfer,
+                                'Transfer',
+                                Icons.swap_horiz_rounded,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Gap(28),
 
-                // Date Range
-                const FormSectionTitle.subhead(title: 'Date Range', icon: Icons.calendar_today_rounded),
-                const Gap(12),
-                DateRangeSelector(
-                  initialDateRange: _filter.dateRange,
-                  showClearButton: true,
-                  onChanged: (range) {
-                    setState(() {
-                      _filter = _filter.copyWith(
-                        dateRange: range,
-                        clearDateRange: range == null,
-                      );
-                    });
-                  },
-                ),
-                const Gap(28),
+                        // Date Range
+                        const FormSectionTitle.subhead(
+                          title: 'Date Range',
+                          icon: Icons.calendar_today_rounded,
+                        ),
+                        const Gap(12),
+                        DateRangeSelector(
+                          initialDateRange: _filter.dateRange,
+                          showClearButton: true,
+                          onChanged: (range) {
+                            setState(() {
+                              _filter = _filter.copyWith(
+                                dateRange: range,
+                                clearDateRange: range == null,
+                              );
+                            });
+                          },
+                        ),
+                        const Gap(28),
 
-                // Categories
-                const FormSectionTitle.subhead(title: 'Categories', icon: Icons.category_rounded),
-                const Gap(12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 10,
-                  children: categories
-                      .map((c) => _buildCategoryChip(c))
-                      .toList(),
-                ),
-                const Gap(28),
+                        // Categories
+                        const FormSectionTitle.subhead(
+                          title: 'Categories',
+                          icon: Icons.category_rounded,
+                        ),
+                        const Gap(12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 10,
+                          children: categories
+                              .map((c) => _buildCategoryChip(c))
+                              .toList(),
+                        ),
+                        const Gap(28),
 
-                // Accounts
-                const FormSectionTitle.subhead(
-                  title: 'Accounts',
-                  icon: Icons.account_balance_wallet_rounded,
-                ),
-                const Gap(12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 10,
-                  children: accounts.map((a) => _buildAccountChip(a)).toList(),
-                ),
-                const Gap(28),
+                        // Accounts
+                        const FormSectionTitle.subhead(
+                          title: 'Accounts',
+                          icon: Icons.account_balance_wallet_rounded,
+                        ),
+                        const Gap(12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 10,
+                          children: accounts
+                              .map((a) => _buildAccountChip(a))
+                              .toList(),
+                        ),
+                        const Gap(28),
 
-                // Amount Range
-                const FormSectionTitle.subhead(title: 'Amount Range', icon: Icons.payments_rounded),
-                const Gap(12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildAmountField(
-                        _minAmountController,
-                        'Min',
-                        currency.symbol,
+                        // Amount Range
+                        const FormSectionTitle.subhead(
+                          title: 'Amount Range',
+                          icon: Icons.payments_rounded,
+                        ),
+                        const Gap(12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildAmountField(
+                                _minAmountController,
+                                'Min',
+                                currency.symbol,
+                              ),
+                            ),
+                            const Gap(12),
+                            Container(
+                              width: 20,
+                              height: 1.5,
+                              decoration: BoxDecoration(
+                                color: AppTheme.dividerColor(
+                                  context,
+                                ).withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: _buildAmountField(
+                                _maxAmountController,
+                                'Max',
+                                currency.symbol,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ]
+                      .animate(interval: 40.ms)
+                      .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                      .scale(
+                        begin: const Offset(0.95, 0.95),
+                        duration: 250.ms,
+                        curve: Curves.easeOutCubic,
                       ),
-                    ),
-                    const Gap(12),
-                    Container(
-                      width: 20,
-                      height: 1.5,
-                      decoration: BoxDecoration(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    const Gap(12),
-                    Expanded(
-                      child: _buildAmountField(
-                        _maxAmountController,
-                        'Max',
-                        currency.symbol,
-                      ),
-                    ),
-                  ],
-                ),
-              ]
-              .animate(interval: 40.ms)
-              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-              .scale(
-                begin: const Offset(0.95, 0.95),
-                duration: 250.ms,
-                curve: Curves.easeOutCubic,
-              ),
             ),
           ),
 
@@ -391,8 +410,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       ),
     );
   }
-
-
 
   // ── Type Chip with icon ──
   Widget _buildTypeChip(TransactionType? type, String label, IconData icon) {

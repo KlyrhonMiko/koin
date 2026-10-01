@@ -53,7 +53,8 @@ class Account {
       excludeFromTotal: excludeFromTotal ?? this.excludeFromTotal,
       position: position ?? this.position,
       transferFeeAmount: transferFeeAmount ?? this.transferFeeAmount,
-      isTransferFeePercentage: isTransferFeePercentage ?? this.isTransferFeePercentage,
+      isTransferFeePercentage:
+          isTransferFeePercentage ?? this.isTransferFeePercentage,
       logoAsset: logoAsset != null ? logoAsset() : this.logoAsset,
       cardColorHex: cardColorHex != null ? cardColorHex() : this.cardColorHex,
       cardShapeType: cardShapeType != null

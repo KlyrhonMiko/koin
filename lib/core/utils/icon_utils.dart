@@ -27,9 +27,10 @@ class IconUtils {
     Icons.card_giftcard.codePoint: Icons.card_giftcard,
     Icons.coffee.codePoint: Icons.coffee,
     Icons.fastfood.codePoint: Icons.fastfood,
-    
+
     // Rounded icons for accounts
-    Icons.account_balance_wallet_rounded.codePoint: Icons.account_balance_wallet_rounded,
+    Icons.account_balance_wallet_rounded.codePoint:
+        Icons.account_balance_wallet_rounded,
     Icons.account_balance_rounded.codePoint: Icons.account_balance_rounded,
     Icons.savings_rounded.codePoint: Icons.savings_rounded,
     Icons.payments_rounded.codePoint: Icons.payments_rounded,
@@ -49,7 +50,7 @@ class IconUtils {
     Icons.currency_pound_rounded.codePoint: Icons.currency_pound_rounded,
     Icons.currency_yen_rounded.codePoint: Icons.currency_yen_rounded,
     Icons.currency_franc_rounded.codePoint: Icons.currency_franc_rounded,
-    
+
     // Other common icons
     Icons.help_outline.codePoint: Icons.help_outline,
     Icons.arrow_upward_rounded.codePoint: Icons.arrow_upward_rounded,
@@ -57,7 +58,8 @@ class IconUtils {
     Icons.swap_horiz_rounded.codePoint: Icons.swap_horiz_rounded,
     Icons.insights_rounded.codePoint: Icons.insights_rounded,
     Icons.pie_chart_rounded.codePoint: Icons.pie_chart_rounded,
-    Icons.account_balance_wallet_outlined.codePoint: Icons.account_balance_wallet_outlined,
+    Icons.account_balance_wallet_outlined.codePoint:
+        Icons.account_balance_wallet_outlined,
     Icons.receipt_long_outlined.codePoint: Icons.receipt_long_outlined,
   };
 

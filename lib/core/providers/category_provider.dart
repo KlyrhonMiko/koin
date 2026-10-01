@@ -18,11 +18,13 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
   Future<void> addCategory(TransactionCategory category) async {
     final currentCategories = state.value ?? [];
-    final categoryWithPosition = category.copyWith(position: currentCategories.length);
-    
+    final categoryWithPosition = category.copyWith(
+      position: currentCategories.length,
+    );
+
     final previousState = state;
     state = AsyncValue.data([...currentCategories, categoryWithPosition]);
-    
+
     try {
       await DatabaseHelper.instance.insertCategory(categoryWithPosition);
     } catch (e, st) {
@@ -36,11 +38,11 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
     final previousState = state;
     final currentCategories = state.value!;
-    
+
     state = AsyncValue.data(
       currentCategories.map((c) => c.id == category.id ? category : c).toList(),
     );
-    
+
     try {
       await DatabaseHelper.instance.updateCategory(category);
     } catch (e, st) {
@@ -54,14 +56,18 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     await _loadCategories();
   }
 
-  Future<void> reorderCategories(int oldIndex, int newIndex, TransactionType type) async {
+  Future<void> reorderCategories(
+    int oldIndex,
+    int newIndex,
+    TransactionType type,
+  ) async {
     final categories = state.value;
     if (categories == null) return;
 
     // Filter categories by type to reorder within that type
     final typeCategories = categories.where((c) => c.type == type).toList();
     final otherCategories = categories.where((c) => c.type != type).toList();
-    
+
     final item = typeCategories.removeAt(oldIndex);
     typeCategories.insert(newIndex, item);
 
@@ -84,13 +90,20 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
     // Update database
     try {
-      await DatabaseHelper.instance.updateCategoryPositions(updatedTypeCategories);
+      await DatabaseHelper.instance.updateCategoryPositions(
+        updatedTypeCategories,
+      );
     } catch (e, stackTrace) {
-      dev.log('Error updating category positions', error: e, stackTrace: stackTrace);
+      dev.log(
+        'Error updating category positions',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 }
 
-final categoriesProvider = AsyncNotifierProvider<CategoryNotifier, List<TransactionCategory>>(() {
-  return CategoryNotifier();
-});
+final categoriesProvider =
+    AsyncNotifierProvider<CategoryNotifier, List<TransactionCategory>>(() {
+      return CategoryNotifier();
+    });

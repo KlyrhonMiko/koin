@@ -41,19 +41,21 @@ class DashboardScreen extends ConsumerWidget {
 
     final isExpense = payment.type == TransactionType.expense;
 
-    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
-      payment: payment,
-      amount: result.amount,
-      accountId: result.accountId,
-      categoryId: result.categoryId,
-    );
+    await ref
+        .read(plannedPaymentProvider.notifier)
+        .processOccurrence(
+          payment: payment,
+          amount: result.amount,
+          accountId: result.accountId,
+          categoryId: result.categoryId,
+        );
 
     if (context.mounted) {
       KoinSnackBar.success(
         context,
         isExpense ? 'Payment processed' : 'Income processed',
-        subtitle: isExpense 
-            ? 'Your planned payment has been completed' 
+        subtitle: isExpense
+            ? 'Your planned payment has been completed'
             : 'Your recurring income has been completed',
       );
     }
@@ -80,59 +82,60 @@ class DashboardScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(context),
-              const Gap(24),
-              _buildBalanceCard(context, ref, stats, settings),
-              const Gap(24),
-              _buildQuickActions(context, ref),
-              const Gap(28),
-              _buildAccountsList(context, ref, stats, currency),
-              const Gap(28),
-              _buildBudgetSection(context, ref, stats, currency),
-              const Gap(32),
-              KoinSectionHeader(
-                title: 'Spending Overview',
-                actionLabel: 'Full Analysis',
-                onActionTap: () {
-                  ref.read(activityTabProvider.notifier).setIndex(0);
-                  ref.read(navigationProvider.notifier).setIndex(1);
-                },
-              ),
-              const Gap(16),
-              _buildChartSection(
-                context,
-                stats,
-                currency,
-                transactionsAsync.value ?? [],
-              ),
-              const Gap(28),
-              _buildUpcomingPayments(context, ref, currency),
-              const Gap(32),
-              KoinSectionHeader(
-                title: 'Recent Transactions',
-                actionLabel: 'View All',
-                onActionTap: () {
-                  ref.read(activityTabProvider.notifier).setIndex(1);
-                  ref.read(navigationProvider.notifier).setIndex(1);
-                },
-              ),
-              const Gap(12),
-              _buildRecentTransactions(
-                context,
-                ref,
-                transactionsAsync,
-                currency,
-              ),
-              const Gap(100),
-            ]
-            .animate(interval: 40.ms)
-            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-            .scale(
-              begin: const Offset(0.95, 0.95),
-              duration: 250.ms,
-              curve: Curves.easeOutCubic,
-            ),
+            children:
+                [
+                      _buildHeader(context),
+                      const Gap(24),
+                      _buildBalanceCard(context, ref, stats, settings),
+                      const Gap(24),
+                      _buildQuickActions(context, ref),
+                      const Gap(28),
+                      _buildAccountsList(context, ref, stats, currency),
+                      const Gap(28),
+                      _buildBudgetSection(context, ref, stats, currency),
+                      const Gap(32),
+                      KoinSectionHeader(
+                        title: 'Spending Overview',
+                        actionLabel: 'Full Analysis',
+                        onActionTap: () {
+                          ref.read(activityTabProvider.notifier).setIndex(0);
+                          ref.read(navigationProvider.notifier).setIndex(1);
+                        },
+                      ),
+                      const Gap(16),
+                      _buildChartSection(
+                        context,
+                        stats,
+                        currency,
+                        transactionsAsync.value ?? [],
+                      ),
+                      const Gap(28),
+                      _buildUpcomingPayments(context, ref, currency),
+                      const Gap(32),
+                      KoinSectionHeader(
+                        title: 'Recent Transactions',
+                        actionLabel: 'View All',
+                        onActionTap: () {
+                          ref.read(activityTabProvider.notifier).setIndex(1);
+                          ref.read(navigationProvider.notifier).setIndex(1);
+                        },
+                      ),
+                      const Gap(12),
+                      _buildRecentTransactions(
+                        context,
+                        ref,
+                        transactionsAsync,
+                        currency,
+                      ),
+                      const Gap(100),
+                    ]
+                    .animate(interval: 40.ms)
+                    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                    .scale(
+                      begin: const Offset(0.95, 0.95),
+                      duration: 250.ms,
+                      curve: Curves.easeOutCubic,
+                    ),
           ),
         ),
       ),
@@ -397,7 +400,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-
   // ─── Quick Actions ──────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context, WidgetRef ref) {
     return Row(
@@ -579,10 +581,7 @@ class DashboardScreen extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            baseColor.withValues(alpha: 0.95),
-            baseColor,
-          ],
+          colors: [baseColor.withValues(alpha: 0.95), baseColor],
         ),
         boxShadow: [
           BoxShadow(
@@ -1038,16 +1037,21 @@ class DashboardScreen extends ConsumerWidget {
 
                 return Container(
                   width: 240,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceColor(context),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: isOver
                           ? AppTheme.errorColor(context).withValues(alpha: 0.3)
-                          : Theme.of(context).brightness == Brightness.dark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : AppTheme.dividerColor(context).withValues(alpha: 0.4),
+                          : Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : AppTheme.dividerColor(
+                              context,
+                            ).withValues(alpha: 0.4),
                       width: 1,
                     ),
                     boxShadow: [
@@ -1094,13 +1098,22 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: isOver
-                                  ? AppTheme.errorColor(context).withValues(alpha: 0.1)
+                                  ? AppTheme.errorColor(
+                                      context,
+                                    ).withValues(alpha: 0.1)
                                   : (isNearLimit
-                                      ? Colors.amber.shade700.withValues(alpha: 0.1)
-                                      : category.color.withValues(alpha: 0.1)),
+                                        ? Colors.amber.shade700.withValues(
+                                            alpha: 0.1,
+                                          )
+                                        : category.color.withValues(
+                                            alpha: 0.1,
+                                          )),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -1143,7 +1156,9 @@ class DashboardScreen extends ConsumerWidget {
                               return Container(
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
+                                  color: AppTheme.dividerColor(
+                                    context,
+                                  ).withValues(alpha: 0.4),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: FractionallySizedBox(
@@ -1164,10 +1179,16 @@ class DashboardScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(4),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: isOver ? AppTheme.errorColor(context).withValues(alpha: 0.3) : category.color.withValues(alpha: 0.3),
+                                          color: isOver
+                                              ? AppTheme.errorColor(
+                                                  context,
+                                                ).withValues(alpha: 0.3)
+                                              : category.color.withValues(
+                                                  alpha: 0.3,
+                                                ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
-                                        )
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -1475,10 +1496,7 @@ class DashboardScreen extends ConsumerWidget {
           title: 'Upcoming',
           actionLabel: 'View All',
           onActionTap: () {
-            Navigator.push(
-              context,
-              SlideUpRoute(page: const UpcomingScreen()),
-            );
+            Navigator.push(context, SlideUpRoute(page: const UpcomingScreen()));
           },
         ),
         const Gap(16),
@@ -1486,7 +1504,9 @@ class DashboardScreen extends ConsumerWidget {
           data: (payments) {
             final debts = debtsAsync.value ?? [];
             final upcomingDebts = debts
-                .where((d) => d.totalInstallments > 0 && d.currentAmount < d.amount)
+                .where(
+                  (d) => d.totalInstallments > 0 && d.currentAmount < d.amount,
+                )
                 .toList();
 
             final List<dynamic> allUpcoming = [...payments, ...upcomingDebts];
@@ -1496,10 +1516,12 @@ class DashboardScreen extends ConsumerWidget {
             }
 
             allUpcoming.sort((a, b) {
-              final dateA =
-                  a is PlannedPayment ? a.nextDate : (a as Debt).nextDueDate;
-              final dateB =
-                  b is PlannedPayment ? b.nextDate : (b as Debt).nextDueDate;
+              final dateA = a is PlannedPayment
+                  ? a.nextDate
+                  : (a as Debt).nextDueDate;
+              final dateB = b is PlannedPayment
+                  ? b.nextDate
+                  : (b as Debt).nextDueDate;
               return dateA.compareTo(dateB);
             });
 
@@ -1514,8 +1536,8 @@ class DashboardScreen extends ConsumerWidget {
                   trackId = 'dash_pp_${item.id}';
                   final category =
                       categories.any((c) => c.id == item.categoryId)
-                          ? categories.firstWhere((c) => c.id == item.categoryId)
-                          : (categories.isNotEmpty ? categories.first : null);
+                      ? categories.firstWhere((c) => c.id == item.categoryId)
+                      : (categories.isNotEmpty ? categories.first : null);
 
                   child = _buildUpcomingPaymentItem(
                     context,
@@ -1722,10 +1744,8 @@ class DashboardScreen extends ConsumerWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => AddRepaymentSheet(
-            debt: debt,
-            isIncrease: false,
-          ),
+          builder: (context) =>
+              AddRepaymentSheet(debt: debt, isIncrease: false),
         );
       },
       child: Container(
@@ -1752,7 +1772,9 @@ class DashboardScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                isOwedToMe ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                isOwedToMe
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
                 color: amountColor,
                 size: 20,
               ),

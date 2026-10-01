@@ -92,9 +92,7 @@ class HeroAmountField extends StatelessWidget {
               margin: const EdgeInsets.only(top: 8, bottom: 24),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(2),
-                color: primaryColor.withValues(
-                  alpha: isNotEmpty ? 0.35 : 0.15,
-                ),
+                color: primaryColor.withValues(alpha: isNotEmpty ? 0.35 : 0.15),
               ),
             ),
           ],

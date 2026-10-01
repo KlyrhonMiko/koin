@@ -21,12 +21,14 @@ class UpcomingScreen extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
 
-    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
-      payment: payment,
-      amount: result.amount,
-      accountId: result.accountId,
-      categoryId: result.categoryId,
-    );
+    await ref
+        .read(plannedPaymentProvider.notifier)
+        .processOccurrence(
+          payment: payment,
+          amount: result.amount,
+          accountId: result.accountId,
+          categoryId: result.categoryId,
+        );
 
     if (context.mounted) {
       KoinSnackBar.success(
@@ -87,13 +89,15 @@ class UpcomingScreen extends ConsumerWidget {
               data: (payments) {
                 final debts = debtsAsync.value ?? [];
                 final upcomingDebts = debts
-                    .where((d) =>
-                        d.totalInstallments > 0 && d.currentAmount < d.amount)
+                    .where(
+                      (d) =>
+                          d.totalInstallments > 0 && d.currentAmount < d.amount,
+                    )
                     .toList();
 
                 final List<dynamic> allUpcoming = [
                   ...payments,
-                  ...upcomingDebts
+                  ...upcomingDebts,
                 ];
 
                 if (allUpcoming.isEmpty) {
@@ -119,15 +123,27 @@ class UpcomingScreen extends ConsumerWidget {
                     Widget child;
 
                     if (item is PlannedPayment) {
-                      final category = categories.any((c) => c.id == item.categoryId)
-                          ? categories.firstWhere((c) => c.id == item.categoryId)
+                      final category =
+                          categories.any((c) => c.id == item.categoryId)
+                          ? categories.firstWhere(
+                              (c) => c.id == item.categoryId,
+                            )
                           : (categories.isNotEmpty ? categories.first : null);
 
                       child = _buildUpcomingPaymentItem(
-                          context, ref, item, category, currency);
+                        context,
+                        ref,
+                        item,
+                        category,
+                        currency,
+                      );
                     } else {
                       child = _buildUpcomingDebtItem(
-                          context, ref, item as Debt, currency);
+                        context,
+                        ref,
+                        item as Debt,
+                        currency,
+                      );
                     }
 
                     return child
@@ -178,7 +194,9 @@ class UpcomingScreen extends ConsumerWidget {
                 Icon(
                   Icons.event_repeat_rounded,
                   size: 32,
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.3),
                 ),
                 const Gap(12),
                 Text(
@@ -193,7 +211,9 @@ class UpcomingScreen extends ConsumerWidget {
                 Text(
                   'Tap to add your first subscription',
                   style: TextStyle(
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
@@ -315,10 +335,8 @@ class UpcomingScreen extends ConsumerWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => AddRepaymentSheet(
-            debt: debt,
-            isIncrease: false,
-          ),
+          builder: (context) =>
+              AddRepaymentSheet(debt: debt, isIncrease: false),
         );
       },
       child: Container(

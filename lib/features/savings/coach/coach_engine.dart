@@ -1,7 +1,15 @@
 import 'dart:math';
 import 'package:koin/core/models/models.dart';
 
-enum CoachStatus { completed, overdue, tooEarly, atRisk, ahead, onTrack, behind }
+enum CoachStatus {
+  completed,
+  overdue,
+  tooEarly,
+  atRisk,
+  ahead,
+  onTrack,
+  behind,
+}
 
 class CoachGoal {
   final String id;
@@ -37,7 +45,7 @@ class CoachGoal {
   }
 
   double get remaining => max(0.0, target - current);
-  
+
   int elapsedDays(DateTime today) {
     return max(0, dateOnly(today).difference(startDate).inDays);
   }
@@ -98,13 +106,18 @@ class CoachEngine {
   final CoachGoal goal;
   final DateTime today;
 
-  CoachEngine({required this.goal, DateTime? today}) 
-      : today = CoachGoal.dateOnly(today ?? DateTime.now());
+  CoachEngine({required this.goal, DateTime? today})
+    : today = CoachGoal.dateOnly(today ?? DateTime.now());
 
-  CoachSimulationResult simulate({double extraSavedPerWeek = 0.0, int deadlineShiftWeeks = 0}) {
-    final newDeadline = goal.endDate.add(Duration(days: deadlineShiftWeeks * 7));
+  CoachSimulationResult simulate({
+    double extraSavedPerWeek = 0.0,
+    int deadlineShiftWeeks = 0,
+  }) {
+    final newDeadline = goal.endDate.add(
+      Duration(days: deadlineShiftWeeks * 7),
+    );
     final pace = max(0.0, goal.currentWeeklyPace(today) + extraSavedPerWeek);
-    
+
     DateTime? projectedFinish;
     int? daysLate;
 
@@ -112,11 +125,11 @@ class CoachEngine {
       projectedFinish = today;
       daysLate = projectedFinish.difference(newDeadline).inDays;
     } else if (pace <= 0) {
-      projectedFinish = null; 
+      projectedFinish = null;
     } else {
       final weeksToFinish = goal.remaining / pace;
       final daysToFinish = (weeksToFinish * 7).round();
-      if (daysToFinish > 36500) { 
+      if (daysToFinish > 36500) {
         projectedFinish = null;
       } else {
         projectedFinish = today.add(Duration(days: daysToFinish));
@@ -133,13 +146,13 @@ class CoachEngine {
     if (weeksLeft > 0) {
       weeklyAmountRequired = goal.remaining / weeksLeft;
     } else {
-      weeklyAmountRequired = goal.remaining; 
+      weeklyAmountRequired = goal.remaining;
     }
 
     // Classify status
     CoachStatus status;
     final goalTotalDays = max(1, newDeadline.difference(goal.startDate).inDays);
-    
+
     if (goal.remaining <= 0) {
       status = CoachStatus.completed;
     } else if (today.isAfter(newDeadline)) {
@@ -151,7 +164,7 @@ class CoachEngine {
     } else {
       final toleranceDays = max(3.0, goalTotalDays * 0.03).round();
       final behindThreshold = max(3.0, goalTotalDays * 0.25).round();
-      
+
       if (daysLate! < -toleranceDays) {
         status = CoachStatus.ahead;
       } else if (daysLate <= toleranceDays) {
@@ -180,16 +193,27 @@ class CoachEngine {
     final magnitude = pow(10, (log(val) / ln10).floor());
     final normalized = val / magnitude;
     double friendly;
-    if (normalized <= 1) { friendly = 1; }
-    else if (normalized <= 1.5) { friendly = 1.5; }
-    else if (normalized <= 2) { friendly = 2; }
-    else if (normalized <= 2.5) { friendly = 2.5; }
-    else if (normalized <= 3) { friendly = 3; }
-    else if (normalized <= 4) { friendly = 4; }
-    else if (normalized <= 5) { friendly = 5; }
-    else if (normalized <= 6) { friendly = 6; }
-    else if (normalized <= 8) { friendly = 8; }
-    else { friendly = 10; }
+    if (normalized <= 1) {
+      friendly = 1;
+    } else if (normalized <= 1.5) {
+      friendly = 1.5;
+    } else if (normalized <= 2) {
+      friendly = 2;
+    } else if (normalized <= 2.5) {
+      friendly = 2.5;
+    } else if (normalized <= 3) {
+      friendly = 3;
+    } else if (normalized <= 4) {
+      friendly = 4;
+    } else if (normalized <= 5) {
+      friendly = 5;
+    } else if (normalized <= 6) {
+      friendly = 6;
+    } else if (normalized <= 8) {
+      friendly = 8;
+    } else {
+      friendly = 10;
+    }
     return friendly * magnitude;
   }
 
@@ -197,7 +221,7 @@ class CoachEngine {
     // finish on time, 2 weeks early, 1 month early
     final targetsDaysEarly = [0, 14, 30];
     final currentPace = goal.currentWeeklyPace(today);
-    
+
     List<double> presets = [];
     for (int daysEarly in targetsDaysEarly) {
       final availableDays = goal.endDate.difference(today).inDays - daysEarly;
@@ -205,7 +229,7 @@ class CoachEngine {
       final availableWeeks = availableDays / 7.0;
       final extraNeeded = (goal.remaining / availableWeeks) - currentPace;
       if (extraNeeded <= 0) continue;
-      
+
       final friendly = _roundToFriendly(extraNeeded);
       if (friendly > sliderMax) continue;
       if (!presets.contains(friendly)) {
@@ -221,7 +245,9 @@ class CoachEngine {
     }
     final daysLeft = goal.endDate.difference(today).inDays;
     final weeksLeft = daysLeft / 7.0;
-    final requiredWeekly = weeksLeft > 0 ? goal.remaining / weeksLeft : goal.remaining;
+    final requiredWeekly = weeksLeft > 0
+        ? goal.remaining / weeksLeft
+        : goal.remaining;
     final currentPace = goal.currentWeeklyPace(today);
     final larger = max(requiredWeekly, currentPace);
     return _roundToFriendly(larger * 1.5);

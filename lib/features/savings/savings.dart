@@ -4,3 +4,4 @@ export 'add_savings_goal_screen.dart';
 export 'coach/coach_screen.dart';
 export 'coach/coach_engine.dart';
 export 'coach/stash_coach_view.dart';
+export 'widgets/savings_log_sheet.dart';

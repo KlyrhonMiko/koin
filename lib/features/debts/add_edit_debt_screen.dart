@@ -89,9 +89,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     final notes = _notesController.text.trim();
     if (notes.isEmpty) return;
 
-    final amt = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 1.0;
+    final amt =
+        double.tryParse(_amountController.text.replaceAll(',', '')) ?? 1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
-    final targetType = _selectedType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
+    final targetType = _selectedType == DebtType.owedToMe
+        ? TransactionType.income
+        : TransactionType.expense;
 
     try {
       final suggester = ref.read(categorySuggesterProvider);
@@ -107,14 +110,21 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
 
       if (suggestion != null && mounted) {
         final categories = ref.read(categoriesProvider).value ?? [];
-        final matchedCat = categories.where((c) => c.id == suggestion.categoryId).firstOrNull;
+        final matchedCat = categories
+            .where((c) => c.id == suggestion.categoryId)
+            .firstOrNull;
         if (matchedCat != null) {
-          if (_selectedCategoryId != matchedCat.id || (_selectedAccountId == null && suggestion.originAccountId != null && suggestion.originAccountId!.isNotEmpty)) {
+          if (_selectedCategoryId != matchedCat.id ||
+              (_selectedAccountId == null &&
+                  suggestion.originAccountId != null &&
+                  suggestion.originAccountId!.isNotEmpty)) {
             HapticService.light();
             setState(() {
               if (_selectedCategoryId != matchedCat.id) _autoCatKey++;
               _selectedCategoryId = matchedCat.id;
-              if (_selectedAccountId == null && suggestion.originAccountId != null && suggestion.originAccountId!.isNotEmpty) {
+              if (_selectedAccountId == null &&
+                  suggestion.originAccountId != null &&
+                  suggestion.originAccountId!.isNotEmpty) {
                 _selectedAccountId = suggestion.originAccountId;
               }
             });
@@ -142,7 +152,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       installments = int.tryParse(installmentsText) ?? 0;
     }
 
-    final finalAmount = _items.isNotEmpty ? _items.fold(0.0, (sum, i) => sum + i.amount) : amount;
+    final finalAmount = _items.isNotEmpty
+        ? _items.fold(0.0, (sum, i) => sum + i.amount)
+        : amount;
 
     final debt = Debt(
       id: id,
@@ -170,9 +182,17 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       for (var newItem in _items) {
         final existing = oldItems.where((i) => i.id == newItem.id).firstOrNull;
         if (existing == null) {
-          await ref.read(debtsProvider.notifier).addDebtItem(newItem.copyWith(debtId: id));
-        } else if (existing.amount != newItem.amount || existing.name != newItem.name || existing.totalInstallments != newItem.totalInstallments || existing.firstPaymentDate != newItem.firstPaymentDate || existing.categoryId != newItem.categoryId) {
-          await ref.read(debtsProvider.notifier).updateDebtItem(existing, newItem.copyWith(debtId: id));
+          await ref
+              .read(debtsProvider.notifier)
+              .addDebtItem(newItem.copyWith(debtId: id));
+        } else if (existing.amount != newItem.amount ||
+            existing.name != newItem.name ||
+            existing.totalInstallments != newItem.totalInstallments ||
+            existing.firstPaymentDate != newItem.firstPaymentDate ||
+            existing.categoryId != newItem.categoryId) {
+          await ref
+              .read(debtsProvider.notifier)
+              .updateDebtItem(existing, newItem.copyWith(debtId: id));
         }
       }
       if (mounted) {
@@ -185,19 +205,25 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     } else {
       await ref.read(debtsProvider.notifier).addDebt(debt);
       for (var item in _items) {
-        await ref.read(debtsProvider.notifier).addDebtItem(item.copyWith(debtId: id));
+        await ref
+            .read(debtsProvider.notifier)
+            .addDebtItem(item.copyWith(debtId: id));
       }
     }
 
     if (_selectedCategoryId != null && notes.isNotEmpty) {
-      final targetType = _selectedType == DebtType.owedToMe ? TransactionType.income : TransactionType.expense;
-      ref.read(categorySuggesterProvider).recordFeedback(
-        text: notes,
-        amount: finalAmount,
-        type: targetType,
-        originAccountId: _selectedAccountId ?? '',
-        destinationId: _selectedCategoryId!,
-      );
+      final targetType = _selectedType == DebtType.owedToMe
+          ? TransactionType.income
+          : TransactionType.expense;
+      ref
+          .read(categorySuggesterProvider)
+          .recordFeedback(
+            text: notes,
+            amount: finalAmount,
+            type: targetType,
+            originAccountId: _selectedAccountId ?? '',
+            destinationId: _selectedCategoryId!,
+          );
     }
 
     if (mounted) {
@@ -230,160 +256,208 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     // Type Selector
                     const FormSectionTitle.subhead(title: 'Type'),
                     const Gap(12),
-                    _buildPremiumTypeSwitcher(
-                      context,
-                      primaryColor,
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                    _buildPremiumTypeSwitcher(context, primaryColor)
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(32),
 
                     // Installment Plan
-                    const FormSectionTitle.subhead(title: 'Installment Plan (Optional)'),
+                    const FormSectionTitle.subhead(
+                      title: 'Installment Plan (Optional)',
+                    ),
                     const Gap(12),
-                    _buildInstallmentsCard(
-                      context,
-                      primaryColor,
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                    _buildInstallmentsCard(context, primaryColor)
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(32),
 
                     // Purchases / Sub-Items
-                    _buildPurchasesSection(context, primaryColor, categoriesState.value ?? []).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                    _buildPurchasesSection(
+                          context,
+                          primaryColor,
+                          categoriesState.value ?? [],
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(32),
 
                     // Date
                     FormSectionTitle.subhead(
-                      title: int.tryParse(_installmentsController.text) != null &&
+                      title:
+                          int.tryParse(_installmentsController.text) != null &&
                               int.parse(_installmentsController.text) > 0
                           ? 'Start Payment Date'
                           : 'Record Date',
                     ),
                     const Gap(12),
                     DateSelectorTile(
-                      label: int.tryParse(_installmentsController.text) != null &&
-                              int.parse(_installmentsController.text) > 0
-                          ? 'Start Payment Date'
-                          : 'Record Date',
-                      date: _startDate,
-                      icon: Icons.calendar_today_rounded,
-                      primaryColor: primaryColor,
-                      onDateSelected: (dt) {
-                        setState(() => _startDate = dt);
-                      },
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                          label:
+                              int.tryParse(_installmentsController.text) !=
+                                      null &&
+                                  int.parse(_installmentsController.text) > 0
+                              ? 'Start Payment Date'
+                              : 'Record Date',
+                          date: _startDate,
+                          icon: Icons.calendar_today_rounded,
+                          primaryColor: primaryColor,
+                          onDateSelected: (dt) {
+                            setState(() => _startDate = dt);
+                          },
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(32),
 
                     // Details Section
                     const FormSectionTitle.subhead(title: 'Details'),
                     const Gap(12),
                     Column(
-                      children: [
-                        // Account Picker (Optional)
-                        SelectionTile(
-                          fallbackIcon: Icons.account_balance_wallet_rounded,
-                          label: 'Link to Account (Optional)',
-                          selectedName: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.name,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedColor: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.color,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedIconCodePoint: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.iconCodePoint,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          selectedLogoAsset: accountsState.when(
-                            data: (accounts) => accounts
-                                .where((a) => a.id == _selectedAccountId)
-                                .firstOrNull
-                                ?.logoAsset,
-                            loading: () => null,
-                            error: (_, stackTrace) => null,
-                          ),
-                          placeholder: 'Select Account',
-                          onTap: () => accountsState.whenData(
-                            (accounts) => _openAccountPicker(context, accounts),
-                          ),
-                        ),
-                        const Gap(12),
-                        // Category Picker (Optional)
-                        Builder(
-                          builder: (context) {
-                            Widget child = SelectionTile(
-                              fallbackIcon: Icons.category_rounded,
-                              label: 'Link to Category (Optional)',
-                              selectedName: categoriesState.when(
-                                data: (cats) => cats
-                                    .where((c) => c.id == _selectedCategoryId)
+                          children: [
+                            // Account Picker (Optional)
+                            SelectionTile(
+                              fallbackIcon:
+                                  Icons.account_balance_wallet_rounded,
+                              label: 'Link to Account (Optional)',
+                              selectedName: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.name,
                                 loading: () => null,
-                                error: (_, _) => null,
+                                error: (_, stackTrace) => null,
                               ),
-                              selectedColor: categoriesState.when(
-                                data: (cats) => cats
-                                    .where((c) => c.id == _selectedCategoryId)
+                              selectedColor: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.color,
                                 loading: () => null,
-                                error: (_, _) => null,
+                                error: (_, stackTrace) => null,
                               ),
-                              selectedIconCodePoint: categoriesState.when(
-                                data: (cats) => cats
-                                    .where((c) => c.id == _selectedCategoryId)
+                              selectedIconCodePoint: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
                                     .firstOrNull
                                     ?.iconCodePoint,
                                 loading: () => null,
-                                error: (_, _) => null,
+                                error: (_, stackTrace) => null,
                               ),
-                              placeholder: 'Select Category',
-                              onTap: () => categoriesState.whenData(
-                                (cats) => _openCategoryPicker(context, cats),
+                              selectedLogoAsset: accountsState.when(
+                                data: (accounts) => accounts
+                                    .where((a) => a.id == _selectedAccountId)
+                                    .firstOrNull
+                                    ?.logoAsset,
+                                loading: () => null,
+                                error: (_, stackTrace) => null,
                               ),
-                            );
+                              placeholder: 'Select Account',
+                              onTap: () => accountsState.whenData(
+                                (accounts) =>
+                                    _openAccountPicker(context, accounts),
+                              ),
+                            ),
+                            const Gap(12),
+                            // Category Picker (Optional)
+                            Builder(
+                              builder: (context) {
+                                Widget child = SelectionTile(
+                                  fallbackIcon: Icons.category_rounded,
+                                  label: 'Link to Category (Optional)',
+                                  selectedName: categoriesState.when(
+                                    data: (cats) => cats
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.name,
+                                    loading: () => null,
+                                    error: (_, _) => null,
+                                  ),
+                                  selectedColor: categoriesState.when(
+                                    data: (cats) => cats
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.color,
+                                    loading: () => null,
+                                    error: (_, _) => null,
+                                  ),
+                                  selectedIconCodePoint: categoriesState.when(
+                                    data: (cats) => cats
+                                        .where(
+                                          (c) => c.id == _selectedCategoryId,
+                                        )
+                                        .firstOrNull
+                                        ?.iconCodePoint,
+                                    loading: () => null,
+                                    error: (_, _) => null,
+                                  ),
+                                  placeholder: 'Select Category',
+                                  onTap: () => categoriesState.whenData(
+                                    (cats) =>
+                                        _openCategoryPicker(context, cats),
+                                  ),
+                                );
 
-                            if (_autoCatKey > 0) {
-                              child = child
-                                  .animate(key: ValueKey(_autoCatKey))
-                                  .shimmer(
-                                    duration: 400.ms,
-                                    color: AppTheme.primaryColor(context)
-                                        .withValues(alpha: 0.2),
-                                  )
-                                  .scale(
-                                    duration: 150.ms,
-                                    curve: Curves.easeOut,
-                                    begin: const Offset(1, 1),
-                                    end: const Offset(1.02, 1.02),
-                                  )
-                                  .then()
-                                  .scale(
-                                    duration: 250.ms,
-                                    curve: Curves.easeOutBack,
-                                    begin: const Offset(1.02, 1.02),
-                                    end: const Offset(1, 1),
-                                  );
-                            }
-                            return child;
-                          },
+                                if (_autoCatKey > 0) {
+                                  child = child
+                                      .animate(key: ValueKey(_autoCatKey))
+                                      .shimmer(
+                                        duration: 400.ms,
+                                        color: AppTheme.primaryColor(
+                                          context,
+                                        ).withValues(alpha: 0.2),
+                                      )
+                                      .scale(
+                                        duration: 150.ms,
+                                        curve: Curves.easeOut,
+                                        begin: const Offset(1, 1),
+                                        end: const Offset(1.02, 1.02),
+                                      )
+                                      .then()
+                                      .scale(
+                                        duration: 250.ms,
+                                        curve: Curves.easeOutBack,
+                                        begin: const Offset(1.02, 1.02),
+                                        end: const Offset(1, 1),
+                                      );
+                                }
+                                return child;
+                              },
+                            ),
+                            const Gap(12),
+                            // Notes Input
+                            _buildNotesInput(context),
+                          ],
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                        const Gap(12),
-                        // Notes Input
-                        _buildNotesInput(context),
-                      ],
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -392,45 +466,54 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: PressableScale(
-          onTap: _save,
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+      floatingActionButton:
+          Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: PressableScale(
+                  onTap: _save,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryColor,
+                          primaryColor.withValues(alpha: 0.85),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    child: Text(
+                      isEdit ? 'Update' : 'Create',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Text(
-              isEdit ? 'Update' : 'Create',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 0.5,
+              )
+              .animate()
+              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+              .scale(
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: Curves.easeOutCubic,
               ),
-            ),
-          ),
-        ),
-      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
     );
   }
-
-
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -578,8 +661,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     );
   }
 
-
-
   Widget _buildInstallmentsCard(BuildContext context, Color primaryColor) {
     final settings = ref.read(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(
@@ -669,7 +750,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                               final count = int.tryParse(val) ?? 0;
                               setState(() {
                                 if (count > 0 && !_frequencyUserSet) {
-                                  _selectedFrequency = InstallmentFrequency.monthly;
+                                  _selectedFrequency =
+                                      InstallmentFrequency.monthly;
                                 }
                               });
                             },
@@ -748,7 +830,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             size: 16,
                             color: inst > 0
                                 ? primaryColor.withValues(alpha: 0.8)
-                                : AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                                : AppTheme.textLightColor(
+                                    context,
+                                  ).withValues(alpha: 0.3),
                           ),
                           const Gap(8),
                           Expanded(
@@ -759,7 +843,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                                 fontWeight: FontWeight.w600,
                                 color: inst > 0
                                     ? AppTheme.textColor(context)
-                                    : AppTheme.textLightColor(context).withValues(alpha: 0.35),
+                                    : AppTheme.textLightColor(
+                                        context,
+                                      ).withValues(alpha: 0.35),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -996,99 +1082,130 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       setState(() => _selectedFrequency = freq);
     }
   }
-  Widget _buildPurchasesSection(BuildContext context, Color primaryColor, List<TransactionCategory> categories) {
+
+  Widget _buildPurchasesSection(
+    BuildContext context,
+    Color primaryColor,
+    List<TransactionCategory> categories,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const FormSectionTitle.subhead(title: 'Purchases / Sub-Plans (Optional)'),
+        const FormSectionTitle.subhead(
+          title: 'Purchases / Sub-Plans (Optional)',
+        ),
         const Gap(12),
         if (_items.isNotEmpty)
-          ..._items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: PressableScale(
-              onTap: () async {
-                HapticService.light();
-                final updatedItem = await showAddPurchaseSheet(
-                  context: context,
-                  debtType: _selectedType,
-                  primaryColor: primaryColor,
-                  categories: categories,
-                  defaultDate: _startDate,
-                  existingItem: item,
-                );
-                if (updatedItem != null) {
-                  setState(() {
-                    final index = _items.indexOf(item);
-                    if (index != -1) {
-                      _items[index] = updatedItem;
-                      _updateAmountFromItems();
-                    }
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.dividerColor(context).withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.name, 
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textColor(context)),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const Gap(4),
-                          Text(
-                            '${item.totalInstallments} months • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}', 
-                            style: TextStyle(color: AppTheme.textLightColor(context), fontSize: 12),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+          ..._items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: PressableScale(
+                onTap: () async {
+                  HapticService.light();
+                  final updatedItem = await showAddPurchaseSheet(
+                    context: context,
+                    debtType: _selectedType,
+                    primaryColor: primaryColor,
+                    categories: categories,
+                    defaultDate: _startDate,
+                    existingItem: item,
+                  );
+                  if (updatedItem != null) {
+                    setState(() {
+                      final index = _items.indexOf(item);
+                      if (index != -1) {
+                        _items[index] = updatedItem;
+                        _updateAmountFromItems();
+                      }
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.dividerColor(
+                        context,
+                      ).withValues(alpha: 0.6),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: AppTheme.textColor(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Gap(4),
+                            Text(
+                              '${item.totalInstallments} months • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context),
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Gap(12),
-                    Text(
-                      NumberFormat.simpleCurrency(name: ref.read(settingsProvider).currency.code).format(item.amount),
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: primaryColor),
-                      textAlign: TextAlign.right,
-                    ),
-                    const Gap(12),
-                    GestureDetector(
-                      onTap: () async {
-                        HapticService.light();
-                        final confirm = await ConfirmationSheet.show(
-                          context: context,
-                          title: 'Remove Purchase?',
-                          description: 'Are you sure you want to remove "${item.name}"? This will not update your existing credit limit.',
-                          confirmLabel: 'Remove',
-                          confirmColor: AppTheme.expenseColor(context),
-                          icon: Icons.delete_outline_rounded,
-                          isDanger: true,
-                        );
-                        if (confirm == true) {
-                          setState(() {
-                             _items.remove(item);
-                             _updateAmountFromItems();
-                          });
-                        }
-                      },
-                      child: Icon(Icons.remove_circle_outline_rounded, color: AppTheme.expenseColor(context), size: 24),
-                    ),
-                  ],
+                      const Gap(12),
+                      Text(
+                        NumberFormat.simpleCurrency(
+                          name: ref.read(settingsProvider).currency.code,
+                        ).format(item.amount),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: primaryColor,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                      const Gap(12),
+                      GestureDetector(
+                        onTap: () async {
+                          HapticService.light();
+                          final confirm = await ConfirmationSheet.show(
+                            context: context,
+                            title: 'Remove Purchase?',
+                            description:
+                                'Are you sure you want to remove "${item.name}"? This will not update your existing credit limit.',
+                            confirmLabel: 'Remove',
+                            confirmColor: AppTheme.expenseColor(context),
+                            icon: Icons.delete_outline_rounded,
+                            isDanger: true,
+                          );
+                          if (confirm == true) {
+                            setState(() {
+                              _items.remove(item);
+                              _updateAmountFromItems();
+                            });
+                          }
+                        },
+                        child: Icon(
+                          Icons.remove_circle_outline_rounded,
+                          color: AppTheme.expenseColor(context),
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          )),
-        
+          ),
+
         PressableScale(
           onTap: () async {
             HapticService.light();
@@ -1116,9 +1233,19 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_circle_outline_rounded, color: primaryColor, size: 20),
+                Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: primaryColor,
+                  size: 20,
+                ),
                 const Gap(8),
-                Text('Add Purchase / Sub-Plan', style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700)),
+                Text(
+                  'Add Purchase / Sub-Plan',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1130,7 +1257,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   void _updateAmountFromItems() {
     if (_items.isNotEmpty) {
       final total = _items.fold(0.0, (sum, i) => sum + i.amount);
-      _amountController.text = total.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '');
+      _amountController.text = total
+          .toStringAsFixed(2)
+          .replaceAll(RegExp(r'\.00$'), '');
     }
   }
 }

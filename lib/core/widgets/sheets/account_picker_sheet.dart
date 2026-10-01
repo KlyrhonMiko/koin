@@ -23,7 +23,8 @@ Future<String?> showAccountPickerSheet({
   String noneLabel = 'No Account (Balance only)',
   String noneValue = '',
 }) async {
-  final rawAccounts = accountsOverride ?? (ref.read(accountProvider).value ?? []);
+  final rawAccounts =
+      accountsOverride ?? (ref.read(accountProvider).value ?? []);
   final accounts = excludeAccountId == null
       ? rawAccounts
       : rawAccounts.where((a) => a.id != excludeAccountId).toList();
@@ -35,13 +36,17 @@ Future<String?> showAccountPickerSheet({
     context: context,
     title: title,
     subtitle: subtitle,
-    emptyMessage: emptyMessage ?? (accounts.isEmpty && !allowNone ? 'No accounts available' : null),
+    emptyMessage:
+        emptyMessage ??
+        (accounts.isEmpty && !allowNone ? 'No accounts available' : null),
     itemCount: totalCount,
     itemBuilder: (sheetContext, index) {
       if (allowNone && index == 0) {
         return SelectSheetItem(
           name: noneLabel,
-          accentColor: AppTheme.textLightColor(sheetContext).withValues(alpha: 0.5),
+          accentColor: AppTheme.textLightColor(
+            sheetContext,
+          ).withValues(alpha: 0.5),
           iconCodePoint: Icons.money_off_rounded.codePoint,
           selected: selectedAccountId == null || selectedAccountId.isEmpty,
           onTap: () => Navigator.pop(sheetContext, noneValue),
@@ -68,7 +73,9 @@ Future<String?> showAccountPickerSheet({
               final updatedAccount = acc.copyWith(
                 excludeFromTotal: !acc.excludeFromTotal,
               );
-              refConsumer.read(accountProvider.notifier).updateAccount(updatedAccount);
+              refConsumer
+                  .read(accountProvider.notifier)
+                  .updateAccount(updatedAccount);
             },
           );
         },
@@ -76,4 +83,3 @@ Future<String?> showAccountPickerSheet({
     },
   );
 }
-

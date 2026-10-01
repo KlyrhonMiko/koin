@@ -1,6 +1,7 @@
 export 'database_helper.dart';
 export 'theme.dart';
 export 'ledger/ledger.dart';
+export 'forecasting/forecasting.dart';
 export 'categorization/categorization.dart';
 export 'models/models.dart';
 export 'providers/providers.dart';

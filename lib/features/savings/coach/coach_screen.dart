@@ -20,7 +20,7 @@ class SavingsCoachScreen extends ConsumerStatefulWidget {
 class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
   late CoachEngine _engine;
   late CoachSimulationResult _baseline;
-  
+
   double _extraPerWeek = 0.0;
   int _deadlineShiftWeeks = 0;
 
@@ -54,11 +54,12 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
 
       // Determine the fixed axis for the timeline
       DateTime latest = _engine.goal.endDate;
-      if (_baseline.projectedFinish != null && _baseline.projectedFinish!.isAfter(latest)) {
+      if (_baseline.projectedFinish != null &&
+          _baseline.projectedFinish!.isAfter(latest)) {
         latest = _baseline.projectedFinish!;
       }
-      
-      // Also consider if slider is at max, what is the finish date? 
+
+      // Also consider if slider is at max, what is the finish date?
       // Actually, maxing the slider makes finish date earlier, so it won't push the axis right.
       // What about max deadline shift? We don't have a max, but let's give the axis a little padding.
       _latestDateForAxis = latest.add(const Duration(days: 30));
@@ -86,24 +87,32 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       symbol: ref.watch(settingsProvider).currency.symbol,
     );
 
-    final headline = CoachCopy.getHeadline(_baseline, widget.goal.id, currencyFmt);
+    final headline = CoachCopy.getHeadline(
+      _baseline,
+      widget.goal.id,
+      currencyFmt,
+    );
 
     if (_baseline.status == CoachStatus.completed) {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor(context),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.emoji_events_rounded, size: 80, color: Colors.amber),
+              const Icon(
+                Icons.emoji_events_rounded,
+                size: 80,
+                color: Colors.amber,
+              ),
               const Gap(24),
               Text(
                 headline,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ).animate().fade().scale(),
             ],
@@ -117,7 +126,11 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       deadlineShiftWeeks: _deadlineShiftWeeks,
     );
 
-    final scenarioText = CoachCopy.getScenarioSentence(_baseline, sim, currencyFmt);
+    final scenarioText = CoachCopy.getScenarioSentence(
+      _baseline,
+      sim,
+      currencyFmt,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -165,7 +178,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                   color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                    color: AppTheme.primaryColor(
+                      context,
+                    ).withValues(alpha: 0.1),
                   ),
                 ),
                 child: Text(
@@ -205,11 +220,13 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                           setState(() => _extraPerWeek = preset);
                         }
                       },
-                      selectedColor: AppTheme.primaryColor(context).withValues(alpha: 0.2),
+                      selectedColor: AppTheme.primaryColor(
+                        context,
+                      ).withValues(alpha: 0.2),
                       backgroundColor: AppTheme.surfaceColor(context),
                       labelStyle: TextStyle(
-                        color: isSelected 
-                            ? AppTheme.primaryColor(context) 
+                        color: isSelected
+                            ? AppTheme.primaryColor(context)
                             : AppTheme.textColor(context),
                         fontWeight: FontWeight.w600,
                       ),
@@ -236,8 +253,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: _extraPerWeek > 0 
-                          ? AppTheme.primaryColor(context) 
+                      color: _extraPerWeek > 0
+                          ? AppTheme.primaryColor(context)
                           : AppTheme.textColor(context),
                     ),
                   ),
@@ -246,7 +263,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: AppTheme.primaryColor(context),
-                  inactiveTrackColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                  inactiveTrackColor: AppTheme.primaryColor(
+                    context,
+                  ).withValues(alpha: 0.1),
                   thumbColor: AppTheme.primaryColor(context),
                   trackHeight: 8,
                 ),
@@ -336,7 +355,10 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                         ),
                         child: const Text(
                           "Reset",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -359,13 +381,16 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                         ),
                         child: const Text(
                           "Use this plan",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ).animate().fade().slideY(begin: 0.2),
-                
+
               const Gap(40),
             ],
           ),
@@ -395,16 +420,19 @@ class _TimelineView extends StatelessWidget {
         return TweenAnimationBuilder<double>(
           // Use a simple tween over a timeline parameter (0 to 1) to animate position
           // We will animate the 'sim' projected finish and deadline shift smoothly.
-          // For simplicity, we just rebuild the CustomPaint with the exact dates, 
+          // For simplicity, we just rebuild the CustomPaint with the exact dates,
           // but we can animate the dates by converting to milliseconds!
           tween: Tween<double>(
-            begin: sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ?? latestDate.millisecondsSinceEpoch.toDouble(),
-            end: sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ?? latestDate.millisecondsSinceEpoch.toDouble(),
+            begin:
+                sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ??
+                latestDate.millisecondsSinceEpoch.toDouble(),
+            end:
+                sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ??
+                latestDate.millisecondsSinceEpoch.toDouble(),
           ),
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeOutCubic,
           builder: (context, animatedProjMs, child) {
-            
             final animProjFinish = sim.projectedFinish != null
                 ? DateTime.fromMillisecondsSinceEpoch(animatedProjMs.toInt())
                 : null;
@@ -529,7 +557,10 @@ class _TimelinePainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    textPainter.paint(canvas, Offset(targetX - textPainter.width / 2, centerY - 24));
+    textPainter.paint(
+      canvas,
+      Offset(targetX - textPainter.width / 2, centerY - 24),
+    );
 
     // 4. Hollow marker for baseline projected finish
     if (baselineProjected != null) {
@@ -562,7 +593,10 @@ class _TimelinePainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       finishText.layout();
-      finishText.paint(canvas, Offset(projX - finishText.width / 2, centerY + 12));
+      finishText.paint(
+        canvas,
+        Offset(projX - finishText.width / 2, centerY + 12),
+      );
     }
   }
 

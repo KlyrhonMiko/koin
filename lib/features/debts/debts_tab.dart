@@ -4,8 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
-import 'package:koin/features/debts/add_edit_debt_screen.dart';
-import 'package:koin/features/debts/debt_details_screen.dart';
+import 'package:koin/features/debts/debts.dart';
 
 class DebtsTab extends ConsumerWidget {
   final String? animationSessionKey;
@@ -30,7 +29,8 @@ class DebtsTab extends ConsumerWidget {
           return KoinEmptyState.sliver(
             icon: Icons.handshake_rounded,
             title: 'No credit or IOUs',
-            subtitle: 'Track BNPL, credit cards, and\nmoney you owe or are owed.',
+            subtitle:
+                'Track BNPL, credit cards, and\nmoney you owe or are owed.',
             action: SizedBox(
               width: double.infinity,
               child: Container(
@@ -52,15 +52,10 @@ class DebtsTab extends ConsumerWidget {
                     HapticService.medium();
                     Navigator.push(
                       context,
-                      SlideUpRoute(
-                        page: const AddEditDebtScreen(),
-                      ),
+                      SlideUpRoute(page: const AddEditDebtScreen()),
                     );
                   },
-                  icon: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.add_rounded, color: Colors.white),
                   label: const Text(
                     'Add Your First Account',
                     style: TextStyle(
@@ -72,17 +67,13 @@ class DebtsTab extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
               ),
             ),
           );
         }
-
-
 
         return ReorderableListView.builder(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
@@ -129,11 +120,11 @@ class DebtsTab extends ConsumerWidget {
   ) {
     double netBalance = 0.0;
     double totalRepaid = 0.0;
-    
+
     for (final debt in debts) {
       final remaining = debt.amount - debt.currentAmount;
       totalRepaid += debt.currentAmount;
-      
+
       if (debt.type == DebtType.owedToMe) {
         netBalance += remaining;
       } else {
@@ -142,22 +133,22 @@ class DebtsTab extends ConsumerWidget {
     }
 
     final isNegative = netBalance < 0;
-    final cardColor = isNegative 
-        ? AppTheme.expenseColor(context) 
+    final cardColor = isNegative
+        ? AppTheme.expenseColor(context)
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
-      margin: const EdgeInsets.only(bottom: 24),
-      glowColor: cardColor,
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          cardColor.withValues(alpha: 0.95),
-          cardColor.withValues(alpha: 0.85),
-        ],
-      ),
-      child: Column(
+          margin: const EdgeInsets.only(bottom: 24),
+          glowColor: cardColor,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cardColor.withValues(alpha: 0.95),
+              cardColor.withValues(alpha: 0.85),
+            ],
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -241,17 +232,15 @@ class DebtsTab extends ConsumerWidget {
               ),
             ],
           ),
-    )
-    .animate()
-    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-    .scale(
-      begin: const Offset(0.95, 0.95),
-      duration: 250.ms,
-      curve: Curves.easeOutCubic,
-    );
+        )
+        .animate()
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
-
-
 
   Widget _buildAddDebtButton(BuildContext context) {
     return PressableScale(
@@ -293,8 +282,6 @@ class DebtsTab extends ConsumerWidget {
       ),
     );
   }
-
-
 }
 
 class DebtCard extends StatelessWidget {
@@ -483,7 +470,9 @@ class DebtCard extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                           color: _isDueOverdue(debt.dueDate!)
                               ? Colors.redAccent
-                              : AppTheme.textLightColor(context).withValues(alpha: 0.6),
+                              : AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -506,10 +495,7 @@ class DebtCard extends StatelessWidget {
             duration: 240.ms,
             curve: const Cubic(0.23, 1, 0.32, 1),
           )
-          .fadeIn(
-            delay: delay,
-            duration: 200.ms,
-          );
+          .fadeIn(delay: delay, duration: 200.ms);
     }
 
     return content;

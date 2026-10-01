@@ -83,10 +83,7 @@ class KoinEmptyState extends StatelessWidget {
             height: 1.4,
           ),
         ),
-        if (action != null) ...[
-          const Gap(24),
-          action!,
-        ],
+        if (action != null) ...[const Gap(24), action!],
       ],
     );
   }

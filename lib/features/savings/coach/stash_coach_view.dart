@@ -17,7 +17,7 @@ class StashCoachView extends ConsumerStatefulWidget {
 
 class _StashCoachViewState extends ConsumerState<StashCoachView> {
   StashSimMode _mode = StashSimMode.balance;
-  
+
   late double _weeklySaved;
   late DateTime _targetDate;
   late double _targetAmount;
@@ -76,7 +76,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   color: AppTheme.surfaceColor(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                    color: AppTheme.dividerColor(
+                      context,
+                    ).withValues(alpha: 0.5),
                   ),
                 ),
                 padding: const EdgeInsets.all(4),
@@ -84,8 +86,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   children: [
                     Expanded(
                       child: _buildToggleOption(
-                        context, 
-                        title: 'Target Date', 
+                        context,
+                        title: 'Target Date',
                         isSelected: _mode == StashSimMode.balance,
                         onTap: () {
                           HapticService.light();
@@ -95,8 +97,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                     ),
                     Expanded(
                       child: _buildToggleOption(
-                        context, 
-                        title: 'Target Amount', 
+                        context,
+                        title: 'Target Amount',
                         isSelected: _mode == StashSimMode.time,
                         onTap: () {
                           HapticService.light();
@@ -112,11 +114,11 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
               // 2. Big Result Headline
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                child: _mode == StashSimMode.balance 
-                  ? _buildBalanceHeadline(currencyFmt)
-                  : _buildTimeHeadline(currencyFmt),
+                child: _mode == StashSimMode.balance
+                    ? _buildBalanceHeadline(currencyFmt)
+                    : _buildTimeHeadline(currencyFmt),
               ),
-              
+
               const Gap(40),
 
               // 3. Mode Specific Inputs
@@ -135,7 +137,11 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                     IconButton(
                       onPressed: () {
                         HapticService.light();
-                        setState(() => _targetDate = _targetDate.subtract(const Duration(days: 30)));
+                        setState(
+                          () => _targetDate = _targetDate.subtract(
+                            const Duration(days: 30),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.remove_circle_outline),
                       color: AppTheme.textLightColor(context),
@@ -164,7 +170,11 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                     IconButton(
                       onPressed: () {
                         HapticService.light();
-                        setState(() => _targetDate = _targetDate.add(const Duration(days: 30)));
+                        setState(
+                          () => _targetDate = _targetDate.add(
+                            const Duration(days: 30),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.add_circle_outline),
                       color: AppTheme.textLightColor(context),
@@ -185,7 +195,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        if (_targetAmount <= widget.goal.currentAmount + 100) return;
+                        if (_targetAmount <= widget.goal.currentAmount + 100) {
+                          return;
+                        }
                         HapticService.light();
                         setState(() => _targetAmount -= 100);
                       },
@@ -214,7 +226,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   ],
                 ),
               ],
-              
+
               const Gap(32),
 
               // 4. Slider
@@ -242,7 +254,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
               SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: AppTheme.primaryColor(context),
-                  inactiveTrackColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                  inactiveTrackColor: AppTheme.primaryColor(
+                    context,
+                  ).withValues(alpha: 0.1),
                   thumbColor: AppTheme.primaryColor(context),
                   trackHeight: 8,
                 ),
@@ -257,7 +271,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   onChangeEnd: (_) => HapticService.selection(),
                 ),
               ),
-              
+
               const Gap(48),
 
               // 5. Use this plan
@@ -265,23 +279,27 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                 onPressed: () {
                   HapticService.success();
                   // Return the simulated deadline depending on mode
-                  final dt = _mode == StashSimMode.balance ? _targetDate : (_projectedDate ?? _targetDate);
-                  final amt = _mode == StashSimMode.balance ? _projectedBalance : _targetAmount;
-                  
+                  final dt = _mode == StashSimMode.balance
+                      ? _targetDate
+                      : (_projectedDate ?? _targetDate);
+                  final amt = _mode == StashSimMode.balance
+                      ? _projectedBalance
+                      : _targetAmount;
+
                   // Reusing CoachSimulationResult structure to pass back new params
                   Navigator.pop(
-                    context, 
+                    context,
                     CoachSimulationResult(
-                      status: CoachStatus.onTrack, 
-                      newDeadline: dt, 
-                      weeklyPace: _weeklySaved, 
-                      projectedFinish: dt, 
-                      daysLate: 0, 
-                      weeklyAmountRequired: _weeklySaved, 
+                      status: CoachStatus.onTrack,
+                      newDeadline: dt,
+                      weeklyPace: _weeklySaved,
+                      projectedFinish: dt,
+                      daysLate: 0,
+                      weeklyAmountRequired: _weeklySaved,
                       extraSavedPerWeek: 0,
                       deadlineShiftWeeks: 0,
-                      targetAmountOverride: amt
-                    )
+                      targetAmountOverride: amt,
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -306,14 +324,21 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
     );
   }
 
-  Widget _buildToggleOption(BuildContext context, {required String title, required bool isSelected, required VoidCallback onTap}) {
+  Widget _buildToggleOption(
+    BuildContext context, {
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor(context) : Colors.transparent,
+          color: isSelected
+              ? AppTheme.primaryColor(context)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         alignment: Alignment.center,
@@ -381,7 +406,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
           ),
         ),
         const Gap(4),
-        if (pDate == null) 
+        if (pDate == null)
           Text(
             "Never",
             style: TextStyle(
@@ -412,7 +437,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
               color: AppTheme.primaryColor(context),
             ),
           ),
-        ]
+        ],
       ],
     );
   }

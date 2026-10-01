@@ -32,35 +32,46 @@ void main() {
       expect(tx.amount, 50.0);
     });
 
-    test('core.dart provides seamless access to ledger and categorization seams', () {
-      final ledger = InMemoryLedgerAdapter();
-      expect(ledger, isA<Ledger>());
+    test(
+      'core.dart provides seamless access to ledger and categorization seams',
+      () {
+        final ledger = InMemoryLedgerAdapter();
+        expect(ledger, isA<Ledger>());
 
-      final adapter = TestStubSuggesterAdapter(
-        stubbedSuggestion: const CategorySuggestion(
-          categoryId: 'cat_stub',
-          type: TransactionType.expense,
-          confidence: 0.9,
-        ),
-      );
-      expect(adapter, isA<CategorySuggester>());
-    });
+        final adapter = TestStubSuggesterAdapter(
+          stubbedSuggestion: const CategorySuggestion(
+            categoryId: 'cat_stub',
+            type: TransactionType.expense,
+            confidence: 0.9,
+          ),
+        );
+        expect(adapter, isA<CategorySuggester>());
 
-    test('features.dart provides unified access to all feature screens and layouts', () {
-      expect(MainLayout, isNotNull);
-      expect(DashboardScreen, isNotNull);
-      expect(PortfolioScreen, isNotNull);
-      expect(ActivityScreen, isNotNull);
-      expect(BudgetsScreen, isNotNull);
-      expect(AccountsScreen, isNotNull);
-      expect(CategoryManagerScreen, isNotNull);
-      expect(CustomReportsScreen, isNotNull);
-      expect(SettingsScreen, isNotNull);
-      expect(CashflowScheduleTab, isNotNull);
-      expect(DebtsTab, isNotNull);
-      expect(SavingsTab, isNotNull);
-      expect(TransactionsListScreen, isNotNull);
-    });
+        expect(CashflowForecaster, isNotNull);
+        expect(ForecastHorizon.values.length, 3);
+      },
+    );
+
+    test(
+      'features.dart provides unified access to all feature screens and layouts',
+      () {
+        expect(MainLayout, isNotNull);
+        expect(DashboardScreen, isNotNull);
+        expect(PortfolioScreen, isNotNull);
+        expect(ActivityScreen, isNotNull);
+        expect(BudgetsScreen, isNotNull);
+        expect(AccountsScreen, isNotNull);
+        expect(CategoryManagerScreen, isNotNull);
+        expect(CustomReportsScreen, isNotNull);
+        expect(SettingsScreen, isNotNull);
+        expect(CashflowScheduleTab, isNotNull);
+        expect(DebtsTab, isNotNull);
+        expect(SavingsTab, isNotNull);
+        expect(TransactionsListScreen, isNotNull);
+        expect(AddRepaymentSheet, isNotNull);
+        expect(SavingsLogSheet, isNotNull);
+      },
+    );
 
     test('koin.dart root barrel exports both core and features layers', () {
       // Validates that koin.dart cleanly compiles and exports both layers

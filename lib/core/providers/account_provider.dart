@@ -18,14 +18,16 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
 
   Future<void> addAccount(Account account) async {
     final currentAccounts = state.value ?? [];
-    final accountWithPosition = account.copyWith(position: currentAccounts.length);
-    
+    final accountWithPosition = account.copyWith(
+      position: currentAccounts.length,
+    );
+
     // Save previous state for rollback
     final previousState = state;
-    
+
     // Optimistic update
     state = AsyncValue.data([...currentAccounts, accountWithPosition]);
-    
+
     try {
       await DatabaseHelper.instance.insertAccount(accountWithPosition);
       // Optional: reload if you want to be 100% sure, but optimistic should be enough
@@ -37,15 +39,15 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
 
   Future<void> updateAccount(Account account) async {
     if (!state.hasValue) return;
-    
+
     final previousState = state;
     final currentAccounts = state.value!;
-    
+
     // Optimistic update
     state = AsyncValue.data(
       currentAccounts.map((a) => a.id == account.id ? account : a).toList(),
     );
-    
+
     try {
       await DatabaseHelper.instance.updateAccount(account);
     } catch (e, st) {
@@ -79,11 +81,17 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     try {
       await DatabaseHelper.instance.updateAccountPositions(updatedItems);
     } catch (e, stackTrace) {
-      dev.log('Error updating account positions', error: e, stackTrace: stackTrace);
+      dev.log(
+        'Error updating account positions',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 }
 
-final accountProvider = AsyncNotifierProvider<AccountNotifier, List<Account>>(() {
-  return AccountNotifier();
-});
+final accountProvider = AsyncNotifierProvider<AccountNotifier, List<Account>>(
+  () {
+    return AccountNotifier();
+  },
+);

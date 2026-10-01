@@ -68,7 +68,7 @@ class HybridMlSuggesterAdapter implements CategorySuggester {
   final CategorizationEngine _engine;
 
   HybridMlSuggesterAdapter({CategorizationEngine? engine})
-      : _engine = engine ?? CategorizationEngine();
+    : _engine = engine ?? CategorizationEngine();
 
   @override
   Future<CategorySuggestion?> suggest(SuggestionContext context) async {
@@ -112,7 +112,9 @@ class HybridMlSuggesterAdapter implements CategorySuggester {
     bool isTransfer = false,
   }) async {
     final absAmount = amount.abs() == 0.0 ? 1.0 : amount.abs();
-    final signedAmount = type == TransactionType.income ? absAmount : -absAmount;
+    final signedAmount = type == TransactionType.income
+        ? absAmount
+        : -absAmount;
 
     await _engine.processFeedback(
       rawText: text,

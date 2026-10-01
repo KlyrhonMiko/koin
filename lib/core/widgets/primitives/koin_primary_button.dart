@@ -85,7 +85,9 @@ class KoinPrimaryButton extends StatelessWidget {
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: width == null ? MainAxisSize.min : MainAxisSize.max,
+                mainAxisSize: width == null
+                    ? MainAxisSize.min
+                    : MainAxisSize.max,
                 children: [
                   if (icon != null) ...[
                     Icon(icon, color: Colors.white, size: 20),

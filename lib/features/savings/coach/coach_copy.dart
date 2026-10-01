@@ -39,10 +39,10 @@ class CoachCopy {
     final week = (dayOfYear / 7).ceil();
     final phrasingIndex = _stableHash(goalId, week) % 2;
 
-    final lateDuration = baseline.daysLate != null && baseline.daysLate! > 0 
-        ? formatDuration(baseline.daysLate!) 
+    final lateDuration = baseline.daysLate != null && baseline.daysLate! > 0
+        ? formatDuration(baseline.daysLate!)
         : "";
-    
+
     // To fix it, you need to save remaining / weeksLeft
     final extraNeeded = baseline.weeklyAmountRequired > baseline.weeklyPace
         ? baseline.weeklyAmountRequired - baseline.weeklyPace
@@ -101,7 +101,7 @@ class CoachCopy {
     // Part 1: How the finish date moved + daily cost
     final originalFinish = baseline.projectedFinish;
     final newFinish = sim.projectedFinish;
-    
+
     if (sim.extraSavedPerWeek > 0 || sim.deadlineShiftWeeks != 0) {
       if (originalFinish != null && newFinish != null) {
         final diffDays = originalFinish.difference(newFinish).inDays;
@@ -109,12 +109,18 @@ class CoachCopy {
           final fmtOrig = DateFormat("MMM d").format(originalFinish);
           final fmtNew = DateFormat("MMM d").format(newFinish);
           final direction = diffDays > 0 ? "sooner" : "later";
-          final extraDailyFmt = currencyFormat.format(sim.extraSavedPerWeek / 7);
-          
+          final extraDailyFmt = currencyFormat.format(
+            sim.extraSavedPerWeek / 7,
+          );
+
           if (sim.extraSavedPerWeek > 0) {
-             parts.add("You'd finish on $fmtNew instead of $fmtOrig (${formatDuration(diffDays)} $direction) for about $extraDailyFmt extra a day.");
+            parts.add(
+              "You'd finish on $fmtNew instead of $fmtOrig (${formatDuration(diffDays)} $direction) for about $extraDailyFmt extra a day.",
+            );
           } else {
-             parts.add("You'd finish on $fmtNew instead of $fmtOrig (${formatDuration(diffDays)} $direction).");
+            parts.add(
+              "You'd finish on $fmtNew instead of $fmtOrig (${formatDuration(diffDays)} $direction).",
+            );
           }
         }
       } else if (originalFinish == null && newFinish != null) {
@@ -134,10 +140,13 @@ class CoachCopy {
       parts.add("You'd be safely ahead of schedule.");
     } else if (sim.status == CoachStatus.onTrack) {
       parts.add("You'd be right on track.");
-    } else if (sim.status == CoachStatus.behind || sim.status == CoachStatus.atRisk) {
+    } else if (sim.status == CoachStatus.behind ||
+        sim.status == CoachStatus.atRisk) {
       final extraNeeded = sim.weeklyAmountRequired - sim.weeklyPace;
       if (extraNeeded > 0) {
-        parts.add("You'd still be late. You need another ${currencyFormat.format(extraNeeded)}/wk to fix it.");
+        parts.add(
+          "You'd still be late. You need another ${currencyFormat.format(extraNeeded)}/wk to fix it.",
+        );
       } else {
         parts.add("You'd still be late.");
       }

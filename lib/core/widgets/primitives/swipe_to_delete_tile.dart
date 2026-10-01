@@ -53,15 +53,8 @@ class SwipeToDeleteTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
         margin: margin,
-        decoration: BoxDecoration(
-          color: deleteBgColor,
-          borderRadius: bgRadius,
-        ),
-        child: Icon(
-          icon,
-          color: iconColor ?? Colors.white,
-          size: 28,
-        ),
+        decoration: BoxDecoration(color: deleteBgColor, borderRadius: bgRadius),
+        child: Icon(icon, color: iconColor ?? Colors.white, size: 28),
       ),
       confirmDismiss: (dismissDirection) async {
         if (confirmDismiss != null) {

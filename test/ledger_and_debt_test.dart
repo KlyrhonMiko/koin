@@ -3,33 +3,36 @@ import 'package:koin/core/core.dart';
 
 void main() {
   group('Ledger Domain Module & Seams', () {
-    test('InMemoryLedgerAdapter records, retrieves, and voids transactions', () async {
-      final ledger = InMemoryLedgerAdapter();
+    test(
+      'InMemoryLedgerAdapter records, retrieves, and voids transactions',
+      () async {
+        final ledger = InMemoryLedgerAdapter();
 
-      final tx = AppTransaction(
-        id: 'tx_1',
-        note: 'Test coffee',
-        amount: 4.50,
-        date: DateTime.now(),
-        type: TransactionType.expense,
-        categoryId: 'cat_food',
-        accountId: 'acc_cash',
-        plannedPaymentId: 'plan_sub_1',
-      );
+        final tx = AppTransaction(
+          id: 'tx_1',
+          note: 'Test coffee',
+          amount: 4.50,
+          date: DateTime.now(),
+          type: TransactionType.expense,
+          categoryId: 'cat_food',
+          accountId: 'acc_cash',
+          plannedPaymentId: 'plan_sub_1',
+        );
 
-      await ledger.recordTransaction(tx);
-      final list = await ledger.getTransactions();
-      expect(list.length, 1);
-      expect(list.first.note, 'Test coffee');
+        await ledger.recordTransaction(tx);
+        final list = await ledger.getTransactions();
+        expect(list.length, 1);
+        expect(list.first.note, 'Test coffee');
 
-      final voidResult = await ledger.voidTransaction('tx_1');
-      expect(voidResult.transactionId, 'tx_1');
-      expect(voidResult.hadPlannedPaymentRollback, isTrue);
-      expect(voidResult.affectedPlannedPaymentId, 'plan_sub_1');
+        final voidResult = await ledger.voidTransaction('tx_1');
+        expect(voidResult.transactionId, 'tx_1');
+        expect(voidResult.hadPlannedPaymentRollback, isTrue);
+        expect(voidResult.affectedPlannedPaymentId, 'plan_sub_1');
 
-      final emptyList = await ledger.getTransactions();
-      expect(emptyList.isEmpty, isTrue);
-    });
+        final emptyList = await ledger.getTransactions();
+        expect(emptyList.isEmpty, isTrue);
+      },
+    );
   });
 
   group('Deep Debt Domain Model', () {
@@ -52,20 +55,23 @@ void main() {
       expect(debt.remainingInstallmentsCount, 3);
     });
 
-    test('Identifies settled state when currentAmount reaches or exceeds amount', () {
-      final settledDebt = Debt(
-        id: 'debt_2',
-        personName: 'Bob',
-        amount: 500.0,
-        currentAmount: 500.0,
-        type: DebtType.iOwe,
-        startDate: DateTime(2026, 1, 1),
-      );
+    test(
+      'Identifies settled state when currentAmount reaches or exceeds amount',
+      () {
+        final settledDebt = Debt(
+          id: 'debt_2',
+          personName: 'Bob',
+          amount: 500.0,
+          currentAmount: 500.0,
+          type: DebtType.iOwe,
+          startDate: DateTime(2026, 1, 1),
+        );
 
-      expect(settledDebt.progress, 1.0);
-      expect(settledDebt.isSettled, isTrue);
-      expect(settledDebt.remainingAmount, 0.0);
-    });
+        expect(settledDebt.progress, 1.0);
+        expect(settledDebt.isSettled, isTrue);
+        expect(settledDebt.remainingAmount, 0.0);
+      },
+    );
 
     test('Sums itemized amounts accurately across sub-purchases', () {
       final item1 = DebtItem(
@@ -101,117 +107,126 @@ void main() {
   });
 
   group('PlannedPayment Domain Schedule Logic', () {
-    test('computePreviousDate rolls back daily, weekly, monthly frequencies accurately', () {
-      final monthly = PlannedPayment(
-        id: 'plan_1',
-        title: 'Rent',
-        amount: 1200.0,
-        type: TransactionType.expense,
-        categoryId: 'cat_rent',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 4, 15),
-        frequency: PaymentFrequency.monthly,
-      );
+    test(
+      'computePreviousDate rolls back daily, weekly, monthly frequencies accurately',
+      () {
+        final monthly = PlannedPayment(
+          id: 'plan_1',
+          title: 'Rent',
+          amount: 1200.0,
+          type: TransactionType.expense,
+          categoryId: 'cat_rent',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 4, 15),
+          frequency: PaymentFrequency.monthly,
+        );
 
-      expect(monthly.computePreviousDate(), DateTime(2026, 3, 15));
+        expect(monthly.computePreviousDate(), DateTime(2026, 3, 15));
 
-      final weekly = PlannedPayment(
-        id: 'plan_2',
-        title: 'Gym',
-        amount: 15.0,
-        type: TransactionType.expense,
-        categoryId: 'cat_health',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 21),
-        frequency: PaymentFrequency.weekly,
-      );
+        final weekly = PlannedPayment(
+          id: 'plan_2',
+          title: 'Gym',
+          amount: 15.0,
+          type: TransactionType.expense,
+          categoryId: 'cat_health',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 21),
+          frequency: PaymentFrequency.weekly,
+        );
 
-      expect(weekly.computePreviousDate(), DateTime(2026, 3, 14));
-    });
+        expect(weekly.computePreviousDate(), DateTime(2026, 3, 14));
+      },
+    );
 
-    test('computeNextDate advances daily, weekly, biWeekly, monthly, quarterly, yearly frequencies', () {
-      final monthly = PlannedPayment(
-        id: 'plan_1',
-        title: 'Rent',
-        amount: 1200.0,
-        type: TransactionType.expense,
-        categoryId: 'cat_rent',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 15),
-        frequency: PaymentFrequency.monthly,
-      );
-      expect(monthly.computeNextDate(), DateTime(2026, 4, 15));
+    test(
+      'computeNextDate advances daily, weekly, biWeekly, monthly, quarterly, yearly frequencies',
+      () {
+        final monthly = PlannedPayment(
+          id: 'plan_1',
+          title: 'Rent',
+          amount: 1200.0,
+          type: TransactionType.expense,
+          categoryId: 'cat_rent',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 15),
+          frequency: PaymentFrequency.monthly,
+        );
+        expect(monthly.computeNextDate(), DateTime(2026, 4, 15));
 
-      final weekly = PlannedPayment(
-        id: 'plan_2',
-        title: 'Groceries',
-        amount: 50.0,
-        type: TransactionType.expense,
-        categoryId: 'cat_food',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 15),
-        frequency: PaymentFrequency.weekly,
-      );
-      expect(weekly.computeNextDate(), DateTime(2026, 3, 22));
+        final weekly = PlannedPayment(
+          id: 'plan_2',
+          title: 'Groceries',
+          amount: 50.0,
+          type: TransactionType.expense,
+          categoryId: 'cat_food',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 15),
+          frequency: PaymentFrequency.weekly,
+        );
+        expect(weekly.computeNextDate(), DateTime(2026, 3, 22));
 
-      final biWeekly = PlannedPayment(
-        id: 'plan_3',
-        title: 'Salary',
-        amount: 2500.0,
-        type: TransactionType.income,
-        categoryId: 'cat_salary',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 15),
-        frequency: PaymentFrequency.biWeekly,
-      );
-      expect(biWeekly.computeNextDate(), DateTime(2026, 3, 29));
+        final biWeekly = PlannedPayment(
+          id: 'plan_3',
+          title: 'Salary',
+          amount: 2500.0,
+          type: TransactionType.income,
+          categoryId: 'cat_salary',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 15),
+          frequency: PaymentFrequency.biWeekly,
+        );
+        expect(biWeekly.computeNextDate(), DateTime(2026, 3, 29));
 
-      final flexible = PlannedPayment(
-        id: 'plan_4',
-        title: 'Bonus',
-        amount: 500.0,
-        type: TransactionType.income,
-        categoryId: 'cat_bonus',
-        accountId: 'acc_bank',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 15),
-        frequency: PaymentFrequency.flexible,
-      );
-      expect(flexible.computeNextDate(), DateTime(2026, 3, 15));
-    });
+        final flexible = PlannedPayment(
+          id: 'plan_4',
+          title: 'Bonus',
+          amount: 500.0,
+          type: TransactionType.income,
+          categoryId: 'cat_bonus',
+          accountId: 'acc_bank',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 15),
+          frequency: PaymentFrequency.flexible,
+        );
+        expect(flexible.computeNextDate(), DateTime(2026, 3, 15));
+      },
+    );
 
-    test('recordPlannedPaymentOccurrence records transaction via Ledger seam', () async {
-      final ledger = InMemoryLedgerAdapter();
-      final payment = PlannedPayment(
-        id: 'plan_sub_99',
-        title: 'Cloud Storage',
-        amount: 9.99,
-        type: TransactionType.expense,
-        categoryId: 'cat_software',
-        accountId: 'acc_card',
-        startDate: DateTime(2026, 1, 1),
-        nextDate: DateTime(2026, 3, 1),
-        frequency: PaymentFrequency.monthly,
-      );
+    test(
+      'recordPlannedPaymentOccurrence records transaction via Ledger seam',
+      () async {
+        final ledger = InMemoryLedgerAdapter();
+        final payment = PlannedPayment(
+          id: 'plan_sub_99',
+          title: 'Cloud Storage',
+          amount: 9.99,
+          type: TransactionType.expense,
+          categoryId: 'cat_software',
+          accountId: 'acc_card',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 3, 1),
+          frequency: PaymentFrequency.monthly,
+        );
 
-      final tx = await ledger.recordPlannedPaymentOccurrence(
-        payment: payment,
-        amount: 9.99,
-        accountId: 'acc_card',
-        categoryId: 'cat_software',
-      );
+        final tx = await ledger.recordPlannedPaymentOccurrence(
+          payment: payment,
+          amount: 9.99,
+          accountId: 'acc_card',
+          categoryId: 'cat_software',
+        );
 
-      expect(tx.plannedPaymentId, 'plan_sub_99');
-      expect(tx.amount, 9.99);
-      expect(tx.note, 'Cloud Storage');
+        expect(tx.plannedPaymentId, 'plan_sub_99');
+        expect(tx.amount, 9.99);
+        expect(tx.note, 'Cloud Storage');
 
-      final txs = await ledger.getTransactions();
-      expect(txs.any((t) => t.plannedPaymentId == 'plan_sub_99'), isTrue);
-    });
+        final txs = await ledger.getTransactions();
+        expect(txs.any((t) => t.plannedPaymentId == 'plan_sub_99'), isTrue);
+      },
+    );
   });
 }

@@ -30,8 +30,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   final _amountController = TextEditingController();
   final _feeController = TextEditingController();
   final _noteFocusNode = FocusNode();
-  
-  Timer? _debounceTimer;
+
+  late final DebouncedSuggesterCoordinator _suggesterCoordinator;
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
   String? _selectedCategoryId;
@@ -56,6 +56,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     if (widget.initialType != null) {
       _selectedType = widget.initialType!;
     }
+    _suggesterCoordinator = DebouncedSuggesterCoordinator(
+      suggester: ref.read(categorySuggesterProvider),
+      debounceDuration: const Duration(milliseconds: 500),
+    );
     _noteFocusNode.addListener(() {
       if (mounted) setState(() {});
     });
@@ -103,7 +107,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _suggesterCoordinator.dispose();
     _noteController.removeListener(_onNoteChanged);
     _amountController.removeListener(_onAmountChanged);
     _noteFocusNode.dispose();
@@ -119,24 +123,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Save & ML
   // ═══════════════════════════════════════════════════════
   void _onNoteChanged() {
-    if (widget.editingTransaction != null) return; // Skip auto-categorize if editing
-    
-    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _runAutoCategorization();
-    });
+    if (widget.editingTransaction != null) {
+      return; // Skip auto-categorize if editing
+    }
+    _runAutoCategorization();
   }
 
   void _onAmountChanged() {
     _onNoteChanged();
   }
-  
+
   void _updateTransferFee(Account? account) {
     if (account == null) {
       _feeController.text = '';
       return;
     }
-    
+
     if (mounted) {
       setState(() {
         _isTransferFeePercentage = account.isTransferFeePercentage;
@@ -144,7 +146,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
 
     if (account.transferFeeAmount > 0) {
-      if (account.transferFeeAmount == account.transferFeeAmount.truncateToDouble()) {
+      if (account.transferFeeAmount ==
+          account.transferFeeAmount.truncateToDouble()) {
         _feeController.text = account.transferFeeAmount.toInt().toString();
       } else {
         _feeController.text = account.transferFeeAmount.toString();
@@ -154,40 +157,41 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
   }
 
-  Future<void> _runAutoCategorization() async {
+  void _runAutoCategorization() {
     if (!mounted) return;
     if (_noteController.text.trim().isEmpty) return;
-    
+
     double amount = double.tryParse(_amountController.text) ?? 0.0;
-    
+
     // We need an account ID to process internal transfers properly
     if (amount == 0.0 && _selectedAccountId == null) return;
-    
-    // Fix: Dart treats -0.0 >= 0 as true. If amount is empty (0.0), 
+
+    // Fix: Dart treats -0.0 >= 0 as true. If amount is empty (0.0),
     // the CategorizationEngine will misinterpret expenses as income.
     // We pass a dummy amount of 1.0 just to preserve the correct mathematical sign.
     if (amount == 0.0) amount = 1.0;
-    
-    try {
-      final suggester = ref.read(categorySuggesterProvider);
-      final suggestion = await suggester.suggest(
-        SuggestionContext(
-          text: _noteController.text,
-          amount: amount,
-          type: _selectedType,
-          date: _selectedDate,
-          currentAccountId: _selectedAccountId ?? '',
-        ),
-      );
 
-      if (suggestion != null && mounted) {
+    _suggesterCoordinator.run(
+      context: SuggestionContext(
+        text: _noteController.text,
+        amount: amount,
+        type: _selectedType,
+        date: _selectedDate,
+        currentAccountId: _selectedAccountId ?? '',
+      ),
+      onSuggested: (suggestion) {
+        if (!mounted) return;
         bool changed = false;
         bool categoryChanged = false;
         if (suggestion.type != _selectedType) changed = true;
-        
+
         if (suggestion.isTransfer) {
-          if (_selectedToAccountId != suggestion.destinationAccountId) changed = true;
-          if (_selectedAccountId != suggestion.originAccountId) changed = true;
+          if (_selectedToAccountId != suggestion.destinationAccountId) {
+            changed = true;
+          }
+          if (_selectedAccountId != suggestion.originAccountId) {
+            changed = true;
+          }
         } else {
           if (_selectedCategoryId != suggestion.categoryId) {
             changed = true;
@@ -211,20 +215,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               _selectedToAccountId = null;
             }
           });
-          _onTypeChanged(_selectedType, ref.read(categoriesProvider).value ?? []);
+          _onTypeChanged(
+            _selectedType,
+            ref.read(categoriesProvider).value ?? [],
+          );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Auto-categorize Error: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
+      },
+    );
   }
 
   void _saveTransaction() {
@@ -267,24 +264,27 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     if (isTransfer) {
       final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
-      feeAmount = _isTransferFeePercentage 
+      feeAmount = _isTransferFeePercentage
           ? (amount * (enteredFee / 100))
           : enteredFee;
-      
+
       if (feeAmount >= amount) {
         HapticService.error();
         _showErrorSnackbar(
           'Invalid fee amount',
-          subtitle: 'The transfer fee cannot be greater than or equal to the total amount',
+          subtitle:
+              'The transfer fee cannot be greater than or equal to the total amount',
         );
         return;
       }
-      
+
       if (feeAmount > 0) {
         transferAmount = amount - feeAmount;
         feeTransaction = AppTransaction(
           id: const Uuid().v4(),
-          note: _noteController.text.isNotEmpty ? 'Transfer Fee: ${_noteController.text}' : 'Transfer Fee',
+          note: _noteController.text.isNotEmpty
+              ? 'Transfer Fee: ${_noteController.text}'
+              : 'Transfer Fee',
           amount: feeAmount,
           date: _selectedDate,
           type: TransactionType.expense,
@@ -306,13 +306,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
 
     // Feed the ultimate categorization decision back into the suggester
-    ref.read(categorySuggesterProvider).recordFeedback(
-      text: _noteController.text,
-      amount: transferAmount,
-      type: _selectedType,
-      originAccountId: _selectedAccountId!,
-      destinationId: isTransfer ? _selectedToAccountId! : _selectedCategoryId!,
-    );
+    ref
+        .read(categorySuggesterProvider)
+        .recordFeedback(
+          text: _noteController.text,
+          amount: transferAmount,
+          type: _selectedType,
+          originAccountId: _selectedAccountId!,
+          destinationId: isTransfer
+              ? _selectedToAccountId!
+              : _selectedCategoryId!,
+        );
 
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
@@ -320,9 +324,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
       }
     } else {
-      ref.read(transactionProvider.notifier).addTransaction(newTransaction);
-      if (feeTransaction != null) {
-        ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
+      if (isTransfer) {
+        ref
+            .read(transactionProvider.notifier)
+            .addTransfer(
+              transferTransaction: newTransaction,
+              feeTransaction: feeTransaction,
+            );
+      } else {
+        ref.read(transactionProvider.notifier).addTransaction(newTransaction);
       }
     }
     HapticService.success();
@@ -470,7 +480,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           _selectedCategoryId = null;
         }
       }
-      if (_selectedType == TransactionType.transfer && _selectedAccountId != null) {
+      if (_selectedType == TransactionType.transfer &&
+          _selectedAccountId != null) {
         final accounts = ref.read(accountProvider).value ?? [];
         final acc = _accountById(accounts, _selectedAccountId);
         _updateTransferFee(acc);
@@ -917,7 +928,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         focusedBorder: InputBorder.none,
                         filled: false,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -957,7 +970,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      _isTransferFeePercentage ? Icons.percent_rounded : Icons.payments_rounded,
+                      _isTransferFeePercentage
+                          ? Icons.percent_rounded
+                          : Icons.payments_rounded,
                       size: 17,
                       color: AppTheme.textLightColor(context),
                     ),
@@ -966,14 +981,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   Expanded(
                     child: TextField(
                       controller: _feeController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                         color: AppTheme.textColor(context),
                       ),
                       decoration: InputDecoration(
-                        hintText: _isTransferFeePercentage ? 'Percentage Fee (e.g. 0.5)' : 'Fixed Fee (e.g. 10.00)',
+                        hintText: _isTransferFeePercentage
+                            ? 'Percentage Fee (e.g. 0.5)'
+                            : 'Fixed Fee (e.g. 10.00)',
                         hintStyle: TextStyle(
                           color: AppTheme.textLightColor(
                             context,
@@ -986,12 +1005,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         focusedBorder: InputBorder.none,
                         filled: false,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                        ),
                         suffixIcon: Padding(
                           padding: const EdgeInsets.all(6),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.dividerColor(context).withValues(alpha: 0.08),
+                              color: AppTheme.dividerColor(
+                                context,
+                              ).withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             padding: const EdgeInsets.all(3),
@@ -1001,29 +1024,44 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                 GestureDetector(
                                   onTap: () {
                                     if (_isTransferFeePercentage) {
-                                      setState(() => _isTransferFeePercentage = false);
+                                      setState(
+                                        () => _isTransferFeePercentage = false,
+                                      );
                                       HapticService.light();
                                     }
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: !_isTransferFeePercentage ? AppTheme.surfaceColor(context) : Colors.transparent,
+                                      color: !_isTransferFeePercentage
+                                          ? AppTheme.surfaceColor(context)
+                                          : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
-                                      boxShadow: !_isTransferFeePercentage ? [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.05),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        )
-                                      ] : null,
+                                      boxShadow: !_isTransferFeePercentage
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.05,
+                                                ),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : null,
                                     ),
                                     child: Text(
                                       'Fixed',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        fontWeight: !_isTransferFeePercentage ? FontWeight.w700 : FontWeight.w500,
-                                        color: !_isTransferFeePercentage ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                        fontWeight: !_isTransferFeePercentage
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: !_isTransferFeePercentage
+                                            ? AppTheme.primaryColor(context)
+                                            : AppTheme.textLightColor(context),
                                       ),
                                     ),
                                   ),
@@ -1031,29 +1069,44 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                 GestureDetector(
                                   onTap: () {
                                     if (!_isTransferFeePercentage) {
-                                      setState(() => _isTransferFeePercentage = true);
+                                      setState(
+                                        () => _isTransferFeePercentage = true,
+                                      );
                                       HapticService.light();
                                     }
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: _isTransferFeePercentage ? AppTheme.surfaceColor(context) : Colors.transparent,
+                                      color: _isTransferFeePercentage
+                                          ? AppTheme.surfaceColor(context)
+                                          : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
-                                      boxShadow: _isTransferFeePercentage ? [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.05),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        )
-                                      ] : null,
+                                      boxShadow: _isTransferFeePercentage
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.05,
+                                                ),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : null,
                                     ),
                                     child: Text(
                                       '%',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        fontWeight: _isTransferFeePercentage ? FontWeight.w700 : FontWeight.w500,
-                                        color: _isTransferFeePercentage ? AppTheme.primaryColor(context) : AppTheme.textLightColor(context),
+                                        fontWeight: _isTransferFeePercentage
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: _isTransferFeePercentage
+                                            ? AppTheme.primaryColor(context)
+                                            : AppTheme.textLightColor(context),
                                       ),
                                     ),
                                   ),
@@ -1157,8 +1210,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     .animate(key: ValueKey(_autoCatKey))
                                     .shimmer(
                                       duration: 400.ms,
-                                      color: AppTheme.primaryColor(context)
-                                          .withValues(alpha: 0.2),
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.2),
                                     )
                                     .scale(
                                       duration: 150.ms,

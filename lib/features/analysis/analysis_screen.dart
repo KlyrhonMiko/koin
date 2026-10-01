@@ -172,57 +172,59 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                     sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildChartSection(
-                          context,
-                          filteredTransactions,
-                          categories,
-                          currency,
-                        ),
-                        const Gap(32),
-                        Row(
-                          children: [
-                            Text(
-                              'Top Categories',
-                              style: TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.textColor(context),
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(16),
-                        _buildTopCategoriesList(
-                          context,
-                          ref,
-                          filteredTransactions,
-                          categories,
-                          currency,
-                        ),
-                        const Gap(32),
-                        Center(
-                          child: Container(
-                            width: 48,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: AppTheme.dividerColor(
+                      delegate: SliverChildListDelegate(
+                        [
+                              _buildChartSection(
                                 context,
-                              ).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(2),
+                                filteredTransactions,
+                                categories,
+                                currency,
+                              ),
+                              const Gap(32),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Top Categories',
+                                    style: TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.textColor(context),
+                                      letterSpacing: -0.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(16),
+                              _buildTopCategoriesList(
+                                context,
+                                ref,
+                                filteredTransactions,
+                                categories,
+                                currency,
+                              ),
+                              const Gap(32),
+                              Center(
+                                child: Container(
+                                  width: 48,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.dividerColor(
+                                      context,
+                                    ).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                              const Gap(64),
+                            ]
+                            .animate(interval: 40.ms)
+                            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                            .scale(
+                              begin: const Offset(0.95, 0.95),
+                              duration: 250.ms,
+                              curve: Curves.easeOutCubic,
                             ),
-                          ),
-                        ),
-                        const Gap(64),
-                      ]
-                      .animate(interval: 40.ms)
-                      .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                      .scale(
-                        begin: const Offset(0.95, 0.95),
-                        duration: 250.ms,
-                        curve: Curves.easeOutCubic,
-                      )),
+                      ),
                     ),
                   ),
               ],
@@ -296,65 +298,66 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Total Spent',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        _buildGlassFilterControl(context),
-                      ],
-                    ),
-                    const Gap(12),
-                    AnimatedCounter(
-                      value: totalExpense,
-                      formatter: (val) => NumberFormat.currency(
-                        symbol: currency.symbol,
-                      ).format(val),
-                      duration: const Duration(milliseconds: 1000),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 48,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.5,
-                        height: 1.1,
-                      ),
-                    ),
-                    const Gap(12),
-                    SizedBox(
-                      height: 24,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          _buildInlinePeriodSelector(),
-                          if (previousExpense != null) ...[
-                            const Gap(10),
-                            _buildTrendBadge(
-                              totalExpense,
-                              previousExpense,
+                  children:
+                      [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Total Spent',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                _buildGlassFilterControl(context),
+                              ],
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const Gap(24),
-                    _buildIntegratedForecast(context, currency),
-                  ]
-                  .animate(interval: 40.ms)
-                  .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                  .scale(
-                    begin: const Offset(0.95, 0.95),
-                    duration: 250.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+                            const Gap(12),
+                            AnimatedCounter(
+                              value: totalExpense,
+                              formatter: (val) => NumberFormat.currency(
+                                symbol: currency.symbol,
+                              ).format(val),
+                              duration: const Duration(milliseconds: 1000),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 48,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.5,
+                                height: 1.1,
+                              ),
+                            ),
+                            const Gap(12),
+                            SizedBox(
+                              height: 24,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _buildInlinePeriodSelector(),
+                                  if (previousExpense != null) ...[
+                                    const Gap(10),
+                                    _buildTrendBadge(
+                                      totalExpense,
+                                      previousExpense,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const Gap(24),
+                            _buildIntegratedForecast(context, currency),
+                          ]
+                          .animate(interval: 40.ms)
+                          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                          .scale(
+                            begin: const Offset(0.95, 0.95),
+                            duration: 250.ms,
+                            curve: Curves.easeOutCubic,
+                          ),
                 ),
               ),
             ],
@@ -384,18 +387,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       children: [
         Icon(icon, color: badgeColor, size: 14),
         const Gap(4),
-          Text(
-            '${percent.toStringAsFixed(1)}%',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              shadows: [
-                Shadow(color: badgeColor.withValues(alpha: 0.8), blurRadius: 6),
-              ],
-            ),
+        Text(
+          '${percent.toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+            shadows: [
+              Shadow(color: badgeColor.withValues(alpha: 0.8), blurRadius: 6),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -488,7 +491,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         Text(
                           'Net Balance',
                           style: TextStyle(
-                            color: isWarning ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.7),
+                            color: isWarning
+                                ? Colors.redAccent.shade100
+                                : Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -499,7 +504,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     Text(
                       netStr,
                       style: TextStyle(
-                        color: isWarning ? Colors.redAccent.shade100 : Colors.white,
+                        color: isWarning
+                            ? Colors.redAccent.shade100
+                            : Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -518,21 +525,25 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       duration: const Duration(milliseconds: 250),
       child: forecastAsync.when(
         data: (forecast) {
-          if (forecast.forecastedInflow == 0 && forecast.forecastedOutflow == 0) {
+          if (forecast.forecastedInflow == 0 &&
+              forecast.forecastedOutflow == 0) {
             return const SizedBox.shrink();
           }
           return buildRow(
-            inflowStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedInflow),
-            outflowStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.forecastedOutflow),
-            netStr: NumberFormat.currency(symbol: currency.symbol).format(forecast.predictedNetBalance),
+            inflowStr: NumberFormat.currency(
+              symbol: currency.symbol,
+            ).format(forecast.forecastedInflow),
+            outflowStr: NumberFormat.currency(
+              symbol: currency.symbol,
+            ).format(forecast.forecastedOutflow),
+            netStr: NumberFormat.currency(
+              symbol: currency.symbol,
+            ).format(forecast.predictedNetBalance),
             isWarning: forecast.isWarning,
           );
         },
-        loading: () => buildRow(
-          inflowStr: '...',
-          outflowStr: '...',
-          netStr: '...',
-        ),
+        loading: () =>
+            buildRow(inflowStr: '...', outflowStr: '...', netStr: '...'),
         error: (e, st) => const SizedBox.shrink(),
       ),
     );

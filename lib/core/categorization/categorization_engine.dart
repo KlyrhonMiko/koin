@@ -5,8 +5,8 @@ import 'package:uuid/uuid.dart';
 import 'dart:math';
 
 class CategorizationResult {
-  final String originId; 
-  final String destinationId; 
+  final String originId;
+  final String destinationId;
   final TransactionType type;
   final double confidence;
   final bool isExactMatch;
@@ -28,18 +28,38 @@ class CategorizationEngine {
 
   List<String> _tokenize(String rawText) {
     // Strip all non-alphabetical characters and convert to lowercase
-    final sanitized = rawText.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').toLowerCase();
-    
+    final sanitized = rawText
+        .replaceAll(RegExp(r'[^a-zA-Z\s]'), '')
+        .toLowerCase();
+
     // Split into isolated words
-    final words = sanitized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    
+    final words = sanitized
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     // Filter out common stop words and short tokens (< 3 characters)
-    final stopWords = {'the', 'and', 'for', 'with', 'from', 'that', 'this', 'was', 'out', 'are'};
+    final stopWords = {
+      'the',
+      'and',
+      'for',
+      'with',
+      'from',
+      'that',
+      'this',
+      'was',
+      'out',
+      'are',
+    };
     return words.where((w) => w.length >= 3 && !stopWords.contains(w)).toList();
   }
 
   String _sanitize(String rawText) {
-    return rawText.replaceAll(RegExp(r'[^a-zA-Z\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ').toLowerCase().trim();
+    return rawText
+        .replaceAll(RegExp(r'[^a-zA-Z\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .toLowerCase()
+        .trim();
   }
 
   // Phase 3: The Routing Waterfall
@@ -47,7 +67,7 @@ class CategorizationEngine {
   /// Evaluates a new transaction and attempts to auto-categorize it.
   /// Note: [amount] should be the signed value. If the app uses positive amounts
   /// with a separate `TransactionType`, pass the amount as positive for income,
-  /// and negative for expense, or vice versa, to reflect the "mathematical sign" 
+  /// and negative for expense, or vice versa, to reflect the "mathematical sign"
   /// required by the engine.
   Future<CategorizationResult?> categorize({
     required String rawText,
@@ -66,7 +86,11 @@ class CategorizationEngine {
     }
 
     // Step 2: The Internal Transfer Heuristic
-    final internalTransfer = await _checkInternalTransfer(amount, date, currentAccountId);
+    final internalTransfer = await _checkInternalTransfer(
+      amount,
+      date,
+      currentAccountId,
+    );
     if (internalTransfer != null) {
       return internalTransfer;
     }
@@ -76,9 +100,12 @@ class CategorizationEngine {
     return await _calculateProbability(tokens, sign, currentAccountId);
   }
 
-  Future<CategorizationResult?> _checkExactMatch(String sanitizedString, int sign) async {
+  Future<CategorizationResult?> _checkExactMatch(
+    String sanitizedString,
+    int sign,
+  ) async {
     if (sanitizedString.isEmpty) return null;
-    
+
     final db = await _dbHelper.database;
     final results = await db.query(
       'categorization_rules',
@@ -89,10 +116,14 @@ class CategorizationEngine {
     for (var rule in results) {
       final originId = rule['originId'] as String;
       final destinationId = rule['destinationId'] as String;
-      
-      final isTransferResult = await db.query('accounts', where: 'id = ?', whereArgs: [destinationId]);
+
+      final isTransferResult = await db.query(
+        'accounts',
+        where: 'id = ?',
+        whereArgs: [destinationId],
+      );
       final isTransfer = isTransferResult.isNotEmpty;
-      
+
       if (isTransfer) {
         return CategorizationResult(
           originId: originId,
@@ -113,8 +144,10 @@ class CategorizationEngine {
 
       if (catResult.isNotEmpty) {
         final catType = catResult.first['type'] as String?;
-        final expectedType = sign >= 0 ? TransactionType.income.name : TransactionType.expense.name;
-        
+        final expectedType = sign >= 0
+            ? TransactionType.income.name
+            : TransactionType.expense.name;
+
         if (catType == expectedType) {
           return CategorizationResult(
             originId: originId,
@@ -129,28 +162,43 @@ class CategorizationEngine {
     return null;
   }
 
-  Future<CategorizationResult?> _checkInternalTransfer(double amount, DateTime date, String currentAccountId) async {
+  Future<CategorizationResult?> _checkInternalTransfer(
+    double amount,
+    DateTime date,
+    String currentAccountId,
+  ) async {
     final db = await _dbHelper.database;
-    
+
     // We assume the DB stores amounts as positive numbers and uses TransactionType to denote sign.
     final absAmount = amount.abs();
-    final targetType = amount >= 0 ? TransactionType.expense.name : TransactionType.income.name;
-    
+    final targetType = amount >= 0
+        ? TransactionType.expense.name
+        : TransactionType.income.name;
+
     // 48-hour tight threshold
-    final lowerBound = date.subtract(const Duration(hours: 48)).toIso8601String();
+    final lowerBound = date
+        .subtract(const Duration(hours: 48))
+        .toIso8601String();
     final upperBound = date.add(const Duration(hours: 48)).toIso8601String();
 
     final results = await db.query(
       'transactions',
-      where: 'amount = ? AND date >= ? AND date <= ? AND type = ? AND accountId != ?',
-      whereArgs: [absAmount, lowerBound, upperBound, targetType, currentAccountId],
+      where:
+          'amount = ? AND date >= ? AND date <= ? AND type = ? AND accountId != ?',
+      whereArgs: [
+        absAmount,
+        lowerBound,
+        upperBound,
+        targetType,
+        currentAccountId,
+      ],
       limit: 1,
     );
 
     if (results.isNotEmpty) {
       final targetTx = results.first;
       final targetAccountId = targetTx['accountId'] as String;
-      
+
       // Link them together as an internal movement
       final originId = amount >= 0 ? targetAccountId : currentAccountId;
       final destinationId = amount >= 0 ? currentAccountId : targetAccountId;
@@ -166,7 +214,11 @@ class CategorizationEngine {
     return null;
   }
 
-  Future<CategorizationResult?> _calculateProbability(List<String> tokens, int sign, String currentAccountId) async {
+  Future<CategorizationResult?> _calculateProbability(
+    List<String> tokens,
+    int sign,
+    String currentAccountId,
+  ) async {
     final db = await _dbHelper.database;
 
     // Filter by Direction: retrieve token counts for the specific sign
@@ -181,8 +233,8 @@ class CategorizationEngine {
 
     if (results.isEmpty) return null;
 
-    final classCounts = <String, int>{}; 
-    final tokenClassCounts = <String, Map<String, int>>{}; 
+    final classCounts = <String, int>{};
+    final tokenClassCounts = <String, Map<String, int>>{};
     int totalDocs = 0;
 
     // Aggregate probabilities against historical data matching the sign
@@ -219,7 +271,10 @@ class CategorizationEngine {
     String? bestClass;
 
     // Naive Bayes with Laplace smoothing
-    final vocabSizeQuery = await db.rawQuery('SELECT COUNT(DISTINCT token) as count FROM ml_frequency_dictionary WHERE sign = ?', [sign]);
+    final vocabSizeQuery = await db.rawQuery(
+      'SELECT COUNT(DISTINCT token) as count FROM ml_frequency_dictionary WHERE sign = ?',
+      [sign],
+    );
     final vocabSize = (vocabSizeQuery.first['count'] as num).toInt();
 
     // Score Calculation
@@ -229,7 +284,9 @@ class CategorizationEngine {
 
       for (var token in tokens) {
         final tokenCountInClass = tokenClassCounts[token]?[classKey] ?? 0;
-        final probTokenGivenClass = (tokenCountInClass + 1) / (classTotal + vocabSize); // P(Token | Class)
+        final probTokenGivenClass =
+            (tokenCountInClass + 1) /
+            (classTotal + vocabSize); // P(Token | Class)
         logProb += log(probTokenGivenClass);
       }
 
@@ -251,7 +308,7 @@ class CategorizationEngine {
       }
       sumExp += exp(lp - bestScore);
     }
-    
+
     final confidence = 1.0 / sumExp;
 
     // Threshold Check: Auto-apply if it exceeds 70% confidence
@@ -260,9 +317,13 @@ class CategorizationEngine {
       final originId = parts[0];
       final destinationId = parts[1];
 
-      final isTransferResult = await db.query('accounts', where: 'id = ?', whereArgs: [destinationId]);
+      final isTransferResult = await db.query(
+        'accounts',
+        where: 'id = ?',
+        whereArgs: [destinationId],
+      );
       final isTransfer = isTransferResult.isNotEmpty;
-      
+
       if (isTransfer) {
         return CategorizationResult(
           originId: originId,
@@ -282,8 +343,10 @@ class CategorizationEngine {
 
       if (catResult.isNotEmpty) {
         final catType = catResult.first['type'] as String?;
-        final expectedType = sign >= 0 ? TransactionType.income.name : TransactionType.expense.name;
-        
+        final expectedType = sign >= 0
+            ? TransactionType.income.name
+            : TransactionType.expense.name;
+
         if (catType != expectedType) {
           return null; // Category type doesn't match transaction sign
         }
@@ -343,33 +406,44 @@ class CategorizationEngine {
       bool updated = false;
       for (var existing in ruleExists) {
         final existingDest = existing['destinationId'] as String;
-        final isExistingTransfer = (await db.query('accounts', where: 'id = ?', whereArgs: [existingDest])).isNotEmpty;
-        final isNewTransfer = (await db.query('accounts', where: 'id = ?', whereArgs: [destinationId])).isNotEmpty;
+        final isExistingTransfer = (await db.query(
+          'accounts',
+          where: 'id = ?',
+          whereArgs: [existingDest],
+        )).isNotEmpty;
+        final isNewTransfer = (await db.query(
+          'accounts',
+          where: 'id = ?',
+          whereArgs: [destinationId],
+        )).isNotEmpty;
 
         if (isExistingTransfer && isNewTransfer) {
           await db.update(
             'categorization_rules',
-            {
-              'originId': originId,
-              'destinationId': destinationId,
-            },
+            {'originId': originId, 'destinationId': destinationId},
             where: 'id = ?',
             whereArgs: [existing['id']],
           );
           updated = true;
           break;
         } else if (!isExistingTransfer && !isNewTransfer) {
-          final existingCat = await db.query('categories', where: 'id = ?', whereArgs: [existingDest], limit: 1);
-          final existingType = existingCat.isNotEmpty ? existingCat.first['type'] as String? : null;
-          final expectedType = sign >= 0 ? TransactionType.income.name : TransactionType.expense.name;
+          final existingCat = await db.query(
+            'categories',
+            where: 'id = ?',
+            whereArgs: [existingDest],
+            limit: 1,
+          );
+          final existingType = existingCat.isNotEmpty
+              ? existingCat.first['type'] as String?
+              : null;
+          final expectedType = sign >= 0
+              ? TransactionType.income.name
+              : TransactionType.expense.name;
 
           if (existingType == expectedType) {
             await db.update(
               'categorization_rules',
-              {
-                'originId': originId,
-                'destinationId': destinationId,
-              },
+              {'originId': originId, 'destinationId': destinationId},
               where: 'id = ?',
               whereArgs: [existing['id']],
             );
@@ -418,65 +492,69 @@ class CategorizationEngine {
     }
   }
 
-  /// Bootstraps the ML model using historical transactions. 
+  /// Bootstraps the ML model using historical transactions.
   /// Runs only once per device. Extremely fast for users with no data.
   Future<void> bootstrapFromHistory() async {
     final db = await _dbHelper.database;
-    
+
     // Check if we already bootstrapped to avoid repeating the heavy lifting
     final setting = await db.query(
       'app_settings',
       where: 'key = ?',
       whereArgs: ['is_ml_bootstrapped'],
     );
-    
+
     if (setting.isNotEmpty && setting.first['value'] == 'true') {
       return; // Already trained
     }
-    
+
     // Fetch all existing transactions
     final transactions = await db.query('transactions');
-    
+
     if (transactions.isEmpty) {
-       // O(1) exit for users with no existing data
-       await db.insert('app_settings', {
-         'key': 'is_ml_bootstrapped',
-         'value': 'true'
-       }, conflictAlgorithm: ConflictAlgorithm.replace);
-       return;
+      // O(1) exit for users with no existing data
+      await db.insert('app_settings', {
+        'key': 'is_ml_bootstrapped',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      return;
     }
 
     // Wrap in a SQLite transaction for massive performance boost
     await db.transaction((txn) async {
-       for (var tx in transactions) {
-          final note = tx['title'] as String? ?? '';
-          if (note.trim().isEmpty) continue;
+      for (var tx in transactions) {
+        final note = tx['title'] as String? ?? '';
+        if (note.trim().isEmpty) continue;
 
-          final amount = (tx['amount'] as num).toDouble();
-          final type = tx['type'] as String;
-          final accountId = tx['accountId'] as String;
-          
-          final signedAmount = type == TransactionType.expense.name ? -amount : amount;
-          final isTransfer = type == TransactionType.transfer.name;
-          
-          final destinationId = isTransfer ? (tx['toAccountId'] as String?) : (tx['categoryId'] as String?);
-          
-          if (destinationId != null && destinationId.isNotEmpty) {
-              await _processFeedbackInternal(
-                 db: txn,
-                 rawText: note,
-                 amount: signedAmount,
-                 originId: accountId,
-                 destinationId: destinationId,
-              );
-          }
-       }
-       
-       // Mark as completed
-       await txn.insert('app_settings', {
-         'key': 'is_ml_bootstrapped',
-         'value': 'true'
-       }, conflictAlgorithm: ConflictAlgorithm.replace);
+        final amount = (tx['amount'] as num).toDouble();
+        final type = tx['type'] as String;
+        final accountId = tx['accountId'] as String;
+
+        final signedAmount = type == TransactionType.expense.name
+            ? -amount
+            : amount;
+        final isTransfer = type == TransactionType.transfer.name;
+
+        final destinationId = isTransfer
+            ? (tx['toAccountId'] as String?)
+            : (tx['categoryId'] as String?);
+
+        if (destinationId != null && destinationId.isNotEmpty) {
+          await _processFeedbackInternal(
+            db: txn,
+            rawText: note,
+            amount: signedAmount,
+            originId: accountId,
+            destinationId: destinationId,
+          );
+        }
+      }
+
+      // Mark as completed
+      await txn.insert('app_settings', {
+        'key': 'is_ml_bootstrapped',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   }
 }

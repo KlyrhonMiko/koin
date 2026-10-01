@@ -24,7 +24,9 @@ void main() {
   });
 
   group('CashflowScheduleTab Widget Tests', () {
-    testWidgets('renders planned payments expense list items and auto badges', (tester) async {
+    testWidgets('renders planned payments expense list items and auto badges', (
+      tester,
+    ) async {
       final payments = [
         PlannedPayment(
           id: 'test_pp_1',
@@ -44,13 +46,11 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            plannedPaymentProvider.overrideWith(() => FakePlannedPaymentNotifier(payments)),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: PlannedPaymentsTab(),
+            plannedPaymentProvider.overrideWith(
+              () => FakePlannedPaymentNotifier(payments),
             ),
-          ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: PlannedPaymentsTab())),
         ),
       );
 
@@ -62,7 +62,9 @@ void main() {
       expect(find.text('Pay'), findsOneWidget);
     });
 
-    testWidgets('renders recurring incomes list items and receive action', (tester) async {
+    testWidgets('renders recurring incomes list items and receive action', (
+      tester,
+    ) async {
       final incomes = [
         PlannedPayment(
           id: 'test_inc_1',
@@ -82,13 +84,11 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            plannedPaymentProvider.overrideWith(() => FakePlannedPaymentNotifier(incomes)),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: RecurringIncomesTab(),
+            plannedPaymentProvider.overrideWith(
+              () => FakePlannedPaymentNotifier(incomes),
             ),
-          ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: RecurringIncomesTab())),
         ),
       );
 
@@ -99,18 +99,18 @@ void main() {
       expect(find.text('Receive'), findsOneWidget);
     });
 
-    testWidgets('renders clean empty state when no items exist', (tester) async {
+    testWidgets('renders clean empty state when no items exist', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            plannedPaymentProvider.overrideWith(() => FakePlannedPaymentNotifier([])),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: PlannedPaymentsTab(),
+            plannedPaymentProvider.overrideWith(
+              () => FakePlannedPaymentNotifier([]),
             ),
-          ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: PlannedPaymentsTab())),
         ),
       );
 

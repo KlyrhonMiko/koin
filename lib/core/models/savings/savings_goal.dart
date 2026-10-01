@@ -28,7 +28,9 @@ class SavingsGoal {
       'targetAmount': targetAmount ?? 0.0,
       'currentAmount': currentAmount,
       'startDate': startDate.toIso8601String(),
-      'endDate': endDate?.toIso8601String() ?? DateTime(2099, 12, 31).toIso8601String(),
+      'endDate':
+          endDate?.toIso8601String() ??
+          DateTime(2099, 12, 31).toIso8601String(),
       'notes': notes,
       'linkedAccountId': linkedAccountId,
       'isStash': isStash ? 1 : 0,
@@ -39,14 +41,16 @@ class SavingsGoal {
     final isStash = map['isStash'] == 1;
     final parsedTarget = (map['targetAmount'] as num).toDouble();
     final parsedEndDateStr = map['endDate'] as String;
-    
+
     return SavingsGoal(
       id: map['id'],
       name: map['name'],
       targetAmount: (isStash && parsedTarget == 0.0) ? null : parsedTarget,
       currentAmount: (map['currentAmount'] as num).toDouble(),
       startDate: DateTime.parse(map['startDate']),
-      endDate: (isStash && parsedEndDateStr.startsWith('2099')) ? null : DateTime.parse(parsedEndDateStr),
+      endDate: (isStash && parsedEndDateStr.startsWith('2099'))
+          ? null
+          : DateTime.parse(parsedEndDateStr),
       notes: map['notes'],
       linkedAccountId: map['linkedAccountId'],
       isStash: isStash,
@@ -68,10 +72,14 @@ class SavingsGoal {
       id: id ?? this.id,
       name: name ?? this.name,
       // allow nullification of targetAmount and endDate
-      targetAmount: targetAmount != null && targetAmount == -1 ? null : (targetAmount ?? this.targetAmount),
+      targetAmount: targetAmount != null && targetAmount == -1
+          ? null
+          : (targetAmount ?? this.targetAmount),
       currentAmount: currentAmount ?? this.currentAmount,
       startDate: startDate ?? this.startDate,
-      endDate: endDate != null && endDate.year == 1970 ? null : (endDate ?? this.endDate),
+      endDate: endDate != null && endDate.year == 1970
+          ? null
+          : (endDate ?? this.endDate),
       notes: notes ?? this.notes,
       linkedAccountId: linkedAccountId ?? this.linkedAccountId,
       isStash: isStash ?? this.isStash,
@@ -81,7 +89,8 @@ class SavingsGoal {
   // Calculations
   int? get totalDays => endDate?.difference(startDate).inDays;
   int? get remainingDays => endDate?.difference(DateTime.now()).inDays;
-  double? get remainingAmount => targetAmount != null ? targetAmount! - currentAmount : null;
+  double? get remainingAmount =>
+      targetAmount != null ? targetAmount! - currentAmount : null;
 
   double? get dailyNeeded {
     if (remainingDays == null || remainingAmount == null) return null;
@@ -93,6 +102,7 @@ class SavingsGoal {
     if (dailyNeeded == null || remainingAmount == null) return null;
     return (dailyNeeded! * 7).clamp(0, remainingAmount!);
   }
+
   double? get monthlyNeeded {
     if (dailyNeeded == null || remainingAmount == null) return null;
     return (dailyNeeded! * 30).clamp(0, remainingAmount!);

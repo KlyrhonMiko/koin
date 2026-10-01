@@ -69,17 +69,10 @@ class FormSectionTitle extends StatelessWidget {
     if (icon != null) {
       child = Row(
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: AppTheme.primaryColor(context),
-          ),
+          Icon(icon, size: 16, color: AppTheme.primaryColor(context)),
           const Gap(8),
           Text(effectiveTitle, style: textStyle),
-          if (trailing != null) ...[
-            const Spacer(),
-            trailing!,
-          ],
+          if (trailing != null) ...[const Spacer(), trailing!],
         ],
       );
     } else if (trailing != null) {
@@ -95,10 +88,7 @@ class FormSectionTitle extends StatelessWidget {
     }
 
     if (padding != null) {
-      return Padding(
-        padding: padding!,
-        child: child,
-      );
+      return Padding(padding: padding!, child: child);
     }
     return child;
   }

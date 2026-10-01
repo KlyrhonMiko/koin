@@ -31,3 +31,7 @@ A predictive classification module that consumes narrative input context (raw de
 
 ### Savings Goal & Stash
 A savings accumulation target tracking progress toward a financial milestone, optionally linked to an underlying holding account.
+
+### Cashflow Forecaster
+A predictive projection engine that combines historical variable cashflow (using exponential moving average - EMA), fixed recurring cashflow schedules (`PlannedPayment`), debt amortization schedules, and savings target timelines to project net cashflow balances across weekly, monthly, and yearly horizons.
+

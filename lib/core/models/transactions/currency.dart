@@ -10,11 +10,7 @@ class Currency {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'code': code,
-      'symbol': symbol,
-      'name': name,
-    };
+    return {'code': code, 'symbol': symbol, 'name': name};
   }
 
   factory Currency.fromMap(Map<String, dynamic> map) {

@@ -32,12 +32,14 @@ class CashflowScheduleTab extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
 
-    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
-      payment: payment,
-      amount: result.amount,
-      accountId: result.accountId,
-      categoryId: result.categoryId,
-    );
+    await ref
+        .read(plannedPaymentProvider.notifier)
+        .processOccurrence(
+          payment: payment,
+          amount: result.amount,
+          accountId: result.accountId,
+          categoryId: result.categoryId,
+        );
 
     if (context.mounted) {
       KoinSnackBar.success(
@@ -97,7 +99,9 @@ class CashflowScheduleTab extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () {
             HapticService.light();
-            return ref.read(plannedPaymentProvider.notifier).loadPlannedPayments();
+            return ref
+                .read(plannedPaymentProvider.notifier)
+                .loadPlannedPayments();
           },
           color: AppTheme.primaryColor(context),
           backgroundColor: AppTheme.surfaceColor(context),
@@ -115,7 +119,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                   .cast<TransactionCategory?>()
                   .firstWhere(
                     (c) => c?.id == payment.categoryId,
-                    orElse: () => categories.isNotEmpty ? categories.first : null,
+                    orElse: () =>
+                        categories.isNotEmpty ? categories.first : null,
                   );
 
               final account = accounts
@@ -126,13 +131,19 @@ class CashflowScheduleTab extends ConsumerWidget {
                 key: Key('cashflow_${payment.id}'),
                 margin: const EdgeInsets.only(bottom: 16),
                 borderRadius: BorderRadius.circular(24),
-                confirmTitle: _isIncome ? 'Delete Recurring Income?' : 'Delete Subscription?',
+                confirmTitle: _isIncome
+                    ? 'Delete Recurring Income?'
+                    : 'Delete Subscription?',
                 confirmDescription:
                     'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
-                confirmLabel: _isIncome ? 'Delete Income' : 'Delete Subscription',
+                confirmLabel: _isIncome
+                    ? 'Delete Income'
+                    : 'Delete Subscription',
                 onDelete: () {
                   HapticService.heavy();
-                  ref.read(plannedPaymentProvider.notifier).deletePlannedPayment(payment.id);
+                  ref
+                      .read(plannedPaymentProvider.notifier)
+                      .deletePlannedPayment(payment.id);
                 },
                 child: _buildCard(
                   context,
@@ -184,16 +195,22 @@ class CashflowScheduleTab extends ConsumerWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                          color: AppTheme.primaryColor(
+                            context,
+                          ).withValues(alpha: 0.1),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
                       ],
                     ),
                     child: Icon(
-                      _isIncome ? Icons.account_balance_wallet_rounded : Icons.event_repeat_rounded,
+                      _isIncome
+                          ? Icons.account_balance_wallet_rounded
+                          : Icons.event_repeat_rounded,
                       size: 56,
-                      color: AppTheme.primaryColor(context).withValues(alpha: 0.6),
+                      color: AppTheme.primaryColor(
+                        context,
+                      ).withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -220,7 +237,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 36),
                   KoinPrimaryButton(
-                    label: _isIncome ? 'Add Your First Recurring Income' : 'Add Your First Subscription',
+                    label: _isIncome
+                        ? 'Add Your First Recurring Income'
+                        : 'Add Your First Subscription',
                     icon: Icons.add_rounded,
                     onPressed: () {
                       HapticService.medium();
@@ -259,10 +278,7 @@ class CashflowScheduleTab extends ConsumerWidget {
         Navigator.push(
           context,
           SlideUpRoute(
-            page: AddEditCashflowScreen(
-              payment: payment,
-              initialType: type,
-            ),
+            page: AddEditCashflowScreen(payment: payment, initialType: type),
           ),
         );
       },
@@ -297,7 +313,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
-                    category != null ? IconUtils.getIcon(category.iconCodePoint) : Icons.category_rounded,
+                    category != null
+                        ? IconUtils.getIcon(category.iconCodePoint)
+                        : Icons.category_rounded,
                     color: catColor,
                     size: 24,
                   ),
@@ -338,9 +356,14 @@ class CashflowScheduleTab extends ConsumerWidget {
                           if (payment.isAutoProcess) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                                color: AppTheme.primaryColor(
+                                  context,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
@@ -374,7 +397,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                     letterSpacing: -0.5,
-                    color: _isIncome ? AppTheme.incomeColor(context) : AppTheme.expenseColor(context),
+                    color: _isIncome
+                        ? AppTheme.incomeColor(context)
+                        : AppTheme.expenseColor(context),
                   ),
                 ),
               ],
@@ -387,7 +412,11 @@ class CashflowScheduleTab extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: dueDateColor),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: dueDateColor,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _formatNextPaymentDate(payment.nextDate),
@@ -399,7 +428,12 @@ class CashflowScheduleTab extends ConsumerWidget {
                     ),
                     if (accountName != null) ...[
                       const SizedBox(width: 8),
-                      Text('•', style: TextStyle(color: AppTheme.textLightColor(context))),
+                      Text(
+                        '•',
+                        style: TextStyle(
+                          color: AppTheme.textLightColor(context),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         accountName,
@@ -415,20 +449,31 @@ class CashflowScheduleTab extends ConsumerWidget {
                 PressableScale(
                   onTap: () => _processPayment(context, ref, payment),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: _isIncome
-                          ? AppTheme.incomeColor(context).withValues(alpha: 0.12)
-                          : AppTheme.primaryColor(context).withValues(alpha: 0.1),
+                          ? AppTheme.incomeColor(
+                              context,
+                            ).withValues(alpha: 0.12)
+                          : AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _isIncome ? Icons.download_rounded : Icons.check_rounded,
+                          _isIncome
+                              ? Icons.download_rounded
+                              : Icons.check_rounded,
                           size: 14,
-                          color: _isIncome ? AppTheme.incomeColor(context) : AppTheme.primaryColor(context),
+                          color: _isIncome
+                              ? AppTheme.incomeColor(context)
+                              : AppTheme.primaryColor(context),
                         ),
                         const Gap(6),
                         Text(
@@ -436,7 +481,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _isIncome ? AppTheme.incomeColor(context) : AppTheme.primaryColor(context),
+                            color: _isIncome
+                                ? AppTheme.incomeColor(context)
+                                : AppTheme.primaryColor(context),
                           ),
                         ),
                       ],
@@ -499,10 +546,7 @@ class CashflowScheduleTab extends ConsumerWidget {
 class PlannedPaymentsTab extends StatelessWidget {
   final bool showEntranceAnimations;
 
-  const PlannedPaymentsTab({
-    super.key,
-    this.showEntranceAnimations = false,
-  });
+  const PlannedPaymentsTab({super.key, this.showEntranceAnimations = false});
 
   @override
   Widget build(BuildContext context) {
@@ -517,10 +561,7 @@ class PlannedPaymentsTab extends StatelessWidget {
 class RecurringIncomesTab extends StatelessWidget {
   final bool showEntranceAnimations;
 
-  const RecurringIncomesTab({
-    super.key,
-    this.showEntranceAnimations = false,
-  });
+  const RecurringIncomesTab({super.key, this.showEntranceAnimations = false});
 
   @override
   Widget build(BuildContext context) {

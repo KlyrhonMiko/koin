@@ -71,40 +71,41 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          KoinScreenHeader(
-            tag: 'TIMELINE',
-            title: 'Activity & Flow',
-            padding: EdgeInsets.zero,
-            trailing: IconButton(
-              onPressed: () {
-                HapticService.light();
-                Navigator.push(
-                  context,
-                  SlideUpRoute(page: const CustomReportsScreen()),
-                );
-              },
-              icon: Icon(
-                Icons.summarize_outlined,
-                color: AppTheme.textColor(context),
-              ),
-              tooltip: 'Custom Reports',
-            ),
-          ),
-          const SizedBox(height: 20),
-          KoinSegmentedControl(
-            controller: _tabController,
-            leftLabel: 'Analysis',
-            rightLabel: 'Transactions',
-          ),
-        ]
-        .animate(interval: 40.ms)
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        ),
+        children:
+            [
+                  KoinScreenHeader(
+                    tag: 'TIMELINE',
+                    title: 'Activity & Flow',
+                    padding: EdgeInsets.zero,
+                    trailing: IconButton(
+                      onPressed: () {
+                        HapticService.light();
+                        Navigator.push(
+                          context,
+                          SlideUpRoute(page: const CustomReportsScreen()),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.summarize_outlined,
+                        color: AppTheme.textColor(context),
+                      ),
+                      tooltip: 'Custom Reports',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  KoinSegmentedControl(
+                    controller: _tabController,
+                    leftLabel: 'Analysis',
+                    rightLabel: 'Transactions',
+                  ),
+                ]
+                .animate(interval: 40.ms)
+                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: 250.ms,
+                  curve: Curves.easeOutCubic,
+                ),
       ),
     );
   }

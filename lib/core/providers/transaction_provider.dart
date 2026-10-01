@@ -26,6 +26,18 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     await loadTransactions(showLoading: false);
   }
 
+  Future<TransferResult> addTransfer({
+    required AppTransaction transferTransaction,
+    AppTransaction? feeTransaction,
+  }) async {
+    final result = await _ledger.recordTransfer(
+      transferTransaction: transferTransaction,
+      feeTransaction: feeTransaction,
+    );
+    await loadTransactions(showLoading: false);
+    return result;
+  }
+
   Future<void> updateTransaction(AppTransaction transaction) async {
     await _ledger.updateTransaction(transaction);
     await loadTransactions(showLoading: false);

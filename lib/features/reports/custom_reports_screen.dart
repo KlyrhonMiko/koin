@@ -46,48 +46,49 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(context),
-                  const Gap(32),
-                  DateRangeSelector(
-                    initialDateRange: _dateRange,
-                    onChanged: (range) {
-                      if (range != null) {
-                        setState(() => _dateRange = range);
-                      }
-                    },
-                  ),
-                  const Gap(24),
-                  _buildSummaryCard(context, ref, currencySymbol),
-                  const Gap(28),
-                  const KoinSectionHeader(
-                    title: 'Transaction Type',
-                    subtitle: 'Filter by income or expense',
-                  ),
-                  const Gap(12),
-                  _buildTypeSelector(context),
-                  const Gap(28),
-                  const KoinSectionHeader(
-                    title: 'Categories',
-                    subtitle: 'Narrow down by spending categories',
-                  ),
-                  const Gap(12),
-                  _buildCategorySelector(context, categories),
-                  const Gap(28),
-                  const KoinSectionHeader(
-                    title: 'Accounts',
-                    subtitle: 'Select specific accounts to include',
-                  ),
-                  const Gap(12),
-                  _buildAccountSelector(context, accounts),
-                ]
-                .animate(interval: 40.ms)
-                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                .scale(
-                  begin: const Offset(0.95, 0.95),
-                  duration: 250.ms,
-                  curve: Curves.easeOutCubic,
-                ),
+                children:
+                    [
+                          _buildHeader(context),
+                          const Gap(32),
+                          DateRangeSelector(
+                            initialDateRange: _dateRange,
+                            onChanged: (range) {
+                              if (range != null) {
+                                setState(() => _dateRange = range);
+                              }
+                            },
+                          ),
+                          const Gap(24),
+                          _buildSummaryCard(context, ref, currencySymbol),
+                          const Gap(28),
+                          const KoinSectionHeader(
+                            title: 'Transaction Type',
+                            subtitle: 'Filter by income or expense',
+                          ),
+                          const Gap(12),
+                          _buildTypeSelector(context),
+                          const Gap(28),
+                          const KoinSectionHeader(
+                            title: 'Categories',
+                            subtitle: 'Narrow down by spending categories',
+                          ),
+                          const Gap(12),
+                          _buildCategorySelector(context, categories),
+                          const Gap(28),
+                          const KoinSectionHeader(
+                            title: 'Accounts',
+                            subtitle: 'Select specific accounts to include',
+                          ),
+                          const Gap(12),
+                          _buildAccountSelector(context, accounts),
+                        ]
+                        .animate(interval: 40.ms)
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
               ),
             ),
             _buildSummaryCard(context, ref, currencySymbol, getCountOnly: true)
@@ -248,7 +249,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       ),
     );
   }
-
 
   Widget _buildSummaryItem(
     BuildContext context,

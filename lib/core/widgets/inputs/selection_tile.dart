@@ -44,7 +44,8 @@ class SelectionTile extends StatelessWidget {
       child: InkWell(
         onTap: () async {
           HapticService.light();
-          final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
+          final hadFocus =
+              FocusManager.instance.primaryFocus?.hasFocus ?? false;
           FocusManager.instance.primaryFocus?.unfocus();
           if (hadFocus) {
             await Future.delayed(const Duration(milliseconds: 150));
@@ -70,9 +71,9 @@ class SelectionTile extends StatelessWidget {
                       style: TextStyle(
                         fontSize: asCard ? 12 : 11,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textLightColor(context).withValues(
-                          alpha: asCard ? 0.7 : 0.65,
-                        ),
+                        color: AppTheme.textLightColor(
+                          context,
+                        ).withValues(alpha: asCard ? 0.7 : 0.65),
                         letterSpacing: asCard ? null : 0.3,
                       ),
                     ),
@@ -86,9 +87,9 @@ class SelectionTile extends StatelessWidget {
                             : FontWeight.w500,
                         color: hasSelection
                             ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(context).withValues(
-                                alpha: 0.5,
-                              ),
+                            : AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.5),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -146,12 +147,8 @@ class SelectionTile extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _buildFallbackContainer(
-            context,
-            size,
-            iconSize,
-            radius,
-          ),
+          errorBuilder: (_, _, _) =>
+              _buildFallbackContainer(context, size, iconSize, radius),
         ),
       );
     }
@@ -175,12 +172,8 @@ class SelectionTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
       ),
       child: Icon(
-        hasSelection
-            ? IconUtils.getIcon(selectedIconCodePoint!)
-            : fallbackIcon,
-        color: hasSelection
-            ? selectedColor!
-            : AppTheme.textLightColor(context),
+        hasSelection ? IconUtils.getIcon(selectedIconCodePoint!) : fallbackIcon,
+        color: hasSelection ? selectedColor! : AppTheme.textLightColor(context),
         size: iconSize,
       ),
     );

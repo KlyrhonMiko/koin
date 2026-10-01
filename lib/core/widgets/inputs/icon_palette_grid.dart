@@ -89,8 +89,8 @@ class IconPaletteGrid extends StatelessWidget {
             color: isSelected
                 ? activeColor.withValues(alpha: 0.12)
                 : shape == BoxShape.circle
-                    ? AppTheme.dividerColor(context).withValues(alpha: 0.1)
-                    : AppTheme.surfaceLightColor(context),
+                ? AppTheme.dividerColor(context).withValues(alpha: 0.1)
+                : AppTheme.surfaceLightColor(context),
             shape: shape,
             borderRadius: shape == BoxShape.circle
                 ? null

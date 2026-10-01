@@ -10,10 +10,7 @@ import 'package:koin/features/savings/savings_details_screen.dart';
 class SavingsTab extends ConsumerStatefulWidget {
   final bool showEntranceAnimations;
 
-  const SavingsTab({
-    super.key,
-    required this.showEntranceAnimations,
-  });
+  const SavingsTab({super.key, required this.showEntranceAnimations});
 
   @override
   ConsumerState<SavingsTab> createState() => _SavingsTabState();
@@ -34,9 +31,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         if (goals.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildEmptyState(context)),
-            ],
+            children: [Expanded(child: _buildEmptyState(context))],
           );
         }
         return RefreshIndicator(
@@ -52,7 +47,12 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: _buildHeroBentoCard(context, goals, currencyFormat, isDark),
+                  child: _buildHeroBentoCard(
+                    context,
+                    goals,
+                    currencyFormat,
+                    isDark,
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
@@ -77,7 +77,9 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
-                          color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -87,16 +89,19 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final goal = goals[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildListGoalCard(context, goal, index, currencyFormat, isDark),
-                      );
-                    },
-                    childCount: goals.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final goal = goals[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildListGoalCard(
+                        context,
+                        goal,
+                        index,
+                        currencyFormat,
+                        isDark,
+                      ),
+                    );
+                  }, childCount: goals.length),
                 ),
               ),
               SliverToBoxAdapter(
@@ -121,122 +126,123 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     bool isDark,
   ) {
     final totalSaved = goals.fold<double>(0, (sum, g) => sum + g.currentAmount);
-    final totalTarget = goals.fold<double>(0, (sum, g) => sum + (g.targetAmount ?? 0));
+    final totalTarget = goals.fold<double>(
+      0,
+      (sum, g) => sum + (g.targetAmount ?? 0),
+    );
     final overallProgress = totalTarget > 0
         ? (totalSaved / totalTarget).clamp(0.0, 1.0)
         : 0.0;
 
     Widget card = KoinSummaryCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total Saved',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const Gap(6),
-                      AnimatedCounter(
-                        value: totalSaved,
-                        formatter: (v) => currencyFormat.format(v),
-                        duration: const Duration(milliseconds: 1400),
-                        curve: Curves.easeOutCubic,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1.0,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.1),
+                  Text(
+                    'Total Saved',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
                     ),
-                    child: Center(
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: overallProgress),
-                        duration: const Duration(milliseconds: 1400),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, val, child) {
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: CircularProgressIndicator(
-                                  value: 1.0,
-                                  strokeWidth: 4,
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: CircularProgressIndicator(
-                                  value: val,
-                                  strokeWidth: 4,
-                                  strokeCap: StrokeCap.round,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '${(val * 100).toInt()}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                  ),
+                  const Gap(6),
+                  AnimatedCounter(
+                    value: totalSaved,
+                    formatter: (v) => currencyFormat.format(v),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.0,
+                      height: 1.1,
                     ),
                   ),
                 ],
               ),
-              const Gap(24),
               Container(
-                height: 1,
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
-              const Gap(16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildMiniStat('Target', totalTarget, currencyFormat),
-                  _buildMiniStat(
-                    'Remaining', 
-                    totalTarget - totalSaved, 
-                    currencyFormat,
-                    alignment: CrossAxisAlignment.end,
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: overallProgress),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, val, child) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: CircularProgressIndicator(
+                              value: 1.0,
+                              strokeWidth: 4,
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: CircularProgressIndicator(
+                              value: val,
+                              strokeWidth: 4,
+                              strokeCap: StrokeCap.round,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            '${(val * 100).toInt()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ],
+                ),
               ),
             ],
           ),
+          const Gap(24),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
+          const Gap(16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildMiniStat('Target', totalTarget, currencyFormat),
+              _buildMiniStat(
+                'Remaining',
+                totalTarget - totalSaved,
+                currencyFormat,
+                alignment: CrossAxisAlignment.end,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
 
     if (widget.showEntranceAnimations) {
-      card = card.animate()
+      card = card
+          .animate()
           .fade(duration: 400.ms, curve: Curves.easeOutCubic)
           .scale(
             begin: const Offset(0.96, 0.96),
@@ -248,8 +254,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
   }
 
   Widget _buildMiniStat(
-    String label, 
-    double amount, 
+    String label,
+    double amount,
     NumberFormat fmt, {
     CrossAxisAlignment alignment = CrossAxisAlignment.start,
   }) {
@@ -291,7 +297,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
   ) {
     final progressPercent = (goal.progress * 100).toInt();
     final isCompleted = goal.progress >= 1.0;
-    
+
     final accentColors = [
       AppTheme.primaryColor(context),
       const Color(0xFF6366F1),
@@ -363,17 +369,22 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isCompleted 
-                        ? successGreen.withValues(alpha: 0.1) 
+                    color: isCompleted
+                        ? successGreen.withValues(alpha: 0.1)
                         : AppTheme.backgroundColor(context),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     '$progressPercent%',
                     style: TextStyle(
-                      color: isCompleted ? successGreen : AppTheme.textColor(context),
+                      color: isCompleted
+                          ? successGreen
+                          : AppTheme.textColor(context),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -406,7 +417,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     );
 
     if (widget.showEntranceAnimations) {
-      card = card.animate(key: ValueKey('goal_${goal.id}_entrance'))
+      card = card
+          .animate(key: ValueKey('goal_${goal.id}_entrance'))
           .fade(delay: (index * 40).ms, duration: 400.ms)
           .slideX(begin: 0.05, curve: Curves.easeOutCubic);
     }
@@ -419,7 +431,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
       icon: Icons.savings_outlined,
       iconSize: 40,
       title: 'No dreams yet',
-      subtitle: 'Start your financial journey by\nsetting your first savings goal.',
+      subtitle:
+          'Start your financial journey by\nsetting your first savings goal.',
       action: PressableScale(
         onTap: () {
           Navigator.push(
@@ -461,7 +474,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     );
 
     if (widget.showEntranceAnimations) {
-      state = state.animate()
+      state = state
+          .animate()
           .fade(delay: 50.ms, duration: 400.ms, curve: Curves.easeOutCubic)
           .slideY(begin: 0.1, curve: Curves.easeOutCubic);
     }
@@ -510,7 +524,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     );
 
     if (widget.showEntranceAnimations) {
-      btn = btn.animate()
+      btn = btn
+          .animate()
           .fade(duration: 400.ms, curve: Curves.easeOutCubic)
           .scale(begin: const Offset(0.96, 0.96), curve: Curves.easeOutCubic);
     }

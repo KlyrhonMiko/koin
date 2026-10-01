@@ -97,7 +97,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final goal = SavingsGoal(
       id: widget.goal?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
-      targetAmount: _isStash && (targetAmount == null || targetAmount <= 0) ? null : (targetAmount ?? 0.0),
+      targetAmount: _isStash && (targetAmount == null || targetAmount <= 0)
+          ? null
+          : (targetAmount ?? 0.0),
       currentAmount: widget.goal?.currentAmount ?? 0.0,
       startDate: _startDate,
       endDate: _isStash ? null : _endDate,
@@ -171,77 +173,91 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     const FormSectionTitle.subhead(title: 'Timeline'),
                     const Gap(12),
                     Row(
-                      children: [
-                        Expanded(
-                          child: DateSelectorTile(
-                            label: 'Start Date',
-                            date: _startDate,
-                            icon: Icons.play_arrow_rounded,
-                            onTap: () => _selectDate(context, true),
-                          ),
+                          children: [
+                            Expanded(
+                              child: DateSelectorTile(
+                                label: 'Start Date',
+                                date: _startDate,
+                                icon: Icons.play_arrow_rounded,
+                                onTap: () => _selectDate(context, true),
+                              ),
+                            ),
+                            if (!_isStash) ...[
+                              const Gap(12),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceLightColor(context),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 16,
+                                  color: AppTheme.textLightColor(context),
+                                ),
+                              ),
+                              const Gap(12),
+                              Expanded(
+                                child: DateSelectorTile(
+                                  label: 'Target Date',
+                                  date: _endDate,
+                                  icon: Icons.flag_rounded,
+                                  onTap: () => _selectDate(context, false),
+                                ),
+                              ),
+                            ],
+                          ],
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                        if (!_isStash) ...[
-                          const Gap(12),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppTheme.surfaceLightColor(context),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 16,
-                              color: AppTheme.textLightColor(context),
-                            ),
-                          ),
-                          const Gap(12),
-                          Expanded(
-                            child: DateSelectorTile(
-                              label: 'Target Date',
-                              date: _endDate,
-                              icon: Icons.flag_rounded,
-                              onTap: () => _selectDate(context, false),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                     if (!_isStash && _amountController.text.isNotEmpty) ...[
                       const Gap(12),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: primaryColor.withValues(alpha: 0.15),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.insights_rounded,
-                              size: 18,
-                              color: primaryColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
                             ),
-                            const Gap(12),
-                            Expanded(
-                              child: Text(
-                                'Save ${_getDailyEstimate()}/day to reach your goal in $_totalDays days',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryColor,
-                                ),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.15),
                               ),
                             ),
-                          ],
-                        ),
-                      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.insights_rounded,
+                                  size: 18,
+                                  color: primaryColor,
+                                ),
+                                const Gap(12),
+                                Expanded(
+                                  child: Text(
+                                    'Save ${_getDailyEstimate()}/day to reach your goal in $_totalDays days',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                          .animate()
+                          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                          .scale(
+                            begin: const Offset(0.95, 0.95),
+                            duration: 250.ms,
+                            curve: Curves.easeOutCubic,
+                          ),
                       const Gap(32),
                     ] else ...[
                       const Gap(32),
@@ -253,108 +269,123 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
 
                     // Linked Account
                     SelectionTile(
-                      fallbackIcon: Icons.account_balance_wallet_rounded,
-                      label: 'Linked Account (Optional)',
-                      selectedName: _accountById(
-                        accounts,
-                        _selectedAccountId,
-                      )?.name,
-                      selectedColor: _accountById(
-                        accounts,
-                        _selectedAccountId,
-                      )?.color,
-                      selectedIconCodePoint: _accountById(
-                        accounts,
-                        _selectedAccountId,
-                      )?.iconCodePoint,
-                      selectedLogoAsset: _accountById(
-                        accounts,
-                        _selectedAccountId,
-                      )?.logoAsset,
-                      placeholder: 'None',
-                      onTap: () => _openAccountPicker(
-                        context,
-                        availableAccounts,
-                        title: 'Linked Account',
-                        subtitle: 'Link an account to fund this goal',
-                        selectedId: _selectedAccountId,
-                        onSelected: (id) =>
-                            setState(() => _selectedAccountId = id),
-                      ),
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+                          fallbackIcon: Icons.account_balance_wallet_rounded,
+                          label: 'Linked Account (Optional)',
+                          selectedName: _accountById(
+                            accounts,
+                            _selectedAccountId,
+                          )?.name,
+                          selectedColor: _accountById(
+                            accounts,
+                            _selectedAccountId,
+                          )?.color,
+                          selectedIconCodePoint: _accountById(
+                            accounts,
+                            _selectedAccountId,
+                          )?.iconCodePoint,
+                          selectedLogoAsset: _accountById(
+                            accounts,
+                            _selectedAccountId,
+                          )?.logoAsset,
+                          placeholder: 'None',
+                          onTap: () => _openAccountPicker(
+                            context,
+                            availableAccounts,
+                            title: 'Linked Account',
+                            subtitle: 'Link an account to fund this goal',
+                            selectedId: _selectedAccountId,
+                            onSelected: (id) =>
+                                setState(() => _selectedAccountId = id),
+                          ),
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
                     const Gap(16),
 
                     // Notes
                     Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.7),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceColor(context),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: AppTheme.dividerColor(
+                                context,
+                              ).withValues(alpha: 0.7),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceLightColor(context),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.sticky_note_2_rounded,
-                                size: 17,
-                                color: AppTheme.textLightColor(context),
-                              ),
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: TextField(
-                                controller: _notesController,
-                                onTap: () {
-                                  HapticService.light();
-                                },
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: AppTheme.textColor(context),
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Notes (Optional)',
-                                  hintStyle: TextStyle(
-                                    color: AppTheme.textLightColor(
-                                      context,
-                                    ).withValues(alpha: 0.45),
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 15,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceLightColor(context),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  filled: false,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 15,
+                                  child: Icon(
+                                    Icons.sticky_note_2_rounded,
+                                    size: 17,
+                                    color: AppTheme.textLightColor(context),
                                   ),
                                 ),
-                              ),
+                                const Gap(12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _notesController,
+                                    onTap: () {
+                                      HapticService.light();
+                                    },
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                      color: AppTheme.textColor(context),
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Notes (Optional)',
+                                      hintStyle: TextStyle(
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.45),
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 15,
+                                      ),
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      filled: false,
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 15,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        )
+                        .animate()
+                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          duration: 250.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                      ),
-                    ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
                   ],
                 ),
               ),
@@ -363,18 +394,24 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: KoinPrimaryButton(
-          label: isEditing ? 'Update Goal' : 'Create Goal',
-          onPressed: _save,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-        ),
-      ).animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic),
+      floatingActionButton:
+          Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: KoinPrimaryButton(
+                  label: isEditing ? 'Update Goal' : 'Create Goal',
+                  onPressed: _save,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                ),
+              )
+              .animate()
+              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+              .scale(
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: Curves.easeOutCubic,
+              ),
     );
   }
-
-
 
   Widget _buildHeader(
     BuildContext context,
@@ -443,7 +480,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
             primaryColor: primaryColor,
             onChanged: (_) => setState(() {}),
           ),
-          
+
           const Gap(16),
           // Stash Toggle
           Padding(
@@ -451,13 +488,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _isStash 
-                    ? primaryColor.withValues(alpha: 0.1) 
+                color: _isStash
+                    ? primaryColor.withValues(alpha: 0.1)
                     : AppTheme.surfaceColor(context),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _isStash 
-                      ? primaryColor.withValues(alpha: 0.3) 
+                  color: _isStash
+                      ? primaryColor.withValues(alpha: 0.3)
                       : AppTheme.dividerColor(context).withValues(alpha: 0.5),
                 ),
               ),
@@ -467,15 +504,17 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: _isStash 
-                          ? primaryColor.withValues(alpha: 0.2) 
+                      color: _isStash
+                          ? primaryColor.withValues(alpha: 0.2)
                           : AppTheme.surfaceLightColor(context),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.savings_rounded,
                       size: 18,
-                      color: _isStash ? primaryColor : AppTheme.textLightColor(context),
+                      color: _isStash
+                          ? primaryColor
+                          : AppTheme.textLightColor(context),
                     ),
                   ),
                   const Gap(12),
@@ -488,7 +527,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: _isStash ? primaryColor : AppTheme.textColor(context),
+                            color: _isStash
+                                ? primaryColor
+                                : AppTheme.textColor(context),
                           ),
                         ),
                         Text(
@@ -520,8 +561,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       ),
     );
   }
-
-
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Selection Row

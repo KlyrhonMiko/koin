@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/coach/coach_screen.dart';
 import 'package:koin/features/savings/coach/coach_engine.dart';
+import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -19,12 +20,10 @@ class SavingsDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
-  final _amountController = TextEditingController();
-
-  Future<void> _saveLog({SavingsLog? existingLog}) async {
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-
+  Future<void> _saveLog({
+    SavingsLog? existingLog,
+    required double amount,
+  }) async {
     if (existingLog != null) {
       final newLog = SavingsLog(
         id: existingLog.id,
@@ -48,7 +47,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       await ref.read(savingsGoalsProvider.notifier).addLog(log);
 
       final currentAmountAfter = widget.goal.currentAmount + amount;
-      final isNowCompleted = currentAmountAfter >= (widget.goal.targetAmount ?? 0);
+      final isNowCompleted =
+          currentAmountAfter >= (widget.goal.targetAmount ?? 0);
 
       if (!wasCompleted && isNowCompleted) {
         HapticService.success();
@@ -60,195 +60,21 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         HapticService.success();
       }
     }
-
-    _amountController.clear();
-    if (mounted) {
-      Navigator.pop(context);
-    }
   }
 
-  void _showAddLogSheet({SavingsLog? log, Account? linkedAccount, double? linkedBalance}) {
-    String currentExpression = log != null
-        ? log.amount.toString().replaceFirst(RegExp(r'\.0$'), '')
-        : '';
-    String evaluatedResult = log != null ? log.amount.toString() : '0';
-    _amountController.text = evaluatedResult;
-
-    HapticService.light();
-    showModalBottomSheet(
+  void _showAddLogSheet({
+    SavingsLog? log,
+    Account? linkedAccount,
+    double? linkedBalance,
+  }) {
+    SavingsLogSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final settings = ref.read(settingsProvider);
-          final hasAmount =
-              currentExpression.isNotEmpty && currentExpression != '0';
-          final primaryColor = AppTheme.primaryColor(context);
-          final parsedAmount = double.tryParse(evaluatedResult) ?? 0;
-          final isExceeded = log == null && linkedAccount != null && linkedBalance != null && parsedAmount > linkedBalance;
-
-          return Container(
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(32),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 24,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Gap(12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.dividerColor(context),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const Gap(24),
-                Text(
-                  log != null ? 'Edit Savings' : 'Add Savings',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const Gap(32),
-
-                // Hero Amount Display
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        settings.currency.code,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: primaryColor.withValues(alpha: 0.5),
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const Gap(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${settings.currency.symbol} ',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: primaryColor.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          Text(
-                            currentExpression.isEmpty ? '0' : currentExpression,
-                            style: TextStyle(
-                              fontSize: 44,
-                              fontWeight: FontWeight.w800,
-                              color: isExceeded
-                                  ? AppTheme.expenseColor(context)
-                                  : (hasAmount
-                                      ? primaryColor
-                                      : primaryColor.withValues(alpha: 0.3)),
-                              letterSpacing: -1.5,
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (currentExpression.contains(RegExp(r'[+\-*/]')))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '= ${settings.currency.symbol}$evaluatedResult',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
-                      if (linkedAccount != null && linkedBalance != null && log == null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            isExceeded
-                                ? 'Insufficient balance in ${linkedAccount.name}'
-                                : 'Available from ${linkedAccount.name}: ${NumberFormat.currency(symbol: settings.currency.symbol).format(linkedBalance)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isExceeded
-                                  ? AppTheme.expenseColor(context)
-                                  : AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ),
-                      const Gap(12),
-                      Container(
-                        width: 48,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: primaryColor.withValues(alpha: 0.15),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Gap(32),
-
-                NumPad(
-                  compact: true,
-                  initialValue: currentExpression,
-                  onValueChanged: (expression, result) {
-                    setModalState(() {
-                      currentExpression = expression;
-                      evaluatedResult = result;
-                      _amountController.text = result;
-                    });
-                  },
-                  onDone: () {
-                    final amount = double.tryParse(_amountController.text);
-                    if (amount != null && amount > 0) {
-                      if (log == null && linkedAccount != null && linkedBalance != null && amount > linkedBalance) {
-                        HapticService.error();
-                        return;
-                      }
-                      _saveLog(existingLog: log);
-                    } else {
-                      HapticService.error();
-                    }
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      goal: widget.goal,
+      log: log,
+      linkedAccount: linkedAccount,
+      linkedBalance: linkedBalance,
+      onSave: (amount) => _saveLog(existingLog: log, amount: amount),
     );
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
   }
 
   String _formatRelativeTime(DateTime date) {
@@ -298,36 +124,34 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
       floatingActionButton: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: AppTheme.primaryGradient(context),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton.extended(
-                onPressed: () {
-                  HapticService.medium();
-                  _showAddLogSheet(linkedAccount: linkedAccount, linkedBalance: linkedBalance);
-                },
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                icon: const Icon(Icons.add_rounded, color: Colors.white),
-                label: const Text(
-                  'Add Savings',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppTheme.primaryGradient(context),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            HapticService.medium();
+            _showAddLogSheet(
+              linkedAccount: linkedAccount,
+              linkedBalance: linkedBalance,
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text(
+            'Add Savings',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -368,7 +192,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                 )
                               else
                                 Icon(
-                                  IconUtils.getIcon(linkedAccount.iconCodePoint),
+                                  IconUtils.getIcon(
+                                    linkedAccount.iconCodePoint,
+                                  ),
                                   size: 14,
                                   color: linkedAccount.color,
                                 ),
@@ -546,8 +372,13 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         child: Center(
                           child: TweenAnimationBuilder<double>(
                             tween: Tween<double>(
-                                begin: 0, 
-                                end: (goal.isStash && (goal.targetAmount == null || goal.targetAmount == 0)) ? 1.0 : goal.progress,
+                              begin: 0,
+                              end:
+                                  (goal.isStash &&
+                                      (goal.targetAmount == null ||
+                                          goal.targetAmount == 0))
+                                  ? 1.0
+                                  : goal.progress,
                             ),
                             duration: const Duration(milliseconds: 1400),
                             curve: Curves.easeOutCubic,
@@ -561,7 +392,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                     child: CircularProgressIndicator(
                                       value: 1.0,
                                       strokeWidth: 4,
-                                      color: Colors.white.withValues(alpha: 0.1),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
                                     ),
                                   ),
                                   SizedBox(
@@ -596,7 +429,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     ],
                   ),
                   const Gap(24),
-                  if (!goal.isStash || (goal.targetAmount != null && goal.targetAmount! > 0)) ...[
+                  if (!goal.isStash ||
+                      (goal.targetAmount != null &&
+                          goal.targetAmount! > 0)) ...[
                     Container(
                       height: 1,
                       color: Colors.white.withValues(alpha: 0.15),
@@ -614,7 +449,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         ),
                         _buildStatItem(
                           context,
-                          label: goal.remainingDays != null ? 'Left (${goal.remainingDays}d)' : 'Left',
+                          label: goal.remainingDays != null
+                              ? 'Left (${goal.remainingDays}d)'
+                              : 'Left',
                           value: goal.remainingAmount ?? 0.0,
                           formatter: currencyFormat.format,
                           alignment: CrossAxisAlignment.end,
@@ -657,7 +494,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           formatter: formatter,
           duration: const Duration(milliseconds: 1000),
           style: const TextStyle(
-            fontSize: 15, 
+            fontSize: 15,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
@@ -666,7 +503,11 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildCoachInsightButton(BuildContext context, SavingsGoal goal, NumberFormat currencyFormat) {
+  Widget _buildCoachInsightButton(
+    BuildContext context,
+    SavingsGoal goal,
+    NumberFormat currencyFormat,
+  ) {
     return PressableScale(
       onTap: () async {
         HapticService.light();
@@ -678,7 +519,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           ),
         );
         if (result != null && mounted) {
-          if (result.newDeadline != goal.endDate || (result.targetAmountOverride != null && result.targetAmountOverride != goal.targetAmount)) {
+          if (result.newDeadline != goal.endDate ||
+              (result.targetAmountOverride != null &&
+                  result.targetAmountOverride != goal.targetAmount)) {
             final updatedGoal = SavingsGoal(
               id: goal.id,
               name: goal.name,
@@ -690,22 +533,26 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               linkedAccountId: goal.linkedAccountId,
               isStash: goal.isStash,
             );
-            await ref.read(savingsGoalsProvider.notifier).updateGoal(updatedGoal);
-            
+            await ref
+                .read(savingsGoalsProvider.notifier)
+                .updateGoal(updatedGoal);
+
             if (!context.mounted) return;
             final scaffoldMessenger = ScaffoldMessenger.of(context);
             final themeColor = AppTheme.primaryColor(context);
-            
-            final msg = result.targetAmountOverride != null && goal.isStash 
-              ? 'Stash plan updated!' 
-              : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
-            
+
+            final msg = result.targetAmountOverride != null && goal.isStash
+                ? 'Stash plan updated!'
+                : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
+
             scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(msg),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: themeColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             );
           }
@@ -782,19 +629,22 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     NumberFormat currencyFormat,
   ) {
     if (goal.dailyNeeded == null) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Savings Needed',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textColor(context),
-            letterSpacing: -0.3,
-          ),
-        ).animate().fade(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
+              'Savings Needed',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textColor(context),
+                letterSpacing: -0.3,
+              ),
+            )
+            .animate()
+            .fade(duration: 300.ms, curve: Curves.easeOutCubic)
+            .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
         const Gap(12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -857,36 +707,44 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     required int delayMs,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-            letterSpacing: 0.2,
-          ),
-        ),
-        const Gap(2),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.center,
-          child: AnimatedCounter(
-            value: value,
-            formatter: formatter,
-            duration: const Duration(milliseconds: 1400),
-            curve: Curves.easeOutCubic,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textColor(context),
-              letterSpacing: -0.4,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+                letterSpacing: 0.2,
+              ),
             ),
-          ),
-        ),
-      ],
-    ).animate().fade(delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.15, delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic);
+            const Gap(2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: AnimatedCounter(
+                value: value,
+                formatter: formatter,
+                duration: const Duration(milliseconds: 1400),
+                curve: Curves.easeOutCubic,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textColor(context),
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ),
+          ],
+        )
+        .animate()
+        .fade(delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic)
+        .slideY(
+          begin: 0.15,
+          delay: delayMs.ms,
+          duration: 400.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 
   Widget _buildActivitySection(
@@ -915,17 +773,27 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                 if (logs.isEmpty) {
                   return _buildEmptyActivity(context);
                 }
-                return _buildActivityTimeline(context, logs, currencyFormat, linkedAccount, linkedBalance);
+                return _buildActivityTimeline(
+                  context,
+                  logs,
+                  currencyFormat,
+                  linkedAccount,
+                  linkedBalance,
+                );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Text('Error: $err'),
             ),
           ],
         )
-        .animate().fade(duration: 250.ms, curve: Curves.easeOutCubic).scale(begin: const Offset(0.95, 0.95), duration: 250.ms, curve: Curves.easeOutCubic);
+        .animate()
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
-
-
 
   Widget _buildEmptyActivity(BuildContext context) {
     return Container(
@@ -1051,7 +919,11 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       child: PressableScale(
                         onTap: () {
                           HapticService.light();
-                          _showAddLogSheet(log: log, linkedAccount: linkedAccount, linkedBalance: linkedBalance);
+                          _showAddLogSheet(
+                            log: log,
+                            linkedAccount: linkedAccount,
+                            linkedBalance: linkedBalance,
+                          );
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -1138,8 +1010,4 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       }).toList(),
     );
   }
-
-
 }
-
-

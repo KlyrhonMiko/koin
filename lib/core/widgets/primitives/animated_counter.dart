@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:koin/core/utils/animation_utils.dart';
 
@@ -85,8 +84,8 @@ class _AnimatedCounterState extends State<AnimatedCounter> {
         widgets.add(
           _RollingDigit(
             digit: digit,
-            progress: widget.value == 0 
-                ? 1.0 
+            progress: widget.value == 0
+                ? 1.0
                 : (animatedValue / widget.value).clamp(0.0, 1.0),
             style: effectiveStyle,
           ),

@@ -52,90 +52,97 @@ class TransactionsListScreen extends ConsumerWidget {
                           child: Column(
                             mainAxisSize:
                                 MainAxisSize.min, // Keep column compact
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(36),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceColor(context),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.1),
-                                      blurRadius: 40,
-                                      spreadRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.receipt_long_rounded,
-                                  size: 56,
-                                  color: AppTheme.primaryColor(
-                                    context,
-                                  ).withValues(alpha: 0.6),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                filter.isEmpty
-                                    ? 'No recent activity'
-                                    : 'No results found',
-                                style: TextStyle(
-                                  color: AppTheme.textColor(context),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                filter.isEmpty
-                                    ? 'Transactions will appear here once added'
-                                    : 'Try adjusting your search or filters',
-                                style: TextStyle(
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.6),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              if (!filter.isEmpty) ...[
-                                const SizedBox(height: 32),
-                                PressableScale(
-                                  onTap: () {
-                                    HapticService.medium();
-                                    filterNotifier.clearFilters();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Text(
-                                      'Clear all filters',
-                                      style: TextStyle(
-                                        color: AppTheme.primaryColor(context),
-                                        fontWeight: FontWeight.w700,
+                            children:
+                                [
+                                      Container(
+                                        padding: const EdgeInsets.all(36),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.surfaceColor(context),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppTheme.primaryColor(
+                                                context,
+                                              ).withValues(alpha: 0.1),
+                                              blurRadius: 40,
+                                              spreadRadius: 10,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          Icons.receipt_long_rounded,
+                                          size: 56,
+                                          color: AppTheme.primaryColor(
+                                            context,
+                                          ).withValues(alpha: 0.6),
+                                        ),
                                       ),
+                                      const SizedBox(height: 24),
+                                      Text(
+                                        filter.isEmpty
+                                            ? 'No recent activity'
+                                            : 'No results found',
+                                        style: TextStyle(
+                                          color: AppTheme.textColor(context),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        filter.isEmpty
+                                            ? 'Transactions will appear here once added'
+                                            : 'Try adjusting your search or filters',
+                                        style: TextStyle(
+                                          color: AppTheme.textLightColor(
+                                            context,
+                                          ).withValues(alpha: 0.6),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      if (!filter.isEmpty) ...[
+                                        const SizedBox(height: 32),
+                                        PressableScale(
+                                          onTap: () {
+                                            HapticService.medium();
+                                            filterNotifier.clearFilters();
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 24,
+                                              vertical: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.primaryColor(
+                                                context,
+                                              ).withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                            child: Text(
+                                              'Clear all filters',
+                                              style: TextStyle(
+                                                color: AppTheme.primaryColor(
+                                                  context,
+                                                ),
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ]
+                                    .animate(interval: 40.ms)
+                                    .fade(
+                                      duration: 250.ms,
+                                      curve: Curves.easeOutCubic,
+                                    )
+                                    .scale(
+                                      begin: const Offset(0.95, 0.95),
+                                      duration: 250.ms,
+                                      curve: Curves.easeOutCubic,
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ]
-                            .animate(interval: 40.ms)
-                            .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                            .scale(
-                              begin: const Offset(0.95, 0.95),
-                              duration: 250.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
                           ),
                         ),
                       ),
@@ -300,13 +307,15 @@ class TransactionsListScreen extends ConsumerWidget {
                                                 ? Icons.arrow_downward_rounded
                                                 : Icons.arrow_upward_rounded));
 
-                                final categoryName = isTransfer 
+                                final categoryName = isTransfer
                                     ? 'Transfer'
                                     : (categories
-                                        .where((c) => c.id == tx.categoryId)
-                                        .map((c) => c.name)
-                                        .firstOrNull ??
-                                    'Others');
+                                              .where(
+                                                (c) => c.id == tx.categoryId,
+                                              )
+                                              .map((c) => c.name)
+                                              .firstOrNull ??
+                                          'Others');
 
                                 final accountName = accountsAsync.when(
                                   data: (accounts) =>
@@ -318,12 +327,14 @@ class TransactionsListScreen extends ConsumerWidget {
                                   loading: () => '...',
                                   error: (error, stack) => 'Error',
                                 );
-                                
-                                final toAccountName = isTransfer 
+
+                                final toAccountName = isTransfer
                                     ? accountsAsync.when(
                                         data: (accounts) =>
                                             accounts
-                                                .where((a) => a.id == tx.toAccountId)
+                                                .where(
+                                                  (a) => a.id == tx.toAccountId,
+                                                )
                                                 .map((a) => a.name)
                                                 .firstOrNull ??
                                             'Account',
@@ -335,14 +346,14 @@ class TransactionsListScreen extends ConsumerWidget {
                                 final displayTitle = tx.note.isEmpty
                                     ? categoryName
                                     : tx.note;
-                                
+
                                 final displaySubtitle = isTransfer
-                                    ? (tx.note.isEmpty 
-                                        ? '$accountName → $toAccountName' 
-                                        : 'Transfer • $accountName → $toAccountName')
+                                    ? (tx.note.isEmpty
+                                          ? '$accountName → $toAccountName'
+                                          : 'Transfer • $accountName → $toAccountName')
                                     : (tx.note.isEmpty
-                                        ? accountName
-                                        : '$categoryName • $accountName');
+                                          ? accountName
+                                          : '$categoryName • $accountName');
 
                                 final listItem = PressableScale(
                                   onTap: () {

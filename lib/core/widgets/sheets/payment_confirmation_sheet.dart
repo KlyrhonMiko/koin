@@ -120,12 +120,7 @@ class _PaymentConfirmationSheetState
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          0,
-          16,
-          0,
-          0,
-        ),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
         decoration: BoxDecoration(
           color: AppTheme.backgroundColor(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -166,75 +161,77 @@ class _PaymentConfirmationSheetState
 
             // ── Hero Amount ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Text(
-                    currency.code,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: typeColor.withValues(alpha: 0.5),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const Gap(4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
                     children: [
                       Text(
-                        '${currency.symbol} ',
+                        currency.code,
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          color: typeColor.withValues(alpha: 0.4),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: typeColor.withValues(alpha: 0.5),
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      Text(
-                        _currentExpression.isEmpty ? '0' : _currentExpression,
-                        style: TextStyle(
-                          fontSize: 44,
-                          fontWeight: FontWeight.w800,
-                          color: hasAmount
-                              ? typeColor
-                              : typeColor.withValues(alpha: 0.3),
-                          letterSpacing: -1.5,
-                          height: 1.1,
+                      const Gap(4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '${currency.symbol} ',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: typeColor.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          Text(
+                            _currentExpression.isEmpty
+                                ? '0'
+                                : _currentExpression,
+                            style: TextStyle(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w800,
+                              color: hasAmount
+                                  ? typeColor
+                                  : typeColor.withValues(alpha: 0.3),
+                              letterSpacing: -1.5,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_currentExpression.contains(RegExp(r'[+\-*/]')))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '= ${currency.symbol}${_amountController.text}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      const Gap(12),
+                      Container(
+                        width: 48,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: typeColor.withValues(alpha: 0.15),
                         ),
                       ),
                     ],
                   ),
-                  if (_currentExpression.contains(RegExp(r'[+\-*/]')))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '= ${currency.symbol}${_amountController.text}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
-                  const Gap(12),
-                  Container(
-                    width: 48,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      color: typeColor.withValues(alpha: 0.15),
-                    ),
-                  ),
-                ],
-              ),
-            )
-            .animate()
-            .fadeIn(duration: 300.ms)
-            .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                )
+                .animate()
+                .fadeIn(duration: 300.ms)
+                .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
             const Gap(28),
 
@@ -305,18 +302,19 @@ class _PaymentConfirmationSheetState
             const Gap(16),
 
             NumPad(
-              compact: true,
-              initialValue: _currentExpression,
-              onValueChanged: (expression, result) {
-                setState(() {
-                  _currentExpression = expression;
-                  _amountController.text = result;
-                });
-              },
-              onDone: _submit,
-            ).animate()
-             .fadeIn(delay: 200.ms, duration: 300.ms)
-             .slideY(begin: 0.15, curve: Curves.easeOutCubic),
+                  compact: true,
+                  initialValue: _currentExpression,
+                  onValueChanged: (expression, result) {
+                    setState(() {
+                      _currentExpression = expression;
+                      _amountController.text = result;
+                    });
+                  },
+                  onDone: _submit,
+                )
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 300.ms)
+                .slideY(begin: 0.15, curve: Curves.easeOutCubic),
           ],
         ),
       ),
@@ -326,8 +324,7 @@ class _PaymentConfirmationSheetState
   void _submit() {
     HapticService.medium();
     final amount =
-        double.tryParse(_amountController.text) ??
-        widget.payment.amount;
+        double.tryParse(_amountController.text) ?? widget.payment.amount;
     Navigator.pop(
       context,
       PaymentConfirmationResult(

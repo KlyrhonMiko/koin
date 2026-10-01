@@ -20,6 +20,20 @@ class TransactionVoidResult {
   bool get hadDebtRollback => affectedDebtId != null;
 }
 
+/// Represents the outcome of recording a transfer transaction,
+/// including any associated fee transaction recorded atomically alongside it.
+class TransferResult {
+  final AppTransaction transferTransaction;
+  final AppTransaction? feeTransaction;
+
+  const TransferResult({
+    required this.transferTransaction,
+    this.feeTransaction,
+  });
+
+  bool get hasFee => feeTransaction != null;
+}
+
 /// Domain Seam: The interface through which transactions are recorded, queried, and voided.
 /// Hides raw SQL persistence and encapsulates transaction cascade rules.
 abstract class Ledger {
@@ -48,6 +62,12 @@ abstract class Ledger {
     required DebtRepayment repayment,
     required String? categoryId,
   });
+
+  /// Atomically records a transfer transaction between accounts, optionally creating a linked fee transaction.
+  Future<TransferResult> recordTransfer({
+    required AppTransaction transferTransaction,
+    AppTransaction? feeTransaction,
+  });
 }
 
 /// Production Adapter: Uses DatabaseHelper and SQLite under an atomic transaction.
@@ -55,7 +75,7 @@ class SqliteLedgerAdapter implements Ledger {
   final DatabaseHelper _dbHelper;
 
   SqliteLedgerAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<AppTransaction>> getTransactions() async {
@@ -193,10 +213,10 @@ class SqliteLedgerAdapter implements Ledger {
       await txn.insert('debt_repayments', repayment.toMap());
 
       if (repayment.isIncrease) {
-        await txn.execute(
-          'UPDATE debts SET amount = amount + ? WHERE id = ?',
-          [repayment.amount, repayment.debtId],
-        );
+        await txn.execute('UPDATE debts SET amount = amount + ? WHERE id = ?', [
+          repayment.amount,
+          repayment.debtId,
+        ]);
       } else {
         await txn.execute(
           'UPDATE debts SET currentAmount = currentAmount + ? WHERE id = ?',
@@ -214,13 +234,14 @@ class SqliteLedgerAdapter implements Ledger {
           amount: repayment.amount,
           date: repayment.date,
           type: isExpense ? TransactionType.expense : TransactionType.income,
-          categoryId: categoryId ?? (isExpense ? 'cat_others' : 'cat_others_inc'),
+          categoryId:
+              categoryId ?? (isExpense ? 'cat_others' : 'cat_others_inc'),
           accountId: repayment.accountId!,
           note: repayment.isIncrease
               ? 'Debt increase: ${debt.personName}'
               : (debt.type == DebtType.owedToMe
-                  ? 'Debt payment: ${debt.personName}'
-                  : 'Debt settlement: ${debt.personName}'),
+                    ? 'Debt payment: ${debt.personName}'
+                    : 'Debt settlement: ${debt.personName}'),
           debtRepaymentId: repayment.id,
         );
 
@@ -228,6 +249,24 @@ class SqliteLedgerAdapter implements Ledger {
         return transaction;
       }
       return null;
+    });
+  }
+
+  @override
+  Future<TransferResult> recordTransfer({
+    required AppTransaction transferTransaction,
+    AppTransaction? feeTransaction,
+  }) async {
+    final db = await _dbHelper.database;
+    return await db.transaction((txn) async {
+      await txn.insert('transactions', transferTransaction.toMap());
+      if (feeTransaction != null) {
+        await txn.insert('transactions', feeTransaction.toMap());
+      }
+      return TransferResult(
+        transferTransaction: transferTransaction,
+        feeTransaction: feeTransaction,
+      );
     });
   }
 }
@@ -321,6 +360,21 @@ class InMemoryLedgerAdapter implements Ledger {
       return tx;
     }
     return null;
+  }
+
+  @override
+  Future<TransferResult> recordTransfer({
+    required AppTransaction transferTransaction,
+    AppTransaction? feeTransaction,
+  }) async {
+    _store[transferTransaction.id] = transferTransaction;
+    if (feeTransaction != null) {
+      _store[feeTransaction.id] = feeTransaction;
+    }
+    return TransferResult(
+      transferTransaction: transferTransaction,
+      feeTransaction: feeTransaction,
+    );
   }
 }
 

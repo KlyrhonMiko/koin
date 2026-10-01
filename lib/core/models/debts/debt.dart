@@ -113,17 +113,20 @@ class Debt {
 
   double get remainingAmount => (amount - currentAmount).clamp(0.0, amount);
 
-  double get progress => amount <= 0.0 ? 1.0 : (currentAmount / amount).clamp(0.0, 1.0);
+  double get progress =>
+      amount <= 0.0 ? 1.0 : (currentAmount / amount).clamp(0.0, 1.0);
 
   bool get isSettled => progress >= 1.0;
 
-  double get totalItemizedAmount => items.fold(0.0, (sum, item) => sum + item.amount);
+  double get totalItemizedAmount =>
+      items.fold(0.0, (sum, item) => sum + item.amount);
 
   double get perInstallmentAmount =>
       totalInstallments > 0 ? amount / totalInstallments : amount;
 
-  int get paidInstallmentsCount =>
-      perInstallmentAmount > 0 ? (currentAmount / perInstallmentAmount).floor() : 0;
+  int get paidInstallmentsCount => perInstallmentAmount > 0
+      ? (currentAmount / perInstallmentAmount).floor()
+      : 0;
 
   int get remainingInstallmentsCount =>
       (totalInstallments - paidInstallmentsCount).clamp(0, totalInstallments);
@@ -134,19 +137,25 @@ class Debt {
       final targetDate = nextDueDate;
       for (var item in items) {
         if (item.totalInstallments > 0) {
-           bool hasStarted = targetDate.year > item.firstPaymentDate.year || 
-                             (targetDate.year == item.firstPaymentDate.year && targetDate.month >= item.firstPaymentDate.month);
-           if (hasStarted) {
-               totalInstallment += item.amount / item.totalInstallments;
-           }
+          bool hasStarted =
+              targetDate.year > item.firstPaymentDate.year ||
+              (targetDate.year == item.firstPaymentDate.year &&
+                  targetDate.month >= item.firstPaymentDate.month);
+          if (hasStarted) {
+            totalInstallment += item.amount / item.totalInstallments;
+          }
         }
       }
-      return remainingAmount < totalInstallment ? remainingAmount : totalInstallment;
+      return remainingAmount < totalInstallment
+          ? remainingAmount
+          : totalInstallment;
     }
 
     if (totalInstallments > 0) {
       final perInstallment = amount / totalInstallments;
-      return remainingAmount < perInstallment ? remainingAmount : perInstallment;
+      return remainingAmount < perInstallment
+          ? remainingAmount
+          : perInstallment;
     }
     return remainingAmount;
   }
@@ -177,8 +186,9 @@ class Debt {
             newMonth = ((newMonth - 1) % 12) + 1;
           }
           final daysInNewMonth = DateTime(newYear, newMonth + 1, 0).day;
-          final newDay =
-              startDate.day > daysInNewMonth ? daysInNewMonth : startDate.day;
+          final newDay = startDate.day > daysInNewMonth
+              ? daysInNewMonth
+              : startDate.day;
           next = DateTime(newYear, newMonth, newDay);
           break;
         case InstallmentFrequency.yearly:
@@ -186,9 +196,8 @@ class Debt {
           final targetYear = next.year + 1;
           final isTargetLeapYear =
               (targetYear % 4 == 0 && targetYear % 100 != 0) ||
-                  (targetYear % 400 == 0);
-          final newDay =
-              (isLeapDay && !isTargetLeapYear) ? 28 : startDate.day;
+              (targetYear % 400 == 0);
+          final newDay = (isLeapDay && !isTargetLeapYear) ? 28 : startDate.day;
           next = DateTime(targetYear, startDate.month, newDay);
           break;
       }
@@ -196,4 +205,3 @@ class Debt {
     return next;
   }
 }
-

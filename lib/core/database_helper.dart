@@ -208,9 +208,7 @@ CREATE TABLE app_settings (
     }
     if (oldVersion < 24) {
       try {
-        await db.execute(
-          'ALTER TABLE debts ADD COLUMN categoryId TEXT',
-        );
+        await db.execute('ALTER TABLE debts ADD COLUMN categoryId TEXT');
       } catch (e) {
         // Column might already exist
       }
@@ -239,9 +237,7 @@ CREATE TABLE debt_items (
     }
     if (oldVersion < 27) {
       try {
-        await db.execute(
-          'ALTER TABLE debt_items ADD COLUMN categoryId TEXT',
-        );
+        await db.execute('ALTER TABLE debt_items ADD COLUMN categoryId TEXT');
       } catch (e) {
         // Column might already exist
       }
@@ -895,13 +891,13 @@ CREATE TABLE transactions (
   // Savings Logs commands
   Future<SavingsLog> insertSavingsLog(SavingsLog log) async {
     final db = await instance.database;
-    await db.insert('savings_logs', log.toMap());
-
-    // Update currentAmount in savings_goals
-    await db.execute(
-      'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
-      [log.amount, log.goalId],
-    );
+    await db.transaction((txn) async {
+      await txn.insert('savings_logs', log.toMap());
+      await txn.execute(
+        'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
+        [log.amount, log.goalId],
+      );
+    });
 
     return log;
   }
@@ -1032,7 +1028,10 @@ CREATE TABLE transactions (
     // where the column may not have been added due to a failed migration).
     List<Map<String, dynamic>> result;
     try {
-      result = await db.query('debts', orderBy: 'sortOrder ASC, startDate DESC');
+      result = await db.query(
+        'debts',
+        orderBy: 'sortOrder ASC, startDate DESC',
+      );
     } catch (_) {
       // sortOrder column missing — add it now and retry with a safe order.
       try {
@@ -1044,9 +1043,9 @@ CREATE TABLE transactions (
       }
       result = await db.query('debts', orderBy: 'startDate DESC');
     }
-    
+
     final debts = result.map((json) => Debt.fromMap(json)).toList();
-    
+
     try {
       final itemsResult = await db.query('debt_items');
       final Map<String, List<DebtItem>> itemsMap = {};
@@ -1084,12 +1083,21 @@ CREATE TABLE transactions (
 
   Future<void> updateDebtItem(DebtItem oldItem, DebtItem newItem) async {
     final db = await instance.database;
-    await db.update('debt_items', newItem.toMap(), where: 'id = ?', whereArgs: [newItem.id]);
+    await db.update(
+      'debt_items',
+      newItem.toMap(),
+      where: 'id = ?',
+      whereArgs: [newItem.id],
+    );
   }
 
   Future<int> deleteDebtItem(DebtItem item) async {
     final db = await instance.database;
-    final res = await db.delete('debt_items', where: 'id = ?', whereArgs: [item.id]);
+    final res = await db.delete(
+      'debt_items',
+      where: 'id = ?',
+      whereArgs: [item.id],
+    );
     return res;
   }
 
@@ -1100,10 +1108,10 @@ CREATE TABLE transactions (
 
     // Update debts table based on whether this is an increase or repayment
     if (repayment.isIncrease) {
-      await db.execute(
-        'UPDATE debts SET amount = amount + ? WHERE id = ?',
-        [repayment.amount, repayment.debtId],
-      );
+      await db.execute('UPDATE debts SET amount = amount + ? WHERE id = ?', [
+        repayment.amount,
+        repayment.debtId,
+      ]);
     } else {
       await db.execute(
         'UPDATE debts SET currentAmount = currentAmount + ? WHERE id = ?',
@@ -1128,13 +1136,13 @@ CREATE TABLE transactions (
         where: 'debtRepaymentId = ?',
         whereArgs: [repayment.id],
       );
-      
+
       // Reverse the effect on the debt
       if (repayment.isIncrease) {
-        await txn.execute(
-          'UPDATE debts SET amount = amount - ? WHERE id = ?',
-          [repayment.amount, repayment.debtId],
-        );
+        await txn.execute('UPDATE debts SET amount = amount - ? WHERE id = ?', [
+          repayment.amount,
+          repayment.debtId,
+        ]);
       } else {
         await txn.execute(
           'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
@@ -1153,6 +1161,46 @@ CREATE TABLE transactions (
       orderBy: 'date DESC',
     );
     return result.map((json) => DebtRepayment.fromMap(json)).toList();
+  }
+
+  // Forecasting Queries
+  Future<List<double>> getHistoricalVariableInflows() async {
+    final db = await instance.database;
+    final res = await db.rawQuery('''
+      SELECT strftime('%Y-%m', date) as period, SUM(amount) as total
+      FROM transactions
+      WHERE type = 'income'
+        AND plannedPaymentId IS NULL
+        AND accountId IN (SELECT id FROM accounts WHERE excludeFromTotal = 0)
+      GROUP BY strftime('%Y-%m', date)
+      ORDER BY period ASC
+    ''');
+    return res.map((r) => (r['total'] as num).toDouble()).toList();
+  }
+
+  Future<List<double>> getHistoricalVariableOutflows() async {
+    final db = await instance.database;
+    final res = await db.rawQuery('''
+      SELECT strftime('%Y-%m', date) as period, SUM(amount) as total
+      FROM transactions
+      WHERE type = 'expense'
+        AND plannedPaymentId IS NULL
+        AND debtRepaymentId IS NULL
+        AND accountId IN (SELECT id FROM accounts WHERE excludeFromTotal = 0)
+      GROUP BY strftime('%Y-%m', date)
+      ORDER BY period ASC
+    ''');
+    return res.map((r) => (r['total'] as num).toDouble()).toList();
+  }
+
+  Future<List<PlannedPayment>> getUnexcludedPlannedPayments() async {
+    final db = await instance.database;
+    final res = await db.rawQuery('''
+      SELECT * FROM planned_payments
+      WHERE accountId IN (SELECT id FROM accounts WHERE excludeFromTotal = 0)
+         OR accountId IS NULL
+    ''');
+    return res.map((row) => PlannedPayment.fromMap(row)).toList();
   }
 
   Future close() async {

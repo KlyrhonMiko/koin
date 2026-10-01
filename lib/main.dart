@@ -6,17 +6,15 @@ import 'package:koin/features/features.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Auto-run ML bootstrap in the background via suggester adapter.
   HybridMlSuggesterAdapter().bootstrap();
-  
+
   final sharedPrefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPrefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
       child: const MyApp(),
     ),
   );
@@ -28,7 +26,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    
+
     return MaterialApp(
       title: 'Koin',
       themeMode: settings.themeMode,
