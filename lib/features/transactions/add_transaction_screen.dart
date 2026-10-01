@@ -239,15 +239,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
 
-    if (isTransfer && _selectedAccountId == _selectedToAccountId) {
-      HapticService.error();
-      _showErrorSnackbar(
-        'Source and destination must be different',
-        subtitle: 'You cannot transfer money to the same account',
-      );
-      return;
-    }
-
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
       HapticService.error();
@@ -258,74 +249,91 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
 
-    double transferAmount = amount;
-    double feeAmount = 0.0;
+    AppTransaction newTransaction;
     AppTransaction? feeTransaction;
+    double effectiveAmount = amount;
 
     if (isTransfer) {
-      final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
       final accounts = ref.read(accountProvider).value ?? [];
       final selectedAccount = accounts
           .where((a) => a.id == _selectedAccountId)
           .firstOrNull;
-      feeAmount = selectedAccount?.calculateTransferFee(
-            amount,
-            enteredFee,
-            _isTransferFeePercentage,
-          ) ??
-          (_isTransferFeePercentage
-              ? (amount * (enteredFee / 100))
-              : enteredFee);
+      final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
 
-      if (feeAmount >= amount) {
+      final draft = TransferDraft(
+        sourceAccountId: _selectedAccountId!,
+        destinationAccountId: _selectedToAccountId!,
+        rawAmount: amount,
+        enteredFee: enteredFee,
+        isFeePercentage: _isTransferFeePercentage,
+        note: _noteController.text,
+        date: _selectedDate,
+      );
+
+      final error = draft.validate();
+      if (error != null) {
         HapticService.error();
-        _showErrorSnackbar(
-          'Invalid fee amount',
-          subtitle:
-              'The transfer fee cannot be greater than or equal to the total amount',
-        );
-        return;
+        switch (error) {
+          case TransferDraftValidationError.sameAccount:
+            _showErrorSnackbar(
+              'Source and destination must be different',
+              subtitle: 'You cannot transfer money to the same account',
+            );
+            return;
+          case TransferDraftValidationError.feeExceedsAmount:
+            _showErrorSnackbar(
+              'Invalid fee amount',
+              subtitle:
+                  'The transfer fee cannot be greater than or equal to the total amount',
+            );
+            return;
+          case TransferDraftValidationError.invalidAmount:
+            _showErrorSnackbar(
+              'Enter a valid amount',
+              subtitle: 'The amount must be greater than zero',
+            );
+            return;
+          case TransferDraftValidationError.missingRequiredFields:
+            _showErrorSnackbar(
+              'Please fill all required fields',
+              subtitle: 'Amount, Category, and Account are mandatory',
+            );
+            return;
+        }
       }
 
-      if (feeAmount > 0) {
-        transferAmount = amount - feeAmount;
-        feeTransaction = AppTransaction(
-          id: const Uuid().v4(),
-          note: _noteController.text.isNotEmpty
-              ? 'Transfer Fee: ${_noteController.text}'
-              : 'Transfer Fee',
-          amount: feeAmount,
-          date: _selectedDate,
-          type: TransactionType.expense,
-          categoryId: 'cat_others',
-          accountId: _selectedAccountId!,
-        );
-      }
+      final built = draft.buildTransactions(
+        existingId: widget.editingTransaction?.id,
+        sourceAccount: selectedAccount,
+      );
+      newTransaction = built.transferTransaction;
+      feeTransaction = built.feeTransaction;
+      effectiveAmount = newTransaction.amount;
+    } else {
+      newTransaction = AppTransaction(
+        id: widget.editingTransaction?.id ?? const Uuid().v4(),
+        note: _noteController.text,
+        amount: amount,
+        date: _selectedDate,
+        type: _selectedType,
+        categoryId: _selectedCategoryId!,
+        accountId: _selectedAccountId!,
+      );
     }
-
-    final newTransaction = AppTransaction(
-      id: widget.editingTransaction?.id ?? const Uuid().v4(),
-      note: _noteController.text,
-      amount: transferAmount,
-      date: _selectedDate,
-      type: _selectedType,
-      categoryId: isTransfer ? 'cat_others' : _selectedCategoryId!,
-      accountId: _selectedAccountId!,
-      toAccountId: isTransfer ? _selectedToAccountId : null,
-    );
 
     // Feed the ultimate categorization decision back into the suggester
     ref
         .read(categorySuggesterProvider)
         .recordFeedback(
           text: _noteController.text,
-          amount: transferAmount,
+          amount: effectiveAmount,
           type: _selectedType,
           originAccountId: _selectedAccountId!,
           destinationId: isTransfer
               ? _selectedToAccountId!
               : _selectedCategoryId!,
         );
+
 
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);

@@ -1,18 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/repositories/category_repository.dart';
 import 'dart:developer' as dev;
 
 class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
+  CategoryRepository get _repository => ref.read(categoryRepositoryProvider);
+
   @override
   Future<List<TransactionCategory>> build() async {
-    return await DatabaseHelper.instance.getCategories();
+    return await _repository.getCategories();
   }
 
   Future<void> _loadCategories() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return await DatabaseHelper.instance.getCategories();
+      return await _repository.getCategories();
     });
   }
 
@@ -26,7 +28,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     state = AsyncValue.data([...currentCategories, categoryWithPosition]);
 
     try {
-      await DatabaseHelper.instance.insertCategory(categoryWithPosition);
+      await _repository.insertCategory(categoryWithPosition);
     } catch (e, st) {
       state = previousState;
       dev.log('Error adding category', error: e, stackTrace: st);
@@ -44,7 +46,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     );
 
     try {
-      await DatabaseHelper.instance.updateCategory(category);
+      await _repository.updateCategory(category);
     } catch (e, st) {
       state = previousState;
       dev.log('Error updating category', error: e, stackTrace: st);
@@ -52,7 +54,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
   }
 
   Future<void> deleteCategory(String id) async {
-    await DatabaseHelper.instance.deleteCategory(id);
+    await _repository.deleteCategory(id);
     await _loadCategories();
   }
 
@@ -90,7 +92,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
     // Update database
     try {
-      await DatabaseHelper.instance.updateCategoryPositions(
+      await _repository.updateCategoryPositions(
         updatedTypeCategories,
       );
     } catch (e, stackTrace) {

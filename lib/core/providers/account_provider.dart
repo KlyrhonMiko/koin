@@ -1,18 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/repositories/account_repository.dart';
 import 'dart:developer' as dev;
 
 class AccountNotifier extends AsyncNotifier<List<Account>> {
+  AccountRepository get _repository => ref.read(accountRepositoryProvider);
+
   @override
   Future<List<Account>> build() async {
-    return await DatabaseHelper.instance.getAccounts();
+    return await _repository.getAccounts();
   }
 
   Future<void> loadAccounts() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return await DatabaseHelper.instance.getAccounts();
+      return await _repository.getAccounts();
     });
   }
 
@@ -29,8 +31,7 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     state = AsyncValue.data([...currentAccounts, accountWithPosition]);
 
     try {
-      await DatabaseHelper.instance.insertAccount(accountWithPosition);
-      // Optional: reload if you want to be 100% sure, but optimistic should be enough
+      await _repository.insertAccount(accountWithPosition);
     } catch (e, st) {
       state = previousState;
       dev.log('Error adding account', error: e, stackTrace: st);
@@ -49,7 +50,7 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     );
 
     try {
-      await DatabaseHelper.instance.updateAccount(account);
+      await _repository.updateAccount(account);
     } catch (e, st) {
       state = previousState;
       dev.log('Error updating account', error: e, stackTrace: st);
@@ -57,7 +58,7 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
   }
 
   Future<void> deleteAccount(String id) async {
-    await DatabaseHelper.instance.deleteAccount(id);
+    await _repository.deleteAccount(id);
     await loadAccounts();
   }
 
@@ -79,7 +80,7 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
 
     // Update database efficiently with batch
     try {
-      await DatabaseHelper.instance.updateAccountPositions(updatedItems);
+      await _repository.updateAccountPositions(updatedItems);
     } catch (e, stackTrace) {
       dev.log(
         'Error updating account positions',

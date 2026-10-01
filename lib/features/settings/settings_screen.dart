@@ -7,10 +7,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:file_saver/file_saver.dart';
-import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 
 class SettingsScreen extends ConsumerWidget {
+
   const SettingsScreen({super.key});
 
   @override
@@ -330,35 +330,14 @@ class SettingsScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      // Save current SharedPreferences to Database
-      final prefs = ref.read(sharedPreferencesProvider);
-      final settings = {
-        if (prefs.getString('currency_code') != null)
-          'currency_code': prefs.getString('currency_code')!,
-        if (prefs.getInt('theme_color') != null)
-          'theme_color': prefs.getInt('theme_color')!.toString(),
-        if (prefs.getInt('theme_mode') != null)
-          'theme_mode': prefs.getInt('theme_mode')!.toString(),
-        if (prefs.getInt('analysis_filter_index') != null)
-          'analysis_filter_index': prefs
-              .getInt('analysis_filter_index')!
-              .toString(),
-      };
-      await DatabaseHelper.instance.saveSettingsToDb(settings);
+      final maintenance = ref.read(appMaintenanceProvider);
+      final bundle = await maintenance.createBackup();
 
-      final dbPath = await DatabaseHelper.instance.getDatabaseFilePath();
-      final file = File(dbPath);
-      if (await file.exists()) {
-        final dateStr = DateFormat('yyyy_MM_dd').format(DateTime.now());
-        final fileName = 'koin_backup_$dateStr';
-
-        // Read DB file bytes
-        final bytes = await file.readAsBytes();
-
+      if (bundle != null) {
         // Prompt user for save location
         final savedPath = await FileSaver.instance.saveAs(
-          name: fileName,
-          bytes: bytes,
+          name: bundle.fileName,
+          bytes: bundle.bytes,
           fileExtension: 'db',
           mimeType: MimeType.other,
         );
@@ -417,59 +396,18 @@ class SettingsScreen extends ConsumerWidget {
             path = tempFile.path;
           }
 
-          final success = await DatabaseHelper.instance.restoreDatabase(path);
+          final maintenance = ref.read(appMaintenanceProvider);
+          final success = await maintenance.restoreBackup(path);
+
+          if (!context.mounted) return;
 
           if (success) {
-            // Restore settings from db to SharedPreferences
-            final settingsFromDb = await DatabaseHelper.instance
-                .loadSettingsFromDb();
-            final prefs = ref.read(sharedPreferencesProvider);
-            if (settingsFromDb.containsKey('currency_code')) {
-              await prefs.setString(
-                'currency_code',
-                settingsFromDb['currency_code']!,
-              );
-            }
-            if (settingsFromDb.containsKey('theme_color') &&
-                settingsFromDb['theme_color']!.isNotEmpty) {
-              await prefs.setInt(
-                'theme_color',
-                int.parse(settingsFromDb['theme_color']!),
-              );
-            }
-            if (settingsFromDb.containsKey('theme_mode') &&
-                settingsFromDb['theme_mode']!.isNotEmpty) {
-              await prefs.setInt(
-                'theme_mode',
-                int.parse(settingsFromDb['theme_mode']!),
-              );
-            }
-            if (settingsFromDb.containsKey('analysis_filter_index') &&
-                settingsFromDb['analysis_filter_index']!.isNotEmpty) {
-              await prefs.setInt(
-                'analysis_filter_index',
-                int.parse(settingsFromDb['analysis_filter_index']!),
-              );
-            }
-
-            if (!context.mounted) return;
-
-            ref.invalidate(settingsProvider);
-            ref.invalidate(transactionProvider);
-            ref.invalidate(accountProvider);
-            ref.invalidate(categoriesProvider);
-            ref.invalidate(savingsGoalsProvider);
-            ref.invalidate(debtsProvider);
-            ref.invalidate(plannedPaymentProvider);
-            // ignore: unused_result
-            ref.refresh(dashboardStatsProvider);
             KoinSnackBar.success(
               context,
               'Data restored successfully!',
               subtitle: 'App will now refresh with your data',
             );
           } else {
-            if (!context.mounted) return;
             KoinSnackBar.error(
               context,
               'Failed to restore data.',
@@ -510,9 +448,7 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await DatabaseHelper.instance.deleteAllTransactions();
-      ref.invalidate(transactionProvider);
-      ref.invalidate(accountProvider);
+      await ref.read(appMaintenanceProvider).clearTransactions();
 
       if (context.mounted) {
         KoinSnackBar.success(
@@ -536,13 +472,7 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await DatabaseHelper.instance.deleteAllData();
-      ref.invalidate(transactionProvider);
-      ref.invalidate(accountProvider);
-      ref.invalidate(categoriesProvider);
-      ref.invalidate(savingsGoalsProvider);
-      ref.invalidate(debtsProvider);
-      ref.invalidate(plannedPaymentProvider);
+      await ref.read(appMaintenanceProvider).clearAllData();
 
       if (context.mounted) {
         KoinSnackBar.success(
@@ -566,14 +496,7 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await DatabaseHelper.instance.resetDatabase();
-      await ref.read(settingsProvider.notifier).resetSettings();
-      ref.invalidate(transactionProvider);
-      ref.invalidate(accountProvider);
-      ref.invalidate(categoriesProvider);
-      ref.invalidate(savingsGoalsProvider);
-      ref.invalidate(debtsProvider);
-      ref.invalidate(plannedPaymentProvider);
+      await ref.read(appMaintenanceProvider).factoryReset();
 
       if (context.mounted) {
         KoinSnackBar.success(

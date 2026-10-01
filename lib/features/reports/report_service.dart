@@ -7,8 +7,88 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
 
+class ReportSummary {
+  final double totalIncome;
+  final double totalExpense;
+  final double netBalance;
+
+  const ReportSummary({
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.netBalance,
+  });
+
+  factory ReportSummary.fromTransactions(List<AppTransaction> transactions) {
+    double income = 0;
+    double expense = 0;
+    for (final tx in transactions) {
+      if (tx.type == TransactionType.income) {
+        income += tx.amount;
+      } else if (tx.type == TransactionType.expense) {
+        expense += tx.amount;
+      }
+    }
+    return ReportSummary(
+      totalIncome: income,
+      totalExpense: expense,
+      netBalance: income - expense,
+    );
+  }
+}
+
+class ReportExportPayload {
+  final Uint8List bytes;
+  final String fileName;
+  final String extension;
+
+  const ReportExportPayload({
+    required this.bytes,
+    required this.fileName,
+    required this.extension,
+  });
+}
+
 class ReportService {
+  static Future<ReportExportPayload> generateReport({
+    required List<AppTransaction> transactions,
+    required List<TransactionCategory> categories,
+    required List<Account> accounts,
+    required String currencySymbol,
+    required bool isPdf,
+    String title = 'Custom Financial Report',
+    DateTime? timestamp,
+  }) async {
+    final now = timestamp ?? DateTime.now();
+    final timeStr = DateFormat('yyyyMMdd_HHmmss').format(now);
+    if (isPdf) {
+      final bytes = await generatePDF(
+        transactions: transactions,
+        categories: categories,
+        accounts: accounts,
+        title: title,
+        currencySymbol: currencySymbol,
+      );
+      return ReportExportPayload(
+        bytes: bytes,
+        fileName: 'Koin_Report_$timeStr.pdf',
+        extension: 'pdf',
+      );
+    } else {
+      final bytes = await generateCSV(
+        transactions: transactions,
+        categories: categories,
+        accounts: accounts,
+      );
+      return ReportExportPayload(
+        bytes: bytes,
+        fileName: 'Koin_Report_$timeStr.csv',
+        extension: 'csv',
+      );
+    }
+  }
+
   static Future<Uint8List> generateCSV({
+
     required List<AppTransaction> transactions,
     required List<TransactionCategory> categories,
     required List<Account> accounts,
@@ -113,17 +193,12 @@ class ReportService {
     final textLightColor = PdfColor.fromInt(0xFF6B7280);
     final greyColor = PdfColor.fromInt(0xFFF1F3F5);
 
-    // Calculate Summary
-    double totalIncome = 0;
-    double totalExpense = 0;
-    for (var tx in transactions) {
-      if (tx.type == TransactionType.income) {
-        totalIncome += tx.amount;
-      } else if (tx.type == TransactionType.expense) {
-        totalExpense += tx.amount;
-      }
-    }
-    final netBalance = totalIncome - totalExpense;
+    // Calculate Summary using domain model
+    final summary = ReportSummary.fromTransactions(transactions);
+    final totalIncome = summary.totalIncome;
+    final totalExpense = summary.totalExpense;
+    final netBalance = summary.netBalance;
+
 
     pdf.addPage(
       pw.MultiPage(

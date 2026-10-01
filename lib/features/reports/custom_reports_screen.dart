@@ -9,9 +9,9 @@ import 'package:koin/features/reports/report_service.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'dart:typed_data';
 
 class CustomReportsScreen extends ConsumerStatefulWidget {
+
   const CustomReportsScreen({super.key});
 
   @override
@@ -670,39 +670,22 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         return;
       }
 
-      Uint8List bytes;
-      String defaultFileName;
-      String extension;
-
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-
-      if (isPdf) {
-        bytes = await ReportService.generatePDF(
-          transactions: filteredTransactions,
-          categories: categories,
-          accounts: accounts,
-          title: 'Custom Financial Report',
-          currencySymbol: currencySymbol,
-        );
-        defaultFileName = 'Koin_Report_$timestamp.pdf';
-        extension = 'pdf';
-      } else {
-        bytes = await ReportService.generateCSV(
-          transactions: filteredTransactions,
-          categories: categories,
-          accounts: accounts,
-        );
-        defaultFileName = 'Koin_Report_$timestamp.csv';
-        extension = 'csv';
-      }
+      final payload = await ReportService.generateReport(
+        transactions: filteredTransactions,
+        categories: categories,
+        accounts: accounts,
+        currencySymbol: currencySymbol,
+        isPdf: isPdf,
+      );
 
       final Uri? outputUri = await FilePicker.saveFile(
         dialogTitle: 'Select report destination',
-        fileName: defaultFileName,
+        fileName: payload.fileName,
         type: FileType.custom,
-        allowedExtensions: [extension],
-        bytes: bytes,
+        allowedExtensions: [payload.extension],
+        bytes: payload.bytes,
       );
+
 
       if (outputUri == null) {
         if (mounted) {
@@ -715,15 +698,16 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       if (outputUri.scheme == 'file') {
         final File file = File(outputUri.toFilePath());
         if (!await file.exists() || await file.length() == 0) {
-          await file.writeAsBytes(bytes);
+          await file.writeAsBytes(payload.bytes);
         }
       }
 
       if (!context.mounted) return;
       final String fileName = outputUri.pathSegments.isNotEmpty
           ? outputUri.pathSegments.last
-          : defaultFileName;
+          : payload.fileName;
       KoinSnackBar.success(context, 'Report Saved', subtitle: fileName);
+
     } catch (e) {
       debugPrint('Export error: $e');
       if (!context.mounted) return;

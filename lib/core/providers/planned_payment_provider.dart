@@ -1,34 +1,37 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/ledger/ledger.dart';
+import 'package:koin/core/repositories/planned_payment_repository.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
 class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
+  PlannedPaymentRepository get _repository =>
+      ref.read(plannedPaymentRepositoryProvider);
+
   @override
   Future<List<PlannedPayment>> build() async {
-    return await DatabaseHelper.instance.getPlannedPayments();
+    return await _repository.getPlannedPayments();
   }
 
   Future<void> loadPlannedPayments() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return await DatabaseHelper.instance.getPlannedPayments();
+      return await _repository.getPlannedPayments();
     });
   }
 
   Future<void> addPlannedPayment(PlannedPayment payment) async {
-    await DatabaseHelper.instance.insertPlannedPayment(payment);
+    await _repository.insertPlannedPayment(payment);
     await loadPlannedPayments();
   }
 
   Future<void> updatePlannedPayment(PlannedPayment payment) async {
-    await DatabaseHelper.instance.updatePlannedPayment(payment);
+    await _repository.updatePlannedPayment(payment);
     await loadPlannedPayments();
   }
 
   Future<void> deletePlannedPayment(String id) async {
-    await DatabaseHelper.instance.deletePlannedPayment(id);
+    await _repository.deletePlannedPayment(id);
     await loadPlannedPayments();
   }
 

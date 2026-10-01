@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/forecasting/cashflow_forecaster.dart';
+import 'package:koin/core/repositories/forecast_repository.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/core/providers/savings_provider.dart';
@@ -19,10 +19,10 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
   final debtsAsync = ref.watch(debtsProvider);
   final savingsAsync = ref.watch(computedSavingsGoalsProvider);
 
-  final dbHelper = DatabaseHelper.instance;
-  final variableInflows = await dbHelper.getHistoricalVariableInflows();
-  final variableOutflows = await dbHelper.getHistoricalVariableOutflows();
-  final plannedPayments = await dbHelper.getUnexcludedPlannedPayments();
+  final forecastRepo = ref.read(forecastRepositoryProvider);
+  final variableInflows = await forecastRepo.getHistoricalVariableInflows();
+  final variableOutflows = await forecastRepo.getHistoricalVariableOutflows();
+  final plannedPayments = await forecastRepo.getUnexcludedPlannedPayments();
 
   return CashflowForecaster.calculate(
     historicalVariableInflows: variableInflows,

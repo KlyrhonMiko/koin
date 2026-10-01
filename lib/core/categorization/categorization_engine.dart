@@ -21,8 +21,12 @@ class CategorizationResult {
 }
 
 class CategorizationEngine {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final DatabaseHelper _dbHelper;
   final Uuid _uuid = const Uuid();
+
+  CategorizationEngine({DatabaseHelper? dbHelper})
+      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+
 
   // Phase 2: Sanitization & Tokenization
 

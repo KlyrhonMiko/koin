@@ -1,50 +1,51 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/repositories/savings_repository.dart';
 
 class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
+  SavingsRepository get _repository => ref.read(savingsRepositoryProvider);
+
   @override
   Future<List<SavingsGoal>> build() async {
-    return await DatabaseHelper.instance.getSavingsGoals();
+    return await _repository.getSavingsGoals();
   }
 
   Future<void> loadGoals() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return await DatabaseHelper.instance.getSavingsGoals();
+      return await _repository.getSavingsGoals();
     });
   }
 
   Future<void> addGoal(SavingsGoal goal) async {
-    await DatabaseHelper.instance.insertSavingsGoal(goal);
+    await _repository.insertSavingsGoal(goal);
     await loadGoals();
   }
 
   Future<void> updateGoal(SavingsGoal goal) async {
-    await DatabaseHelper.instance.updateSavingsGoal(goal);
+    await _repository.updateSavingsGoal(goal);
     await loadGoals();
   }
 
   Future<void> deleteGoal(String id) async {
-    await DatabaseHelper.instance.deleteSavingsGoal(id);
+    await _repository.deleteSavingsGoal(id);
     await loadGoals();
   }
 
   Future<void> addLog(SavingsLog log) async {
-    await DatabaseHelper.instance.insertSavingsLog(log);
+    await _repository.insertSavingsLog(log);
     ref.invalidate(savingsLogsProvider(log.goalId));
     await loadGoals();
   }
 
   Future<void> updateLog(SavingsLog oldLog, SavingsLog newLog) async {
-    await DatabaseHelper.instance.updateSavingsLog(oldLog, newLog);
+    await _repository.updateSavingsLog(oldLog, newLog);
     ref.invalidate(savingsLogsProvider(newLog.goalId));
     await loadGoals();
   }
 
   Future<void> deleteLog(SavingsLog log) async {
-    await DatabaseHelper.instance.deleteSavingsLog(log);
+    await _repository.deleteSavingsLog(log);
     ref.invalidate(savingsLogsProvider(log.goalId));
     await loadGoals();
   }
@@ -65,5 +66,6 @@ final savingsLogsProvider = FutureProvider.family<List<SavingsLog>, String>((
   ref,
   goalId,
 ) async {
-  return await DatabaseHelper.instance.getSavingsLogs(goalId);
+  final repository = ref.read(savingsRepositoryProvider);
+  return await repository.getSavingsLogs(goalId);
 });

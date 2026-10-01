@@ -38,6 +38,12 @@ A predictive projection engine that combines historical variable cashflow (using
 ### Spending Analysis
 A time-series spending aggregation and comparative analysis engine (`SpendingAnalysis`, `AnalysisPeriod`). Encapsulates inclusive date boundaries for weekly, monthly, and yearly horizons, prior-period baseline comparisons, trend deltas, and ranked category spending breakdowns.
 
-### Budget Overview
-A centralized budget calculation module (`BudgetOverview`). Evaluates category fixed and percentage spending limits against aggregate income and category expense totals, determining overall progress, category remaining balances, and over-budget states.
+### Transfer Draft
+A domain value model (`TransferDraft`) that encapsulates transfer fee evaluation (fixed or percentage fee rules based on source account configuration), transfer validation (balance checks, distinct counterparty accounts, fee limits), and atomic assembly of the primary transfer transaction and linked expense fee transaction.
+
+### Domain Repositories
+Decoupled persistence seams (`AccountRepository`, `CategoryRepository`, `DebtRepository`, `PlannedPaymentRepository`, `SavingsRepository`, `ForecastRepository`) that isolate domain state notifiers from raw SQL database access. Each repository provides dual concrete adapters: a production `Sqlite...Adapter` and a deterministic `InMemory...Adapter` for headless domain testing.
+
+### App Maintenance
+The lifecycle and maintenance authority (`AppMaintenanceService`) encapsulating database checkpointing, encrypted/plain file backup generation, database file restoration with SharedPreferences reconciliation, transaction purging, complete database purging, and factory reset cascades behind a unified high-leverage interface.
 
