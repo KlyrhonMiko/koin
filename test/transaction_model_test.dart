@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('AppTransaction Model Tests', () {

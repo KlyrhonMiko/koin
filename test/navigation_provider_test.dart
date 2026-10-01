@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/providers/navigation_provider.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('NavigationNotifier Tests', () {

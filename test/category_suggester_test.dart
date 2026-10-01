@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/categorization/category_suggester.dart';
-import 'package:koin/core/models/transaction.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('CategorySuggester Seam & Adapters', () {

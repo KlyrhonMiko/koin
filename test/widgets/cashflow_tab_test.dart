@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/providers/planned_payment_provider.dart';
-import 'package:koin/core/providers/settings_provider.dart';
-import 'package:koin/features/cashflow/cashflow_tab.dart';
+import 'package:koin/core/core.dart';
+import 'package:koin/features/cashflow/cashflow.dart';
 
 class FakePlannedPaymentNotifier extends PlannedPaymentNotifier {
   final List<PlannedPayment> initial;

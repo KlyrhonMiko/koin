@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/widgets/selection_tile.dart';
-import 'package:koin/core/theme.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('SelectionTile Widget Tests', () {

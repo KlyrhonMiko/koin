@@ -1,9 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:koin/core/ledger/ledger.dart';
-import 'package:koin/core/models/transaction.dart';
-import 'package:koin/core/models/planned_payment.dart';
-import 'package:koin/core/models/debt.dart';
-import 'package:koin/core/models/debt_item.dart';
+import 'package:koin/core/core.dart';
 
 void main() {
   group('Ledger Domain Module & Seams', () {
