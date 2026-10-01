@@ -85,4 +85,55 @@ class PlannedPayment {
         return prevDate;
     }
   }
+
+  /// Calculates the forward due date based on recurrence frequency.
+  DateTime computeNextDate([DateTime? fromDate]) {
+    final base = fromDate ?? nextDate;
+    switch (frequency) {
+      case PaymentFrequency.daily:
+        return base.add(const Duration(days: 1));
+      case PaymentFrequency.weekly:
+        return base.add(const Duration(days: 7));
+      case PaymentFrequency.biWeekly:
+        return base.add(const Duration(days: 14));
+      case PaymentFrequency.monthly:
+        return DateTime(base.year, base.month + 1, base.day);
+      case PaymentFrequency.quarterly:
+        return DateTime(base.year, base.month + 3, base.day);
+      case PaymentFrequency.yearly:
+        return DateTime(base.year + 1, base.month, base.day);
+      case PaymentFrequency.flexible:
+        return base;
+    }
+  }
+
+  PlannedPayment copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    TransactionType? type,
+    String? categoryId,
+    String? accountId,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? nextDate,
+    PaymentFrequency? frequency,
+    String? notes,
+    bool? isAutoProcess,
+  }) {
+    return PlannedPayment(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      categoryId: categoryId ?? this.categoryId,
+      accountId: accountId ?? this.accountId,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      nextDate: nextDate ?? this.nextDate,
+      frequency: frequency ?? this.frequency,
+      notes: notes ?? this.notes,
+      isAutoProcess: isAutoProcess ?? this.isAutoProcess,
+    );
+  }
 }

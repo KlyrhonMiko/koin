@@ -21,11 +21,10 @@ import 'package:koin/core/models/debt.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 import 'package:koin/features/dashboard/upcoming_screen.dart';
-import 'package:koin/features/planned_payments/add_edit_planned_payment_screen.dart';
+import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
-import 'package:koin/features/accounts/screens/account_form_screen.dart';
-import 'package:uuid/uuid.dart';
+import 'package:koin/features/accounts/account_form_screen.dart';
 import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
@@ -64,61 +63,12 @@ class DashboardScreen extends ConsumerWidget {
 
     final isExpense = payment.type == TransactionType.expense;
 
-    final transaction = AppTransaction(
-      id: const Uuid().v4(),
-      note: payment.title,
+    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
+      payment: payment,
       amount: result.amount,
-      type: payment.type,
-      date: DateTime.now(),
-      categoryId: result.categoryId,
       accountId: result.accountId,
-      plannedPaymentId: payment.id,
+      categoryId: result.categoryId,
     );
-
-    DateTime nextDate = payment.nextDate;
-    switch (payment.frequency) {
-      case PaymentFrequency.daily:
-        nextDate = nextDate.add(const Duration(days: 1));
-        break;
-      case PaymentFrequency.weekly:
-        nextDate = nextDate.add(const Duration(days: 7));
-        break;
-      case PaymentFrequency.biWeekly:
-        nextDate = nextDate.add(const Duration(days: 14));
-        break;
-      case PaymentFrequency.monthly:
-        nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
-        break;
-      case PaymentFrequency.quarterly:
-        nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
-        break;
-      case PaymentFrequency.yearly:
-        nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
-        break;
-      case PaymentFrequency.flexible:
-        // Do not advance the nextDate for flexible payments
-        break;
-    }
-
-    final updatedPayment = PlannedPayment(
-      id: payment.id,
-      title: payment.title,
-      amount: payment.amount,
-      type: payment.type,
-      categoryId: payment.categoryId,
-      accountId: payment.accountId,
-      startDate: payment.startDate,
-      endDate: payment.endDate,
-      nextDate: nextDate,
-      frequency: payment.frequency,
-      notes: payment.notes,
-      isAutoProcess: payment.isAutoProcess,
-    );
-
-    await ref.read(transactionProvider.notifier).addTransaction(transaction);
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .updatePlannedPayment(updatedPayment);
 
     if (context.mounted) {
       KoinSnackBar.success(
@@ -1729,7 +1679,11 @@ class DashboardScreen extends ConsumerWidget {
         HapticService.medium();
         Navigator.push(
           context,
-          SlideUpRoute(page: const AddEditPlannedPaymentScreen()),
+          SlideUpRoute(
+            page: const AddEditCashflowScreen(
+              initialType: TransactionType.expense,
+            ),
+          ),
         );
       },
       child: Container(

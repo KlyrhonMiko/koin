@@ -11,7 +11,7 @@ import 'package:koin/core/widgets/koin_primary_button.dart';
 import 'package:koin/core/widgets/koin_reorder_proxy.dart';
 import 'package:koin/core/widgets/swipe_to_delete_tile.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
-import 'package:koin/features/accounts/screens/account_form_screen.dart';
+import 'package:koin/features/accounts/account_form_screen.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
 import 'package:koin/core/widgets/animated_counter.dart';

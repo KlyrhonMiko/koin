@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
@@ -16,12 +15,11 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
-import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/widgets/payment_confirmation_sheet.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
-import 'package:koin/features/planned_payments/add_edit_planned_payment_screen.dart';
+import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
 
 class UpcomingScreen extends ConsumerWidget {
   const UpcomingScreen({super.key});
@@ -37,66 +35,22 @@ class UpcomingScreen extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
 
-    final transaction = AppTransaction(
-      id: const Uuid().v4(),
-      note: '${payment.title} (Subscription)',
+    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
+      payment: payment,
       amount: result.amount,
-      type: payment.type,
-      date: DateTime.now(),
-      categoryId: result.categoryId,
       accountId: result.accountId,
-      plannedPaymentId: payment.id,
+      categoryId: result.categoryId,
     );
-
-    DateTime nextDate = payment.nextDate;
-    switch (payment.frequency) {
-      case PaymentFrequency.daily:
-        nextDate = nextDate.add(const Duration(days: 1));
-        break;
-      case PaymentFrequency.weekly:
-        nextDate = nextDate.add(const Duration(days: 7));
-        break;
-      case PaymentFrequency.biWeekly:
-        nextDate = nextDate.add(const Duration(days: 14));
-        break;
-      case PaymentFrequency.monthly:
-        nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
-        break;
-      case PaymentFrequency.quarterly:
-        nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
-        break;
-      case PaymentFrequency.yearly:
-        nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
-        break;
-      case PaymentFrequency.flexible:
-        break;
-    }
-
-    final updatedPayment = PlannedPayment(
-      id: payment.id,
-      title: payment.title,
-      amount: payment.amount,
-      type: payment.type,
-      categoryId: payment.categoryId,
-      accountId: payment.accountId,
-      startDate: payment.startDate,
-      endDate: payment.endDate,
-      nextDate: nextDate,
-      frequency: payment.frequency,
-      notes: payment.notes,
-      isAutoProcess: payment.isAutoProcess,
-    );
-
-    await ref.read(transactionProvider.notifier).addTransaction(transaction);
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .updatePlannedPayment(updatedPayment);
 
     if (context.mounted) {
       KoinSnackBar.success(
         context,
-        'Payment recorded successfully',
-        subtitle: 'Your payment history has been updated',
+        payment.type == TransactionType.income
+            ? 'Income processed'
+            : 'Payment recorded successfully',
+        subtitle: payment.type == TransactionType.income
+            ? 'Your recurring income has been completed'
+            : 'Your payment history has been updated',
       );
     }
   }
@@ -215,7 +169,11 @@ class UpcomingScreen extends ConsumerWidget {
             HapticService.medium();
             Navigator.push(
               context,
-              SlideUpRoute(page: const AddEditPlannedPaymentScreen()),
+              SlideUpRoute(
+                page: const AddEditCashflowScreen(
+                  initialType: TransactionType.expense,
+                ),
+              ),
             );
           },
           child: Container(

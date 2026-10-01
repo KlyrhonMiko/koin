@@ -19,7 +19,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/widgets/selection_tile.dart';
 import 'package:koin/core/widgets/account_picker_sheet.dart';
 import 'package:koin/core/widgets/category_picker_sheet.dart';
-import 'package:koin/core/widgets/premium_selection_sheet.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/koin_back_button.dart';
 import 'package:koin/core/widgets/pressable_scale.dart';
@@ -998,15 +998,14 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     Color primaryColor,
   ) async {
     final frequencies = InstallmentFrequency.values;
-    final freq = await PremiumSelectionSheet.show<InstallmentFrequency>(
+    final freq = await showSelectSheet<InstallmentFrequency>(
       context: context,
       title: 'Payment Frequency',
       subtitle: 'How often are payments made?',
-      indicatorColor: primaryColor,
       itemCount: frequencies.length,
       itemBuilder: (sheetContext, index) {
         final f = frequencies[index];
-        return PremiumSheetItem(
+        return SelectSheetItem(
           name: f.name[0].toUpperCase() + f.name.substring(1),
           accentColor: primaryColor,
           iconCodePoint: Icons.event_repeat_rounded.codePoint,

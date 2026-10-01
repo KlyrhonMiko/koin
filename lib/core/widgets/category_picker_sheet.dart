@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/category.dart';
 import 'package:koin/core/models/transaction.dart';
 import 'package:koin/core/providers/category_provider.dart';
-import 'package:koin/core/widgets/premium_selection_sheet.dart';
+import 'package:koin/core/widgets/select_sheet.dart';
 
 /// Deep Category Picker Module: Encapsulates category filtering by TransactionType,
 /// styling, and sheet presentation behind a single method call.
@@ -22,15 +22,14 @@ Future<String?> showCategoryPickerSheet({
       .where((c) => c.type == type)
       .toList();
 
-  return await PremiumSelectionSheet.show<String>(
+  return await showSelectSheet<String>(
     context: context,
     title: title,
     subtitle: subtitle,
-    indicatorColor: indicatorColor,
     itemCount: filteredCategories.length,
     itemBuilder: (sheetContext, index) {
       final cat = filteredCategories[index];
-      return PremiumSheetItem(
+      return SelectSheetItem(
         name: cat.name,
         accentColor: cat.color,
         iconCodePoint: cat.iconCodePoint,
