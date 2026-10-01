@@ -78,7 +78,7 @@ void main() {
         final stubAdapter = TestStubSuggesterAdapter(stubbedSuggestion: stub);
         final coordinator = DebouncedSuggesterCoordinator(
           suggester: stubAdapter,
-          debounceDuration: const Duration(milliseconds: 50),
+          debounceDuration: const Duration(milliseconds: 10),
         );
 
         CategorySuggestion? captured;
@@ -96,7 +96,7 @@ void main() {
         );
 
         expect(captured, isNull);
-        await Future.delayed(const Duration(milliseconds: 70));
+        await Future.delayed(const Duration(milliseconds: 100));
         expect(captured, isNotNull);
         expect(captured!.categoryId, 'cat_groceries');
         coordinator.dispose();

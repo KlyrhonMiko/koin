@@ -20,42 +20,18 @@ class BudgetsScreen extends ConsumerWidget {
       data: (categories) {
         final totalIncome = stats.totalIncome;
 
-        // Resolve percentage-based budgets to actual amounts
-        double resolvedBudget(TransactionCategory c) {
-          if (c.isPercentBudget &&
-              c.budgetPercent != null &&
-              c.budgetPercent! > 0) {
-            return totalIncome * c.budgetPercent! / 100;
-          }
-          return c.budget ?? 0;
-        }
-
         final budgeted = categories
-            .where(
-              (c) =>
-                  c.type == TransactionType.expense &&
-                  ((c.budget != null && c.budget! > 0) ||
-                      (c.isPercentBudget &&
-                          c.budgetPercent != null &&
-                          c.budgetPercent! > 0)),
-            )
+            .where((c) => c.type == TransactionType.expense && c.hasBudget)
             .toList();
         final unbudgeted = categories
-            .where(
-              (c) =>
-                  c.type == TransactionType.expense &&
-                  !((c.budget != null && c.budget! > 0) ||
-                      (c.isPercentBudget &&
-                          c.budgetPercent != null &&
-                          c.budgetPercent! > 0)),
-            )
+            .where((c) => c.type == TransactionType.expense && !c.hasBudget)
             .toList();
 
         // Calculate totals
         double totalBudget = 0;
         double totalSpent = 0;
         for (var cat in budgeted) {
-          totalBudget += resolvedBudget(cat);
+          totalBudget += cat.resolvedBudget(totalIncome);
           totalSpent += stats.categorySpending[cat.id] ?? 0;
         }
         final overallProgress = totalBudget > 0
@@ -129,9 +105,8 @@ class BudgetsScreen extends ConsumerWidget {
                                           spent: spent,
                                           currency: currency,
                                           index: index,
-                                          resolvedBudget: resolvedBudget(
-                                            category,
-                                          ),
+                                          resolvedBudget:
+                                              category.resolvedBudget(totalIncome),
                                           totalIncome: totalIncome,
                                         );
                                       }),

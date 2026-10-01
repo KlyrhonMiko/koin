@@ -544,13 +544,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                       ),
                                       if (category.type ==
                                               TransactionType.expense &&
-                                          ((category.budget != null &&
-                                                  category.budget! > 0) ||
-                                              (category.isPercentBudget &&
-                                                  category.budgetPercent !=
-                                                      null &&
-                                                  category.budgetPercent! >
-                                                      0))) ...[
+                                          category.hasBudget) ...[
                                         const Gap(4),
                                         Text(
                                           category.isPercentBudget

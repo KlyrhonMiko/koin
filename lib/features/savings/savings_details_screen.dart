@@ -43,12 +43,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         date: DateTime.now(),
       );
 
-      final wasCompleted = widget.goal.progress >= 1.0;
+      final wasCompleted = widget.goal.isCompleted;
       await ref.read(savingsGoalsProvider.notifier).addLog(log);
-
-      final currentAmountAfter = widget.goal.currentAmount + amount;
-      final isNowCompleted =
-          currentAmountAfter >= (widget.goal.targetAmount ?? 0);
+      final isNowCompleted = widget.goal.willComplete(amount);
 
       if (!wasCompleted && isNowCompleted) {
         HapticService.success();
@@ -373,10 +370,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           child: TweenAnimationBuilder<double>(
                             tween: Tween<double>(
                               begin: 0,
-                              end:
-                                  (goal.isStash &&
-                                      (goal.targetAmount == null ||
-                                          goal.targetAmount == 0))
+                              end: (goal.isStash && !goal.hasTarget)
                                   ? 1.0
                                   : goal.progress,
                             ),
@@ -429,9 +423,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     ],
                   ),
                   const Gap(24),
-                  if (!goal.isStash ||
-                      (goal.targetAmount != null &&
-                          goal.targetAmount! > 0)) ...[
+                  if (!goal.isStash || goal.hasTarget) ...[
                     Container(
                       height: 1,
                       color: Colors.white.withValues(alpha: 0.15),

@@ -122,7 +122,7 @@ class DebtsTab extends ConsumerWidget {
     double totalRepaid = 0.0;
 
     for (final debt in debts) {
-      final remaining = debt.amount - debt.currentAmount;
+      final remaining = debt.remainingAmount;
       totalRepaid += debt.currentAmount;
 
       if (debt.type == DebtType.owedToMe) {
@@ -300,12 +300,8 @@ class DebtCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (debt.currentAmount / debt.amount).clamp(0.0, 1.0);
-    final isSettled = progress >= 1.0;
-    final remaining = (debt.amount - debt.currentAmount).clamp(
-      0.0,
-      debt.amount,
-    );
+    final isSettled = debt.isSettled;
+    final remaining = debt.remainingAmount;
     final color = debt.type == DebtType.owedToMe
         ? AppTheme.incomeColor(context)
         : AppTheme.expenseColor(context);

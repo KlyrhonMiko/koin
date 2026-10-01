@@ -296,7 +296,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     bool isDark,
   ) {
     final progressPercent = (goal.progress * 100).toInt();
-    final isCompleted = goal.progress >= 1.0;
+    final isCompleted = goal.isCompleted;
 
     final accentColors = [
       AppTheme.primaryColor(context),

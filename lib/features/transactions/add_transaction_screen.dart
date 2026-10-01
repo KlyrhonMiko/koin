@@ -264,9 +264,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     if (isTransfer) {
       final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
-      feeAmount = _isTransferFeePercentage
-          ? (amount * (enteredFee / 100))
-          : enteredFee;
+      final accounts = ref.read(accountProvider).value ?? [];
+      final selectedAccount = accounts
+          .where((a) => a.id == _selectedAccountId)
+          .firstOrNull;
+      feeAmount = selectedAccount?.calculateTransferFee(
+            amount,
+            enteredFee,
+            _isTransferFeePercentage,
+          ) ??
+          (_isTransferFeePercentage
+              ? (amount * (enteredFee / 100))
+              : enteredFee);
 
       if (feeAmount >= amount) {
         HapticService.error();

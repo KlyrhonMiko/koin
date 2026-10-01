@@ -103,4 +103,16 @@ class Account {
   Color? get cardColor => cardColorHex == null
       ? null
       : Color(int.parse(cardColorHex!.replaceFirst('#', '0xFF')));
+
+  /// Computes the effective transfer fee for a given transfer [amount].
+  double calculateTransferFee(
+    double amount, [
+    double? customFeeAmount,
+    bool? isPercentage,
+  ]) {
+    final fee = customFeeAmount ?? transferFeeAmount;
+    if (fee <= 0) return 0.0;
+    final usePercentage = isPercentage ?? isTransferFeePercentage;
+    return usePercentage ? (amount * (fee / 100)) : fee;
+  }
 }

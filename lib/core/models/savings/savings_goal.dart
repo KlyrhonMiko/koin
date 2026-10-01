@@ -112,4 +112,14 @@ class SavingsGoal {
     if (targetAmount == null || targetAmount! <= 0) return 0.0;
     return (currentAmount / targetAmount!).clamp(0.0, 1.0);
   }
+
+  /// Whether the goal has an explicit target amount set.
+  bool get hasTarget => targetAmount != null && targetAmount! > 0;
+
+  /// Whether the savings goal target has been reached or exceeded.
+  bool get isCompleted => hasTarget && currentAmount >= targetAmount!;
+
+  /// Whether adding [additionalAmount] to current savings will achieve or exceed the target.
+  bool willComplete(double additionalAmount) =>
+      hasTarget && (currentAmount + additionalAmount) >= targetAmount!;
 }

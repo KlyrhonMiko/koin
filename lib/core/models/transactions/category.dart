@@ -80,4 +80,29 @@ class TransactionCategory {
   }
 
   Color get color => Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+
+  /// Returns whether this category has an active budget configured (fixed or percentage).
+  bool get hasBudget =>
+      (isPercentBudget && budgetPercent != null && budgetPercent! > 0) ||
+      (!isPercentBudget && budget != null && budget! > 0);
+
+  /// Resolves the effective budget amount in currency, computing percentage against [totalIncome] if configured as percentage-based.
+  double resolvedBudget([double totalIncome = 0.0]) {
+    if (isPercentBudget && budgetPercent != null && budgetPercent! > 0) {
+      return totalIncome * budgetPercent! / 100;
+    }
+    return budget ?? 0.0;
+  }
+
+  /// Calculates the fraction (0.0 to 1.0) of budget consumed by [spent].
+  double calculateProgress({required double spent, double totalIncome = 0.0}) {
+    final b = resolvedBudget(totalIncome);
+    return b > 0 ? (spent / b).clamp(0.0, 1.0) : 0.0;
+  }
+
+  /// Returns whether [spent] exceeds the resolved budget.
+  bool isOverBudget({required double spent, double totalIncome = 0.0}) {
+    final b = resolvedBudget(totalIncome);
+    return b > 0 && spent > b;
+  }
 }

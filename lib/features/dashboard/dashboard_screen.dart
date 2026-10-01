@@ -914,14 +914,7 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     final categories = ref.watch(categoriesProvider).value ?? [];
     final budgetedCategories = categories
-        .where(
-          (c) =>
-              c.type == TransactionType.expense &&
-              ((c.budget != null && c.budget! > 0) ||
-                  (c.isPercentBudget &&
-                      c.budgetPercent != null &&
-                      c.budgetPercent! > 0)),
-        )
+        .where((c) => c.type == TransactionType.expense && c.hasBudget)
         .toList();
 
     return Column(
@@ -1020,19 +1013,18 @@ class DashboardScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final category = budgetedCategories[index];
                 final spent = stats.categorySpending[category.id] ?? 0;
-                final budget =
-                    (category.isPercentBudget &&
-                        category.budgetPercent != null &&
-                        category.budgetPercent! > 0)
-                    ? stats.totalIncome * category.budgetPercent! / 100
-                    : (category.budget ?? 0.0);
-                final progress = budget > 0
-                    ? (spent / budget).clamp(0.0, 1.0)
-                    : 0.0;
+                final budget = category.resolvedBudget(stats.totalIncome);
+                final progress = category.calculateProgress(
+                  spent: spent,
+                  totalIncome: stats.totalIncome,
+                );
                 final percent = budget > 0
                     ? (spent / budget * 100).toStringAsFixed(0)
                     : '0';
-                final isOver = spent > budget;
+                final isOver = category.isOverBudget(
+                  spent: spent,
+                  totalIncome: stats.totalIncome,
+                );
                 final isNearLimit = progress > 0.8 && !isOver;
 
                 return Container(

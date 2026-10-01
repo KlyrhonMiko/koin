@@ -296,4 +296,158 @@ void main() {
       },
     );
   });
+
+  group('TransactionCategory & Account Domain Tests', () {
+    test(
+      'TransactionCategory resolves fixed and percentage budgets correctly',
+      () {
+        final fixedCat = TransactionCategory(
+          id: 'cat_food',
+          name: 'Food',
+          iconCodePoint: 1,
+          colorHex: '#FF0000',
+          type: TransactionType.expense,
+          budget: 500.0,
+        );
+
+        expect(fixedCat.hasBudget, true);
+        expect(fixedCat.resolvedBudget(), 500.0);
+        expect(fixedCat.calculateProgress(spent: 250.0), 0.5);
+        expect(fixedCat.isOverBudget(spent: 600.0), true);
+        expect(fixedCat.isOverBudget(spent: 500.0), false);
+
+        final percentCat = TransactionCategory(
+          id: 'cat_rent',
+          name: 'Rent',
+          iconCodePoint: 2,
+          colorHex: '#00FF00',
+          type: TransactionType.expense,
+          isPercentBudget: true,
+          budgetPercent: 20.0,
+        );
+
+        expect(percentCat.hasBudget, true);
+        // 20% of 4000 total income = 800
+        expect(percentCat.resolvedBudget(4000.0), 800.0);
+        expect(
+          percentCat.calculateProgress(spent: 400.0, totalIncome: 4000.0),
+          0.5,
+        );
+        expect(
+          percentCat.isOverBudget(spent: 900.0, totalIncome: 4000.0),
+          true,
+        );
+
+        final unbudgetedCat = TransactionCategory(
+          id: 'cat_misc',
+          name: 'Misc',
+          iconCodePoint: 3,
+          colorHex: '#0000FF',
+          type: TransactionType.expense,
+        );
+
+        expect(unbudgetedCat.hasBudget, false);
+        expect(unbudgetedCat.resolvedBudget(5000.0), 0.0);
+        expect(unbudgetedCat.calculateProgress(spent: 100.0), 0.0);
+        expect(unbudgetedCat.isOverBudget(spent: 100.0), false);
+      },
+    );
+
+    test(
+      'Account calculates transfer fees correctly for fixed and percentage fees',
+      () {
+        final fixedAccount = Account(
+          id: 'acc_fixed',
+          name: 'Bank',
+          iconCodePoint: 1,
+          colorHex: '#000000',
+          transferFeeAmount: 25.0,
+          isTransferFeePercentage: false,
+        );
+
+        expect(fixedAccount.calculateTransferFee(1000.0), 25.0);
+        expect(fixedAccount.calculateTransferFee(1000.0, 10.0), 10.0);
+
+        final percentAccount = Account(
+          id: 'acc_percent',
+          name: 'Wallet',
+          iconCodePoint: 2,
+          colorHex: '#000000',
+          transferFeeAmount: 1.5,
+          isTransferFeePercentage: true,
+        );
+
+        // 1.5% of 1000 = 15.0
+        expect(percentAccount.calculateTransferFee(1000.0), 15.0);
+        // Overridden 2.0% of 1000 = 20.0
+        expect(percentAccount.calculateTransferFee(1000.0, 2.0), 20.0);
+        // Explicitly override percentage mode: treat 15 as fixed 15.0
+        expect(percentAccount.calculateTransferFee(1000.0, 15.0, false), 15.0);
+      },
+    );
+
+    test('SavingsGoal domain calculations and completion checks', () {
+      final targetGoal = SavingsGoal(
+        id: 'goal_1',
+        name: 'New Car',
+        targetAmount: 10000.0,
+        currentAmount: 4000.0,
+        startDate: DateTime.now().subtract(const Duration(days: 30)),
+        endDate: DateTime.now().add(const Duration(days: 60)),
+      );
+
+      expect(targetGoal.hasTarget, true);
+      expect(targetGoal.progress, 0.4);
+      expect(targetGoal.remainingAmount, 6000.0);
+      expect(targetGoal.isCompleted, false);
+      expect(targetGoal.willComplete(5000.0), false);
+      expect(targetGoal.willComplete(6000.0), true);
+      expect(targetGoal.willComplete(7000.0), true);
+
+      final completedGoal = targetGoal.copyWith(currentAmount: 10000.0);
+      expect(completedGoal.isCompleted, true);
+      expect(completedGoal.progress, 1.0);
+
+      final stashGoal = SavingsGoal(
+        id: 'stash_1',
+        name: 'Emergency Stash',
+        currentAmount: 2500.0,
+        startDate: DateTime.now(),
+        isStash: true,
+      );
+
+      expect(stashGoal.hasTarget, false);
+      expect(stashGoal.isCompleted, false);
+      expect(stashGoal.willComplete(1000.0), false);
+      expect(stashGoal.progress, 0.0);
+      expect(stashGoal.remainingAmount, isNull);
+    });
+
+    test('Debt domain metrics, settlement, and installments', () {
+      final activeDebt = Debt(
+        id: 'debt_1',
+        personName: 'Alice',
+        amount: 1000.0,
+        currentAmount: 250.0,
+        startDate: DateTime.now().subtract(const Duration(days: 30)),
+        dueDate: DateTime.now().add(const Duration(days: 30)),
+        type: DebtType.owedToMe,
+        totalInstallments: 4,
+      );
+
+      expect(activeDebt.remainingAmount, 750.0);
+      expect(activeDebt.progress, 0.25);
+      expect(activeDebt.isSettled, false);
+      expect(activeDebt.perInstallmentAmount, 250.0);
+      expect(activeDebt.paidInstallmentsCount, 1);
+      expect(activeDebt.remainingInstallmentsCount, 3);
+
+      final settledDebt = activeDebt.copyWith(currentAmount: 1000.0);
+      expect(settledDebt.remainingAmount, 0.0);
+      expect(settledDebt.progress, 1.0);
+      expect(settledDebt.isSettled, true);
+      expect(settledDebt.paidInstallmentsCount, 4);
+      expect(settledDebt.remainingInstallmentsCount, 0);
+    });
+  });
 }
