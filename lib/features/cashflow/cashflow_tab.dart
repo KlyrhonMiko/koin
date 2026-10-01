@@ -52,20 +52,6 @@ class CashflowScheduleTab extends ConsumerWidget {
     }
   }
 
-  String _formatNextPaymentDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final paymentDate = DateTime(date.year, date.month, date.day);
-    final difference = paymentDate.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-    if (difference < -1) return '${difference.abs()} days overdue';
-    if (difference < 7) return 'in $difference days';
-    return DateFormat('MMM d, y').format(date);
-  }
-
   int _getDaysUntil(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -73,12 +59,6 @@ class CashflowScheduleTab extends ConsumerWidget {
     return target.difference(today).inDays;
   }
 
-  Color _getDueDateColor(BuildContext context, DateTime date) {
-    final days = _getDaysUntil(date);
-    if (days < 0) return Colors.redAccent;
-    if (days <= 2) return Colors.orangeAccent;
-    return AppTheme.textLightColor(context);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -270,7 +250,6 @@ class CashflowScheduleTab extends ConsumerWidget {
   ) {
     final catColor = category?.color ?? AppTheme.primaryColor(context);
     final isOverdue = _getDaysUntil(payment.nextDate) < 0;
-    final dueDateColor = _getDueDateColor(context, payment.nextDate);
 
     return PressableScale(
       onTap: () {
@@ -404,89 +383,94 @@ class CashflowScheduleTab extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            Container(
+              height: 1,
+              color: AppTheme.textLightColor(
+                context,
+              ).withValues(alpha: 0.1),
+            ),
             const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 14,
-                      color: dueDateColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formatNextPaymentDate(payment.nextDate),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: dueDateColor,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.backgroundColor(context),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: AppTheme.textLightColor(context),
                       ),
                     ),
-                    if (accountName != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '•',
-                        style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        accountName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textLightColor(context),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                PressableScale(
-                  onTap: () => _processPayment(context, ref, payment),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _isIncome
-                          ? AppTheme.incomeColor(
-                              context,
-                            ).withValues(alpha: 0.12)
-                          : AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          _isIncome
-                              ? Icons.download_rounded
-                              : Icons.check_rounded,
-                          size: 14,
-                          color: _isIncome
-                              ? AppTheme.incomeColor(context)
-                              : AppTheme.primaryColor(context),
-                        ),
-                        const Gap(6),
                         Text(
-                          _isIncome ? 'Receive' : 'Pay',
+                          payment.frequency == PaymentFrequency.flexible
+                              ? 'Availability'
+                              : _isIncome
+                                  ? 'Next Income Date'
+                                  : 'Next Payment',
                           style: TextStyle(
-                            fontSize: 13,
+                            color: AppTheme.textLightColor(
+                              context,
+                            ),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          payment.frequency == PaymentFrequency.flexible
+                              ? 'Available Anytime'
+                              : DateFormat.yMMMd().format(payment.nextDate),
+                          style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: _isIncome
-                                ? AppTheme.incomeColor(context)
-                                : AppTheme.primaryColor(context),
+                            fontSize: 13,
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+                InkWell(
+                  onTap: () {
+                    HapticService.light();
+                    _processPayment(context, ref, payment);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor(context),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor(
+                            context,
+                          ).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      _isIncome ? 'Collect Now' : 'Pay Now',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -508,31 +492,32 @@ class CashflowScheduleTab extends ConsumerWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24, top: 4),
+        margin: const EdgeInsets.only(bottom: 24, top: 8),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppTheme.textLightColor(context).withValues(alpha: 0.2),
-            width: 1.5,
+            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+            width: 1,
+            strokeAlign: BorderSide.strokeAlignInside,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.add_circle_outline_rounded,
+              Icons.add_rounded,
+              color: AppTheme.textLightColor(context),
               size: 20,
-              color: AppTheme.primaryColor(context),
             ),
-            const SizedBox(width: 8),
+            const Gap(10),
             Text(
-              _isIncome ? 'Add Recurring Income' : 'Add Subscription',
+              _isIncome ? 'Add New Income' : 'Add New Payment',
               style: TextStyle(
-                color: AppTheme.primaryColor(context),
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+                color: AppTheme.textLightColor(context),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
           ],
