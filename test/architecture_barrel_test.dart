@@ -67,6 +67,7 @@ void main() {
         expect(CashflowScheduleTab, isNotNull);
         expect(DebtsTab, isNotNull);
         expect(SavingsTab, isNotNull);
+        expect(AccountsTab, isNotNull);
         expect(TransactionsListScreen, isNotNull);
         expect(AddRepaymentSheet, isNotNull);
         expect(SavingsLogSheet, isNotNull);
