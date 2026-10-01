@@ -47,3 +47,12 @@ Decoupled persistence seams (`AccountRepository`, `CategoryRepository`, `DebtRep
 ### App Maintenance
 The lifecycle and maintenance authority (`AppMaintenanceService`) encapsulating database checkpointing, encrypted/plain file backup generation, database file restoration with SharedPreferences reconciliation, transaction purging, complete database purging, and factory reset cascades behind a unified high-leverage interface.
 
+### Debt Summary
+An immutable domain value object (`DebtSummary`) that encapsulates portfolio-wide debt aggregation. Determines net debt balance (owed to user minus owed by user), total repaid capital, active loan counts, settled obligations, and overdue statuses without leaking calculation logic into presentation widgets.
+
+### Upcoming Timeline & Entry
+A unified, strongly-typed domain timeline (`UpcomingTimeline`, `UpcomingEntry`) consolidating recurring cashflow schedules (`PlannedPayment`) and debt installment obligations into an ordered forward commitment schedule. Computes due horizons, overdue status, and total due capital across heterogeneous financial sources without dynamic typecasting.
+
+### Savings Summary
+An immutable domain value model (`SavingsSummary`) computing aggregate savings portfolio metrics (total saved, total target milestones, overall progress percentage, active goals, and stashes) behind a clean domain interface.
+

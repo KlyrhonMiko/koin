@@ -489,4 +489,266 @@ void main() {
       expect(content.contains('Lunch with team'), isTrue);
     });
   });
+
+  group('DebtRepository saveDebtWithItems & DebtSummary Domain Tests', () {
+    test('saveDebtWithItems synchronizes parent debt and items atomically', () async {
+      final repo = InMemoryDebtAdapter();
+      final debt = Debt(
+        id: 'debt_1',
+        personName: 'Bob',
+        amount: 250.0,
+        type: DebtType.iOwe,
+        startDate: DateTime(2026, 1, 1),
+        totalInstallments: 3,
+      );
+      final item1 = DebtItem(
+        id: 'item_1',
+        debtId: 'debt_1',
+        name: 'Headphones',
+        amount: 150.0,
+        totalInstallments: 2,
+        firstPaymentDate: DateTime(2026, 1, 1),
+      );
+      final item2 = DebtItem(
+        id: 'item_2',
+        debtId: 'debt_1',
+        name: 'Keyboard',
+        amount: 100.0,
+        totalInstallments: 1,
+        firstPaymentDate: DateTime(2026, 1, 15),
+      );
+
+      await repo.saveDebtWithItems(debt, [item1, item2]);
+      var debts = await repo.getDebts();
+      expect(debts.length, 1);
+      expect(debts.first.items.length, 2);
+
+      // Remove item1, update item2, and add item3
+      final updatedItem2 = item2.copyWith(amount: 120.0);
+      final item3 = DebtItem(
+        id: 'item_3',
+        debtId: 'debt_1',
+        name: 'Mouse',
+        amount: 80.0,
+        totalInstallments: 1,
+        firstPaymentDate: DateTime(2026, 2, 1),
+      );
+      final updatedDebt = debt.copyWith(amount: 200.0);
+
+      await repo.saveDebtWithItems(updatedDebt, [updatedItem2, item3]);
+      debts = await repo.getDebts();
+      expect(debts.first.amount, 200.0);
+      expect(debts.first.items.length, 2);
+      expect(debts.first.items.any((i) => i.id == 'item_1'), isFalse);
+      expect(debts.first.items.firstWhere((i) => i.id == 'item_2').amount, 120.0);
+      expect(debts.first.items.any((i) => i.id == 'item_3'), isTrue);
+    });
+
+    test('DebtSummary accurately computes net balance, active loans, and overdue counts', () {
+      final now = DateTime(2026, 6, 1);
+      final debts = [
+        Debt(
+          id: 'd1',
+          personName: 'Alice',
+          amount: 500.0,
+          currentAmount: 200.0, // remaining 300
+          type: DebtType.owedToMe,
+          startDate: DateTime(2026, 1, 1),
+          dueDate: DateTime(2026, 5, 1), // overdue
+          totalInstallments: 5,
+        ),
+        Debt(
+          id: 'd2',
+          personName: 'Bank',
+          amount: 200.0,
+          currentAmount: 50.0, // remaining 150
+          type: DebtType.iOwe,
+          startDate: DateTime(2026, 2, 1),
+          dueDate: DateTime(2026, 7, 1), // not overdue
+          totalInstallments: 4,
+        ),
+        Debt(
+          id: 'd3',
+          personName: 'Charlie',
+          amount: 100.0,
+          currentAmount: 100.0, // settled
+          type: DebtType.owedToMe,
+          startDate: DateTime(2026, 1, 1),
+          dueDate: DateTime(2026, 4, 1),
+        ),
+      ];
+
+      final summary = DebtSummary.calculate(debts, now: now);
+
+      // net = +300 (owedToMe) - 150 (iOwe) = 150
+      expect(summary.netBalance, 150.0);
+      expect(summary.totalOwedToMe, 300.0);
+      expect(summary.totalIOwe, 150.0);
+      expect(summary.totalRepaid, 350.0); // 200 + 50 + 100
+      expect(summary.totalOriginalPrincipal, 800.0);
+      expect(summary.activeCount, 2);
+      expect(summary.settledCount, 1);
+      expect(summary.overdueCount, 1); // d1 is overdue, d3 settled doesn't count as active overdue
+      expect(summary.isNegative, isFalse);
+    });
+  });
+
+  group('UpcomingTimeline Domain Tests', () {
+    test('UpcomingTimeline merges payments and debt installments into sorted timeline', () {
+      final now = DateTime(2026, 6, 1);
+      final payments = [
+        PlannedPayment(
+          id: 'p1',
+          title: 'Internet',
+          amount: 60.0,
+          type: TransactionType.expense,
+          categoryId: 'c1',
+          accountId: 'a1',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 6, 10),
+          frequency: PaymentFrequency.monthly,
+        ),
+        PlannedPayment(
+          id: 'p2',
+          title: 'Salary',
+          amount: 3000.0,
+          type: TransactionType.income,
+          categoryId: 'c2',
+          accountId: 'a1',
+          startDate: DateTime(2026, 1, 1),
+          nextDate: DateTime(2026, 6, 5),
+          frequency: PaymentFrequency.monthly,
+        ),
+      ];
+
+      final debts = [
+        Debt(
+          id: 'd1',
+          personName: 'Car Loan',
+          amount: 1200.0,
+          currentAmount: 200.0,
+          type: DebtType.iOwe,
+          startDate: DateTime(2026, 1, 1),
+          dueDate: DateTime(2026, 6, 2),
+          totalInstallments: 12,
+        ),
+      ];
+
+      final timeline = UpcomingTimeline.calculate(
+        payments: payments,
+        debts: debts,
+        now: now,
+      );
+
+      expect(timeline.length, 3);
+      // Sorted chronologically: d1 (June 2), p2 (June 5), p1 (June 10)
+      expect(timeline.entries[0].id, 'd1');
+      expect(timeline.entries[0].isDebt, isTrue);
+      expect(timeline.entries[0].amount, 100.0); // 1200 / 12
+      expect(timeline.entries[0].isExpense, isTrue);
+
+      expect(timeline.entries[1].id, 'p2');
+      expect(timeline.entries[1].isPayment, isTrue);
+      expect(timeline.entries[1].isExpense, isFalse);
+
+      expect(timeline.entries[2].id, 'p1');
+      expect(timeline.entries[2].isPayment, isTrue);
+      expect(timeline.entries[2].isExpense, isTrue);
+
+      expect(timeline.take(2).length, 2);
+      expect(timeline.totalExpenseDue, 160.0); // 100 debt + 60 internet
+      expect(timeline.totalIncomeDue, 3000.0);
+    });
+
+    test('UpcomingEntry formats due status accurately', () {
+      final now = DateTime(2026, 6, 10);
+      final todayEntry = UpcomingEntry(
+        id: '1',
+        title: 'Rent',
+        amount: 1000,
+        dueDate: DateTime(2026, 6, 10),
+        isExpense: true,
+        kind: UpcomingEntryKind.plannedPayment,
+      );
+      final tomorrowEntry = UpcomingEntry(
+        id: '2',
+        title: 'Water',
+        amount: 40,
+        dueDate: DateTime(2026, 6, 11),
+        isExpense: true,
+        kind: UpcomingEntryKind.plannedPayment,
+      );
+      final overdueEntry = UpcomingEntry(
+        id: '3',
+        title: 'Electricity',
+        amount: 80,
+        dueDate: DateTime(2026, 6, 8),
+        isExpense: true,
+        kind: UpcomingEntryKind.plannedPayment,
+      );
+
+      expect(todayEntry.formattedDueStatus(now), 'Due today');
+      expect(tomorrowEntry.formattedDueStatus(now), 'Due tomorrow');
+      expect(overdueEntry.formattedDueStatus(now), '2d overdue');
+      expect(overdueEntry.isOverdue(now), isTrue);
+    });
+  });
+
+  group('Account & SavingsSummary Domain Tests', () {
+    test('Account.computeAdjustedInitialBalance calculates correct offset', () {
+      final account = Account(
+        id: 'acc_1',
+        name: 'Checking',
+        iconCodePoint: 123,
+        colorHex: '#00FF00',
+        initialBalance: 500.0,
+      );
+
+      // If current balance with transactions is 450, but user sets target balance to 600,
+      // difference is +150, so new initialBalance must be 500 + 150 = 650.
+      final adjusted = account.computeAdjustedInitialBalance(
+        targetBalance: 600.0,
+        currentBalance: 450.0,
+      );
+      expect(adjusted, 650.0);
+    });
+
+    test('SavingsSummary computes totals, progress percentage, and goal statuses', () {
+      final goals = [
+        SavingsGoal(
+          id: 'g1',
+          name: 'Vacation',
+          currentAmount: 400.0,
+          targetAmount: 1000.0,
+          startDate: DateTime(2026, 1, 1),
+        ),
+        SavingsGoal(
+          id: 'g2',
+          name: 'Rainy Day Stash',
+          currentAmount: 600.0,
+          startDate: DateTime(2026, 1, 1),
+          isStash: true,
+        ),
+        SavingsGoal(
+          id: 'g3',
+          name: 'New Phone',
+          currentAmount: 1000.0,
+          targetAmount: 1000.0,
+          startDate: DateTime(2026, 1, 1),
+        ),
+      ];
+
+      final summary = SavingsSummary.calculate(goals);
+
+      expect(summary.totalSaved, 2000.0); // 400 + 600 + 1000
+      expect(summary.totalTarget, 2000.0); // 1000 (g1) + 1000 (g3)
+      expect(summary.overallProgress, 1.0);
+      expect(summary.overallPercent, 100);
+      expect(summary.totalGoalsCount, 3);
+      expect(summary.activeGoalsCount, 1); // g1 active, g2 is stash, g3 is completed
+      expect(summary.stashesCount, 1);
+      expect(summary.completedGoalsCount, 1);
+    });
+  });
 }
+

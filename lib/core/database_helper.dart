@@ -1074,6 +1074,58 @@ CREATE TABLE transactions (
     return await db.delete('debts', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Atomically inserts or updates a debt and synchronizes all its itemized sub-purchases in a single transaction.
+  Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final existingDebt = await txn.query(
+        'debts',
+        where: 'id = ?',
+        whereArgs: [debt.id],
+      );
+      if (existingDebt.isEmpty) {
+        await txn.insert('debts', debt.toMap());
+      } else {
+        await txn.update(
+          'debts',
+          debt.toMap(),
+          where: 'id = ?',
+          whereArgs: [debt.id],
+        );
+      }
+
+      final existingItems = await txn.query(
+        'debt_items',
+        where: 'debtId = ?',
+        whereArgs: [debt.id],
+      );
+      final existingItemIds = existingItems.map((r) => r['id'] as String).toSet();
+      final newItemIds = items.map((i) => i.id).toSet();
+
+      // Delete removed items
+      for (final oldId in existingItemIds) {
+        if (!newItemIds.contains(oldId)) {
+          await txn.delete('debt_items', where: 'id = ?', whereArgs: [oldId]);
+        }
+      }
+
+      // Insert or update current items
+      for (final item in items) {
+        final itemMap = item.copyWith(debtId: debt.id).toMap();
+        if (existingItemIds.contains(item.id)) {
+          await txn.update(
+            'debt_items',
+            itemMap,
+            where: 'id = ?',
+            whereArgs: [item.id],
+          );
+        } else {
+          await txn.insert('debt_items', itemMap);
+        }
+      }
+    });
+  }
+
   // Debt Items commands
   Future<DebtItem> insertDebtItem(DebtItem item) async {
     final db = await instance.database;

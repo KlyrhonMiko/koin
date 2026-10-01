@@ -59,7 +59,7 @@ void main() {
       expect(find.text('Netflix Subscription'), findsOneWidget);
       expect(find.text('MONTHLY'), findsOneWidget);
       expect(find.text('AUTO'), findsOneWidget);
-      expect(find.text('Pay'), findsOneWidget);
+      expect(find.text('Pay Now'), findsOneWidget);
     });
 
     testWidgets('renders recurring incomes list items and receive action', (
@@ -96,7 +96,7 @@ void main() {
 
       expect(find.text('Design Client Retainer'), findsOneWidget);
       expect(find.text('MONTHLY'), findsOneWidget);
-      expect(find.text('Receive'), findsOneWidget);
+      expect(find.text('Collect Now'), findsOneWidget);
     });
 
     testWidgets('renders clean empty state when no items exist', (

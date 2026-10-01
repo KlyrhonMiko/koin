@@ -268,8 +268,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         final currentBalance =
             dashboardStats.accountBalances[widget.account!.id] ??
             widget.account!.initialBalance;
-        final difference = newInitialBalance - currentBalance;
-        newInitialBalance = widget.account!.initialBalance + difference;
+        newInitialBalance = widget.account!.computeAdjustedInitialBalance(
+          targetBalance: newInitialBalance,
+          currentBalance: currentBalance,
+        );
       }
 
       final updatedAccount = Account(

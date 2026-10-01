@@ -115,4 +115,14 @@ class Account {
     final usePercentage = isPercentage ?? isTransferFeePercentage;
     return usePercentage ? (amount * (fee / 100)) : fee;
   }
+
+  /// Adjusts the initial balance so that cumulative ledger transactions result in the [targetBalance].
+  double computeAdjustedInitialBalance({
+    required double targetBalance,
+    required double currentBalance,
+  }) {
+    final difference = targetBalance - currentBalance;
+    return initialBalance + difference;
+  }
 }
+

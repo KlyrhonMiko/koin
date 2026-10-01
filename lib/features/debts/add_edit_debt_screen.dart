@@ -171,44 +171,18 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       items: _items,
     );
 
-    if (isEdit) {
-      await ref.read(debtsProvider.notifier).updateDebt(debt);
-      final oldItems = widget.debt!.items;
-      for (var oldItem in oldItems) {
-        if (!_items.any((i) => i.id == oldItem.id)) {
-          await ref.read(debtsProvider.notifier).deleteDebtItem(oldItem);
-        }
-      }
-      for (var newItem in _items) {
-        final existing = oldItems.where((i) => i.id == newItem.id).firstOrNull;
-        if (existing == null) {
-          await ref
-              .read(debtsProvider.notifier)
-              .addDebtItem(newItem.copyWith(debtId: id));
-        } else if (existing.amount != newItem.amount ||
-            existing.name != newItem.name ||
-            existing.totalInstallments != newItem.totalInstallments ||
-            existing.firstPaymentDate != newItem.firstPaymentDate ||
-            existing.categoryId != newItem.categoryId) {
-          await ref
-              .read(debtsProvider.notifier)
-              .updateDebtItem(existing, newItem.copyWith(debtId: id));
-        }
-      }
-      if (mounted) {
-        KoinSnackBar.success(
-          context,
-          'Record updated',
-          subtitle: 'Your record has been saved successfully',
-        );
-      }
-    } else {
-      await ref.read(debtsProvider.notifier).addDebt(debt);
-      for (var item in _items) {
-        await ref
-            .read(debtsProvider.notifier)
-            .addDebtItem(item.copyWith(debtId: id));
-      }
+    // Ensure debt items have debtId assigned
+    final preparedItems = _items.map((i) => i.copyWith(debtId: id)).toList();
+    final preparedDebt = debt.copyWith(items: preparedItems);
+
+    await ref.read(debtsProvider.notifier).saveDebt(preparedDebt);
+
+    if (mounted) {
+      KoinSnackBar.success(
+        context,
+        isEdit ? 'Record updated' : 'Record created',
+        subtitle: 'Your record has been saved successfully',
+      );
     }
 
     if (_selectedCategoryId != null && notes.isNotEmpty) {

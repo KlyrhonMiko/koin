@@ -475,23 +475,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   if (updatedItem != null) {
                     await ref
                         .read(debtsProvider.notifier)
-                        .updateDebtItem(item, updatedItem);
-
-                    final newItems = debt.items
-                        .map((i) => i.id == item.id ? updatedItem : i)
-                        .toList();
-                    final newAmount = newItems.fold(
-                      0.0,
-                      (sum, i) => sum + i.amount,
-                    );
-
-                    final updatedDebt = debt.copyWith(
-                      amount: newAmount,
-                      items: newItems,
-                    );
-                    await ref
-                        .read(debtsProvider.notifier)
-                        .updateDebt(updatedDebt);
+                        .saveDebtItem(debt, updatedItem);
 
                     if (context.mounted) {
                       KoinSnackBar.success(context, 'Purchase Updated');
@@ -611,13 +595,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 
             if (newItem != null) {
               final newDebtItem = newItem.copyWith(debtId: debt.id);
-              await ref.read(debtsProvider.notifier).addDebtItem(newDebtItem);
-
-              final updatedDebt = debt.copyWith(
-                amount: debt.amount + newDebtItem.amount,
-                items: [...debt.items, newDebtItem],
-              );
-              await ref.read(debtsProvider.notifier).updateDebt(updatedDebt);
+              await ref
+                  .read(debtsProvider.notifier)
+                  .saveDebtItem(debt, newDebtItem);
 
               if (context.mounted) {
                 KoinSnackBar.success(context, 'Purchase Added');

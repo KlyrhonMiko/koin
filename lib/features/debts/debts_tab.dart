@@ -19,6 +19,7 @@ class DebtsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final debtsAsync = ref.watch(debtsProvider);
+    final summary = ref.watch(debtSummaryProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
     final fmt = NumberFormat.simpleCurrency(name: currency.code);
@@ -77,7 +78,7 @@ class DebtsTab extends ConsumerWidget {
 
         return ReorderableListView.builder(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-          header: _buildHeroSummaryCard(context, debts, fmt),
+          header: _buildHeroSummaryCard(context, summary, debts.length, fmt),
           footer: _buildAddDebtButton(context),
           itemCount: debts.length,
           onReorderItem: (oldIndex, newIndex) {
@@ -115,25 +116,13 @@ class DebtsTab extends ConsumerWidget {
   // ── Hero Summary Card ──
   Widget _buildHeroSummaryCard(
     BuildContext context,
-    List<Debt> debts,
+    DebtSummary summary,
+    int activeCount,
     NumberFormat currencyFormat,
   ) {
-    double netBalance = 0.0;
-    double totalRepaid = 0.0;
-
-    for (final debt in debts) {
-      final remaining = debt.remainingAmount;
-      totalRepaid += debt.currentAmount;
-
-      if (debt.type == DebtType.owedToMe) {
-        netBalance += remaining;
-      } else {
-        netBalance -= remaining;
-      }
-    }
-
-    final isNegative = netBalance < 0;
-    final cardColor = isNegative
+    final netBalance = summary.netBalance;
+    final totalRepaid = summary.totalRepaid;
+    final cardColor = summary.isNegative
         ? AppTheme.expenseColor(context)
         : AppTheme.primaryColor(context);
 
@@ -174,7 +163,7 @@ class DebtsTab extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${debts.length} ACTIVE',
+                      '${summary.activeCount} ACTIVE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

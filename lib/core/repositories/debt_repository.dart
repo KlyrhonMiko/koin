@@ -14,6 +14,7 @@ abstract class DebtRepository {
   Future<List<DebtRepayment>> getDebtRepayments(String debtId);
   Future<void> insertDebtRepayment(DebtRepayment repayment);
   Future<void> updateDebtPositions(List<Debt> debts);
+  Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items);
 }
 
 /// Concrete SQLite Adapter: delegates to DatabaseHelper.
@@ -62,6 +63,10 @@ class SqliteDebtAdapter implements DebtRepository {
   @override
   Future<void> updateDebtPositions(List<Debt> debts) =>
       _dbHelper.updateDebtPositions(debts);
+
+  @override
+  Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) =>
+      _dbHelper.saveDebtWithItems(debt, items);
 }
 
 /// In-Memory Test Adapter: provides deterministic debt persistence for testing.
@@ -128,6 +133,12 @@ class InMemoryDebtAdapter implements DebtRepository {
     if (list != null) {
       list.removeWhere((i) => i.id == item.id);
     }
+  }
+
+  @override
+  Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) async {
+    _debts[debt.id] = debt;
+    _items[debt.id] = List.from(items.map((i) => i.copyWith(debtId: debt.id)));
   }
 
   @override

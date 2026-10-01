@@ -20,6 +20,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
   @override
   Widget build(BuildContext context) {
     final goalsAsync = ref.watch(computedSavingsGoalsProvider);
+    final summary = ref.watch(savingsSummaryProvider);
     final settings = ref.watch(settingsProvider);
     final currencyFormat = NumberFormat.simpleCurrency(
       name: settings.currency.code,
@@ -49,7 +50,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: _buildHeroBentoCard(
                     context,
-                    goals,
+                    summary,
                     currencyFormat,
                     isDark,
                   ),
@@ -121,18 +122,13 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
   Widget _buildHeroBentoCard(
     BuildContext context,
-    List<SavingsGoal> goals,
+    SavingsSummary summary,
     NumberFormat currencyFormat,
     bool isDark,
   ) {
-    final totalSaved = goals.fold<double>(0, (sum, g) => sum + g.currentAmount);
-    final totalTarget = goals.fold<double>(
-      0,
-      (sum, g) => sum + (g.targetAmount ?? 0),
-    );
-    final overallProgress = totalTarget > 0
-        ? (totalSaved / totalTarget).clamp(0.0, 1.0)
-        : 0.0;
+    final totalSaved = summary.totalSaved;
+    final totalTarget = summary.totalTarget;
+    final overallProgress = summary.overallProgress;
 
     Widget card = KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.savings,

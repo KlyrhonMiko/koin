@@ -4,6 +4,8 @@ import 'package:koin/core/ledger/ledger.dart';
 import 'package:koin/core/repositories/planned_payment_repository.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
+import 'package:koin/core/providers/debt_provider.dart';
+
 class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
   PlannedPaymentRepository get _repository =>
       ref.read(plannedPaymentRepositoryProvider);
@@ -62,3 +64,10 @@ final plannedPaymentProvider =
     AsyncNotifierProvider<PlannedPaymentNotifier, List<PlannedPayment>>(() {
       return PlannedPaymentNotifier();
     });
+
+final upcomingTimelineProvider = Provider<UpcomingTimeline>((ref) {
+  final payments = ref.watch(plannedPaymentProvider).value ?? [];
+  final debts = ref.watch(debtsProvider).value ?? [];
+  return UpcomingTimeline.calculate(payments: payments, debts: debts);
+});
+

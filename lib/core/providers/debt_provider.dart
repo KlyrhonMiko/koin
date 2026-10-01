@@ -54,6 +54,41 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
     await loadDebts();
   }
 
+  /// Atomically saves a debt along with all its itemized obligations in a single transaction,
+  /// triggering a single state reload.
+  Future<void> saveDebt(Debt debt) async {
+    await _repository.saveDebtWithItems(debt, debt.items);
+    await loadDebts();
+  }
+
+  /// Adds or updates an item on a debt and synchronizes the parent debt atomically.
+  Future<void> saveDebtItem(Debt debt, DebtItem item) async {
+    final existingIndex = debt.items.indexWhere((i) => i.id == item.id);
+    List<DebtItem> updatedItems;
+    if (existingIndex >= 0) {
+      updatedItems = List<DebtItem>.from(debt.items)..[existingIndex] = item;
+    } else {
+      updatedItems = [...debt.items, item];
+    }
+    final newAmount = updatedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final updatedDebt = debt.copyWith(
+      amount: newAmount,
+      items: updatedItems,
+    );
+    await saveDebt(updatedDebt);
+  }
+
+  /// Removes an item from a debt and recalculates the parent debt amount atomically.
+  Future<void> removeDebtItem(Debt debt, DebtItem item) async {
+    final updatedItems = debt.items.where((i) => i.id != item.id).toList();
+    final newAmount = updatedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final updatedDebt = debt.copyWith(
+      amount: newAmount,
+      items: updatedItems,
+    );
+    await saveDebt(updatedDebt);
+  }
+
   /// Atomically processes a debt repayment or credit increase through the Ledger seam,
   /// updating the debt balance, storing repayment history, and recording
   /// the associated financial transaction if an account was linked.
@@ -112,3 +147,9 @@ final debtRepaymentsProvider =
       final repository = ref.read(debtRepositoryProvider);
       return await repository.getDebtRepayments(debtId);
     });
+
+final debtSummaryProvider = Provider<DebtSummary>((ref) {
+  final debts = ref.watch(debtsProvider).value ?? [];
+  return DebtSummary.calculate(debts);
+});
+

@@ -69,3 +69,9 @@ final savingsLogsProvider = FutureProvider.family<List<SavingsLog>, String>((
   final repository = ref.read(savingsRepositoryProvider);
   return await repository.getSavingsLogs(goalId);
 });
+
+final savingsSummaryProvider = Provider<SavingsSummary>((ref) {
+  final goals = ref.watch(computedSavingsGoalsProvider).value ?? [];
+  return SavingsSummary.calculate(goals);
+});
+
