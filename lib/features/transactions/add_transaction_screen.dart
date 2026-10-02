@@ -334,7 +334,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               : _selectedCategoryId!,
         );
 
-
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
       if (feeTransaction != null) {
@@ -548,7 +547,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               _buildHeader(context, animatedColor, currency, isDark),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(
+                    KoinSpacing.screenInset,
+                    8,
+                    KoinSpacing.screenInset,
+                    16,
+                  ),
                   child: _buildFormSection(context, categories, animatedColor),
                 ),
               ),
@@ -607,7 +611,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           Gap(topPadding),
           // ── Top bar ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+              vertical: 4,
+            ),
             child: Row(
               children: [
                 // Back button
@@ -649,8 +656,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             Text(
                               DateFormat('h:mm a').format(_selectedDate),
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontSize: KoinTypography.small,
+                                fontWeight: KoinTypography.labelWeight,
                                 color: AppTheme.textColor(context),
                               ),
                             ),
@@ -691,8 +698,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             Text(
                               DateFormat('MMM d').format(_selectedDate),
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontSize: KoinTypography.small,
+                                fontWeight: KoinTypography.labelWeight,
                                 color: AppTheme.textColor(context),
                               ),
                             ),
@@ -708,7 +715,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           const Gap(4),
           // ── Type selector ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: _buildTypeSelector(context, typeColor),
           ),
           const Gap(24),
@@ -794,15 +803,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _currentExpression.isNotEmpty && _currentExpression != '0';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: KoinSpacing.screenInset),
       child: Column(
         children: [
           // Currency label
           Text(
             currency.code,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.titleWeight,
               color: typeColor.withValues(alpha: 0.5),
               letterSpacing: 1.5,
             ),
@@ -817,8 +826,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               Text(
                 '${currency.symbol} ',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
+                  fontSize: KoinTypography.screenTitle,
+                  fontWeight: KoinTypography.labelWeight,
                   color: typeColor.withValues(alpha: 0.4),
                 ),
               ),
@@ -830,13 +839,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   _currentExpression.isEmpty ? '0' : _currentExpression,
                   key: ValueKey(_currentExpression),
                   style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
+                    fontSize: KoinTypography.inputAmount,
+                    fontWeight: KoinTypography.headingWeight,
                     color: hasAmount
                         ? typeColor
                         : typeColor.withValues(alpha: 0.35),
                     letterSpacing: -2,
-                    height: 1.1,
+                    height: KoinTypography.amountHeight,
                   ),
                 ),
               ),
@@ -921,8 +930,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       },
                       onTapOutside: (_) => _noteFocusNode.unfocus(),
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                        fontWeight: KoinTypography.labelWeight,
+                        fontSize: KoinTypography.body,
                         color: AppTheme.textColor(context),
                       ),
                       decoration: InputDecoration(
@@ -932,7 +941,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             context,
                           ).withValues(alpha: 0.45),
                           fontWeight: FontWeight.w400,
-                          fontSize: 15,
+                          fontSize: KoinTypography.body,
                         ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -996,8 +1005,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         decimal: true,
                       ),
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                        fontWeight: KoinTypography.labelWeight,
+                        fontSize: KoinTypography.body,
                         color: AppTheme.textColor(context),
                       ),
                       decoration: InputDecoration(
@@ -1009,7 +1018,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             context,
                           ).withValues(alpha: 0.45),
                           fontWeight: FontWeight.w400,
-                          fontSize: 15,
+                          fontSize: KoinTypography.body,
                         ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -1066,10 +1075,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     child: Text(
                                       'Fixed',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: KoinTypography.small,
                                         fontWeight: !_isTransferFeePercentage
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
+                                            ? KoinTypography.titleWeight
+                                            : KoinTypography.supportingWeight,
                                         color: !_isTransferFeePercentage
                                             ? AppTheme.primaryColor(context)
                                             : AppTheme.textLightColor(context),
@@ -1111,10 +1120,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     child: Text(
                                       '%',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: KoinTypography.small,
                                         fontWeight: _isTransferFeePercentage
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
+                                            ? KoinTypography.titleWeight
+                                            : KoinTypography.supportingWeight,
                                         color: _isTransferFeePercentage
                                             ? AppTheme.primaryColor(context)
                                             : AppTheme.textLightColor(context),
@@ -1384,7 +1393,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         'Error: $err',
                         style: TextStyle(
                           color: AppTheme.errorColor(context),
-                          fontSize: 13,
+                          fontSize: KoinTypography.caption,
                         ),
                       ),
                     ),

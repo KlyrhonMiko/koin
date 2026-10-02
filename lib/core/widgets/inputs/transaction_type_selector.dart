@@ -119,8 +119,8 @@ class TransactionTypeSelector extends StatelessWidget {
                                 color: isSelected
                                     ? Colors.white
                                     : AppTheme.textLightColor(context),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
+                                fontWeight: KoinTypography.titleWeight,
+                                fontSize: KoinTypography.caption,
                               ),
                             ),
                           ],

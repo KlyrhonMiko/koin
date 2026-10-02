@@ -137,13 +137,16 @@ class KoinSettingTile extends StatelessWidget {
           : null,
       contentPadding:
           contentPadding ??
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          const EdgeInsets.symmetric(
+            horizontal: KoinSpacing.screenInset,
+            vertical: 4,
+          ),
       leading: icon != null || leading != null ? _buildLeading(context) : null,
       title: Text(
         title,
         style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
+          fontWeight: KoinTypography.labelWeight,
+          fontSize: KoinTypography.body,
           color: isDestructive ? Colors.red : null,
         ),
       ),
@@ -152,8 +155,8 @@ class KoinSettingTile extends StatelessWidget {
               subtitle!,
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontSize: KoinTypography.small,
+                fontWeight: KoinTypography.supportingWeight,
               ),
             )
           : null,

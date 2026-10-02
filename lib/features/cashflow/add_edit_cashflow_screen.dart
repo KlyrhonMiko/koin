@@ -307,7 +307,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         children: [
           Gap(topPadding + 4),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: Row(
               children: [
                 const KoinBackButton(),
@@ -327,15 +329,17 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           const Gap(8),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: TextFormField(
               controller: _titleController,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.formTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.5,
+                letterSpacing: KoinTypography.headingTracking,
               ),
               decoration: InputDecoration(
                 hintText: _isIncome
@@ -423,7 +427,12 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           _buildHeader(context, primaryColor),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+              padding: const EdgeInsets.fromLTRB(
+                KoinSpacing.screenInset,
+                24,
+                KoinSpacing.screenInset,
+                100,
+              ),
               physics: const BouncingScrollPhysics(),
               child: Form(
                 key: _formKey,
@@ -453,7 +462,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                                   duration: const Duration(milliseconds: 200),
                                   margin: const EdgeInsets.only(right: 12),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
+                                    horizontal: KoinSpacing.screenInset,
                                   ),
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
@@ -686,7 +695,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton:
           Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
                 child: PressableScale(
                   onTap: _savePayment,
                   child: Container(
@@ -714,8 +725,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                       isEditing ? 'Save Changes' : 'Create $_domainNoun',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.titleWeight,
                         color: Colors.white,
                         letterSpacing: 0.5,
                       ),
@@ -782,8 +793,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                       Text(
                         'Auto-Process $_domainNoun',
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: KoinTypography.overline,
+                          fontWeight: KoinTypography.labelWeight,
                           color: AppTheme.textLightColor(
                             context,
                           ).withValues(alpha: 0.65),
@@ -794,7 +805,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                       Text(
                         'Create transaction automatically',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: KoinTypography.compact,
                           color: AppTheme.textLightColor(
                             context,
                           ).withValues(alpha: 0.7),
@@ -860,8 +871,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                   HapticService.light();
                 },
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontWeight: KoinTypography.labelWeight,
+                  fontSize: KoinTypography.body,
                   color: AppTheme.textColor(context),
                 ),
                 decoration: InputDecoration(
@@ -871,7 +882,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                       context,
                     ).withValues(alpha: 0.45),
                     fontWeight: FontWeight.w400,
-                    fontSize: 15,
+                    fontSize: KoinTypography.body,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,

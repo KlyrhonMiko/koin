@@ -68,9 +68,9 @@ class KoinEmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: AppTheme.textColor(context),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
+            fontSize: KoinTypography.sectionTitle,
+            fontWeight: KoinTypography.headingWeight,
+            letterSpacing: KoinTypography.headingTracking,
           ),
         ),
         const Gap(8),
@@ -79,7 +79,7 @@ class KoinEmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: AppTheme.textLightColor(context),
-            fontSize: 14,
+            fontSize: KoinTypography.compact,
             height: 1.4,
           ),
         ),

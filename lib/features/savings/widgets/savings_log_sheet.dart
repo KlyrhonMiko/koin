@@ -114,25 +114,27 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
           Text(
             widget.log != null ? 'Edit Savings' : 'Add Savings',
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+              fontSize: KoinTypography.sectionTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
             ),
           ),
           const Gap(32),
 
           // Hero Amount Display
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: Column(
               children: [
                 Text(
                   settings.currency.code,
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontSize: KoinTypography.overline,
+                    fontWeight: KoinTypography.headingWeight,
                     color: primaryColor.withValues(alpha: 0.5),
-                    letterSpacing: 1.2,
+                    letterSpacing: KoinTypography.overlineTracking,
                   ),
                 ),
                 const Gap(4),
@@ -144,23 +146,23 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                     Text(
                       '${settings.currency.symbol} ',
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.screenTitle,
+                        fontWeight: KoinTypography.labelWeight,
                         color: primaryColor.withValues(alpha: 0.4),
                       ),
                     ),
                     Text(
                       _currentExpression.isEmpty ? '0' : _currentExpression,
                       style: TextStyle(
-                        fontSize: 44,
+                        fontSize: KoinTypography.inputAmount,
                         fontWeight: FontWeight.w800,
                         color: isExceeded
                             ? AppTheme.expenseColor(context)
                             : (hasAmount
                                   ? primaryColor
                                   : primaryColor.withValues(alpha: 0.3)),
-                        letterSpacing: -1.5,
-                        height: 1.1,
+                        letterSpacing: -2,
+                        height: KoinTypography.amountHeight,
                       ),
                     ),
                   ],
@@ -171,8 +173,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                     child: Text(
                       '= ${settings.currency.symbol}$_evaluatedResult',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.labelWeight,
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: 0.6),
@@ -189,8 +191,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                           ? 'Insufficient balance in ${widget.linkedAccount!.name}'
                           : 'Available from ${widget.linkedAccount!.name}: ${NumberFormat.currency(symbol: settings.currency.symbol).format(widget.linkedBalance)}',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.small,
+                        fontWeight: KoinTypography.labelWeight,
                         color: isExceeded
                             ? AppTheme.expenseColor(context)
                             : AppTheme.textLightColor(

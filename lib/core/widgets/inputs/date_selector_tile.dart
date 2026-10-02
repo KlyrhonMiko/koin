@@ -124,8 +124,8 @@ class DateSelectorTile extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.small,
+                    fontWeight: KoinTypography.labelWeight,
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.6),
@@ -136,7 +136,10 @@ class DateSelectorTile extends StatelessWidget {
             const Gap(8),
             Text(
               (dateFormat ?? DateFormat.yMMMd()).format(date),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                fontSize: KoinTypography.body,
+                fontWeight: KoinTypography.titleWeight,
+              ),
             ),
           ],
         ),

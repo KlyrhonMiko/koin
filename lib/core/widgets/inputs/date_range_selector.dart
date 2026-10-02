@@ -170,8 +170,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
               style: TextButton.styleFrom(
                 foregroundColor: primary,
                 textStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  fontWeight: KoinTypography.titleWeight,
+                  fontSize: KoinTypography.body,
                 ),
               ),
             ),
@@ -217,7 +217,10 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
     return PressableScale(
       onTap: () => _openDatePicker(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        padding: const EdgeInsets.symmetric(
+          horizontal: KoinSpacing.screenInset,
+          vertical: 18,
+        ),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(24),
@@ -248,8 +251,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                     'Time Period',
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   ),
                   const Gap(2),
@@ -259,8 +262,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                       color: hasRange
                           ? AppTheme.textColor(context)
                           : AppTheme.textLightColor(context),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: KoinTypography.itemTitle,
+                      fontWeight: KoinTypography.titleWeight,
                     ),
                   ),
                 ],
@@ -277,8 +280,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                   '${_dateRange!.duration.inDays}d',
                   style: TextStyle(
                     color: AppTheme.primaryColor(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: KoinTypography.overline,
+                    fontWeight: KoinTypography.titleWeight,
                   ),
                 ),
               ),
@@ -361,8 +364,10 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                     color: isSelected
                         ? Colors.white
                         : AppTheme.textLightColor(context),
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    fontSize: 13,
+                    fontWeight: isSelected
+                        ? KoinTypography.titleWeight
+                        : KoinTypography.labelWeight,
+                    fontSize: KoinTypography.caption,
                   ),
                 ),
               ),

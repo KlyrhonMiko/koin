@@ -142,7 +142,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: KoinSpacing.screenInset,
                     vertical: 8,
                   ),
                   child: Row(
@@ -154,9 +154,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                             ? 'Edit Category'
                             : 'New Category',
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
+                          fontSize: KoinTypography.screenTitle,
+                          fontWeight: KoinTypography.headingWeight,
+                          letterSpacing: KoinTypography.headingTracking,
                           color: AppTheme.textColor(context),
                         ),
                       ),
@@ -166,7 +166,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                    padding: const EdgeInsets.fromLTRB(
+                      KoinSpacing.screenInset,
+                      16,
+                      KoinSpacing.screenInset,
+                      40,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -177,7 +182,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           previewName,
                         ).animate().fade(duration: 400.ms).slideY(begin: 0.05),
 
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Name field
                         _buildSectionLabel(context, 'Category Name'),
@@ -191,7 +196,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ).animate().fade(delay: 100.ms),
 
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Type selector
                         _buildSectionLabel(context, 'Category Type'),
@@ -200,7 +205,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           context,
                         ).animate().fade(delay: 120.ms),
 
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Icon picker
                         _buildSectionLabel(context, 'Icon'),
@@ -210,7 +215,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           selectedColor,
                         ).animate().fade(delay: 150.ms),
 
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Color picker
                         _buildSectionLabel(context, 'Color'),
@@ -288,8 +293,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   'Preview',
                   style: TextStyle(
                     color: AppTheme.textLightColor(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.overline,
+                    fontWeight: KoinTypography.labelWeight,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -300,8 +305,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     previewName,
                     key: ValueKey(previewName),
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.itemAmount,
                       letterSpacing: -0.3,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -314,8 +319,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     'Has active budget',
                     style: TextStyle(
                       color: AppTheme.primaryColor(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.supportingWeight,
                     ),
                   ),
                 ],

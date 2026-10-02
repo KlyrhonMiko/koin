@@ -42,7 +42,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
     return categoriesAsync.when(
       data: (categories) {
-
         return Column(
           children: [
             _buildHeader(context),
@@ -63,7 +62,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       backgroundColor: AppTheme.surfaceColor(context),
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                        padding: const EdgeInsets.fromLTRB(
+                          KoinSpacing.screenInset,
+                          16,
+                          KoinSpacing.screenInset,
+                          100,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children:
@@ -79,26 +83,28 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                         currency: currency,
                                       ),
 
-                                    if (budgeted.isNotEmpty) const Gap(28),
+                                    if (budgeted.isNotEmpty)
+                                      const Gap(KoinSpacing.sectionGap),
 
                                     // Active budgets section
                                     if (budgeted.isNotEmpty) ...[
                                       Text(
                                         'Active Budgets',
                                         style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
+                                          fontSize: KoinTypography.sectionTitle,
+                                          fontWeight:
+                                              KoinTypography.headingWeight,
                                           color: AppTheme.textColor(context),
-                                          letterSpacing: -0.3,
+                                          letterSpacing:
+                                              KoinTypography.headingTracking,
                                         ),
                                       ),
                                       const Gap(12),
                                       ...budgeted.asMap().entries.map((entry) {
                                         final index = entry.key;
                                         final category = entry.value;
-                                        final metrics =
-                                            overview.metricsByCategory[category
-                                                .id];
+                                        final metrics = overview
+                                            .metricsByCategory[category.id];
                                         if (metrics == null) {
                                           return const SizedBox.shrink();
                                         }
@@ -121,10 +127,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                             ? 'Set Monthly Budgets'
                                             : 'Add More Budgets',
                                         style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
+                                          fontSize: KoinTypography.sectionTitle,
+                                          fontWeight:
+                                              KoinTypography.headingWeight,
                                           color: AppTheme.textColor(context),
-                                          letterSpacing: -0.3,
+                                          letterSpacing:
+                                              KoinTypography.headingTracking,
                                         ),
                                       ),
                                       if (budgeted.isEmpty)
@@ -138,7 +146,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               color: AppTheme.textLightColor(
                                                 context,
                                               ),
-                                              fontSize: 13,
+                                              fontSize: KoinTypography.caption,
                                             ),
                                           ),
                                         ),
@@ -155,10 +163,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
                                           final optimallyOrderedItems =
                                               UnbudgetedChipItem.optimizeRowPacking(
-                                            unbudgeted: unbudgeted,
-                                            maxRowWidth: maxRowWidth,
-                                            spacing: spacing,
-                                          );
+                                                unbudgeted: unbudgeted,
+                                                maxRowWidth: maxRowWidth,
+                                                spacing: spacing,
+                                              );
 
                                           return Wrap(
                                             spacing: spacing,
@@ -335,8 +343,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               'Create Category',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontWeight: KoinTypography.titleWeight,
+                fontSize: KoinTypography.body,
               ),
             ),
             style: ElevatedButton.styleFrom(
@@ -352,8 +360,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildInlineMonthSelector({bool isDark = false}) {
     final now = DateTime.now();
-    final isCurrentMonth = _selectedMonth.year == now.year &&
-        _selectedMonth.month == now.month;
+    final isCurrentMonth =
+        _selectedMonth.year == now.year && _selectedMonth.month == now.month;
     final monthLabel = DateFormat('MMMM yyyy').format(_selectedMonth);
     final textColor = isDark ? AppTheme.textColor(context) : Colors.white;
     final chevronColor = isDark ? AppTheme.textColor(context) : Colors.white;
@@ -397,8 +405,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             monthLabel,
             style: TextStyle(
               color: textColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontSize: KoinTypography.caption,
+              fontWeight: KoinTypography.titleWeight,
               letterSpacing: 0.3,
             ),
           ),
@@ -421,9 +429,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
             child: Icon(
               Icons.chevron_right_rounded,
-              color: chevronColor.withValues(
-                alpha: isCurrentMonth ? 0.4 : 1.0,
-              ),
+              color: chevronColor.withValues(alpha: isCurrentMonth ? 0.4 : 1.0),
               size: 18,
             ),
           ),
@@ -450,19 +456,19 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       borderRadius: 28,
       child: Column(
         children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
                     Text(
                       'Monthly Budget',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.caption,
+                        fontWeight: KoinTypography.labelWeight,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -472,10 +478,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       formatter: (v) => fmt.format(v),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.5,
-                        height: 1.1,
+                        fontSize: KoinTypography.summaryAmount,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.amountTracking,
+                        height: KoinTypography.amountHeight,
                       ),
                     ),
                     const Gap(16),
@@ -502,7 +508,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     curve: Curves.easeOutCubic,
                     builder: (context, val, child) {
                       final targetPercent = double.tryParse(percent) ?? 0;
-                      final displayPercent = (targetPercent * (progress > 0 ? (val / progress) : 0)).round();
+                      final displayPercent =
+                          (targetPercent *
+                                  (progress > 0 ? (val / progress) : 0))
+                              .round();
                       return Stack(
                         alignment: Alignment.center,
                         children: [
@@ -533,8 +542,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                               color: isOver
                                   ? const Color(0xFFFFCDD2)
                                   : Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                              fontSize: KoinTypography.itemTitle,
+                              fontWeight: KoinTypography.headingWeight,
                             ),
                           ),
                         ],
@@ -558,8 +567,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     'Spent',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   ),
                   const Gap(4),
@@ -568,8 +577,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     formatter: (v) => fmt.format(v),
                     style: TextStyle(
                       color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: KoinTypography.body,
+                      fontWeight: KoinTypography.titleWeight,
                     ),
                   ),
                 ],
@@ -583,8 +592,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       color: isOver
                           ? const Color(0xFFFFCDD2)
                           : Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   ),
                   const Gap(4),
@@ -592,11 +601,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     value: isOver ? (totalSpent - totalBudget) : remaining,
                     formatter: (v) => fmt.format(v),
                     style: TextStyle(
-                      color: isOver
-                          ? const Color(0xFFFFCDD2)
-                          : Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
+                      fontSize: KoinTypography.body,
+                      fontWeight: KoinTypography.titleWeight,
                     ),
                   ),
                 ],
@@ -678,8 +685,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             child: Text(
                               category.name,
                               style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontWeight: KoinTypography.titleWeight,
+                                fontSize: KoinTypography.body,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -716,17 +723,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             value: spent,
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: KoinTypography.caption,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w500,
+                              fontWeight: KoinTypography.supportingWeight,
                             ),
                           ),
                           Text(
                             ' / ',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: KoinTypography.caption,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.3),
@@ -736,11 +743,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             value: budget,
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: KoinTypography.caption,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.8),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: KoinTypography.labelWeight,
                             ),
                           ),
                         ],
@@ -766,8 +773,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           color: isOver
                               ? Colors.red
                               : AppTheme.textLightColor(context),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontWeight: KoinTypography.titleWeight,
+                          fontSize: KoinTypography.caption,
                         ),
                       ),
                     )
@@ -853,8 +860,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               child: Text(
                 category.name,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontWeight: KoinTypography.labelWeight,
+                  fontSize: KoinTypography.caption,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -935,4 +942,3 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         .scale(begin: const Offset(0.92, 0.92));
   }
 }
-

@@ -28,8 +28,8 @@ class KoinScreenHeader extends StatelessWidget {
         EdgeInsets.only(
           top: MediaQuery.paddingOf(context).top + 14,
           bottom: 12,
-          left: 20,
-          right: 20,
+          left: KoinSpacing.screenInset,
+          right: KoinSpacing.screenInset,
         );
 
     final titleColumn = Column(
@@ -41,19 +41,19 @@ class KoinScreenHeader extends StatelessWidget {
             tag!.toUpperCase(),
             style: TextStyle(
               color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+              fontSize: KoinTypography.overline,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: KoinTypography.overlineTracking,
             ),
           ),
-          const Gap(4),
+          const Gap(KoinSpacing.labelGap),
         ],
         Text(
           title,
           style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+            fontSize: KoinTypography.screenTitle,
+            fontWeight: KoinTypography.headingWeight,
+            letterSpacing: KoinTypography.headingTracking,
             color: AppTheme.textColor(context),
           ),
         ),

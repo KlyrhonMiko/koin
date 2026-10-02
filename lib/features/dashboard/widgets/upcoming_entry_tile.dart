@@ -104,8 +104,8 @@ class UpcomingEntryTile extends StatelessWidget {
                         child: Text(
                           entry.title,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontWeight: KoinTypography.titleWeight,
+                            fontSize: KoinTypography.body,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -143,8 +143,8 @@ class UpcomingEntryTile extends StatelessWidget {
                       color: entry.isOverdue()
                           ? AppTheme.expenseColor(context)
                           : AppTheme.textLightColor(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.supportingWeight,
                     ),
                   ),
                 ],
@@ -155,8 +155,8 @@ class UpcomingEntryTile extends StatelessWidget {
               "${isExpense ? '-' : '+'}${NumberFormat.currency(symbol: currency.symbol).format(entry.amount)}",
               style: TextStyle(
                 color: amountColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
+                fontWeight: KoinTypography.headingWeight,
+                fontSize: KoinTypography.body,
               ),
             ),
           ],

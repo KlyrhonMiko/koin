@@ -109,7 +109,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               Text(
                 headline,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: KoinTypography.screenTitle,
+                  letterSpacing: KoinTypography.headingTracking,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -141,7 +142,10 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: KoinSpacing.screenInset,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -149,11 +153,11 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               Text(
                 headline,
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                  fontSize: KoinTypography.formTitle,
+                  fontWeight: KoinTypography.headingWeight,
                   color: AppTheme.textColor(context),
                   height: 1.2,
-                  letterSpacing: -0.5,
+                  letterSpacing: KoinTypography.headingTracking,
                 ),
               ),
               const Gap(40),
@@ -185,8 +189,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                 child: Text(
                   scenarioText,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontSize: KoinTypography.body,
+                    fontWeight: KoinTypography.supportingWeight,
                     color: AppTheme.primaryColor(context),
                     height: 1.4,
                   ),
@@ -199,8 +203,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                 Text(
                   "Try a preset",
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
                     color: AppTheme.textLightColor(context),
                   ),
                 ),
@@ -239,8 +243,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               Text(
                 "Extra savings per week",
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
                   color: AppTheme.textLightColor(context),
                 ),
               ),
@@ -250,8 +254,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                   Text(
                     '+${currencyFmt.format(_extraPerWeek)}',
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontSize: KoinTypography.sectionTitle,
+                      letterSpacing: KoinTypography.headingTracking,
+                      fontWeight: KoinTypography.headingWeight,
                       color: _extraPerWeek > 0
                           ? AppTheme.primaryColor(context)
                           : AppTheme.textColor(context),
@@ -284,8 +289,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               Text(
                 "Adjust deadline",
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
                   color: AppTheme.textLightColor(context),
                 ),
               ),
@@ -306,8 +311,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                         Text(
                           DateFormat("MMM d, yyyy").format(sim.newDeadline),
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.titleWeight,
                           ),
                         ),
                         if (_deadlineShiftWeeks != 0)
@@ -316,9 +321,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                                 ? "+$_deadlineShiftWeeks weeks"
                                 : "$_deadlineShiftWeeks weeks",
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: KoinTypography.small,
                               color: AppTheme.primaryColor(context),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: KoinTypography.labelWeight,
                             ),
                           ),
                       ],
@@ -355,8 +360,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                         child: const Text(
                           "Reset",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.labelWeight,
                           ),
                         ),
                       ),
@@ -381,8 +386,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                         child: const Text(
                           "Use this plan",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.titleWeight,
                           ),
                         ),
                       ),

@@ -35,7 +35,10 @@ class KoinPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
-    final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveGradient = gradient != null
+        ? AppTheme.filledGradient(context, gradient!)
+        : AppTheme.primaryGradient(context);
     final isInteractive = enabled && !isLoading && onPressed != null;
 
     Widget button = Container(
@@ -49,7 +52,7 @@ class KoinPrimaryButton extends StatelessWidget {
                   AppTheme.textLightColor(context).withValues(alpha: 0.2),
                 ],
               ),
-        boxShadow: isInteractive
+        boxShadow: isInteractive && !isDark
             ? [
                 BoxShadow(
                   color: effectiveGlow.withValues(alpha: 0.3),
@@ -97,8 +100,8 @@ class KoinPrimaryButton extends StatelessWidget {
                     label,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.itemTitle,
                     ),
                   ),
                 ],

@@ -30,7 +30,12 @@ class AccountsTab extends ConsumerWidget {
           return _buildEmptyState(context);
         }
         return ReorderableListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+          padding: const EdgeInsets.fromLTRB(
+            KoinSpacing.screenInset,
+            12,
+            KoinSpacing.screenInset,
+            100,
+          ),
           itemCount: accounts.length,
           footer: _buildAddAccountButton(context, ref),
           onReorderItem: (oldIndex, newIndex) {
@@ -153,8 +158,8 @@ class AccountsTab extends ConsumerWidget {
               'Add New Account',
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontWeight: KoinTypography.labelWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ],
@@ -216,9 +221,9 @@ class AccountsTab extends ConsumerWidget {
                     'No accounts yet',
                     style: TextStyle(
                       color: AppTheme.textColor(context),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      fontSize: KoinTypography.sectionTitle,
+                      fontWeight: KoinTypography.headingWeight,
+                      letterSpacing: KoinTypography.headingTracking,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -227,7 +232,7 @@ class AccountsTab extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
-                      fontSize: 14,
+                      fontSize: KoinTypography.compact,
                       height: 1.4,
                     ),
                   ),

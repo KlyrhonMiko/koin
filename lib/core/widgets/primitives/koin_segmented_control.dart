@@ -153,14 +153,16 @@ class KoinSegmentedControl extends StatelessWidget {
               Text(
                 item.label,
                 style: TextStyle(
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: isActive
+                      ? KoinTypography.titleWeight
+                      : KoinTypography.labelWeight,
                   color: Color.lerp(
                     AppTheme.textLightColor(context),
                     AppTheme.textColor(context),
                     value,
                   ),
-                  fontSize: 15,
-                  letterSpacing: -0.2,
+                  fontSize: KoinTypography.body,
+                  letterSpacing: KoinTypography.itemTracking,
                 ),
               ),
             ],

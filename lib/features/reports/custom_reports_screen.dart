@@ -11,7 +11,6 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
 class CustomReportsScreen extends ConsumerStatefulWidget {
-
   const CustomReportsScreen({super.key});
 
   @override
@@ -50,7 +49,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
+              padding: const EdgeInsets.fromLTRB(
+                KoinSpacing.screenInset,
+                16,
+                KoinSpacing.screenInset,
+                140,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children:
@@ -67,21 +71,21 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                           ),
                           const Gap(24),
                           _buildSummaryCard(context, ref, currencySymbol),
-                          const Gap(28),
+                          const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Transaction Type',
                             subtitle: 'Filter by income or expense',
                           ),
                           const Gap(12),
                           _buildTypeSelector(context),
-                          const Gap(28),
+                          const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Categories',
                             subtitle: 'Narrow down by spending categories',
                           ),
                           const Gap(12),
                           _buildCategorySelector(context, categories),
-                          const Gap(28),
+                          const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Accounts',
                             subtitle: 'Select specific accounts to include',
@@ -98,12 +102,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                         ),
               ),
             ),
-            _buildExportActions(
-              context,
-              categories,
-              accounts,
-              currencySymbol,
-            )
+            _buildExportActions(context, categories, accounts, currencySymbol)
                 .animate()
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                 .scale(
@@ -176,7 +175,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           Container(
             width: 1,
             height: 40,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
           ),
           Expanded(
@@ -211,9 +212,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                    fontSize: KoinTypography.overline,
+                    fontWeight: KoinTypography.titleWeight,
+                    letterSpacing: KoinTypography.overlineTracking,
                   ),
                 ),
                 const Gap(2),
@@ -221,9 +222,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                   'Custom Reports',
                   style: TextStyle(
                     color: AppTheme.textColor(context),
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    fontSize: KoinTypography.screenTitle,
+                    fontWeight: KoinTypography.headingWeight,
+                    letterSpacing: KoinTypography.headingTracking,
                   ),
                 ),
               ],
@@ -261,8 +262,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                 label,
                 style: TextStyle(
                   color: AppTheme.textLightColor(context),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: KoinTypography.overline,
+                  fontWeight: KoinTypography.labelWeight,
                 ),
               ),
               AnimatedCounter(
@@ -274,8 +275,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     : v.toInt().toString(),
                 style: TextStyle(
                   color: AppTheme.textColor(context),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+                  fontSize: KoinTypography.body,
+                  fontWeight: KoinTypography.headingWeight,
                 ),
               ),
             ],
@@ -340,8 +341,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textColor(context),
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 14,
+                fontWeight: isSelected
+                    ? KoinTypography.headingWeight
+                    : KoinTypography.labelWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ),
@@ -415,9 +418,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     style: TextStyle(
                       color: AppTheme.textColor(context),
                       fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      fontSize: 13,
+                          ? KoinTypography.titleWeight
+                          : KoinTypography.labelWeight,
+                      fontSize: KoinTypography.caption,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -509,9 +512,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     style: TextStyle(
                       color: AppTheme.textColor(context),
                       fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      fontSize: 13,
+                          ? KoinTypography.titleWeight
+                          : KoinTypography.labelWeight,
+                      fontSize: KoinTypography.caption,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -543,7 +546,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+            padding: const EdgeInsets.fromLTRB(
+              KoinSpacing.screenInset,
+              16,
+              KoinSpacing.screenInset,
+              40,
+            ),
             decoration: BoxDecoration(
               color: AppTheme.backgroundColor(context).withValues(alpha: 0.8),
               border: Border(
@@ -622,8 +630,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               label,
               style: TextStyle(
                 color: textColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontWeight: KoinTypography.titleWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ],
@@ -680,7 +688,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         bytes: payload.bytes,
       );
 
-
       if (outputUri == null) {
         if (mounted) {
           setState(() => _isExporting = false);
@@ -701,7 +708,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           ? outputUri.pathSegments.last
           : payload.fileName;
       KoinSnackBar.success(context, 'Report Saved', subtitle: fileName);
-
     } catch (e) {
       debugPrint('Export error: $e');
       if (!context.mounted) return;

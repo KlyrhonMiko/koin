@@ -51,15 +51,14 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
     required WidgetRef ref,
     required PlannedPayment payment,
   }) async {
-    final result = await show(
-      context: context,
-      payment: payment,
-    );
+    final result = await show(context: context, payment: payment);
     if (result == null || !context.mounted) return false;
 
     final isExpense = payment.type == TransactionType.expense;
 
-    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
+    await ref
+        .read(plannedPaymentProvider.notifier)
+        .processOccurrence(
           payment: payment,
           amount: result.amount,
           accountId: result.accountId,
@@ -186,26 +185,28 @@ class _PaymentConfirmationSheetState
               widget.payment.title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.screenTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.5,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
             const Gap(24),
 
             // ── Hero Amount ──
             Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   child: Column(
                     children: [
                       Text(
                         currency.code,
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontSize: KoinTypography.overline,
+                          fontWeight: KoinTypography.headingWeight,
                           color: typeColor.withValues(alpha: 0.5),
-                          letterSpacing: 1.2,
+                          letterSpacing: KoinTypography.overlineTracking,
                         ),
                       ),
                       const Gap(4),
@@ -217,8 +218,8 @@ class _PaymentConfirmationSheetState
                           Text(
                             '${currency.symbol} ',
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.labelWeight,
                               color: typeColor.withValues(alpha: 0.4),
                             ),
                           ),
@@ -227,13 +228,13 @@ class _PaymentConfirmationSheetState
                                 ? '0'
                                 : _currentExpression,
                             style: TextStyle(
-                              fontSize: 44,
+                              fontSize: KoinTypography.inputAmount,
                               fontWeight: FontWeight.w800,
                               color: hasAmount
                                   ? typeColor
                                   : typeColor.withValues(alpha: 0.3),
-                              letterSpacing: -1.5,
-                              height: 1.1,
+                              letterSpacing: -2,
+                              height: KoinTypography.amountHeight,
                             ),
                           ),
                         ],
@@ -244,8 +245,8 @@ class _PaymentConfirmationSheetState
                           child: Text(
                             '= ${currency.symbol}${_amountController.text}',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.labelWeight,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.6),
@@ -268,11 +269,13 @@ class _PaymentConfirmationSheetState
                 .fadeIn(duration: 300.ms)
                 .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
-            const Gap(28),
+            const Gap(KoinSpacing.sectionGap),
 
             // ── Category & Account card ──
             Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceColor(context),

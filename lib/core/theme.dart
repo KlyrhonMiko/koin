@@ -1,15 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'typography.dart';
+
+export 'typography.dart';
 
 class AppTheme {
+  static const _darkBackground = Color(0xFF171A1C);
+  static const _darkSurface = Color(0xFF202427);
+  static const _darkSurfaceLight = Color(0xFF292E32);
+
+  /// Keep the chosen hue, but give accents a softer, readable dark variant.
+  static Color _darkAccent(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withSaturation((hsl.saturation * 0.45).clamp(0.0, 0.38))
+        .withLightness(hsl.lightness.clamp(0.64, 0.70))
+        .toColor();
+  }
+
+  static Color accentColor(BuildContext context, Color color) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? _darkAccent(color)
+      : color;
+
+  /// Dark fills stay deep enough for the white labels used on custom cards.
+  static LinearGradient filledGradient(
+    BuildContext context,
+    LinearGradient gradient,
+  ) {
+    if (Theme.of(context).brightness != Brightness.dark) return gradient;
+    return LinearGradient(
+      colors: gradient.colors
+          .map((color) {
+            final hsl = HSLColor.fromColor(color);
+            return hsl
+                .withSaturation(hsl.saturation < 0.05
+                    ? hsl.saturation
+                    : hsl.saturation.clamp(0.45, 0.65))
+                .withLightness(hsl.lightness.clamp(0.26, 0.30))
+                .withAlpha(1)
+                .toColor();
+          })
+          .toList(),
+      stops: gradient.stops,
+      begin: gradient.begin,
+      end: gradient.end,
+      tileMode: gradient.tileMode,
+      transform: gradient.transform,
+    );
+  }
+
   static SystemUiOverlayStyle getSystemOverlayStyle(bool isDarkMode) {
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-      systemNavigationBarColor: isDarkMode
-          ? const Color(0xFF0A0A0A)
-          : Colors.white,
+      systemNavigationBarColor: isDarkMode ? _darkBackground : Colors.white,
       systemNavigationBarIconBrightness: isDarkMode
           ? Brightness.light
           : Brightness.dark,
@@ -34,21 +80,27 @@ class AppTheme {
   static Color secondaryColor(BuildContext context) =>
       Theme.of(context).colorScheme.secondary;
 
-  static Color incomeColor(BuildContext context) => const Color(0xFF00D09E);
-  static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
-  static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
+  static Color incomeColor(BuildContext context) =>
+      accentColor(context, const Color(0xFF00D09E));
+  static Color expenseColor(BuildContext context) =>
+      accentColor(context, const Color(0xFFFF6B6B));
+  static Color transferColor(BuildContext context) =>
+      accentColor(context, const Color(0xFF3B82F6));
 
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF1F3F5);
+    return isDark ? _darkSurfaceLight : const Color(0xFFF1F3F5);
   }
 
   static LinearGradient primaryGradient(BuildContext context) {
     final primary = primaryColor(context);
-    return LinearGradient(
-      colors: [primary, primary.withValues(alpha: 0.8)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+    return filledGradient(
+      context,
+      LinearGradient(
+        colors: [primary, primary.withValues(alpha: 0.8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
     );
   }
 
@@ -65,27 +117,30 @@ class AppTheme {
   );
 
   static ThemeData getTheme(Color primaryColor, bool isDarkMode) {
+    if (isDarkMode) primaryColor = _darkAccent(primaryColor);
     final Color backgroundColor = isDarkMode
-        ? const Color(0xFF0A0A0A)
+        ? _darkBackground
         : const Color(0xFFF8F9FA);
-    final Color surfaceColor = isDarkMode
-        ? const Color(0xFF141414)
-        : Colors.white;
+    final Color surfaceColor = isDarkMode ? _darkSurface : Colors.white;
     final Color surfaceLightColor = isDarkMode
-        ? const Color(0xFF1F1F1F)
+        ? _darkSurfaceLight
         : const Color(0xFFF1F3F5);
     final Color textColor = isDarkMode
-        ? const Color(0xFFF5F5F5)
+        ? const Color(0xFFE8EAEB)
         : const Color(0xFF1A1A1A);
     final Color textLightColor = isDarkMode
-        ? const Color(0xFF9CA3AF)
+        ? const Color(0xFFA4ABB0)
         : const Color(0xFF6B7280);
     final Color dividerColor = isDarkMode
-        ? const Color(0xFF262626)
+        ? const Color(0xFF363C40)
         : const Color(0xFFE5E7EB);
 
-    const Color errorColor = Color(0xFFFF6B6B);
-    const Color secondaryColor = Color(0xFF34D399);
+    final Color errorColor = isDarkMode
+        ? _darkAccent(const Color(0xFFFF6B6B))
+        : const Color(0xFFFF6B6B);
+    final Color secondaryColor = isDarkMode
+        ? _darkAccent(const Color(0xFF34D399))
+        : const Color(0xFF34D399);
 
     final brightness = isDarkMode ? Brightness.dark : Brightness.light;
     final baseTheme = isDarkMode ? ThemeData.dark() : ThemeData.light();
@@ -105,6 +160,24 @@ class AppTheme {
               onSecondary: const Color(0xFF0A0A0A),
               onSurface: textColor,
               onError: Colors.white,
+              onSurfaceVariant: textLightColor,
+              surfaceContainerLowest: backgroundColor,
+              surfaceContainerLow: surfaceColor,
+              surfaceContainer: surfaceColor,
+              surfaceContainerHigh: surfaceLightColor,
+              surfaceContainerHighest: const Color(0xFF32383C),
+              outline: textLightColor,
+              outlineVariant: dividerColor,
+              primaryContainer: Color.lerp(surfaceColor, primaryColor, 0.16),
+              onPrimaryContainer: textColor,
+              secondaryContainer: Color.lerp(
+                surfaceColor,
+                secondaryColor,
+                0.16,
+              ),
+              onSecondaryContainer: textColor,
+              errorContainer: Color.lerp(surfaceColor, errorColor, 0.16),
+              onErrorContainer: textColor,
             )
           : ColorScheme.light(
               primary: primaryColor,
@@ -120,26 +193,90 @@ class AppTheme {
       textTheme: GoogleFonts.outfitTextTheme(baseTheme.textTheme).copyWith(
         displayLarge: GoogleFonts.outfit(
           color: textColor,
-          fontWeight: FontWeight.bold,
+          fontSize: KoinTypography.inputAmount,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: -2,
+          height: KoinTypography.amountHeight,
         ),
         displayMedium: GoogleFonts.outfit(
           color: textColor,
-          fontWeight: FontWeight.bold,
+          fontSize: KoinTypography.summaryAmount,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.amountTracking,
+          height: KoinTypography.amountHeight,
+        ),
+        displaySmall: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.formTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
+        ),
+        headlineLarge: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.formTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
+        ),
+        headlineMedium: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.screenTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
+        ),
+        headlineSmall: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.sectionTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
         ),
         titleLarge: GoogleFonts.outfit(
           color: textColor,
-          fontWeight: FontWeight.w600,
+          fontSize: KoinTypography.sectionTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
         ),
         titleMedium: GoogleFonts.outfit(
           color: textColor,
-          fontWeight: FontWeight.w600,
+          fontSize: KoinTypography.itemTitle,
+          fontWeight: KoinTypography.titleWeight,
+          letterSpacing: KoinTypography.itemTracking,
         ),
-        bodyLarge: GoogleFonts.outfit(color: textColor),
-        bodyMedium: GoogleFonts.outfit(color: textLightColor),
-        bodySmall: GoogleFonts.outfit(color: textLightColor),
+        titleSmall: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.compact,
+          fontWeight: KoinTypography.titleWeight,
+          letterSpacing: KoinTypography.itemTracking,
+        ),
+        bodyLarge: GoogleFonts.outfit(
+          color: textColor,
+          fontSize: KoinTypography.body,
+          fontWeight: KoinTypography.labelWeight,
+        ),
+        bodyMedium: GoogleFonts.outfit(
+          color: textLightColor,
+          fontSize: KoinTypography.caption,
+          fontWeight: KoinTypography.supportingWeight,
+        ),
+        bodySmall: GoogleFonts.outfit(
+          color: textLightColor,
+          fontSize: KoinTypography.small,
+          fontWeight: KoinTypography.supportingWeight,
+        ),
         labelLarge: GoogleFonts.outfit(
           color: textColor,
-          fontWeight: FontWeight.w600,
+          fontSize: KoinTypography.itemTitle,
+          fontWeight: KoinTypography.titleWeight,
+        ),
+        labelMedium: GoogleFonts.outfit(
+          color: textLightColor,
+          fontSize: KoinTypography.small,
+          fontWeight: KoinTypography.labelWeight,
+        ),
+        labelSmall: GoogleFonts.outfit(
+          color: textLightColor,
+          fontSize: KoinTypography.overline,
+          fontWeight: KoinTypography.titleWeight,
+          letterSpacing: KoinTypography.overlineTracking,
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -151,9 +288,9 @@ class AppTheme {
         iconTheme: IconThemeData(color: textColor),
         titleTextStyle: GoogleFonts.outfit(
           color: textColor,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
+          fontSize: KoinTypography.screenTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
         ),
         systemOverlayStyle: getSystemOverlayStyle(isDarkMode),
       ),
@@ -208,11 +345,11 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: errorColor, width: 2),
+          borderSide: BorderSide(color: errorColor, width: 2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: errorColor, width: 2),
+          borderSide: BorderSide(color: errorColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -241,8 +378,8 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
         foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
-        elevation: 8,
-        highlightElevation: 12,
+        elevation: isDarkMode ? 0 : 8,
+        highlightElevation: isDarkMode ? 2 : 12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       dialogTheme: DialogThemeData(
@@ -250,8 +387,9 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         titleTextStyle: GoogleFonts.outfit(
           color: textColor,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontSize: KoinTypography.screenTitle,
+          fontWeight: KoinTypography.headingWeight,
+          letterSpacing: KoinTypography.headingTracking,
         ),
         contentTextStyle: GoogleFonts.outfit(
           color: textLightColor,

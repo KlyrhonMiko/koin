@@ -80,11 +80,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                _buildImmersiveHeader(
-                  context,
-                  analysis,
-                  currency,
-                ),
+                _buildImmersiveHeader(context, analysis, currency),
                 if (filteredTransactions.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -100,7 +96,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(
+                      KoinSpacing.screenInset,
+                      0,
+                      KoinSpacing.screenInset,
+                      100,
+                    ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate(
                         [
@@ -116,10 +117,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                   Text(
                                     'Top Categories',
                                     style: TextStyle(
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: KoinTypography.sectionTitle,
+                                      fontWeight: KoinTypography.headingWeight,
                                       color: AppTheme.textColor(context),
-                                      letterSpacing: -0.4,
+                                      letterSpacing:
+                                          KoinTypography.headingTracking,
                                     ),
                                   ),
                                 ],
@@ -178,71 +180,76 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     Currency currency,
   ) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        KoinSpacing.screenInset,
+        16,
+        KoinSpacing.screenInset,
+        16,
+      ),
       sliver: SliverToBoxAdapter(
         child: KoinSummaryCard(
           shapeStyle: SummaryShapeStyle.analysis,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          padding: const EdgeInsets.all(KoinSpacing.summaryInset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
-                      [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Total Spent',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                _buildGlassFilterControl(context),
-                              ],
+                [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Total Spent',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: KoinTypography.caption,
+                              fontWeight: KoinTypography.labelWeight,
+                              letterSpacing: 0.5,
                             ),
-                            const Gap(12),
-                            AnimatedCounter(
-                              value: analysis.totalExpense,
-                              formatter: (val) => NumberFormat.currency(
-                                symbol: currency.symbol,
-                              ).format(val),
-                              duration: const Duration(milliseconds: 1000),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 48,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -1.5,
-                                height: 1.1,
-                              ),
-                            ),
-                            const Gap(12),
-                            SizedBox(
-                              height: 24,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  _buildInlinePeriodSelector(),
-                                  if (analysis.previousExpense != null) ...[
-                                    const Gap(10),
-                                    _buildTrendBadge(analysis),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const Gap(24),
-                            _buildIntegratedForecast(context, currency),
-                          ]
-                          .animate(interval: 40.ms)
-                          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                          .scale(
-                            begin: const Offset(0.95, 0.95),
-                            duration: 250.ms,
-                            curve: Curves.easeOutCubic,
                           ),
-                  ),
+                          _buildGlassFilterControl(context),
+                        ],
+                      ),
+                      const Gap(12),
+                      AnimatedCounter(
+                        value: analysis.totalExpense,
+                        formatter: (val) => NumberFormat.currency(
+                          symbol: currency.symbol,
+                        ).format(val),
+                        duration: const Duration(milliseconds: 1000),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: KoinTypography.summaryAmount,
+                          fontWeight: KoinTypography.headingWeight,
+                          letterSpacing: KoinTypography.amountTracking,
+                          height: KoinTypography.amountHeight,
+                        ),
+                      ),
+                      const Gap(12),
+                      SizedBox(
+                        height: 24,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _buildInlinePeriodSelector(),
+                            if (analysis.previousExpense != null) ...[
+                              const Gap(10),
+                              _buildTrendBadge(analysis),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Gap(24),
+                      _buildIntegratedForecast(context, currency),
+                    ]
+                    .animate(interval: 40.ms)
+                    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+                    .scale(
+                      begin: const Offset(0.95, 0.95),
+                      duration: 250.ms,
+                      curve: Curves.easeOutCubic,
+                    ),
+          ),
         ),
       ),
     );
@@ -270,7 +277,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           '${analysis.trendPercentage.toStringAsFixed(1)}%',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: KoinTypography.caption,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.5,
             shadows: [
@@ -310,8 +317,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       'Inflow',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontSize: KoinTypography.small,
+                        fontWeight: KoinTypography.supportingWeight,
                       ),
                     ),
                     const Gap(4),
@@ -319,8 +326,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       inflowStr,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontSize: KoinTypography.body,
+                        fontWeight: KoinTypography.titleWeight,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -335,8 +342,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       'Outflow',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontSize: KoinTypography.small,
+                        fontWeight: KoinTypography.supportingWeight,
                       ),
                     ),
                     const Gap(4),
@@ -344,8 +351,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       outflowStr,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontSize: KoinTypography.body,
+                        fontWeight: KoinTypography.titleWeight,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -373,8 +380,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             color: isWarning
                                 ? Colors.redAccent.shade100
                                 : Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.supportingWeight,
                           ),
                         ),
                       ],
@@ -386,8 +393,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         color: isWarning
                             ? Colors.redAccent.shade100
                             : Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: KoinTypography.body,
+                        fontWeight: KoinTypography.headingWeight,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -459,8 +466,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           _getPeriodLabel(),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontSize: KoinTypography.caption,
+            fontWeight: KoinTypography.titleWeight,
             letterSpacing: 0.3,
           ),
         ),
@@ -557,8 +564,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             label,
             style: TextStyle(
               color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 13,
+              fontWeight: isSelected
+                  ? KoinTypography.headingWeight
+                  : KoinTypography.labelWeight,
+              fontSize: KoinTypography.caption,
             ),
           ),
         ),
@@ -580,10 +589,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             Text(
               _showPieChart ? 'Spending by Category' : 'Spending Trend',
               style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.4,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
             IconButton(
@@ -750,8 +759,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         Text(
                           'Total',
                           style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            fontSize: KoinTypography.overline,
+                            fontWeight: KoinTypography.labelWeight,
                             color: AppTheme.textLightColor(context),
                           ),
                         ),
@@ -761,8 +770,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             symbol: currency.symbol,
                           ).format(totalSpent * value),
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.headingWeight,
                             color: AppTheme.textColor(context),
                             letterSpacing: -0.5,
                           ),
@@ -817,10 +826,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: KoinTypography.small,
                                     fontWeight: isTouched
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
+                                        ? KoinTypography.titleWeight
+                                        : KoinTypography.supportingWeight,
                                     color: AppTheme.textColor(
                                       context,
                                     ).withValues(alpha: opacity),
@@ -845,7 +854,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           Text(
                             '${percent.toStringAsFixed(0)}%',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: KoinTypography.small,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.textColor(
                                 context,
@@ -945,16 +954,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                               Text(
                                 category.name,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
+                                  fontWeight: KoinTypography.titleWeight,
+                                  fontSize: KoinTypography.itemTitle,
                                 ),
                               ),
                               const Gap(6),
                               Text(
                                 '${percent.toStringAsFixed(0)}%',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
+                                  fontWeight: KoinTypography.labelWeight,
+                                  fontSize: KoinTypography.small,
                                   color: AppTheme.textLightColor(context),
                                 ),
                               ),
@@ -967,8 +976,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             ).format(val),
                             duration: const Duration(milliseconds: 1000),
                             style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
+                              fontWeight: KoinTypography.headingWeight,
+                              fontSize: KoinTypography.itemTitle,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -1070,9 +1079,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               title,
               style: TextStyle(
                 color: AppTheme.textColor(context),
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             )
             .animate()
@@ -1083,7 +1092,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               subtitle,
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontSize: 14,
+                fontSize: KoinTypography.compact,
               ),
               textAlign: TextAlign.center,
             )

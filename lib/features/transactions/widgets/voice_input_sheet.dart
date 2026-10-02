@@ -282,9 +282,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        24,
+        KoinSpacing.screenInset,
         16,
-        24,
+        KoinSpacing.screenInset,
         MediaQuery.of(context).padding.bottom + 24,
       ),
       decoration: BoxDecoration(
@@ -308,7 +308,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Gap(28),
+          const Gap(KoinSpacing.sectionGap),
 
           // ── Animated mic orb ──
           AnimatedBuilder(
@@ -463,12 +463,12 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     : 'processing',
               ),
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: state.error.isNotEmpty
                     ? AppTheme.errorColor(context)
                     : AppTheme.textColor(context),
-                letterSpacing: -0.3,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
           ),
@@ -489,8 +489,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 'sub_${state.error}_${state.isListening}_$showPreview',
               ),
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontSize: KoinTypography.caption,
+                fontWeight: KoinTypography.supportingWeight,
                 color: state.error.isNotEmpty
                     ? AppTheme.errorColor(context).withValues(alpha: 0.7)
                     : AppTheme.textLightColor(context),
@@ -504,7 +504,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             Container(
               width: double.infinity,
               constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+                vertical: 16,
+              ),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceColor(context),
                 borderRadius: BorderRadius.circular(16),
@@ -520,8 +523,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                   hasWords ? state.lastWords : 'Try: "Spent 50 on lunch"',
                   key: ValueKey(hasWords ? state.lastWords : 'placeholder'),
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: hasWords ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: KoinTypography.body,
+                    fontWeight: hasWords
+                        ? KoinTypography.labelWeight
+                        : FontWeight.w400,
                     fontStyle: hasWords ? FontStyle.normal : FontStyle.italic,
                     color: hasWords
                         ? AppTheme.textColor(context)
@@ -577,8 +582,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                           Text(
                             'Retry',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.labelWeight,
                               color: AppTheme.textColor(context),
                             ),
                           ),
@@ -618,8 +623,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                           Text(
                             'Use This',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.titleWeight,
                               color: Colors.white,
                             ),
                           ),
@@ -678,8 +683,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 Text(
                   currency.symbol,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.compact,
+                    fontWeight: KoinTypography.labelWeight,
                     color: typeColor.withValues(alpha: 0.6),
                   ),
                 ),
@@ -693,16 +698,17 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     ),
                     textAlign: TextAlign.left,
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontSize: KoinTypography.sectionTitle,
+                      fontWeight: KoinTypography.headingWeight,
                       color: typeColor,
-                      letterSpacing: -0.5,
+                      letterSpacing: KoinTypography.headingTracking,
                     ),
                     decoration: InputDecoration(
                       hintText: '0.00',
                       hintStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontSize: KoinTypography.sectionTitle,
+                        letterSpacing: KoinTypography.headingTracking,
+                        fontWeight: KoinTypography.headingWeight,
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: 0.4),
@@ -780,8 +786,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         Text(
                           data.category!.name,
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.labelWeight,
                             color: AppTheme.textColor(context),
                           ),
                         ),
@@ -789,8 +795,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         Text(
                           'Not detected',
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.supportingWeight,
                             color: AppTheme.textLightColor(
                               context,
                             ).withValues(alpha: 0.5),
@@ -861,8 +867,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                   Text(
                     data.account!.name,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontSize: KoinTypography.compact,
+                      fontWeight: KoinTypography.labelWeight,
                       color: AppTheme.textColor(context),
                     ),
                   ),
@@ -870,8 +876,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                   Text(
                     'Select Account',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: KoinTypography.compact,
+                      fontWeight: KoinTypography.supportingWeight,
                       color: AppTheme.textLightColor(
                         context,
                       ).withValues(alpha: 0.5),
@@ -915,8 +921,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     Text(
                       data.toAccount!.name,
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.labelWeight,
                         color: AppTheme.textColor(context),
                       ),
                     ),
@@ -924,8 +930,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     Text(
                       'Select Target',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.supportingWeight,
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: 0.5),
@@ -956,15 +962,15 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 controller: _noteController,
                 textAlign: TextAlign.end,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: KoinTypography.compact,
+                  fontWeight: KoinTypography.labelWeight,
                   color: AppTheme.textColor(context),
                 ),
                 decoration: InputDecoration(
                   hintText: 'Add note...',
                   hintStyle: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontSize: KoinTypography.compact,
+                    fontWeight: KoinTypography.supportingWeight,
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.5),
@@ -1027,8 +1033,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: KoinTypography.compact,
+                  fontWeight: KoinTypography.supportingWeight,
                   color: AppTheme.textLightColor(context),
                 ),
               ),

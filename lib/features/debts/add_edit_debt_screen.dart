@@ -220,7 +220,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
           _buildHeader(context, primaryColor),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+              padding: const EdgeInsets.fromLTRB(
+                KoinSpacing.screenInset,
+                24,
+                KoinSpacing.screenInset,
+                120,
+              ),
               physics: const BouncingScrollPhysics(),
               child: Form(
                 key: _formKey,
@@ -442,7 +447,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton:
           Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
                 child: PressableScale(
                   onTap: _save,
                   child: Container(
@@ -470,8 +477,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       isEdit ? 'Update' : 'Create',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.titleWeight,
                         color: Colors.white,
                         letterSpacing: 0.5,
                       ),
@@ -508,22 +515,26 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         children: [
           Gap(topPadding + 4),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: Row(children: [const KoinBackButton(), const Spacer()]),
           ),
           const Gap(8),
 
           // Debt Name Input
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             child: TextFormField(
               controller: _nameController,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.formTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.5,
+                letterSpacing: KoinTypography.headingTracking,
               ),
               decoration: InputDecoration(
                 hintText: 'Who is involved?',
@@ -626,8 +637,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
               color: isSelected
                   ? Colors.white
                   : AppTheme.textLightColor(context),
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-              fontSize: 14,
+              fontWeight: isSelected
+                  ? KoinTypography.titleWeight
+                  : KoinTypography.labelWeight,
+              fontSize: KoinTypography.compact,
             ),
           ),
         ),
@@ -693,8 +706,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     Text(
                       'Count (Optional)',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.overline,
+                        fontWeight: KoinTypography.labelWeight,
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: 0.6),
@@ -715,8 +728,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             controller: _installmentsController,
                             keyboardType: TextInputType.number,
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontSize: KoinTypography.itemTitle,
+                              fontWeight: KoinTypography.titleWeight,
                               color: AppTheme.textColor(context),
                             ),
                             onTap: () => HapticService.light(),
@@ -788,8 +801,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       Text(
                         'Frequency',
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: KoinTypography.overline,
+                          fontWeight: KoinTypography.labelWeight,
                           color: AppTheme.textLightColor(
                             context,
                           ).withValues(alpha: 0.6),
@@ -813,8 +826,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             child: Text(
                               inst > 0 ? freqName : 'None',
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontSize: KoinTypography.itemTitle,
+                                fontWeight: KoinTypography.labelWeight,
                                 color: inst > 0
                                     ? AppTheme.textColor(context)
                                     : AppTheme.textLightColor(
@@ -874,8 +887,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       Text(
                         'Estimated Payment',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: KoinTypography.small,
+                          fontWeight: KoinTypography.labelWeight,
                           color: primaryColor.withValues(alpha: 0.8),
                         ),
                       ),
@@ -887,18 +900,18 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                           Text(
                             currencyFormat.format(paymentAmount),
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontSize: KoinTypography.sectionTitle,
+                              fontWeight: KoinTypography.headingWeight,
                               color: primaryColor,
-                              letterSpacing: -0.5,
+                              letterSpacing: KoinTypography.headingTracking,
                             ),
                           ),
                           const Gap(4),
                           Text(
                             frequencySuffix,
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.caption,
+                              fontWeight: KoinTypography.labelWeight,
                               color: primaryColor.withValues(alpha: 0.6),
                             ),
                           ),
@@ -963,8 +976,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                   );
                 },
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontWeight: KoinTypography.labelWeight,
+                  fontSize: KoinTypography.body,
                   color: AppTheme.textColor(context),
                 ),
                 decoration: InputDecoration(
@@ -974,7 +987,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       context,
                     ).withValues(alpha: 0.45),
                     fontWeight: FontWeight.w400,
-                    fontSize: 15,
+                    fontSize: KoinTypography.body,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -1115,8 +1128,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             Text(
                               item.name,
                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                                fontWeight: KoinTypography.titleWeight,
+                                fontSize: KoinTypography.itemTitle,
                                 color: AppTheme.textColor(context),
                               ),
                               maxLines: 1,
@@ -1127,7 +1140,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                               '${item.totalInstallments} months • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
                               style: TextStyle(
                                 color: AppTheme.textLightColor(context),
-                                fontSize: 12,
+                                fontSize: KoinTypography.small,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1141,8 +1154,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                           name: ref.read(settingsProvider).currency.code,
                         ).format(item.amount),
                         style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontWeight: KoinTypography.headingWeight,
+                          fontSize: KoinTypography.itemTitle,
                           color: primaryColor,
                         ),
                         textAlign: TextAlign.right,

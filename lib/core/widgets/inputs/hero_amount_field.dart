@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koin/core/typography.dart';
 import 'package:gap/gap.dart';
 
 /// Consolidated hero amount input field module for entity creation forms
@@ -42,8 +43,8 @@ class HeroAmountField extends StatelessWidget {
                 Text(
                   '$currencySymbol ',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.screenTitle,
+                    fontWeight: KoinTypography.labelWeight,
                     color: primaryColor.withValues(alpha: 0.5),
                   ),
                 ),
@@ -56,13 +57,13 @@ class HeroAmountField extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
+                      fontSize: KoinTypography.inputAmount,
+                      fontWeight: KoinTypography.headingWeight,
                       color: !isNotEmpty
                           ? primaryColor.withValues(alpha: 0.35)
                           : primaryColor,
                       letterSpacing: -2,
-                      height: 1.1,
+                      height: KoinTypography.amountHeight,
                     ),
                     decoration: InputDecoration(
                       hintText: hintText,

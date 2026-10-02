@@ -83,9 +83,11 @@ class TransactionsListScreen extends ConsumerWidget {
                                             : 'No results found',
                                         style: TextStyle(
                                           color: AppTheme.textColor(context),
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: -0.5,
+                                          fontSize: KoinTypography.sectionTitle,
+                                          fontWeight:
+                                              KoinTypography.headingWeight,
+                                          letterSpacing:
+                                              KoinTypography.headingTracking,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -97,7 +99,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                           color: AppTheme.textLightColor(
                                             context,
                                           ).withValues(alpha: 0.6),
-                                          fontSize: 14,
+                                          fontSize: KoinTypography.compact,
                                         ),
                                       ),
                                       if (!filter.isEmpty) ...[
@@ -109,7 +111,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                           },
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 24,
+                                              horizontal:
+                                                  KoinSpacing.screenInset,
                                               vertical: 12,
                                             ),
                                             decoration: BoxDecoration(
@@ -156,7 +159,12 @@ class TransactionsListScreen extends ConsumerWidget {
                 return ListView.builder(
                   key: const ValueKey('transactions_list_builder'),
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(
+                    KoinSpacing.screenInset,
+                    16,
+                    KoinSpacing.screenInset,
+                    100,
+                  ),
                   itemCount: groups.length,
                   itemBuilder: (context, sectionIndex) {
                     final group = groups[sectionIndex];
@@ -189,9 +197,9 @@ class TransactionsListScreen extends ConsumerWidget {
                               // Day Header
                               Container(
                                 padding: const EdgeInsets.fromLTRB(
-                                  20,
+                                  KoinSpacing.screenInset,
                                   16,
-                                  20,
+                                  KoinSpacing.screenInset,
                                   12,
                                 ),
                                 decoration: BoxDecoration(
@@ -214,8 +222,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                         color: AppTheme.textLightColor(
                                           context,
                                         ).withValues(alpha: 0.8),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: KoinTypography.overline,
+                                        fontWeight: KoinTypography.titleWeight,
                                         letterSpacing: 0.5,
                                       ),
                                     ),
@@ -248,8 +256,9 @@ class TransactionsListScreen extends ConsumerWidget {
                                           color: dailyTotal > 0
                                               ? AppTheme.incomeColor(context)
                                               : AppTheme.expenseColor(context),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
+                                          fontSize: KoinTypography.caption,
+                                          fontWeight:
+                                              KoinTypography.titleWeight,
                                           letterSpacing: 0.2,
                                         ),
                                       ),
@@ -300,7 +309,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                     if (i < txList.length - 1)
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
+                                          horizontal: KoinSpacing.screenInset,
                                         ).copyWith(left: 64),
                                         child: Container(
                                           height: 1,
@@ -356,7 +365,12 @@ class TransactionsListScreen extends ConsumerWidget {
     final filterCount = filter.activeFilterCount;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      padding: const EdgeInsets.fromLTRB(
+        KoinSpacing.screenInset,
+        4,
+        KoinSpacing.screenInset,
+        12,
+      ),
       child: Column(
         children: [
           // ── Unified search + filter capsule ──
@@ -389,8 +403,8 @@ class TransactionsListScreen extends ConsumerWidget {
                     onChanged: (value) => filterNotifier.setQuery(value),
                     style: TextStyle(
                       color: AppTheme.textColor(context),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.compact,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Search transactions...',
@@ -398,8 +412,8 @@ class TransactionsListScreen extends ConsumerWidget {
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: 0.4),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.supportingWeight,
                       ),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -506,8 +520,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                 color: AppTheme.textLightColor(
                                   context,
                                 ).withValues(alpha: 0.7),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontSize: KoinTypography.overline,
+                                fontWeight: KoinTypography.labelWeight,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -532,8 +546,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                 'Clear',
                                 style: TextStyle(
                                   color: primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: KoinTypography.overline,
+                                  fontWeight: KoinTypography.titleWeight,
                                 ),
                               ),
                             ),

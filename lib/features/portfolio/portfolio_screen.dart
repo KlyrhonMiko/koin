@@ -144,8 +144,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
       padding: EdgeInsets.only(
         top: MediaQuery.paddingOf(context).top + 16,
         bottom: 16,
-        left: 24,
-        right: 24,
+        left: KoinSpacing.screenInset,
+        right: KoinSpacing.screenInset,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +161,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                   'PORTFOLIO',
                   style: TextStyle(
                     color: AppTheme.textLightColor(context),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: KoinTypography.small,
+                    fontWeight: KoinTypography.titleWeight,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -177,9 +177,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                           _tabs[_tabController.index],
                           style: TextStyle(
                             color: AppTheme.textColor(context),
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.0,
+                            fontSize: KoinTypography.summaryAmount,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.amountTracking,
                             height: 1.2,
                           ),
                         );
@@ -304,7 +304,7 @@ class _DropdownMenu extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: KoinSpacing.screenInset,
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
@@ -320,10 +320,10 @@ class _DropdownMenu extends StatelessWidget {
                           color: isSelected
                               ? AppTheme.primaryColor(context)
                               : AppTheme.textColor(context),
-                          fontSize: 15,
+                          fontSize: KoinTypography.body,
                           fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w600,
+                              ? KoinTypography.titleWeight
+                              : KoinTypography.labelWeight,
                           letterSpacing: -0.3,
                         ),
                       ),

@@ -33,7 +33,10 @@ class TransactionTile extends StatelessWidget {
     this.toAccountName,
     required this.currency,
     this.onTap,
-    this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: KoinSpacing.screenInset,
+      vertical: 14,
+    ),
     this.showTime = true,
   });
 
@@ -46,7 +49,10 @@ class TransactionTile extends StatelessWidget {
     required List<Account> accounts,
     required Currency currency,
     VoidCallback? onTap,
-    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
+      horizontal: KoinSpacing.screenInset,
+      vertical: 14,
+    ),
     bool showTime = true,
   }) {
     final cat = categories
@@ -58,9 +64,7 @@ class TransactionTile extends StatelessWidget {
         .firstOrNull;
 
     final toAcc = transaction.toAccountId != null
-        ? accounts
-            .where((a) => a.id == transaction.toAccountId)
-            .firstOrNull
+        ? accounts.where((a) => a.id == transaction.toAccountId).firstOrNull
         : null;
 
     return TransactionTile(
@@ -84,29 +88,33 @@ class TransactionTile extends StatelessWidget {
     final typeColor = isTransfer
         ? AppTheme.transferColor(context)
         : (isIncome
-            ? AppTheme.incomeColor(context)
-            : AppTheme.expenseColor(context));
+              ? AppTheme.incomeColor(context)
+              : AppTheme.expenseColor(context));
 
-    final color = isTransfer ? typeColor : (category?.color ?? typeColor);
+    final color = isTransfer || category == null
+        ? typeColor
+        : AppTheme.accentColor(context, category!.color);
 
     final icon = isTransfer
         ? Icons.swap_horiz_rounded
         : (category != null
-            ? IconUtils.getIcon(category!.iconCodePoint)
-            : (isIncome
-                ? Icons.arrow_downward_rounded
-                : Icons.arrow_upward_rounded));
+              ? IconUtils.getIcon(category!.iconCodePoint)
+              : (isIncome
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded));
 
     final categoryName = isTransfer ? 'Transfer' : (category?.name ?? 'Others');
-    final displayTitle = transaction.note.isEmpty ? categoryName : transaction.note;
+    final displayTitle = transaction.note.isEmpty
+        ? categoryName
+        : transaction.note;
 
     final displaySubtitle = isTransfer
         ? (transaction.note.isEmpty
-            ? '$accountName → ${toAccountName ?? 'Account'}'
-            : 'Transfer • $accountName → ${toAccountName ?? 'Account'}')
+              ? '$accountName → ${toAccountName ?? 'Account'}'
+              : 'Transfer • $accountName → ${toAccountName ?? 'Account'}')
         : (transaction.note.isEmpty
-            ? accountName
-            : '$categoryName • $accountName');
+              ? accountName
+              : '$categoryName • $accountName');
 
     final formattedAmount = NumberFormat.currency(
       symbol: currency.symbol,
@@ -117,7 +125,8 @@ class TransactionTile extends StatelessWidget {
         : '${isIncome ? '+' : '-'}$formattedAmount';
 
     return PressableScale(
-      onTap: onTap ??
+      onTap:
+          onTap ??
           () {
             HapticService.light();
             Navigator.push(
@@ -147,8 +156,8 @@ class TransactionTile extends StatelessWidget {
                   Text(
                     displayTitle,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.body,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -158,8 +167,8 @@ class TransactionTile extends StatelessWidget {
                     displaySubtitle,
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.supportingWeight,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -175,8 +184,8 @@ class TransactionTile extends StatelessWidget {
                   signedAmount,
                   style: TextStyle(
                     color: typeColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontWeight: KoinTypography.headingWeight,
+                    fontSize: KoinTypography.body,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -185,9 +194,11 @@ class TransactionTile extends StatelessWidget {
                   Text(
                     DateFormat.jm().format(transaction.date),
                     style: TextStyle(
-                      color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textLightColor(
+                        context,
+                      ).withValues(alpha: 0.6),
+                      fontSize: KoinTypography.overline,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   ),
                 ],

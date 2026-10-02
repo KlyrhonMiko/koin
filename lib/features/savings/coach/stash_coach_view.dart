@@ -66,7 +66,10 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: KoinSpacing.screenInset,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -126,8 +129,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                 Text(
                   "Adjust Target Date",
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
                     color: AppTheme.textLightColor(context),
                   ),
                 ),
@@ -152,16 +155,16 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                           Text(
                             DateFormat("MMM d, yyyy").format(_targetDate),
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontSize: KoinTypography.itemTitle,
+                              fontWeight: KoinTypography.titleWeight,
                             ),
                           ),
                           Text(
                             "in ${_weeksToTargetDate > 4 ? '${(_weeksToTargetDate / 4).floor()} months' : '$_weeksToTargetDate weeks'}",
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: KoinTypography.small,
                               color: AppTheme.primaryColor(context),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: KoinTypography.labelWeight,
                             ),
                           ),
                         ],
@@ -185,8 +188,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                 Text(
                   "Adjust Target Amount",
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
                     color: AppTheme.textLightColor(context),
                   ),
                 ),
@@ -209,8 +212,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                         child: Text(
                           currencyFmt.format(_targetAmount),
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
+                            fontSize: KoinTypography.sectionTitle,
+                            letterSpacing: KoinTypography.headingTracking,
+                            fontWeight: KoinTypography.headingWeight,
                           ),
                         ),
                       ),
@@ -233,8 +237,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
               Text(
                 "Stash per week",
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
                   color: AppTheme.textLightColor(context),
                 ),
               ),
@@ -244,8 +248,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   Text(
                     currencyFmt.format(_weeklySaved),
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontSize: KoinTypography.sectionTitle,
+                      letterSpacing: KoinTypography.headingTracking,
+                      fontWeight: KoinTypography.headingWeight,
                       color: AppTheme.primaryColor(context),
                     ),
                   ),
@@ -313,7 +318,10 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                 ),
                 child: const Text(
                   "Use this plan",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontSize: KoinTypography.itemTitle,
+                    fontWeight: KoinTypography.titleWeight,
+                  ),
                 ),
               ),
               const Gap(40),
@@ -346,8 +354,10 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
           title,
           style: TextStyle(
             color: isSelected ? Colors.white : AppTheme.textLightColor(context),
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 13,
+            fontWeight: isSelected
+                ? KoinTypography.titleWeight
+                : KoinTypography.labelWeight,
+            fontSize: KoinTypography.caption,
           ),
         ),
       ),
@@ -362,8 +372,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
         Text(
           "You'll have",
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: KoinTypography.sectionTitle,
+            letterSpacing: KoinTypography.headingTracking,
+            fontWeight: KoinTypography.headingWeight,
             color: AppTheme.textLightColor(context),
           ),
         ),
@@ -371,19 +382,19 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
         Text(
           fmt.format(_projectedBalance),
           style: TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.w800,
+            fontSize: KoinTypography.summaryAmount,
+            fontWeight: KoinTypography.headingWeight,
             color: AppTheme.textColor(context),
-            letterSpacing: -1,
-            height: 1.1,
+            letterSpacing: KoinTypography.amountTracking,
+            height: KoinTypography.amountHeight,
           ),
         ),
         const Gap(8),
         Text(
           "by ${DateFormat.yMMMMd().format(_targetDate)}",
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontSize: KoinTypography.itemTitle,
+            fontWeight: KoinTypography.labelWeight,
             color: AppTheme.primaryColor(context),
           ),
         ),
@@ -400,8 +411,9 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
         Text(
           "You'll reach ${fmt.format(_targetAmount)}",
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: KoinTypography.sectionTitle,
+            letterSpacing: KoinTypography.headingTracking,
+            fontWeight: KoinTypography.headingWeight,
             color: AppTheme.textLightColor(context),
           ),
         ),
@@ -410,30 +422,30 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
           Text(
             "Never",
             style: TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w800,
+              fontSize: KoinTypography.summaryAmount,
+              fontWeight: KoinTypography.headingWeight,
               color: AppTheme.expenseColor(context),
-              letterSpacing: -1,
-              height: 1.1,
+              letterSpacing: KoinTypography.amountTracking,
+              height: KoinTypography.amountHeight,
             ),
           )
         else ...[
           Text(
             DateFormat.yMMMMd().format(pDate),
             style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
+              fontSize: KoinTypography.summaryAmount,
+              fontWeight: KoinTypography.headingWeight,
               color: AppTheme.textColor(context),
-              letterSpacing: -1,
-              height: 1.1,
+              letterSpacing: KoinTypography.amountTracking,
+              height: KoinTypography.amountHeight,
             ),
           ),
           const Gap(8),
           Text(
             "in ${(pDate.difference(DateTime.now()).inDays / 30).floor()} months",
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: KoinTypography.itemTitle,
+              fontWeight: KoinTypography.labelWeight,
               color: AppTheme.primaryColor(context),
             ),
           ),

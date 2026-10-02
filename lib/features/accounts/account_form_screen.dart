@@ -412,7 +412,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         children: [
           ..._previewBackgroundShapes(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+              vertical: 16,
+            ),
             child: Row(
               children: [
                 // Account Icon / Logo
@@ -478,8 +481,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                           textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                             color: secondaryTextColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                            fontWeight: KoinTypography.labelWeight,
+                            fontSize: KoinTypography.caption,
                             letterSpacing: -0.1,
                           ),
                           cursorColor: cursorColor,
@@ -488,8 +491,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                             hintText: 'Account Name',
                             hintStyle: TextStyle(
                               color: hintColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontWeight: KoinTypography.labelWeight,
+                              fontSize: KoinTypography.caption,
                             ),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -510,9 +513,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                             currency.symbol,
                             style: TextStyle(
                               color: primaryTextColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                              letterSpacing: -0.5,
+                              fontWeight: KoinTypography.headingWeight,
+                              fontSize: KoinTypography.sectionTitle,
+                              letterSpacing: KoinTypography.headingTracking,
                             ),
                           ),
                           Flexible(
@@ -536,9 +539,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     ),
                                 style: TextStyle(
                                   color: primaryTextColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 18,
-                                  letterSpacing: -0.5,
+                                  fontWeight: KoinTypography.headingWeight,
+                                  fontSize: KoinTypography.sectionTitle,
+                                  letterSpacing: KoinTypography.headingTracking,
                                 ),
                                 cursorColor: cursorColor,
                                 cursorHeight: 18,
@@ -546,8 +549,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                   hintText: '0.00',
                                   hintStyle: TextStyle(
                                     color: hintColor,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 18,
+                                    fontWeight: KoinTypography.headingWeight,
+                                    fontSize: KoinTypography.sectionTitle,
+                                    letterSpacing:
+                                        KoinTypography.headingTracking,
                                   ),
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
@@ -596,7 +601,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(
+          horizontal: KoinSpacing.screenInset,
+          vertical: 20,
+        ),
         child: Column(
           children: [
             // ── Interactive Preview Card ──
@@ -618,8 +626,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.labelWeight,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -675,10 +683,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                             Text(
                               'Custom',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: KoinTypography.overline,
                                 fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+                                    ? KoinTypography.titleWeight
+                                    : KoinTypography.supportingWeight,
                                 color: isSelected
                                     ? AppTheme.textColor(context)
                                     : AppTheme.textLightColor(context),
@@ -746,10 +754,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                           Text(
                             template.name,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: KoinTypography.overline,
                               fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                                  ? KoinTypography.titleWeight
+                                  : KoinTypography.supportingWeight,
                               color: isSelected
                                   ? AppTheme.textColor(context)
                                   : AppTheme.textLightColor(context),
@@ -791,8 +799,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                         color: AppTheme.textLightColor(
                                           context,
                                         ).withValues(alpha: 0.7),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: KoinTypography.caption,
+                                        fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
@@ -827,8 +835,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                         color: AppTheme.textLightColor(
                                           context,
                                         ).withValues(alpha: 0.7),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: KoinTypography.caption,
+                                        fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
@@ -862,8 +870,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                         color: AppTheme.textLightColor(
                                           context,
                                         ).withValues(alpha: 0.7),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: KoinTypography.caption,
+                                        fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
@@ -941,12 +949,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                 Text(
                                                   'Default',
                                                   style: TextStyle(
-                                                    fontSize: 13,
+                                                    fontSize:
+                                                        KoinTypography.caption,
                                                     fontWeight:
                                                         selectedCardColor ==
                                                             null
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w500,
+                                                        ? KoinTypography
+                                                              .titleWeight
+                                                        : KoinTypography
+                                                              .supportingWeight,
                                                     color:
                                                         selectedCardColor ==
                                                             null
@@ -1054,8 +1065,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     color: AppTheme.textLightColor(
                       context,
                     ).withValues(alpha: 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.labelWeight,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -1128,8 +1139,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                   Text(
                                     'Auto',
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: KoinTypography.small,
+                                      fontWeight: KoinTypography.titleWeight,
                                       color: isSelected
                                           ? AppTheme.textColor(context)
                                           : AppTheme.textLightColor(
@@ -1210,7 +1221,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 child: SwitchListTile(
                   title: const Text(
                     'Make Account Private',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: KoinTypography.compact,
+                      fontWeight: KoinTypography.labelWeight,
+                    ),
                   ),
                   subtitle: const Text(
                     'This will obfuscate the balance and exclude it from the total balance amount',
@@ -1248,7 +1262,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 child: SwitchListTile(
                   title: const Text(
                     'Use Percentage Fee',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: KoinTypography.compact,
+                      fontWeight: KoinTypography.labelWeight,
+                    ),
                   ),
                   subtitle: const Text(
                     'Calculate fee as a % of the transfer amount',
@@ -1277,8 +1294,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 decimal: true,
               ),
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontSize: KoinTypography.itemTitle,
+                fontWeight: KoinTypography.labelWeight,
                 color: AppTheme.textColor(context),
               ),
               decoration: InputDecoration(
@@ -1299,8 +1316,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   color: AppTheme.textLightColor(
                     context,
                   ).withValues(alpha: 0.7),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: KoinTypography.compact,
+                  fontWeight: KoinTypography.supportingWeight,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -1328,7 +1345,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
+                  horizontal: KoinSpacing.screenInset,
                   vertical: 20,
                 ),
               ),

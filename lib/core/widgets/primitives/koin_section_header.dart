@@ -30,10 +30,10 @@ class KoinSectionHeader extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
+            fontSize: KoinTypography.sectionTitle,
+            fontWeight: KoinTypography.headingWeight,
             color: AppTheme.textColor(context),
-            letterSpacing: -0.4,
+            letterSpacing: KoinTypography.headingTracking,
           ),
         ),
         if (subtitle != null) ...[
@@ -41,9 +41,9 @@ class KoinSectionHeader extends StatelessWidget {
           Text(
             subtitle!,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: KoinTypography.caption,
               color: AppTheme.textLightColor(context),
-              fontWeight: FontWeight.w500,
+              fontWeight: KoinTypography.supportingWeight,
             ),
           ),
         ],
@@ -72,8 +72,8 @@ class KoinSectionHeader extends StatelessWidget {
               Text(
                 actionLabel!,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
                   color: AppTheme.textLightColor(context),
                 ),
               ),

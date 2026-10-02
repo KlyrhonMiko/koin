@@ -28,7 +28,7 @@ class KoinSummaryCard extends StatelessWidget {
     this.gradient,
     this.glowColor,
     this.borderRadius = 32,
-    this.padding = const EdgeInsets.all(28),
+    this.padding = const EdgeInsets.all(KoinSpacing.summaryInset),
     this.margin,
     this.shapeStyle = SummaryShapeStyle.defaultStyle,
   });
@@ -44,7 +44,7 @@ class KoinSummaryCard extends StatelessWidget {
     SummaryShapeStyle.defaultStyle => 2,
   };
 
-  Widget _buildCornerAccent() {
+  Widget _buildCornerAccent(bool isDark) {
     final useTile =
         shapeStyle == SummaryShapeStyle.savings ||
         shapeStyle == SummaryShapeStyle.analysis;
@@ -60,7 +60,7 @@ class KoinSummaryCard extends StatelessWidget {
             width: 116,
             height: 116,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
+              color: Colors.white.withValues(alpha: isDark ? 0.035 : 0.10),
               shape: useTile ? BoxShape.rectangle : BoxShape.circle,
               borderRadius: useTile ? BorderRadius.circular(32) : null,
             ),
@@ -72,7 +72,11 @@ class KoinSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sourceGradient = gradient ?? AppTheme.primaryGradient(context);
+    final effectiveGradient = sourceGradient is LinearGradient
+        ? AppTheme.filledGradient(context, sourceGradient)
+        : sourceGradient;
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
 
     return Container(
@@ -83,7 +87,9 @@ class KoinSummaryCard extends StatelessWidget {
         gradient: effectiveGradient,
         boxShadow: [
           BoxShadow(
-            color: effectiveGlow.withValues(alpha: 0.25),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.12)
+                : effectiveGlow.withValues(alpha: 0.25),
             blurRadius: 32,
             offset: const Offset(0, 12),
           ),
@@ -95,12 +101,13 @@ class KoinSummaryCard extends StatelessWidget {
             child: IgnorePointer(
               child: CardBackgroundShapes(
                 shapeType: _shapeType,
-                opacityMultiplier: 1.4,
+                opacityMultiplier: isDark ? 0.4 : 1.4,
               ),
             ),
           ),
           // The eclipse pattern already decorates opposite corners.
-          if (shapeStyle != SummaryShapeStyle.debtDetails) _buildCornerAccent(),
+          if (shapeStyle != SummaryShapeStyle.debtDetails)
+            _buildCornerAccent(isDark),
           Padding(padding: padding, child: child),
         ],
       ),

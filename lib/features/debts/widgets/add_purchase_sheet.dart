@@ -95,9 +95,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                 ],
               ),
               padding: EdgeInsets.fromLTRB(
-                24,
+                KoinSpacing.screenInset,
                 16,
-                24,
+                KoinSpacing.screenInset,
                 24 + MediaQuery.paddingOf(ctx).bottom,
               ),
               child: SingleChildScrollView(
@@ -111,10 +111,10 @@ Future<DebtItem?> showAddPurchaseSheet({
                     Text(
                       existingItem != null ? 'Edit Purchase' : 'Add Purchase',
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                        fontSize: KoinTypography.screenTitle,
+                        fontWeight: KoinTypography.headingWeight,
                         color: AppTheme.textColor(ctx),
-                        letterSpacing: -0.5,
+                        letterSpacing: KoinTypography.headingTracking,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -321,8 +321,8 @@ Future<DebtItem?> showAddPurchaseSheet({
                         existingItem != null ? 'Update Plan' : 'Add to Plan',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontWeight: KoinTypography.titleWeight,
+                          fontSize: KoinTypography.itemTitle,
                         ),
                       ),
                     ),

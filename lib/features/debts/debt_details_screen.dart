@@ -77,7 +77,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 // ── Top bar ──
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: KoinSpacing.screenInset,
                     vertical: 8,
                   ),
                   child: Row(
@@ -88,9 +88,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         child: Text(
                           'Credit Details',
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            fontSize: KoinTypography.screenTitle,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.headingTracking,
                             color: AppTheme.textColor(context),
                           ),
                           maxLines: 1,
@@ -104,7 +104,12 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 // ── Body ──
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(
+                      KoinSpacing.screenInset,
+                      8,
+                      KoinSpacing.screenInset,
+                      100,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -173,136 +178,135 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                    // Person Name & Badge
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            debt.personName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Gap(12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            isSettled
-                                ? 'SETTLED'
-                                : debt.type == DebtType.owedToMe
-                                ? 'OWES YOU'
-                                : 'YOU OWE',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
+              // Person Name & Badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      debt.personName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: KoinTypography.sectionTitle,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: 0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  const Gap(12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isSettled
+                          ? 'SETTLED'
+                          : debt.type == DebtType.owedToMe
+                          ? 'OWES YOU'
+                          : 'YOU OWE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-                    if (debt.totalInstallments > 0) ...[
-                      const Gap(4),
+              if (debt.totalInstallments > 0) ...[
+                const Gap(4),
+                Text(
+                  '${debt.totalInstallments} ${debt.frequency.name} payments',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: KoinTypography.small,
+                    fontWeight: KoinTypography.supportingWeight,
+                  ),
+                ),
+              ],
+
+              const Gap(24),
+
+              // Total Debt Amount
+              AnimatedCounter(
+                value: debt.amount,
+                formatter: (v) => currencyFormat.format(v),
+                duration: const Duration(milliseconds: 1400),
+                curve: Curves.easeOutCubic,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: KoinTypography.summaryAmount,
+                  fontWeight: KoinTypography.headingWeight,
+                  letterSpacing: KoinTypography.amountTracking,
+                  height: KoinTypography.amountHeight,
+                ),
+              ),
+
+              const Gap(KoinSpacing.sectionGap),
+
+              // Progress Bar Section
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Text(
-                        '${debt.totalInstallments} ${debt.frequency.name} payments',
+                        '${(progress * 100).toStringAsFixed(1)}% Repaid',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: KoinTypography.caption,
+                          fontWeight: KoinTypography.labelWeight,
+                        ),
+                      ),
+                      Text(
+                        '${currencyFormat.format(remaining)} left',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: KoinTypography.caption,
+                          fontWeight: KoinTypography.labelWeight,
                         ),
                       ),
                     ],
-
-                    const Gap(24),
-
-                    // Total Debt Amount
-                    AnimatedCounter(
-                      value: debt.amount,
-                      formatter: (v) => currencyFormat.format(v),
-                      duration: const Duration(milliseconds: 1400),
-                      curve: Curves.easeOutCubic,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 42,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.0,
-                        height: 1.1,
-                      ),
+                  ),
+                  const Gap(8),
+                  // Progress Track
+                  Container(
+                    height: 8,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-
-                    const Gap(28),
-
-                    // Progress Bar Section
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Stack(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${(progress * 100).toStringAsFixed(1)}% Repaid',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: progress.clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            Text(
-                              '${currencyFormat.format(remaining)} left',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(8),
-                        // Progress Track
-                        Container(
-                          height: 8,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Stack(
-                            children: [
-                              FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: progress.clamp(0.0, 1.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-
+                  ),
+                ],
+              ),
+            ],
+          ),
         )
         .animate()
         .fadeIn(duration: 400.ms)
@@ -391,8 +395,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.labelWeight,
               color: AppTheme.textLightColor(context),
             ),
           ),
@@ -418,9 +422,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               'Sub-Plans / Purchases',
               style: TextStyle(
                 color: AppTheme.textColor(context),
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
             const Gap(10),
@@ -434,8 +438,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 '${items.length}',
                 style: TextStyle(
                   color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontSize: KoinTypography.small,
+                  fontWeight: KoinTypography.headingWeight,
                 ),
               ),
             ),
@@ -529,8 +533,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                               item.name,
                               style: TextStyle(
                                 color: AppTheme.textColor(context),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontWeight: KoinTypography.titleWeight,
+                                fontSize: KoinTypography.body,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -540,8 +544,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                               '${item.totalInstallments} payments • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
                               style: TextStyle(
                                 color: AppTheme.textLightColor(context),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                fontSize: KoinTypography.small,
+                                fontWeight: KoinTypography.supportingWeight,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -554,8 +558,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         currencyFormat.format(item.amount),
                         style: TextStyle(
                           color: color,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontWeight: KoinTypography.headingWeight,
+                          fontSize: KoinTypography.itemTitle,
                         ),
                         textAlign: TextAlign.right,
                       ),
@@ -608,8 +612,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   'Add Purchase / Sub-Plan',
                   style: TextStyle(
                     color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                    fontWeight: KoinTypography.titleWeight,
+                    fontSize: KoinTypography.body,
                   ),
                 ),
               ],
@@ -664,8 +668,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                           'No payments yet',
                           style: TextStyle(
                             color: AppTheme.textColor(context),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.titleWeight,
                           ),
                         ),
                         const Gap(6),
@@ -676,7 +680,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                             color: AppTheme.textLightColor(
                               context,
                             ).withValues(alpha: 0.6),
-                            fontSize: 13,
+                            fontSize: KoinTypography.caption,
                           ),
                         ),
                       ],
@@ -701,9 +705,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   'Credit Activity',
                   style: TextStyle(
                     color: AppTheme.textColor(context),
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
+                    fontSize: KoinTypography.sectionTitle,
+                    fontWeight: KoinTypography.headingWeight,
+                    letterSpacing: KoinTypography.headingTracking,
                   ),
                 ),
                 const Gap(10),
@@ -720,8 +724,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     '${repayments.length}',
                     style: TextStyle(
                       color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.headingWeight,
                     ),
                   ),
                 ),
@@ -862,9 +866,10 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                                               : 'Payment'),
                                     style: TextStyle(
                                       color: AppTheme.textColor(context),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                      letterSpacing: -0.2,
+                                      fontWeight: KoinTypography.labelWeight,
+                                      fontSize: KoinTypography.body,
+                                      letterSpacing:
+                                          KoinTypography.itemTracking,
                                     ),
                                   ),
                                   const Gap(3),
@@ -872,8 +877,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                                     DateFormat.yMMMd().format(repayment.date),
                                     style: TextStyle(
                                       color: AppTheme.textLightColor(context),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: KoinTypography.small,
+                                      fontWeight:
+                                          KoinTypography.supportingWeight,
                                     ),
                                   ),
                                 ],
@@ -883,8 +889,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                               currencyFormat.format(repayment.amount),
                               style: TextStyle(
                                 color: color,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
+                                fontWeight: KoinTypography.headingWeight,
+                                fontSize: KoinTypography.itemTitle,
                                 letterSpacing: -0.3,
                               ),
                             ),

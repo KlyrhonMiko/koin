@@ -23,7 +23,12 @@ class UpcomingScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 16),
+            padding: EdgeInsets.fromLTRB(
+              KoinSpacing.screenInset,
+              topPadding + 16,
+              KoinSpacing.screenInset,
+              16,
+            ),
             decoration: BoxDecoration(
               color: AppTheme.backgroundColor(context),
               border: Border(
@@ -40,10 +45,10 @@ class UpcomingScreen extends ConsumerWidget {
                 Text(
                   'Upcoming',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
+                    fontSize: KoinTypography.screenTitle,
+                    fontWeight: KoinTypography.headingWeight,
                     color: AppTheme.textColor(context),
-                    letterSpacing: -0.5,
+                    letterSpacing: KoinTypography.headingTracking,
                   ),
                 ),
               ],
@@ -53,7 +58,12 @@ class UpcomingScreen extends ConsumerWidget {
             child: timeline.isEmpty
                 ? _buildEmptyUpcoming(context)
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+                    padding: const EdgeInsets.fromLTRB(
+                      KoinSpacing.screenInset,
+                      24,
+                      KoinSpacing.screenInset,
+                      120,
+                    ),
                     physics: const BouncingScrollPhysics(),
                     itemCount: timeline.length,
                     itemBuilder: (context, index) {
@@ -63,16 +73,16 @@ class UpcomingScreen extends ConsumerWidget {
                           .firstOrNull;
 
                       return UpcomingEntryTile(
-                        entry: entry,
-                        currency: currency,
-                        category: category,
-                        onPayPayment: (payment) =>
-                            PaymentConfirmationSheet.confirmAndProcess(
-                              context: context,
-                              ref: ref,
-                              payment: payment,
-                            ),
-                      )
+                            entry: entry,
+                            currency: currency,
+                            category: category,
+                            onPayPayment: (payment) =>
+                                PaymentConfirmationSheet.confirmAndProcess(
+                                  context: context,
+                                  ref: ref,
+                                  payment: payment,
+                                ),
+                          )
                           .animate()
                           .fade(delay: (index * 40).ms)
                           .slideY(begin: 0.08);
@@ -87,7 +97,9 @@ class UpcomingScreen extends ConsumerWidget {
   Widget _buildEmptyUpcoming(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: KoinSpacing.screenInset,
+        ),
         child: PressableScale(
           onTap: () {
             HapticService.medium();
@@ -116,23 +128,27 @@ class UpcomingScreen extends ConsumerWidget {
                 Icon(
                   Icons.event_repeat_rounded,
                   size: 32,
-                  color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.3),
                 ),
                 const Gap(12),
                 Text(
                   'No upcoming payments',
                   style: TextStyle(
                     color: AppTheme.textLightColor(context),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontWeight: KoinTypography.labelWeight,
+                    fontSize: KoinTypography.compact,
                   ),
                 ),
                 const Gap(4),
                 Text(
                   'Tap to add your first subscription',
                   style: TextStyle(
-                    color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                    fontSize: 12,
+                    color: AppTheme.textLightColor(
+                      context,
+                    ).withValues(alpha: 0.5),
+                    fontSize: KoinTypography.small,
                   ),
                 ),
               ],

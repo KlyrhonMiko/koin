@@ -216,8 +216,8 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                           bottomLabels[index],
                           style: TextStyle(
                             color: AppTheme.textLightColor(context),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontSize: KoinTypography.overline,
+                            fontWeight: KoinTypography.titleWeight,
                           ),
                         ),
                       );
@@ -296,8 +296,8 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                           ).format(originalY),
                           style: TextStyle(
                             color: AppTheme.textColor(context),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.headingWeight,
                           ),
                         ),
                       ],

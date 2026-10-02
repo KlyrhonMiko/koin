@@ -33,8 +33,8 @@ class FormSectionTitle extends StatelessWidget {
     this.icon,
     this.trailing,
     this.padding,
-    this.fontSize = 11,
-    this.fontWeight = FontWeight.w700,
+    this.fontSize = KoinTypography.overline,
+    this.fontWeight = KoinTypography.titleWeight,
     this.color,
   }) : uppercase = true;
 
@@ -45,23 +45,23 @@ class FormSectionTitle extends StatelessWidget {
     TextStyle textStyle;
     if (uppercase) {
       textStyle = TextStyle(
-        fontSize: fontSize ?? 11,
-        fontWeight: fontWeight ?? FontWeight.w700,
+        fontSize: fontSize ?? KoinTypography.overline,
+        fontWeight: fontWeight ?? KoinTypography.titleWeight,
         color: color ?? AppTheme.textLightColor(context),
-        letterSpacing: 1.2,
+        letterSpacing: KoinTypography.overlineTracking,
       );
     } else if (icon != null) {
       textStyle = TextStyle(
-        fontSize: fontSize ?? 14,
-        fontWeight: fontWeight ?? FontWeight.w700,
+        fontSize: fontSize ?? KoinTypography.compact,
+        fontWeight: fontWeight ?? KoinTypography.titleWeight,
         color: color ?? AppTheme.textColor(context),
       );
     } else {
       textStyle = TextStyle(
-        fontSize: fontSize ?? 16,
-        fontWeight: fontWeight ?? FontWeight.w700,
+        fontSize: fontSize ?? KoinTypography.sectionTitle,
+        fontWeight: fontWeight ?? KoinTypography.headingWeight,
         color: color ?? AppTheme.textColor(context),
-        letterSpacing: -0.3,
+        letterSpacing: KoinTypography.headingTracking,
       );
     }
 

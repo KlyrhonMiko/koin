@@ -48,7 +48,12 @@ class CashflowScheduleTab extends ConsumerWidget {
           backgroundColor: AppTheme.surfaceColor(context),
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+            padding: const EdgeInsets.fromLTRB(
+              KoinSpacing.screenInset,
+              12,
+              KoinSpacing.screenInset,
+              100,
+            ),
             itemCount: payments.length + 1,
             itemBuilder: (context, index) {
               if (index == payments.length) {
@@ -159,9 +164,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                     _isIncome ? 'No recurring incomes' : 'No subscriptions',
                     style: TextStyle(
                       color: AppTheme.textColor(context),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      fontSize: KoinTypography.sectionTitle,
+                      fontWeight: KoinTypography.headingWeight,
+                      letterSpacing: KoinTypography.headingTracking,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -172,7 +177,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppTheme.textLightColor(context),
-                      fontSize: 14,
+                      fontSize: KoinTypography.compact,
                       height: 1.5,
                     ),
                   ),
@@ -268,8 +273,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                       Text(
                         payment.title,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
+                          fontWeight: KoinTypography.titleWeight,
+                          fontSize: KoinTypography.itemAmount,
                           letterSpacing: -0.3,
                         ),
                         maxLines: 1,
@@ -288,8 +293,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                             payment.frequency.name.toUpperCase(),
                             style: TextStyle(
                               color: AppTheme.textLightColor(context),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontSize: KoinTypography.overline,
+                              fontWeight: KoinTypography.titleWeight,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -334,9 +339,9 @@ class CashflowScheduleTab extends ConsumerWidget {
                 Text(
                   '${_isIncome ? '+' : '-'}$currencySymbol${NumberFormat('#,##0.00').format(payment.amount)}',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    letterSpacing: -0.5,
+                    fontWeight: KoinTypography.titleWeight,
+                    fontSize: KoinTypography.itemAmount,
+                    letterSpacing: KoinTypography.itemTracking,
                     color: _isIncome
                         ? AppTheme.incomeColor(context)
                         : AppTheme.expenseColor(context),
@@ -347,9 +352,7 @@ class CashflowScheduleTab extends ConsumerWidget {
             const SizedBox(height: 20),
             Container(
               height: 1,
-              color: AppTheme.textLightColor(
-                context,
-              ).withValues(alpha: 0.1),
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.1),
             ),
             const SizedBox(height: 16),
             Row(
@@ -371,21 +374,18 @@ class CashflowScheduleTab extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           payment.frequency == PaymentFrequency.flexible
                               ? 'Availability'
                               : _isIncome
-                                  ? 'Next Income Date'
-                                  : 'Next Payment',
+                              ? 'Next Income Date'
+                              : 'Next Payment',
                           style: TextStyle(
-                            color: AppTheme.textLightColor(
-                              context,
-                            ),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textLightColor(context),
+                            fontSize: KoinTypography.overline,
+                            fontWeight: KoinTypography.supportingWeight,
                           ),
                         ),
                         Text(
@@ -393,8 +393,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                               ? 'Available Anytime'
                               : DateFormat.yMMMd().format(payment.nextDate),
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                            fontWeight: KoinTypography.titleWeight,
+                            fontSize: KoinTypography.caption,
                           ),
                         ),
                       ],
@@ -433,8 +433,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                       _isIncome ? 'Collect Now' : 'Pay Now',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontSize: KoinTypography.caption,
+                        fontWeight: KoinTypography.titleWeight,
                       ),
                     ),
                   ),
@@ -481,8 +481,8 @@ class CashflowScheduleTab extends ConsumerWidget {
               _isIncome ? 'Add New Income' : 'Add New Payment',
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontWeight: KoinTypography.labelWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ],

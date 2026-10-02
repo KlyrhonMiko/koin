@@ -44,7 +44,7 @@ class AccountItem extends StatelessWidget {
       final baseColor = account.cardColor ?? account.color;
       return BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
+        gradient: AppTheme.filledGradient(context, LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -52,8 +52,8 @@ class AccountItem extends StatelessWidget {
             baseColor.withValues(alpha: 0.8),
           ],
           stops: const [0.2, 1.0],
-        ),
-        boxShadow: [
+        )),
+        boxShadow: isDark ? null : [
           BoxShadow(
             color: baseColor.withValues(alpha: 0.3),
             blurRadius: 24,
@@ -139,7 +139,7 @@ class AccountItem extends StatelessWidget {
             else
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
+                  horizontal: KoinSpacing.screenInset,
                   vertical: 16,
                 ),
                 child: Row(
@@ -175,7 +175,9 @@ class AccountItem extends StatelessWidget {
                           : Center(
                               child: Icon(
                                 IconUtils.getIcon(account.iconCodePoint),
-                                color: colored ? Colors.white : account.color,
+                                color: colored
+                                    ? Colors.white
+                                    : AppTheme.accentColor(context, account.color),
                                 size: 24,
                               ),
                             ),
@@ -193,8 +195,8 @@ class AccountItem extends StatelessWidget {
                               color: colored
                                   ? Colors.white.withValues(alpha: 0.85)
                                   : AppTheme.textLightColor(context),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontWeight: KoinTypography.labelWeight,
+                              fontSize: KoinTypography.caption,
                               letterSpacing: -0.1,
                             ),
                             maxLines: 1,
@@ -208,8 +210,8 @@ class AccountItem extends StatelessWidget {
                                     color: colored
                                         ? Colors.white
                                         : AppTheme.textColor(context),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 18,
+                                    fontWeight: KoinTypography.titleWeight,
+                                    fontSize: KoinTypography.itemAmount,
                                     letterSpacing: 2,
                                   ),
                                 )
@@ -226,9 +228,9 @@ class AccountItem extends StatelessWidget {
                                     color: colored
                                         ? Colors.white
                                         : AppTheme.textColor(context),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 18,
-                                    letterSpacing: -0.5,
+                                    fontWeight: KoinTypography.titleWeight,
+                                    fontSize: KoinTypography.itemAmount,
+                                    letterSpacing: KoinTypography.itemTracking,
                                   ),
                                 ),
                         ],

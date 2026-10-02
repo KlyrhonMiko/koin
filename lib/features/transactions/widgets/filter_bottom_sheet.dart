@@ -106,16 +106,18 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
           // ── Header ──
           Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
                 child: Row(
                   children: [
                     Text(
                       'Filters',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                        fontSize: KoinTypography.screenTitle,
+                        fontWeight: KoinTypography.headingWeight,
                         color: AppTheme.textColor(context),
-                        letterSpacing: -0.5,
+                        letterSpacing: KoinTypography.headingTracking,
                       ),
                     ),
                     if (filterCount > 0) ...[
@@ -133,8 +135,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           '$filterCount',
                           style: TextStyle(
                             color: primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.headingWeight,
                           ),
                         ),
                       ),
@@ -159,8 +161,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           'Reset All',
                           style: TextStyle(
                             color: AppTheme.textLightColor(context),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                            fontWeight: KoinTypography.titleWeight,
+                            fontSize: KoinTypography.caption,
                           ),
                         ),
                       ),
@@ -181,7 +183,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           // ── Gradient divider ──
           Container(
             height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 24),
+            margin: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -196,7 +200,12 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           // ── Scrollable content ──
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
+              padding: const EdgeInsets.fromLTRB(
+                KoinSpacing.screenInset,
+                20,
+                KoinSpacing.screenInset,
+                100,
+              ),
               children:
                   [
                         // Transaction Type
@@ -235,7 +244,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             ],
                           ),
                         ),
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Date Range
                         const FormSectionTitle.subhead(
@@ -255,7 +264,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             });
                           },
                         ),
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Categories
                         const FormSectionTitle.subhead(
@@ -270,7 +279,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               .map((c) => _buildCategoryChip(c))
                               .toList(),
                         ),
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Accounts
                         const FormSectionTitle.subhead(
@@ -285,7 +294,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               .map((a) => _buildAccountChip(a))
                               .toList(),
                         ),
-                        const Gap(28),
+                        const Gap(KoinSpacing.sectionGap),
 
                         // Amount Range
                         const FormSectionTitle.subhead(
@@ -340,9 +349,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     padding: EdgeInsets.fromLTRB(
-                      24,
+                      KoinSpacing.screenInset,
                       16,
-                      24,
+                      KoinSpacing.screenInset,
                       MediaQuery.of(context).padding.bottom + 16,
                     ),
                     decoration: BoxDecoration(
@@ -389,8 +398,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                                   : 'Apply Filters',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
+                                fontSize: KoinTypography.itemTitle,
+                                fontWeight: KoinTypography.headingWeight,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -458,8 +467,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textColor(context),
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+                fontWeight: KoinTypography.titleWeight,
+                fontSize: KoinTypography.caption,
               ),
             ),
           ],
@@ -520,8 +529,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               category.name,
               style: TextStyle(
                 color: isSelected ? primary : AppTheme.textColor(context),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 12,
+                fontWeight: isSelected
+                    ? KoinTypography.titleWeight
+                    : KoinTypography.labelWeight,
+                fontSize: KoinTypography.small,
               ),
             ),
           ],
@@ -575,8 +586,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               account.name,
               style: TextStyle(
                 color: isSelected ? primary : AppTheme.textColor(context),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 12,
+                fontWeight: isSelected
+                    ? KoinTypography.titleWeight
+                    : KoinTypography.labelWeight,
+                fontSize: KoinTypography.small,
               ),
             ),
           ],
@@ -603,8 +616,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         labelText: label,
         labelStyle: TextStyle(
           color: AppTheme.textLightColor(context),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontSize: KoinTypography.compact,
+          fontWeight: KoinTypography.supportingWeight,
         ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 16, right: 8),
@@ -612,8 +625,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             currencySymbol,
             style: TextStyle(
               color: AppTheme.textLightColor(context).withValues(alpha: 0.6),
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: KoinTypography.itemTitle,
+              fontWeight: KoinTypography.titleWeight,
             ),
           ),
         ),

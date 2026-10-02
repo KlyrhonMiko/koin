@@ -69,8 +69,10 @@ class SelectionTile extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: asCard ? 12 : 11,
-                        fontWeight: FontWeight.w500,
+                        fontSize: asCard
+                            ? KoinTypography.small
+                            : KoinTypography.overline,
+                        fontWeight: KoinTypography.supportingWeight,
                         color: AppTheme.textLightColor(
                           context,
                         ).withValues(alpha: asCard ? 0.7 : 0.65),
@@ -81,10 +83,12 @@ class SelectionTile extends StatelessWidget {
                     Text(
                       selectedName ?? placeholder,
                       style: TextStyle(
-                        fontSize: asCard ? 16 : 15,
+                        fontSize: asCard
+                            ? KoinTypography.itemTitle
+                            : KoinTypography.body,
                         fontWeight: hasSelection
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                            ? KoinTypography.titleWeight
+                            : KoinTypography.supportingWeight,
                         color: hasSelection
                             ? AppTheme.textColor(context)
                             : AppTheme.textLightColor(

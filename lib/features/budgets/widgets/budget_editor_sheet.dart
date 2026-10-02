@@ -96,21 +96,19 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(28),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Drag handle
-            const KoinBottomSheetHandle(
-              padding: EdgeInsets.only(bottom: 20),
-            ),
+            const KoinBottomSheetHandle(padding: EdgeInsets.only(bottom: 20)),
             // Category header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
               child: Row(
                 children: [
                   Container(
@@ -133,8 +131,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                         Text(
                           category.name,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
+                            fontWeight: KoinTypography.headingWeight,
+                            fontSize: KoinTypography.sectionTitle,
+                            letterSpacing: KoinTypography.headingTracking,
                           ),
                         ),
                         const Gap(2),
@@ -144,7 +143,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               : 'Set monthly budget',
                           style: TextStyle(
                             color: AppTheme.textLightColor(context),
-                            fontSize: 13,
+                            fontSize: KoinTypography.caption,
                           ),
                         ),
                       ],
@@ -183,7 +182,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             const Gap(20),
             // Fixed / % of Income toggle
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
               child: Container(
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceLightColor(context),
@@ -206,9 +207,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             color: !_isPercentMode
                                 ? AppTheme.primaryColor(context)
@@ -219,8 +218,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                           child: Text(
                             'Fixed Amount',
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontWeight: KoinTypography.titleWeight,
+                              fontSize: KoinTypography.caption,
                               color: !_isPercentMode
                                   ? Colors.white
                                   : AppTheme.textLightColor(context),
@@ -243,9 +242,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             color: _isPercentMode
                                 ? AppTheme.primaryColor(context)
@@ -256,8 +253,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                           child: Text(
                             '% of Income',
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontWeight: KoinTypography.titleWeight,
+                              fontSize: KoinTypography.caption,
                               color: _isPercentMode
                                   ? Colors.white
                                   : AppTheme.textLightColor(context),
@@ -273,7 +270,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             const Gap(20),
             // Amount / Percentage display
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
               child: Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -283,18 +282,18 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                     Text(
                       _isPercentMode ? '' : '${currency.symbol} ',
                       style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
+                        fontSize: KoinTypography.summaryAmount,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.amountTracking,
                         color: AppTheme.textLightColor(context),
                       ),
                     ),
                     Text(
                       _currentExpression.isEmpty ? '0' : _currentExpression,
                       style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
+                        fontSize: KoinTypography.summaryAmount,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.amountTracking,
                         color: _currentExpression.isEmpty
                             ? AppTheme.textLightColor(
                                 context,
@@ -306,9 +305,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                       Text(
                         '%',
                         style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
+                          fontSize: KoinTypography.summaryAmount,
+                          fontWeight: KoinTypography.headingWeight,
+                          letterSpacing: KoinTypography.amountTracking,
                           color: _currentExpression.isEmpty
                               ? AppTheme.textLightColor(
                                   context,
@@ -327,9 +326,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                 child: resolvedAmount != null
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(
-                          24,
+                          KoinSpacing.screenInset,
                           0,
-                          24,
+                          KoinSpacing.screenInset,
                           12,
                         ),
                         child: Container(
@@ -338,9 +337,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: category.color.withValues(
-                              alpha: 0.08,
-                            ),
+                            color: category.color.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -349,16 +346,14 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               Icon(
                                 Icons.info_outline_rounded,
                                 size: 16,
-                                color: category.color.withValues(
-                                  alpha: 0.7,
-                                ),
+                                color: category.color.withValues(alpha: 0.7),
                               ),
                               const Gap(8),
                               Text(
                                 '$_currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
                                 style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: KoinTypography.caption,
+                                  fontWeight: KoinTypography.labelWeight,
                                   color: category.color,
                                 ),
                               ),
@@ -369,16 +364,16 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                     : totalIncome <= 0
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(
-                          24,
+                          KoinSpacing.screenInset,
                           0,
-                          24,
+                          KoinSpacing.screenInset,
                           12,
                         ),
                         child: Text(
                           'No income recorded yet — budget will update when income is tracked',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: KoinTypography.small,
                             color: AppTheme.textLightColor(context),
                           ),
                         ),
@@ -390,7 +385,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             // Quick presets
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
               child: Row(
                 children: _isPercentMode
                     ? [5, 10, 15, 20, 25, 30].map((pct) {
@@ -411,26 +408,20 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               ),
                               decoration: BoxDecoration(
                                 color: _currentExpression == pct.toString()
-                                    ? category.color.withValues(
-                                        alpha: 0.15,
-                                      )
-                                    : AppTheme.surfaceLightColor(
-                                        context,
-                                      ),
+                                    ? category.color.withValues(alpha: 0.15)
+                                    : AppTheme.surfaceLightColor(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _currentExpression == pct.toString()
-                                      ? category.color.withValues(
-                                          alpha: 0.4,
-                                        )
+                                      ? category.color.withValues(alpha: 0.4)
                                       : AppTheme.dividerColor(context),
                                 ),
                               ),
                               child: Text(
                                 '$pct%',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontWeight: KoinTypography.labelWeight,
+                                  fontSize: KoinTypography.caption,
                                   color: _currentExpression == pct.toString()
                                       ? category.color
                                       : AppTheme.textColor(context),
@@ -457,9 +448,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.surfaceLightColor(
-                                  context,
-                                ),
+                                color: AppTheme.surfaceLightColor(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: AppTheme.dividerColor(context),
@@ -468,8 +457,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               child: Text(
                                 '${currency.symbol}$amount',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontWeight: KoinTypography.labelWeight,
+                                  fontSize: KoinTypography.caption,
                                   color: AppTheme.textColor(context),
                                 ),
                               ),

@@ -313,6 +313,7 @@ class _BreathingGlowFABState extends State<_BreathingGlowFAB>
 
   @override
   Widget build(BuildContext context) {
+    if (Theme.of(context).brightness == Brightness.dark) return widget.child;
     return AnimatedBuilder(
       animation: _glowAnimation,
       builder: (context, child) {

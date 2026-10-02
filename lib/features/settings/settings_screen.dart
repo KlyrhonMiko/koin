@@ -10,7 +10,6 @@ import 'package:file_saver/file_saver.dart';
 import 'package:koin/core/core.dart';
 
 class SettingsScreen extends ConsumerWidget {
-
   const SettingsScreen({super.key});
 
   @override
@@ -20,7 +19,9 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: KoinSpacing.screenInset,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -33,9 +34,9 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     'Settings',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                      fontSize: KoinTypography.screenTitle,
+                      fontWeight: KoinTypography.headingWeight,
+                      letterSpacing: KoinTypography.headingTracking,
                       color: AppTheme.textColor(context),
                     ),
                   ),
@@ -73,9 +74,9 @@ class SettingsScreen extends ConsumerWidget {
                       'Koin',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
+                        fontSize: KoinTypography.screenTitle,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.headingTracking,
                       ),
                     ),
                     const Gap(4),
@@ -83,8 +84,8 @@ class SettingsScreen extends ConsumerWidget {
                       'Personal Finance Tracker',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        fontSize: KoinTypography.caption,
+                        fontWeight: KoinTypography.supportingWeight,
                       ),
                     ),
                     const Gap(12),
@@ -101,8 +102,8 @@ class SettingsScreen extends ConsumerWidget {
                         'v1.1.1',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: KoinTypography.small,
+                          fontWeight: KoinTypography.labelWeight,
                         ),
                       ),
                     ),
@@ -124,7 +125,7 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () =>
                         _showThemeModePicker(context, ref, settings.themeMode),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
+                      horizontal: KoinSpacing.screenInset,
                       vertical: 2,
                     ),
                     icon: settings.themeMode == ThemeMode.system
@@ -146,12 +147,14 @@ class SettingsScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: KoinSpacing.screenInset,
+                          ),
                           child: Text(
                             'Theme Color',
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                              fontWeight: KoinTypography.labelWeight,
+                              fontSize: KoinTypography.body,
                               color: AppTheme.textColor(context),
                             ),
                           ),
@@ -162,7 +165,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                              horizontal: KoinSpacing.screenInset,
                               vertical: 16,
                             ),
                             itemCount: AppTheme.accentColors.length,
@@ -232,7 +235,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(28),
+              const Gap(KoinSpacing.sectionGap),
 
               // ── Preferences ──
               const FormSectionTitle.subhead(
@@ -252,7 +255,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(28),
+              const Gap(KoinSpacing.sectionGap),
 
               // ── Data Management ──
               const FormSectionTitle.subhead(
@@ -276,7 +279,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(28),
+              const Gap(KoinSpacing.sectionGap),
 
               // ── Danger Zone ──
               const FormSectionTitle.subhead(
@@ -309,7 +312,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(28),
+              const Gap(KoinSpacing.sectionGap),
             ],
           ),
         ),
@@ -552,12 +555,18 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const Text(
               'Select Currency',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: KoinTypography.sectionTitle,
+                letterSpacing: KoinTypography.headingTracking,
+                fontWeight: KoinTypography.titleWeight,
+              ),
             ),
             const Gap(20),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
                 itemCount: Currency.supportedCurrencies.length,
                 itemBuilder: (context, index) {
                   final currency = Currency.supportedCurrencies[index];
@@ -609,7 +618,7 @@ class SettingsScreen extends ConsumerWidget {
                               color: isSelected
                                   ? Colors.white
                                   : AppTheme.textColor(context),
-                              fontSize: 16,
+                              fontSize: KoinTypography.itemTitle,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -619,17 +628,17 @@ class SettingsScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontWeight: isSelected
                                 ? FontWeight.bold
-                                : FontWeight.w600,
+                                : KoinTypography.labelWeight,
                             color: isSelected
                                 ? AppTheme.primaryColor(context)
                                 : AppTheme.textColor(context),
-                            fontSize: 15,
+                            fontSize: KoinTypography.body,
                           ),
                         ),
                         subtitle: Text(
                           currency.code,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: KoinTypography.small,
                             color: AppTheme.textLightColor(context),
                           ),
                         ),
@@ -665,8 +674,8 @@ class SettingsScreen extends ConsumerWidget {
       builder: (context) => Container(
         padding: const EdgeInsets.only(
           bottom: 32,
-          left: 24,
-          right: 24,
+          left: KoinSpacing.screenInset,
+          right: KoinSpacing.screenInset,
           top: 12,
         ),
         decoration: BoxDecoration(
@@ -687,19 +696,19 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               'App Appearance',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.screenTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.5,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
             const Gap(8),
             Text(
               'Choose how Koin looks to you',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: KoinTypography.compact,
                 color: AppTheme.textLightColor(context),
-                fontWeight: FontWeight.w500,
+                fontWeight: KoinTypography.supportingWeight,
               ),
             ),
             const Gap(32),
@@ -824,9 +833,11 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               title,
               style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: isSelected
+                    ? KoinTypography.headingWeight
+                    : KoinTypography.labelWeight,
                 color: isSelected ? primaryColor : AppTheme.textColor(context),
-                fontSize: 14,
+                fontSize: KoinTypography.compact,
                 letterSpacing: -0.3,
               ),
               textAlign: TextAlign.center,

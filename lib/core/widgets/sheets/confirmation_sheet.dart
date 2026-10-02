@@ -56,9 +56,9 @@ class ConfirmationSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        24,
+        KoinSpacing.screenInset,
         12,
-        24,
+        KoinSpacing.screenInset,
         MediaQuery.of(context).padding.bottom + 24,
       ),
       decoration: BoxDecoration(
@@ -108,10 +108,10 @@ class ConfirmationSheet extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
+                  fontSize: KoinTypography.screenTitle,
+                  fontWeight: KoinTypography.headingWeight,
                   color: AppTheme.textColor(context),
-                  letterSpacing: -0.5,
+                  letterSpacing: KoinTypography.headingTracking,
                 ),
               )
               .animate()
@@ -128,10 +128,10 @@ class ConfirmationSheet extends StatelessWidget {
                   description,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: KoinTypography.body,
                     color: AppTheme.textLightColor(context),
                     height: 1.5,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: KoinTypography.supportingWeight,
                   ),
                 ),
               )
@@ -162,8 +162,8 @@ class ConfirmationSheet extends StatelessWidget {
                       child: Text(
                         cancelLabel,
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontSize: KoinTypography.itemTitle,
+                          fontWeight: KoinTypography.titleWeight,
                           color: AppTheme.textLightColor(context),
                         ),
                       ),
@@ -200,8 +200,8 @@ class ConfirmationSheet extends StatelessWidget {
                         child: Text(
                           confirmLabel,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                            fontSize: KoinTypography.itemTitle,
+                            fontWeight: KoinTypography.headingWeight,
                             letterSpacing: 0.5,
                           ),
                         ),

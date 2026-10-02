@@ -107,9 +107,9 @@ class SelectSheetItem extends StatelessWidget {
                     Text(
                       name,
                       style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+                        fontSize: KoinTypography.body,
+                        fontWeight: KoinTypography.labelWeight,
+                        letterSpacing: KoinTypography.itemTracking,
                         color: AppTheme.textColor(context),
                       ),
                       maxLines: 1,
@@ -124,8 +124,8 @@ class SelectSheetItem extends StatelessWidget {
                                 color: AppTheme.textLightColor(
                                   context,
                                 ).withValues(alpha: 0.45),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                fontWeight: KoinTypography.headingWeight,
+                                fontSize: KoinTypography.caption,
                                 letterSpacing: 2,
                               ),
                             )
@@ -134,8 +134,8 @@ class SelectSheetItem extends StatelessWidget {
                                 symbol: currencySymbol ?? '',
                               ).format(balance),
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontSize: KoinTypography.caption,
+                                fontWeight: KoinTypography.supportingWeight,
                                 color: AppTheme.textLightColor(context),
                               ),
                             ),
@@ -254,9 +254,9 @@ Future<T?> showSelectSheet<T>({
                         Text(
                           title,
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
+                            fontSize: KoinTypography.screenTitle,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.headingTracking,
                             color: AppTheme.textColor(sheetContext),
                           ),
                         ),
@@ -264,8 +264,8 @@ Future<T?> showSelectSheet<T>({
                         Text(
                           subtitle,
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.supportingWeight,
                             height: 1.35,
                             color: AppTheme.textLightColor(sheetContext),
                           ),
@@ -283,8 +283,8 @@ Future<T?> showSelectSheet<T>({
                         emptyMessage,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                          fontSize: KoinTypography.body,
+                          fontWeight: KoinTypography.supportingWeight,
                           color: AppTheme.textLightColor(sheetContext),
                         ),
                       ),

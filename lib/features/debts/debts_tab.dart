@@ -61,8 +61,8 @@ class DebtsTab extends ConsumerWidget {
                     'Add Your First Account',
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.body,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -77,7 +77,12 @@ class DebtsTab extends ConsumerWidget {
         }
 
         return ReorderableListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+          padding: const EdgeInsets.fromLTRB(
+            KoinSpacing.screenInset,
+            12,
+            KoinSpacing.screenInset,
+            100,
+          ),
           header: _buildHeroSummaryCard(context, summary, debts.length, fmt),
           footer: _buildAddDebtButton(context),
           itemCount: debts.length,
@@ -148,8 +153,8 @@ class DebtsTab extends ConsumerWidget {
                     'Net Balance',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontSize: KoinTypography.caption,
+                      fontWeight: KoinTypography.labelWeight,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -166,8 +171,8 @@ class DebtsTab extends ConsumerWidget {
                       '${summary.activeCount} ACTIVE',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
+                        fontWeight: KoinTypography.titleWeight,
+                        fontSize: KoinTypography.overline,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -185,10 +190,10 @@ class DebtsTab extends ConsumerWidget {
                 curve: Curves.easeOutCubic,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.5,
-                  height: 1.1,
+                  fontSize: KoinTypography.summaryAmount,
+                  fontWeight: KoinTypography.headingWeight,
+                  letterSpacing: KoinTypography.amountTracking,
+                  height: KoinTypography.amountHeight,
                 ),
               ),
               const Gap(24),
@@ -208,8 +213,8 @@ class DebtsTab extends ConsumerWidget {
                       'Paid ${currencyFormat.format(totalRepaid)}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                        fontWeight: KoinTypography.labelWeight,
+                        fontSize: KoinTypography.small,
                       ),
                     ),
                   ),
@@ -263,8 +268,8 @@ class DebtsTab extends ConsumerWidget {
               'Add Credit / IOU',
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontWeight: KoinTypography.labelWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ],
@@ -362,8 +367,8 @@ class DebtCard extends StatelessWidget {
                     Text(
                       debt.personName,
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        fontWeight: KoinTypography.labelWeight,
+                        fontSize: KoinTypography.compact,
                         color: AppTheme.textLightColor(context),
                         letterSpacing: -0.1,
                       ),
@@ -374,9 +379,9 @@ class DebtCard extends StatelessWidget {
                     Text(
                       currencyFormat.format(debt.amount),
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 19,
-                        letterSpacing: -0.5,
+                        fontWeight: KoinTypography.titleWeight,
+                        fontSize: KoinTypography.itemAmount,
+                        letterSpacing: KoinTypography.itemTracking,
                         color: AppTheme.textColor(context),
                       ),
                     ),
@@ -414,16 +419,14 @@ class DebtCard extends StatelessWidget {
                           '${currencyFormat.format(remaining)} left',
                           style: TextStyle(
                             color: color,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontSize: KoinTypography.caption,
+                            fontWeight: KoinTypography.labelWeight,
                           ),
                         ),
                         const Gap(8),
                         GestureDetector(
-                          onTap: () => AddRepaymentSheet.show(
-                            context,
-                            debt: debt,
-                          ),
+                          onTap: () =>
+                              AddRepaymentSheet.show(context, debt: debt),
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
@@ -444,8 +447,8 @@ class DebtCard extends StatelessWidget {
                       Text(
                         _formatDueDate(debt.dueDate!),
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                          fontSize: KoinTypography.overline,
+                          fontWeight: KoinTypography.supportingWeight,
                           color: debt.isOverdue()
                               ? Colors.redAccent
                               : AppTheme.textLightColor(

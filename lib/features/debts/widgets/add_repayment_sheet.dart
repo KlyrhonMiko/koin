@@ -28,10 +28,8 @@ class AddRepaymentSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddRepaymentSheet(
-        debt: debt,
-        isIncrease: isIncrease,
-      ),
+      builder: (context) =>
+          AddRepaymentSheet(debt: debt, isIncrease: isIncrease),
     );
   }
 
@@ -133,26 +131,28 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
             Text(
               widget.isIncrease ? 'Increase Credit' : 'Log Payment',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: KoinTypography.screenTitle,
+                fontWeight: KoinTypography.headingWeight,
                 color: AppTheme.textColor(context),
-                letterSpacing: -0.5,
+                letterSpacing: KoinTypography.headingTracking,
               ),
             ),
             const Gap(32),
 
             // ── Amount Input Display ──
             Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   child: Column(
                     children: [
                       Text(
                         settings.currency.code,
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontSize: KoinTypography.overline,
+                          fontWeight: KoinTypography.headingWeight,
                           color: color.withValues(alpha: 0.5),
-                          letterSpacing: 1.2,
+                          letterSpacing: KoinTypography.overlineTracking,
                         ),
                       ),
                       const Gap(4),
@@ -164,8 +164,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                           Text(
                             '${settings.currency.symbol} ',
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.labelWeight,
                               color: color.withValues(alpha: 0.4),
                             ),
                           ),
@@ -174,13 +174,13 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                                 ? '0'
                                 : _currentExpression,
                             style: TextStyle(
-                              fontSize: 44,
+                              fontSize: KoinTypography.inputAmount,
                               fontWeight: FontWeight.w800,
                               color: hasAmount
                                   ? color
                                   : color.withValues(alpha: 0.3),
-                              letterSpacing: -1.5,
-                              height: 1.1,
+                              letterSpacing: -2,
+                              height: KoinTypography.amountHeight,
                             ),
                           ),
                         ],
@@ -191,8 +191,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                           child: Text(
                             '= ${settings.currency.symbol}${_amountController.text}',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.labelWeight,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.6),
@@ -218,7 +218,9 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
 
             // ── Account & Note Fields ──
             Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceColor(context),
@@ -283,8 +285,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                                       .primaryFocus
                                       ?.unfocus(),
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 15,
+                                    fontWeight: KoinTypography.supportingWeight,
+                                    fontSize: KoinTypography.body,
                                     color: AppTheme.textColor(context),
                                   ),
                                   decoration: InputDecoration(
@@ -294,7 +296,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                                         context,
                                       ).withValues(alpha: 0.4),
                                       fontWeight: FontWeight.w400,
-                                      fontSize: 15,
+                                      fontSize: KoinTypography.body,
                                     ),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
@@ -340,7 +342,9 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
             if (_noteFocusNode.hasFocus) ...[
               const Gap(32),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
                 child:
                     SizedBox(
                           width: double.infinity,
@@ -361,8 +365,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                                   ? 'Confirm Increase'
                                   : 'Confirm Payment',
                               style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontSize: KoinTypography.itemTitle,
+                                fontWeight: KoinTypography.titleWeight,
                                 letterSpacing: -0.3,
                               ),
                             ),

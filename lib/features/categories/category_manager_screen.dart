@@ -99,7 +99,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        KoinSpacing.screenInset,
+        8,
+        KoinSpacing.screenInset,
+        16,
+      ),
       child: Column(
         children: [
           Row(
@@ -112,9 +117,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                         child: Text(
                           'Manage Categories',
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            fontSize: KoinTypography.sectionTitle,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.headingTracking,
                             color: AppTheme.textColor(context),
                           ),
                         ),
@@ -176,14 +181,14 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
       autofocus: true,
       style: TextStyle(
         color: AppTheme.textColor(context),
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+        fontSize: KoinTypography.itemTitle,
+        fontWeight: KoinTypography.supportingWeight,
       ),
       decoration: InputDecoration(
         hintText: 'Search categories...',
         hintStyle: TextStyle(
           color: AppTheme.textLightColor(context),
-          fontSize: 16,
+          fontSize: KoinTypography.itemTitle,
           fontWeight: FontWeight.w400,
         ),
         border: InputBorder.none,
@@ -225,13 +230,14 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
               color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
             ),
           ),
-          const Gap(28),
+          const Gap(KoinSpacing.sectionGap),
           Text(
             isExpense ? 'No expense categories' : 'No income categories',
             style: TextStyle(
               color: AppTheme.textColor(context),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontSize: KoinTypography.sectionTitle,
+              letterSpacing: KoinTypography.headingTracking,
+              fontWeight: KoinTypography.headingWeight,
             ),
           ),
           const Gap(8),
@@ -239,10 +245,10 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
             'Create your first ${isExpense ? 'expense' : 'income'} category',
             style: TextStyle(
               color: AppTheme.textLightColor(context),
-              fontSize: 14,
+              fontSize: KoinTypography.compact,
             ),
           ),
-          const Gap(28),
+          const Gap(KoinSpacing.sectionGap),
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
@@ -342,7 +348,12 @@ class _CategoryListState extends ConsumerState<CategoryList>
     final fmt = NumberFormat.currency(symbol: widget.currency.symbol);
 
     return ReorderableListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+      padding: const EdgeInsets.fromLTRB(
+        KoinSpacing.screenInset,
+        8,
+        KoinSpacing.screenInset,
+        100,
+      ),
       physics: const BouncingScrollPhysics(),
       itemCount: widget.categories.length,
       onReorderItem: (oldIndex, newIndex) {
@@ -360,8 +371,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                     Text(
                       '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.labelWeight,
                         color: AppTheme.textLightColor(context),
                         letterSpacing: 0.3,
                       ),
@@ -422,8 +433,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                       Text(
                         'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontWeight: KoinTypography.labelWeight,
+                          fontSize: KoinTypography.compact,
                           color: widget.type == TransactionType.expense
                               ? AppTheme.expenseColor(context)
                               : AppTheme.incomeColor(context),
@@ -535,9 +546,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                       Text(
                                         category.name,
                                         style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                          letterSpacing: -0.2,
+                                          fontWeight:
+                                              KoinTypography.titleWeight,
+                                          fontSize: KoinTypography.body,
+                                          letterSpacing:
+                                              KoinTypography.itemTracking,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -554,8 +567,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                             color: AppTheme.textLightColor(
                                               context,
                                             ),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
+                                            fontSize: KoinTypography.small,
+                                            fontWeight:
+                                                KoinTypography.supportingWeight,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
