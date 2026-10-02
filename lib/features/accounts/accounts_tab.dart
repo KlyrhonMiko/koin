@@ -97,11 +97,9 @@ class AccountsTab extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: SwipeToDeleteTile(
                   key: Key('dismiss_${account.id}'),
-                  borderRadius: BorderRadius.circular(20),
-                  backgroundColor: AppTheme.errorColor(
-                    context,
-                  ).withValues(alpha: 0.15),
-                  iconColor: AppTheme.errorColor(context),
+                  borderRadius: BorderRadius.circular(24),
+                  fillRoundedCorners: true,
+                  backgroundColor: AppTheme.errorColor(context),
                   icon: Icons.delete_rounded,
                   confirmTitle: 'Delete Account?',
                   confirmDescription:

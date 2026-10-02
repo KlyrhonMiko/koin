@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/widgets/cards/card_background_shapes.dart';
 
 enum SummaryShapeStyle {
   dashboard,
@@ -11,9 +12,7 @@ enum SummaryShapeStyle {
   defaultStyle,
 }
 
-/// Consolidated hero summary surface card.
-/// Encapsulates 32px rounded corners, primary gradient/lighting, glow elevation,
-/// and layered translucent depth bubbles.
+/// Hero summary surface with a primary gradient and translucent account-style shapes.
 class KoinSummaryCard extends StatelessWidget {
   final Widget child;
   final Gradient? gradient;
@@ -34,192 +33,41 @@ class KoinSummaryCard extends StatelessWidget {
     this.shapeStyle = SummaryShapeStyle.defaultStyle,
   });
 
-  List<Widget> _buildShapes() {
-    switch (shapeStyle) {
-      case SummaryShapeStyle.dashboard:
-        return [
-          Positioned(
-            top: -40,
-            right: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.08)),
+  // Reuse the account card patterns with a modest visibility boost for heroes.
+  int get _shapeType => switch (shapeStyle) {
+    SummaryShapeStyle.dashboard => 0,
+    SummaryShapeStyle.savings => 1,
+    SummaryShapeStyle.debts => 2,
+    SummaryShapeStyle.debtDetails => 5,
+    SummaryShapeStyle.budgets => 4,
+    SummaryShapeStyle.analysis => 7,
+    SummaryShapeStyle.defaultStyle => 2,
+  };
+
+  Widget _buildCornerAccent() {
+    final useTile =
+        shapeStyle == SummaryShapeStyle.savings ||
+        shapeStyle == SummaryShapeStyle.analysis;
+
+    return Positioned(
+      left: -36,
+      top: useTile ? -34 : null,
+      bottom: useTile ? null : -38,
+      child: IgnorePointer(
+        child: Transform.rotate(
+          angle: useTile ? -0.3 : 0,
+          child: Container(
+            width: 116,
+            height: 116,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              shape: useTile ? BoxShape.rectangle : BoxShape.circle,
+              borderRadius: useTile ? BorderRadius.circular(32) : null,
             ),
           ),
-          Positioned(
-            bottom: -30,
-            left: -20,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.savings:
-        return [
-          Positioned(
-            top: -50,
-            right: -30,
-            child: Transform.rotate(
-              angle: -0.2,
-              child: Container(
-                width: 150,
-                height: 160,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -30,
-            child: Transform.rotate(
-              angle: 0.3,
-              child: Container(
-                width: 140,
-                height: 110,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.debts:
-        return [
-          Positioned(
-            left: -50,
-            top: -20,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.08)),
-            ),
-          ),
-          Positioned(
-            right: -20,
-            top: -50,
-            child: Transform.rotate(
-              angle: 0.2,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.debtDetails:
-        return [
-          Positioned(
-            right: -30,
-            bottom: 0,
-            child: Container(
-              width: 120,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(60),
-                color: Colors.white.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            top: -40,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.budgets:
-        return [
-          Positioned(
-            right: 40,
-            top: -20,
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.08)),
-            ),
-          ),
-          Positioned(
-            right: -20,
-            bottom: -10,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.12)),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.analysis:
-        return [
-          Positioned(
-            right: -30,
-            bottom: -50,
-            child: Transform.rotate(
-              angle: 0.5,
-              child: Container(
-                width: 140,
-                height: 120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -20,
-            top: -20,
-            child: Transform.rotate(
-              angle: -0.3,
-              child: Container(
-                width: 80,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-          ),
-        ];
-      case SummaryShapeStyle.defaultStyle:
-        return [
-          Positioned(
-            left: -20,
-            bottom: -40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.07)),
-            ),
-          ),
-          Positioned(
-            right: -10,
-            top: -10,
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
-            ),
-          ),
-        ];
-    }
+        ),
+      ),
+    );
   }
 
   @override
@@ -229,7 +77,6 @@ class KoinSummaryCard extends StatelessWidget {
 
     return Container(
       margin: margin,
-      padding: padding,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -243,10 +90,18 @@ class KoinSummaryCard extends StatelessWidget {
         ],
       ),
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
-          ..._buildShapes(),
-          child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CardBackgroundShapes(
+                shapeType: _shapeType,
+                opacityMultiplier: 1.4,
+              ),
+            ),
+          ),
+          // The eclipse pattern already decorates opposite corners.
+          if (shapeStyle != SummaryShapeStyle.debtDetails) _buildCornerAccent(),
+          Padding(padding: padding, child: child),
         ],
       ),
     );
