@@ -35,17 +35,21 @@ class UpcomingEntry {
 
   bool get isDebt => kind == UpcomingEntryKind.debtInstallment;
   bool get isPayment => kind == UpcomingEntryKind.plannedPayment;
+  bool get isFlexible =>
+      plannedPayment?.frequency == PaymentFrequency.flexible;
 
   int daysUntilDue([DateTime? now]) {
+    if (isFlexible) return 0;
     final ref = now ?? DateTime.now();
     return DateTime(dueDate.year, dueDate.month, dueDate.day)
         .difference(DateTime(ref.year, ref.month, ref.day))
         .inDays;
   }
 
-  bool isOverdue([DateTime? now]) => daysUntilDue(now) < 0;
+  bool isOverdue([DateTime? now]) => !isFlexible && daysUntilDue(now) < 0;
 
   String formattedDueStatus([DateTime? now]) {
+    if (isFlexible) return 'Available anytime';
     final diff = daysUntilDue(now);
     if (diff < 0) return '${-diff}d overdue';
     if (diff == 0) return 'Due today';
@@ -69,15 +73,18 @@ class UpcomingTimeline {
     DateTime? now,
   }) {
     final List<UpcomingEntry> all = [];
+    final reference = now ?? DateTime.now();
+    final today = DateTime(reference.year, reference.month, reference.day);
 
     for (final p in payments) {
+      final isFlex = p.frequency == PaymentFrequency.flexible;
       all.add(
         UpcomingEntry(
           id: p.id,
           title: p.title,
           subtitle: p.frequency.name.toUpperCase(),
           amount: p.amount,
-          dueDate: p.nextDate,
+          dueDate: isFlex ? today : p.nextDate,
           isExpense: p.type == TransactionType.expense,
           isAutoProcess: p.isAutoProcess,
           categoryId: p.categoryId,

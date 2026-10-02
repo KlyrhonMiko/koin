@@ -30,65 +30,81 @@ class BudgetProgressCard extends StatelessWidget {
       return over != 0 ? over : b.percent.compareTo(a.percent);
     });
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.dividerColor(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (budgets.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'No budgets yet',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.titleWeight,
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    'Set a monthly limit to track your spending.',
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: KoinTypography.small,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onManage,
-                    child: const Text('Set budgets'),
-                  ),
-                ],
+    if (budgets.isEmpty) {
+      return PressableScale(
+        onTap: () {
+          HapticService.light();
+          onManage();
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-          for (var i = 0; i < budgets.take(3).length; i++) ...[
-            if (i > 0)
-              Divider(height: 1, color: AppTheme.dividerColor(context)),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: _category(context, budgets[i]),
-            ),
-          ],
-          if (budgets.length > 3)
-            TextButton(
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'No budgets yet',
+                style: TextStyle(
+                  color: AppTheme.textColor(context),
+                  fontSize: KoinTypography.body,
+                  fontWeight: KoinTypography.titleWeight,
+                ),
+              ),
+              const Gap(4),
+              Text(
+                'Set a monthly limit to track your spending.',
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: KoinTypography.small,
+                ),
+              ),
+              const Gap(10),
+              TextButton(
+                onPressed: onManage,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Set budgets'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final previewBudgets = budgets.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final metrics in previewBudgets)
+          _buildBudgetCard(context, metrics),
+        if (budgets.length > 3)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: TextButton(
               onPressed: onManage,
               child: Text('View all ${budgets.length} budgets'),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
-  Widget _category(BuildContext context, CategoryBudgetMetrics metrics) {
+  Widget _buildBudgetCard(BuildContext context, CategoryBudgetMetrics metrics) {
     final category = metrics.category;
     final color = metrics.isOverBudget
         ? AppTheme.errorColor(context)
@@ -103,78 +119,101 @@ class BudgetProgressCard extends StatelessWidget {
       fontSize: KoinTypography.small,
       fontWeight: KoinTypography.labelWeight,
     );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: category.color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            IconUtils.getIcon(category.iconCodePoint),
-            size: 17,
-            color: category.color,
-          ),
+
+    return PressableScale(
+      onTap: () {
+        HapticService.light();
+        onManage();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        const Gap(12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final name = Text(
-                    category.name,
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.titleWeight,
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: category.color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                IconUtils.getIcon(category.iconCodePoint),
+                size: 20,
+                color: category.color,
+              ),
+            ),
+            const Gap(14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final name = Text(
+                        category.name,
+                        style: TextStyle(
+                          color: AppTheme.textColor(context),
+                          fontSize: KoinTypography.body,
+                          fontWeight: KoinTypography.titleWeight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                      final amount = Text(status, style: amountStyle);
+                      if (constraints.maxWidth < 220 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 19) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [name, const Gap(4), amount],
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(child: name),
+                          const Gap(12),
+                          amount,
+                        ],
+                      );
+                    },
+                  ),
+                  const Gap(8),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: 0,
+                      end: metrics.progress.clamp(0.0, 1.0),
                     ),
-                  );
-                  final amount = Text(status, style: amountStyle);
-                  if (constraints.maxWidth < 220 ||
-                      MediaQuery.textScalerOf(context).scale(14) > 19) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [name, const Gap(4), amount],
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: name),
-                      const Gap(12),
-                      amount,
-                    ],
-                  );
-                },
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, progress, _) => LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      borderRadius: BorderRadius.circular(2),
+                      backgroundColor: AppTheme.surfaceLightColor(context),
+                      color: color,
+                      semanticsLabel: '${category.name}, $status',
+                      semanticsValue:
+                          '${(metrics.progress.clamp(0.0, 1.0) * 100).round()}%',
+                    ),
+                  ),
+                ],
               ),
-              const Gap(8),
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(
-                  begin: 0,
-                  end: metrics.progress.clamp(0.0, 1.0),
-                ),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeOutCubic,
-                builder: (context, progress, _) => LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 4,
-                  borderRadius: BorderRadius.circular(2),
-                  backgroundColor: AppTheme.surfaceLightColor(context),
-                  color: color,
-                  semanticsLabel: '${category.name}, $status',
-                  semanticsValue:
-                      '${(metrics.progress.clamp(0.0, 1.0) * 100).round()}%',
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

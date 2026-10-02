@@ -692,6 +692,40 @@ void main() {
       expect(tomorrowEntry.formattedDueStatus(now), 'Due tomorrow');
       expect(overdueEntry.formattedDueStatus(now), '2d overdue');
       expect(overdueEntry.isOverdue(now), isTrue);
+
+      final flexPayment = PlannedPayment(
+        id: 'flex_1',
+        title: 'Allowance',
+        amount: 200,
+        type: TransactionType.income,
+        categoryId: 'cat_allowance',
+        accountId: 'acc_cash',
+        startDate: DateTime(2026, 6, 1),
+        nextDate: DateTime(2026, 6, 1),
+        frequency: PaymentFrequency.flexible,
+      );
+      final flexEntry = UpcomingEntry(
+        id: 'flex_1',
+        title: 'Allowance',
+        amount: 200,
+        dueDate: DateTime(2026, 6, 1),
+        isExpense: false,
+        kind: UpcomingEntryKind.plannedPayment,
+        plannedPayment: flexPayment,
+      );
+      expect(flexEntry.isFlexible, isTrue);
+      expect(flexEntry.isOverdue(now), isFalse);
+      expect(flexEntry.daysUntilDue(now), 0);
+      expect(flexEntry.formattedDueStatus(now), 'Available anytime');
+
+      final timelineWithFlex = UpcomingTimeline.calculate(
+        payments: [flexPayment],
+        debts: [],
+        now: now,
+      );
+      expect(timelineWithFlex.entries.first.dueDate, DateTime(2026, 6, 10));
+      expect(timelineWithFlex.overdueEntries, isEmpty);
+      expect(timelineWithFlex.totalIncomeDue, 200.0);
     });
   });
 

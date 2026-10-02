@@ -138,7 +138,9 @@ class UpcomingEntryTile extends StatelessWidget {
                   ),
                   const Gap(4),
                   Text(
-                    '${DateFormat.MMMMd().format(entry.dueDate)} • ${entry.formattedDueStatus()}',
+                    entry.isFlexible
+                        ? 'Flexible • Available anytime'
+                        : '${DateFormat.MMMMd().format(entry.dueDate)} • ${entry.formattedDueStatus()}',
                     style: TextStyle(
                       color: entry.isOverdue()
                           ? AppTheme.expenseColor(context)
