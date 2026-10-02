@@ -73,10 +73,7 @@ class KoinSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sourceGradient = gradient ?? AppTheme.primaryGradient(context);
-    final effectiveGradient = sourceGradient is LinearGradient
-        ? AppTheme.filledGradient(context, sourceGradient)
-        : sourceGradient;
+    final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
 
     return Container(

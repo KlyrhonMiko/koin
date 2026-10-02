@@ -463,31 +463,51 @@ class DashboardScreen extends ConsumerWidget {
           },
         ),
         const Gap(4),
-        SizedBox(
-          height: 92,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            itemCount: stats.accounts.length + 1,
-            separatorBuilder: (context, index) => const Gap(12),
-            itemBuilder: (context, index) {
-              if (index == stats.accounts.length) {
-                return _buildAddAccountCard(context, ref);
-              }
-              final account = stats.accounts[index];
-              final balance = stats.accountBalances[account.id] ?? 0;
-              return PressableScale(
-                onTap: () {
-                  HapticService.light();
-                  Navigator.push(
-                    context,
-                    SlideUpRoute(page: AccountFormScreen(account: account)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Keep a compact card width; adapt down on smaller screens.
+            // The trailing partial card remains a cue to swipe.
+            final cardWidth =
+                ((constraints.maxWidth +
+                            KoinSpacing.screenInset -
+                            KoinSpacing.cardGap) /
+                        1.8)
+                    .clamp(0.0, 180.0);
+            return SizedBox(
+              // Keep the familiar credit-card silhouette as width changes.
+              height: cardWidth / 1.586,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                itemCount: stats.accounts.length + 1,
+                separatorBuilder: (context, index) =>
+                    const Gap(KoinSpacing.cardGap),
+                itemBuilder: (context, index) {
+                  if (index == stats.accounts.length) {
+                    return _buildAddAccountCard(context, ref);
+                  }
+                  final account = stats.accounts[index];
+                  final balance = stats.accountBalances[account.id] ?? 0;
+                  return PressableScale(
+                    onTap: () {
+                      HapticService.light();
+                      Navigator.push(
+                        context,
+                        SlideUpRoute(page: AccountFormScreen(account: account)),
+                      );
+                    },
+                    child: _buildAccountCard(
+                      context,
+                      account,
+                      balance,
+                      currency,
+                      width: cardWidth,
+                    ),
                   );
                 },
-                child: _buildAccountCard(context, account, balance, currency),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -497,8 +517,9 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     Account account,
     double balance,
-    Currency currency,
-  ) {
+    Currency currency, {
+    required double width,
+  }) {
     final isColored = account.cardColor != null || account.logoAsset != null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -507,18 +528,20 @@ class DashboardScreen extends ConsumerWidget {
       final baseColor = account.cardColor ?? account.color;
       decoration = BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: AppTheme.filledGradient(context, LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [baseColor.withValues(alpha: 0.95), baseColor],
-        )),
-        boxShadow: isDark ? null : [
-          BoxShadow(
-            color: baseColor.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: baseColor.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       );
     } else {
       decoration = BoxDecoration(
@@ -647,7 +670,7 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return Container(
-      width: 160,
+      width: width,
       clipBehavior: Clip.antiAlias,
       decoration: decoration,
       child: Stack(
@@ -714,7 +737,7 @@ class DashboardScreen extends ConsumerWidget {
                               ? Colors.white
                               : AppTheme.textColor(context),
                           fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.itemAmount,
+                          fontSize: KoinTypography.cardAmount,
                           letterSpacing: 2,
                         ),
                       )
@@ -729,7 +752,7 @@ class DashboardScreen extends ConsumerWidget {
                           ).format(v),
                           style: TextStyle(
                             fontWeight: KoinTypography.titleWeight,
-                            fontSize: KoinTypography.itemAmount,
+                            fontSize: KoinTypography.cardAmount,
                             letterSpacing: KoinTypography.itemTracking,
                             color: isColored
                                 ? Colors.white

@@ -36,9 +36,7 @@ class KoinPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveGradient = gradient != null
-        ? AppTheme.filledGradient(context, gradient!)
-        : AppTheme.primaryGradient(context);
+    final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
     final isInteractive = enabled && !isLoading && onPressed != null;
 
     Widget button = Container(

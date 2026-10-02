@@ -10,7 +10,7 @@ class AppTheme {
   static const _darkSurface = Color(0xFF202427);
   static const _darkSurfaceLight = Color(0xFF292E32);
 
-  /// Keep the chosen hue, but give accents a softer, readable dark variant.
+  /// Soften semantic status colors; user-selected accents stay unchanged.
   static Color _darkAccent(Color color) {
     final hsl = HSLColor.fromColor(color);
     return hsl
@@ -19,37 +19,10 @@ class AppTheme {
         .toColor();
   }
 
-  static Color accentColor(BuildContext context, Color color) =>
+  static Color _statusColor(BuildContext context, Color color) =>
       Theme.of(context).brightness == Brightness.dark
       ? _darkAccent(color)
       : color;
-
-  /// Dark fills stay deep enough for the white labels used on custom cards.
-  static LinearGradient filledGradient(
-    BuildContext context,
-    LinearGradient gradient,
-  ) {
-    if (Theme.of(context).brightness != Brightness.dark) return gradient;
-    return LinearGradient(
-      colors: gradient.colors
-          .map((color) {
-            final hsl = HSLColor.fromColor(color);
-            return hsl
-                .withSaturation(hsl.saturation < 0.05
-                    ? hsl.saturation
-                    : hsl.saturation.clamp(0.45, 0.65))
-                .withLightness(hsl.lightness.clamp(0.26, 0.30))
-                .withAlpha(1)
-                .toColor();
-          })
-          .toList(),
-      stops: gradient.stops,
-      begin: gradient.begin,
-      end: gradient.end,
-      tileMode: gradient.tileMode,
-      transform: gradient.transform,
-    );
-  }
 
   static SystemUiOverlayStyle getSystemOverlayStyle(bool isDarkMode) {
     return SystemUiOverlayStyle(
@@ -81,11 +54,11 @@ class AppTheme {
       Theme.of(context).colorScheme.secondary;
 
   static Color incomeColor(BuildContext context) =>
-      accentColor(context, const Color(0xFF00D09E));
+      _statusColor(context, const Color(0xFF00D09E));
   static Color expenseColor(BuildContext context) =>
-      accentColor(context, const Color(0xFFFF6B6B));
+      _statusColor(context, const Color(0xFFFF6B6B));
   static Color transferColor(BuildContext context) =>
-      accentColor(context, const Color(0xFF3B82F6));
+      _statusColor(context, const Color(0xFF3B82F6));
 
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -94,13 +67,10 @@ class AppTheme {
 
   static LinearGradient primaryGradient(BuildContext context) {
     final primary = primaryColor(context);
-    return filledGradient(
-      context,
-      LinearGradient(
-        colors: [primary, primary.withValues(alpha: 0.8)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
+    return LinearGradient(
+      colors: [primary, primary.withValues(alpha: 0.8)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
     );
   }
 
@@ -117,7 +87,9 @@ class AppTheme {
   );
 
   static ThemeData getTheme(Color primaryColor, bool isDarkMode) {
-    if (isDarkMode) primaryColor = _darkAccent(primaryColor);
+    final onPrimary = isDarkMode && primaryColor.computeLuminance() > 0.179
+        ? Colors.black
+        : Colors.white;
     final Color backgroundColor = isDarkMode
         ? _darkBackground
         : const Color(0xFFF8F9FA);
@@ -156,10 +128,10 @@ class AppTheme {
               secondary: secondaryColor,
               surface: surfaceColor,
               error: errorColor,
-              onPrimary: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
+              onPrimary: onPrimary,
               onSecondary: const Color(0xFF0A0A0A),
               onSurface: textColor,
-              onError: Colors.white,
+              onError: _darkBackground,
               onSurfaceVariant: textLightColor,
               surfaceContainerLowest: backgroundColor,
               surfaceContainerLow: surfaceColor,
@@ -306,7 +278,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
+          foregroundColor: onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
@@ -377,7 +349,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
-        foregroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
+        foregroundColor: onPrimary,
         elevation: isDarkMode ? 0 : 8,
         highlightElevation: isDarkMode ? 2 : 12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

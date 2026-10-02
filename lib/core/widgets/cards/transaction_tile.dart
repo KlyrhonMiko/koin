@@ -91,9 +91,7 @@ class TransactionTile extends StatelessWidget {
               ? AppTheme.incomeColor(context)
               : AppTheme.expenseColor(context));
 
-    final color = isTransfer || category == null
-        ? typeColor
-        : AppTheme.accentColor(context, category!.color);
+    final color = isTransfer ? typeColor : (category?.color ?? typeColor);
 
     final icon = isTransfer
         ? Icons.swap_horiz_rounded

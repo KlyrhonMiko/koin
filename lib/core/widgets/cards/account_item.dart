@@ -44,7 +44,7 @@ class AccountItem extends StatelessWidget {
       final baseColor = account.cardColor ?? account.color;
       return BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: AppTheme.filledGradient(context, LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -52,19 +52,21 @@ class AccountItem extends StatelessWidget {
             baseColor.withValues(alpha: 0.8),
           ],
           stops: const [0.2, 1.0],
-        )),
-        boxShadow: isDark ? null : [
-          BoxShadow(
-            color: baseColor.withValues(alpha: 0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: baseColor.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: baseColor.withValues(alpha: 0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: baseColor.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
         border: Border.all(
           color: isSelected
               ? Colors.white
@@ -175,9 +177,7 @@ class AccountItem extends StatelessWidget {
                           : Center(
                               child: Icon(
                                 IconUtils.getIcon(account.iconCodePoint),
-                                color: colored
-                                    ? Colors.white
-                                    : AppTheme.accentColor(context, account.color),
+                                color: colored ? Colors.white : account.color,
                                 size: 24,
                               ),
                             ),
