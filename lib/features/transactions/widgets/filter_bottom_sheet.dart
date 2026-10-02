@@ -41,16 +41,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     super.dispose();
   }
 
-  int get _activeFilterCount {
-    int count = 0;
-    if (_filter.type != null) count++;
-    if (_filter.dateRange != null) count++;
-    if (_filter.categoryIds.isNotEmpty) count += _filter.categoryIds.length;
-    if (_filter.accountIds.isNotEmpty) count += _filter.accountIds.length;
-    if (_minAmountController.text.isNotEmpty) count++;
-    if (_maxAmountController.text.isNotEmpty) count++;
-    return count;
-  }
+  int get _activeFilterCount => _filter
+      .copyWith(
+        minAmount: double.tryParse(_minAmountController.text),
+        maxAmount: double.tryParse(_maxAmountController.text),
+        clearMinAmount: _minAmountController.text.isEmpty,
+        clearMaxAmount: _maxAmountController.text.isEmpty,
+      )
+      .activeFilterCount;
 
   void _apply() {
     final min = double.tryParse(_minAmountController.text);

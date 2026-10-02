@@ -328,4 +328,36 @@ void main() {
       expect((await ledger.getTransactions()).length, equals(0));
     });
   });
+
+  group('TransactionCategory Domain Budgeting Tests', () {
+    final cat = TransactionCategory(
+      id: 'cat_groceries',
+      name: 'Groceries',
+      iconCodePoint: 1234,
+      colorHex: '#FF0000',
+      type: TransactionType.expense,
+      budget: 500.0,
+    );
+
+    test('withFixedBudget updates fixed budget and clears percentage', () {
+      final updated = cat.withFixedBudget(750.0);
+      expect(updated.budget, equals(750.0));
+      expect(updated.budgetPercent, isNull);
+      expect(updated.isPercentBudget, isFalse);
+    });
+
+    test('withPercentBudget updates percentage and clears fixed amount', () {
+      final updated = cat.withPercentBudget(15.0);
+      expect(updated.budget, isNull);
+      expect(updated.budgetPercent, equals(15.0));
+      expect(updated.isPercentBudget, isTrue);
+    });
+
+    test('withoutBudget clears all budget parameters', () {
+      final cleared = cat.withoutBudget();
+      expect(cleared.budget, isNull);
+      expect(cleared.budgetPercent, isNull);
+      expect(cleared.isPercentBudget, isFalse);
+    });
+  });
 }

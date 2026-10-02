@@ -7,6 +7,17 @@ import 'package:koin/core/core.dart';
 class VoiceInputSheet extends ConsumerStatefulWidget {
   const VoiceInputSheet({super.key});
 
+  /// Displays [VoiceInputSheet] in a modal bottom sheet and returns parsed transaction data if accepted.
+  static Future<ParsedTransactionData?> show(BuildContext context) {
+    HapticService.selection();
+    return showModalBottomSheet<ParsedTransactionData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const VoiceInputSheet(),
+    );
+  }
+
   @override
   ConsumerState<VoiceInputSheet> createState() => _VoiceInputSheetState();
 }

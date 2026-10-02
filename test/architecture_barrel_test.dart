@@ -71,6 +71,8 @@ void main() {
         expect(TransactionsListScreen, isNotNull);
         expect(AddRepaymentSheet, isNotNull);
         expect(SavingsLogSheet, isNotNull);
+        expect(BudgetEditorSheet, isNotNull);
+        expect(VoiceInputSheet, isNotNull);
       },
     );
 

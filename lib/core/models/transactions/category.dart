@@ -49,6 +49,45 @@ class TransactionCategory {
     );
   }
 
+  /// Returns a category copy with the specified fixed budget amount.
+  TransactionCategory withFixedBudget(double? amount) => TransactionCategory(
+        id: id,
+        name: name,
+        iconCodePoint: iconCodePoint,
+        colorHex: colorHex,
+        type: type,
+        budget: (amount == null || amount <= 0) ? null : amount,
+        budgetPercent: null,
+        isPercentBudget: false,
+        position: position,
+      );
+
+  /// Returns a category copy with the specified percentage budget.
+  TransactionCategory withPercentBudget(double? percent) => TransactionCategory(
+        id: id,
+        name: name,
+        iconCodePoint: iconCodePoint,
+        colorHex: colorHex,
+        type: type,
+        budget: null,
+        budgetPercent: (percent == null || percent <= 0) ? null : percent,
+        isPercentBudget: percent != null && percent > 0,
+        position: position,
+      );
+
+  /// Returns a category copy with any budget configuration cleared.
+  TransactionCategory withoutBudget() => TransactionCategory(
+        id: id,
+        name: name,
+        iconCodePoint: iconCodePoint,
+        colorHex: colorHex,
+        type: type,
+        budget: null,
+        budgetPercent: null,
+        isPercentBudget: false,
+        position: position,
+      );
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

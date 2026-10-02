@@ -364,13 +364,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Voice Input
   // ═══════════════════════════════════════════════════════
   Future<void> _showVoiceInputSheet() async {
-    HapticService.selection();
-    final result = await showModalBottomSheet<ParsedTransactionData>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const VoiceInputSheet(),
-    );
+    final result = await VoiceInputSheet.show(context);
 
     if (result != null && mounted) {
       setState(() {

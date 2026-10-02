@@ -62,3 +62,9 @@ A reactive domain calculation and presentation layout module (`BudgetOverview`, 
 ### Transaction Group & Filter
 Domain modules (`TransactionGroup`, `TransactionFilter`) encapsulating transaction collection boundaries, chronological day grouping, net daily balance aggregation (signed positive income and negative expense), composite criteria filtering (by query, transaction type, date range, categories, accounts, and monetary limits), active filter counter, and summary text generation. Eliminates scattered collection manipulation and grouping loops across transaction lists and dashboard screens.
 
+### Category Budgeting Domain Logic
+Domain methods on `TransactionCategory` (`withFixedBudget`, `withPercentBudget`, `withoutBudget`) encapsulating mutation rules, mutually exclusive fixed-amount versus income-percentage budgeting, and budget clearing. Decouples state manipulation and UI forms from low-level copy-constructor logic.
+
+### Standardized Sheet Seams & Payment Coordinator
+Encapsulated modal presentation and orchestration seams (`BudgetEditorSheet.show`, `VoiceInputSheet.show`, `AddRepaymentSheet.show`, `PaymentConfirmationSheet.confirmAndProcess`). Centralizes bottom sheet instantiation, user interaction, state dispatch (e.g., planned payment occurrence execution with category and account overrides), and user feedback (`KoinSnackBar`) into deep callable methods, eliminating copy-paste sheet construction across dashboard, cashflow, and debt features.
+
