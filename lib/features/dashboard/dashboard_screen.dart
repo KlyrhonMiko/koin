@@ -7,6 +7,7 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/accounts/accounts.dart';
 import 'package:koin/features/cashflow/cashflow.dart';
 import 'package:koin/features/dashboard/upcoming_screen.dart';
+import 'package:koin/features/dashboard/widgets/budget_progress_card.dart';
 import 'package:koin/features/dashboard/widgets/upcoming_entry_tile.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/features/transactions/transactions.dart';
@@ -64,7 +65,9 @@ class DashboardScreen extends ConsumerWidget {
                       const Gap(KoinSpacing.sectionGap),
                       _buildAccountsList(context, ref, stats, currency),
                       const Gap(KoinSpacing.sectionGap),
-                      _buildBudgetSection(context, ref, stats, currency),
+                      _buildUpcomingPayments(context, ref, currency),
+                      const Gap(KoinSpacing.sectionGap),
+                      _buildBudgetSection(context, ref, currency),
                       const Gap(32),
                       KoinSectionHeader(
                         title: 'Spending Overview',
@@ -81,8 +84,6 @@ class DashboardScreen extends ConsumerWidget {
                         currency,
                         transactionsAsync.value ?? [],
                       ),
-                      const Gap(KoinSpacing.sectionGap),
-                      _buildUpcomingPayments(context, ref, currency),
                       const Gap(32),
                       KoinSectionHeader(
                         title: 'Recent Transactions',
@@ -865,285 +866,31 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildBudgetSection(
     BuildContext context,
     WidgetRef ref,
-    DashboardStats stats,
     Currency currency,
   ) {
-    final overview = ref.watch(monthlyBudgetOverviewProvider(DateTime.now()));
-    final budgetedCategories = overview.budgetedCategories;
+    final now = DateTime.now();
+    final month = DateTime(now.year, now.month);
+    final overview = ref.watch(monthlyBudgetOverviewProvider(month));
+    void manageBudgets() {
+      HapticService.light();
+      Navigator.popUntil(context, (route) => route.isFirst);
+      ref.read(navigationProvider.notifier).setIndex(2);
+    }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         KoinSectionHeader(
           title: 'Budget Progress',
           actionLabel: 'Manage',
-          onActionTap: () {
-            Navigator.popUntil(context, (route) => route.isFirst);
-            ref.read(navigationProvider.notifier).setIndex(2);
-          },
+          onActionTap: manageBudgets,
         ),
         const Gap(14),
-        if (budgetedCategories.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(28),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppTheme.dividerColor(context)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 32,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                  ),
-                ),
-                const Gap(14),
-                Text(
-                  'No budgets set yet',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontWeight: KoinTypography.labelWeight,
-                    fontSize: KoinTypography.body,
-                  ),
-                ),
-                const Gap(6),
-                Text(
-                  'Set monthly budgets to track spending',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
-                    fontSize: KoinTypography.caption,
-                  ),
-                ),
-                const Gap(18),
-                ElevatedButton(
-                  onPressed: () {
-                    HapticService.medium();
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                    ref.read(navigationProvider.notifier).setIndex(2);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor(context),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Set Monthly Budgets',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          SizedBox(
-            height: 130,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              itemCount: budgetedCategories.length,
-              separatorBuilder: (context, index) => const Gap(16),
-              itemBuilder: (context, index) {
-                final category = budgetedCategories[index];
-                final metrics = overview.metricsByCategory[category.id];
-                if (metrics == null) return const SizedBox.shrink();
-
-                final isOver = metrics.isOverBudget;
-                final isNearLimit = metrics.isNearLimit;
-
-                return Container(
-                  width: 240,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isOver
-                          ? AppTheme.errorColor(context).withValues(alpha: 0.3)
-                          : Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.4),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black.withValues(alpha: 0.2)
-                            : Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        spreadRadius: -2,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: category.color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              IconUtils.getIcon(category.iconCodePoint),
-                              color: category.color,
-                              size: 18,
-                            ),
-                          ),
-                          const Gap(10),
-                          Expanded(
-                            child: Text(
-                              category.name,
-                              style: const TextStyle(
-                                fontWeight: KoinTypography.titleWeight,
-                                fontSize: KoinTypography.body,
-                                letterSpacing: KoinTypography.itemTracking,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isOver
-                                  ? AppTheme.errorColor(
-                                      context,
-                                    ).withValues(alpha: 0.1)
-                                  : (isNearLimit
-                                        ? Colors.amber.shade700.withValues(
-                                            alpha: 0.1,
-                                          )
-                                        : category.color.withValues(
-                                            alpha: 0.1,
-                                          )),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              metrics.formattedPercent,
-                              style: TextStyle(
-                                fontWeight: KoinTypography.headingWeight,
-                                color: isOver
-                                    ? AppTheme.errorColor(context)
-                                    : (isNearLimit
-                                          ? Colors.amber.shade800
-                                          : category.color),
-                                fontSize: KoinTypography.small,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isOver
-                                ? 'Exceeded by ${NumberFormat.compactCurrency(symbol: currency.symbol).format(metrics.overBudgetAmount)}'
-                                : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(metrics.remaining)} left',
-                            style: TextStyle(
-                              color: isOver
-                                  ? AppTheme.errorColor(context)
-                                  : AppTheme.textLightColor(context),
-                              fontSize: KoinTypography.caption,
-                              fontWeight: KoinTypography.labelWeight,
-                            ),
-                          ),
-                          const Gap(10),
-                          // Custom gradient progress bar
-                          TweenAnimationBuilder<double>(
-                            tween: Tween<double>(
-                              begin: 0,
-                              end: metrics.progress,
-                            ),
-                            duration: const Duration(milliseconds: 1000),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, animValue, child) {
-                              return Container(
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.dividerColor(
-                                    context,
-                                  ).withValues(alpha: 0.4),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: FractionallySizedBox(
-                                  alignment: Alignment.centerLeft,
-                                  widthFactor: animValue,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: isOver
-                                          ? AppTheme.dangerGradient
-                                          : LinearGradient(
-                                              colors: [
-                                                category.color.withValues(
-                                                  alpha: 0.7,
-                                                ),
-                                                category.color,
-                                              ],
-                                            ),
-                                      borderRadius: BorderRadius.circular(4),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: isOver
-                                              ? AppTheme.errorColor(
-                                                  context,
-                                                ).withValues(alpha: 0.3)
-                                              : category.color.withValues(
-                                                  alpha: 0.3,
-                                                ),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
+        BudgetProgressCard(
+          overview: overview,
+          currency: currency,
+          onManage: manageBudgets,
+        ),
       ],
     );
   }
