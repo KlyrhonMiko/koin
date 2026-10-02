@@ -420,18 +420,10 @@ class DebtCard extends StatelessWidget {
                         ),
                         const Gap(8),
                         GestureDetector(
-                          onTap: () {
-                            HapticService.medium();
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => AddRepaymentSheet(
-                                debt: debt,
-                                isIncrease: false,
-                              ),
-                            );
-                          },
+                          onTap: () => AddRepaymentSheet.show(
+                            context,
+                            debt: debt,
+                          ),
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(

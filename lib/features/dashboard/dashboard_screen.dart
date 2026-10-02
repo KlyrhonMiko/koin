@@ -28,39 +28,6 @@ class DashboardScreen extends ConsumerWidget {
     return Icons.dark_mode_rounded;
   }
 
-  Future<void> _paySubscription(
-    BuildContext context,
-    WidgetRef ref,
-    PlannedPayment payment,
-  ) async {
-    final result = await PaymentConfirmationSheet.show(
-      context: context,
-      payment: payment,
-    );
-    if (result == null || !context.mounted) return;
-
-    final isExpense = payment.type == TransactionType.expense;
-
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .processOccurrence(
-          payment: payment,
-          amount: result.amount,
-          accountId: result.accountId,
-          categoryId: result.categoryId,
-        );
-
-    if (context.mounted) {
-      KoinSnackBar.success(
-        context,
-        isExpense ? 'Payment processed' : 'Income processed',
-        subtitle: isExpense
-            ? 'Your planned payment has been completed'
-            : 'Your recurring income has been completed',
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(dashboardStatsProvider);
@@ -1345,7 +1312,11 @@ class DashboardScreen extends ConsumerWidget {
                 currency: currency,
                 category: category,
                 onPayPayment: (payment) =>
-                    _paySubscription(context, ref, payment),
+                    PaymentConfirmationSheet.confirmAndProcess(
+                      context: context,
+                      ref: ref,
+                      payment: payment,
+                    ),
               );
 
               if (!AnimationTracker.hasSeen(trackId)) {

@@ -21,38 +21,6 @@ class CashflowScheduleTab extends ConsumerWidget {
 
   bool get _isIncome => type == TransactionType.income;
 
-  Future<void> _processPayment(
-    BuildContext context,
-    WidgetRef ref,
-    PlannedPayment payment,
-  ) async {
-    final result = await PaymentConfirmationSheet.show(
-      context: context,
-      payment: payment,
-    );
-    if (result == null || !context.mounted) return;
-
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .processOccurrence(
-          payment: payment,
-          amount: result.amount,
-          accountId: result.accountId,
-          categoryId: result.categoryId,
-        );
-
-    if (context.mounted) {
-      KoinSnackBar.success(
-        context,
-        _isIncome ? 'Income processed' : 'Payment processed',
-        subtitle: _isIncome
-            ? 'Your recurring income has been completed'
-            : 'Your planned payment has been completed',
-      );
-    }
-  }
-
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paymentsAsync = ref.watch(plannedPaymentProvider);
@@ -436,7 +404,11 @@ class CashflowScheduleTab extends ConsumerWidget {
                 InkWell(
                   onTap: () {
                     HapticService.light();
-                    _processPayment(context, ref, payment);
+                    PaymentConfirmationSheet.confirmAndProcess(
+                      context: context,
+                      ref: ref,
+                      payment: payment,
+                    );
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(

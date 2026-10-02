@@ -17,6 +17,24 @@ class AddRepaymentSheet extends ConsumerStatefulWidget {
     this.isIncrease = false,
   });
 
+  /// Presents [AddRepaymentSheet] in a standardized modal bottom sheet.
+  static Future<void> show(
+    BuildContext context, {
+    required Debt debt,
+    bool isIncrease = false,
+  }) {
+    HapticService.medium();
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddRepaymentSheet(
+        debt: debt,
+        isIncrease: isIncrease,
+      ),
+    );
+  }
+
   @override
   ConsumerState<AddRepaymentSheet> createState() => AddRepaymentSheetState();
 }

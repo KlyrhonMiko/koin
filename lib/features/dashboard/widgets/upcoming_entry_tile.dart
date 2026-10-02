@@ -64,13 +64,7 @@ class UpcomingEntryTile extends StatelessWidget {
           if (onRepayDebt != null) {
             onRepayDebt!(entry.debt!);
           } else {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) =>
-                  AddRepaymentSheet(debt: entry.debt!, isIncrease: false),
-            );
+            AddRepaymentSheet.show(context, debt: entry.debt!);
           }
         }
       },

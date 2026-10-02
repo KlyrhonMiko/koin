@@ -22,14 +22,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     Debt debt, {
     bool isIncrease = false,
   }) {
-    HapticService.light();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          AddRepaymentSheet(debt: debt, isIncrease: isIncrease),
-    );
+    AddRepaymentSheet.show(context, debt: debt, isIncrease: isIncrease);
   }
 
   Future<void> _showDeleteConfirmation(Debt debt) async {
@@ -74,9 +67,6 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             return const Center(child: Text('Credit/IOU not found'));
           }
 
-          final progress = debt.progress;
-          final isSettled = debt.isSettled;
-          final remaining = debt.remainingAmount;
           final color = debt.type == DebtType.owedToMe
               ? AppTheme.incomeColor(context)
               : AppTheme.expenseColor(context);
@@ -122,9 +112,6 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         _buildMainCard(
                           context,
                           debt: debt,
-                          progress: progress,
-                          isSettled: isSettled,
-                          remaining: remaining,
                           color: color,
                           currencyFormat: currencyFormat,
                         ),
@@ -166,12 +153,13 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
   Widget _buildMainCard(
     BuildContext context, {
     required Debt debt,
-    required double progress,
-    required bool isSettled,
-    required double remaining,
     required Color color,
     required NumberFormat currencyFormat,
   }) {
+    final progress = debt.progress;
+    final isSettled = debt.isSettled;
+    final remaining = debt.remainingAmount;
+
     return KoinSummaryCard(
           shapeStyle: SummaryShapeStyle.debtDetails,
           borderRadius: 28,

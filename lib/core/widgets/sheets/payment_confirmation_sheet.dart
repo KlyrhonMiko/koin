@@ -5,7 +5,9 @@ import 'package:gap/gap.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
+import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 import 'account_picker_sheet.dart';
 import 'category_picker_sheet.dart';
 import '../inputs/selection_tile.dart';
@@ -41,6 +43,39 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
       isScrollControlled: true,
       builder: (context) => PaymentConfirmationSheet(payment: payment),
     );
+  }
+
+  /// Displays the confirmation sheet and processes the planned payment occurrence upon confirmation.
+  static Future<bool> confirmAndProcess({
+    required BuildContext context,
+    required WidgetRef ref,
+    required PlannedPayment payment,
+  }) async {
+    final result = await show(
+      context: context,
+      payment: payment,
+    );
+    if (result == null || !context.mounted) return false;
+
+    final isExpense = payment.type == TransactionType.expense;
+
+    await ref.read(plannedPaymentProvider.notifier).processOccurrence(
+          payment: payment,
+          amount: result.amount,
+          accountId: result.accountId,
+          categoryId: result.categoryId,
+        );
+
+    if (context.mounted) {
+      KoinSnackBar.success(
+        context,
+        isExpense ? 'Payment processed' : 'Income processed',
+        subtitle: isExpense
+            ? 'Your planned payment has been completed'
+            : 'Your recurring income has been completed',
+      );
+    }
+    return true;
   }
 
   @override

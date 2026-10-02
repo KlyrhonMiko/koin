@@ -9,39 +9,6 @@ import 'package:koin/features/dashboard/widgets/upcoming_entry_tile.dart';
 class UpcomingScreen extends ConsumerWidget {
   const UpcomingScreen({super.key});
 
-  Future<void> _paySubscription(
-    BuildContext context,
-    WidgetRef ref,
-    PlannedPayment payment,
-  ) async {
-    final result = await PaymentConfirmationSheet.show(
-      context: context,
-      payment: payment,
-    );
-    if (result == null || !context.mounted) return;
-
-    final isExpense = payment.type == TransactionType.expense;
-
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .processOccurrence(
-          payment: payment,
-          amount: result.amount,
-          accountId: result.accountId,
-          categoryId: result.categoryId,
-        );
-
-    if (context.mounted) {
-      KoinSnackBar.success(
-        context,
-        isExpense ? 'Payment processed' : 'Income processed',
-        subtitle: isExpense
-            ? 'Your planned payment has been completed'
-            : 'Your recurring income has been completed',
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeline = ref.watch(upcomingTimelineProvider);
@@ -100,7 +67,11 @@ class UpcomingScreen extends ConsumerWidget {
                         currency: currency,
                         category: category,
                         onPayPayment: (payment) =>
-                            _paySubscription(context, ref, payment),
+                            PaymentConfirmationSheet.confirmAndProcess(
+                              context: context,
+                              ref: ref,
+                              payment: payment,
+                            ),
                       )
                           .animate()
                           .fade(delay: (index * 40).ms)
