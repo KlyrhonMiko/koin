@@ -516,114 +516,16 @@ class SettingsScreen extends ConsumerWidget {
     required IconData icon,
     bool isDestructive = false,
   }) {
-    HapticService.light();
-    return showModalBottomSheet<bool>(
+    return ConfirmationSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children:
-              [
-                    const KoinBottomSheetHandle(
-                      padding: EdgeInsets.only(bottom: 24),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color:
-                            (isDestructive
-                                    ? Colors.red
-                                    : AppTheme.primaryColor(context))
-                                .withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        icon,
-                        color: isDestructive
-                            ? Colors.red
-                            : AppTheme.primaryColor(context),
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: AppTheme.textLightColor(context),
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const Gap(16),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: isDestructive
-                                  ? Colors.red
-                                  : AppTheme.primaryColor(context),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Text(
-                              confirmText,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ]
-                  .animate(interval: 40.ms)
-                  .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                  .scale(
-                    begin: const Offset(0.95, 0.95),
-                    duration: 250.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
-        ),
-      ),
+      title: title,
+      description: message,
+      confirmLabel: confirmText,
+      confirmColor: isDestructive
+          ? AppTheme.errorColor(context)
+          : AppTheme.primaryColor(context),
+      icon: icon,
+      isDanger: isDestructive,
     );
   }
 

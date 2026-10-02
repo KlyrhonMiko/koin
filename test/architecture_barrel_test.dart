@@ -79,6 +79,8 @@ void main() {
       expect(AppTheme, isNotNull);
       expect(SqliteLedgerAdapter, isNotNull);
       expect(MainLayout, isNotNull);
+      expect(TransactionGroup, isNotNull);
+      expect(TransactionTile, isNotNull);
     });
   });
 }

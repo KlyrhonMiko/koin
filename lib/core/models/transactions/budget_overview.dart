@@ -19,6 +19,18 @@ class CategoryBudgetMetrics {
     required this.remaining,
     required this.isOverBudget,
   });
+
+  /// Spending percentage relative to budget.
+  double get percent => budget > 0 ? (spent / budget * 100) : 0.0;
+
+  /// String formatted percentage e.g. "85%".
+  String get formattedPercent => '${percent.toStringAsFixed(0)}%';
+
+  /// The monetary amount spent exceeding the budget limit, or 0.0 if not exceeded.
+  double get overBudgetAmount => isOverBudget ? (spent - budget) : 0.0;
+
+  /// Whether current spending is within 80% to 100% of the allocated budget.
+  bool get isNearLimit => progress > 0.8 && !isOverBudget;
 }
 
 /// Deep Domain Module: Encapsulates budget evaluation, spending aggregation,

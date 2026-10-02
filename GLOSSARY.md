@@ -59,3 +59,6 @@ An immutable domain value model (`SavingsSummary`) computing aggregate savings p
 ### Budget Overview & Layout Packing
 A reactive domain calculation and presentation layout module (`BudgetOverview`, `UnbudgetedChipItem`, `monthlyBudgetOverviewProvider`). Consolidates category-level spending limits, dynamic income percentage resolutions, and progress metrics while encapsulating greedy row bin-packing for unbudgeted category management without leaking untyped collections or algorithms into UI build trees.
 
+### Transaction Group & Filter
+Domain modules (`TransactionGroup`, `TransactionFilter`) encapsulating transaction collection boundaries, chronological day grouping, net daily balance aggregation (signed positive income and negative expense), composite criteria filtering (by query, transaction type, date range, categories, accounts, and monetary limits), active filter counter, and summary text generation. Eliminates scattered collection manipulation and grouping loops across transaction lists and dashboard screens.
+

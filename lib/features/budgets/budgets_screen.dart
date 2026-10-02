@@ -95,19 +95,18 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                       ...budgeted.asMap().entries.map((entry) {
                                         final index = entry.key;
                                         final category = entry.value;
-                                        final spent =
-                                            stats.categorySpending[category
-                                                .id] ??
-                                            0;
+                                        final metrics =
+                                            overview.metricsByCategory[category
+                                                .id];
+                                        if (metrics == null) {
+                                          return const SizedBox.shrink();
+                                        }
                                         return _buildBudgetCard(
                                           context,
                                           ref,
-                                          category: category,
-                                          spent: spent,
+                                          metrics: metrics,
                                           currency: currency,
                                           index: index,
-                                          resolvedBudget:
-                                              category.resolvedBudget(totalIncome),
                                           totalIncome: totalIncome,
                                         );
                                       }),
@@ -611,19 +610,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   Widget _buildBudgetCard(
     BuildContext context,
     WidgetRef ref, {
-    required TransactionCategory category,
-    required double spent,
+    required CategoryBudgetMetrics metrics,
     required currency,
     required int index,
-    required double resolvedBudget,
     required double totalIncome,
   }) {
-    final budget = resolvedBudget;
-    final progress = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
-    final percent = budget > 0
-        ? (spent / budget * 100).toStringAsFixed(0)
-        : '0';
-    final isOver = spent > budget;
+    final category = metrics.category;
+    final budget = metrics.budget;
+    final spent = metrics.spent;
+    final progress = metrics.progress;
+    final percent = metrics.percent.toStringAsFixed(0);
+    final isOver = metrics.isOverBudget;
     final fmt = NumberFormat.currency(symbol: currency.symbol);
     final isPercent = category.isPercentBudget;
 

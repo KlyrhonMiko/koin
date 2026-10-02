@@ -870,10 +870,8 @@ class DashboardScreen extends ConsumerWidget {
     DashboardStats stats,
     Currency currency,
   ) {
-    final categories = ref.watch(categoriesProvider).value ?? [];
-    final budgetedCategories = categories
-        .where((c) => c.type == TransactionType.expense && c.hasBudget)
-        .toList();
+    final overview = ref.watch(monthlyBudgetOverviewProvider(DateTime.now()));
+    final budgetedCategories = overview.budgetedCategories;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -970,20 +968,11 @@ class DashboardScreen extends ConsumerWidget {
               separatorBuilder: (context, index) => const Gap(16),
               itemBuilder: (context, index) {
                 final category = budgetedCategories[index];
-                final spent = stats.categorySpending[category.id] ?? 0;
-                final budget = category.resolvedBudget(stats.totalIncome);
-                final progress = category.calculateProgress(
-                  spent: spent,
-                  totalIncome: stats.totalIncome,
-                );
-                final percent = budget > 0
-                    ? (spent / budget * 100).toStringAsFixed(0)
-                    : '0';
-                final isOver = category.isOverBudget(
-                  spent: spent,
-                  totalIncome: stats.totalIncome,
-                );
-                final isNearLimit = progress > 0.8 && !isOver;
+                final metrics = overview.metricsByCategory[category.id];
+                if (metrics == null) return const SizedBox.shrink();
+
+                final isOver = metrics.isOverBudget;
+                final isNearLimit = metrics.isNearLimit;
 
                 return Container(
                   width: 240,
@@ -1067,7 +1056,7 @@ class DashboardScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '$percent%',
+                              metrics.formattedPercent,
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: isOver
@@ -1086,8 +1075,8 @@ class DashboardScreen extends ConsumerWidget {
                         children: [
                           Text(
                             isOver
-                                ? 'Exceeded by ${NumberFormat.compactCurrency(symbol: currency.symbol).format(spent - budget)}'
-                                : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(budget - spent)} left',
+                                ? 'Exceeded by ${NumberFormat.compactCurrency(symbol: currency.symbol).format(metrics.overBudgetAmount)}'
+                                : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(metrics.remaining)} left',
                             style: TextStyle(
                               color: isOver
                                   ? AppTheme.errorColor(context)
@@ -1099,7 +1088,7 @@ class DashboardScreen extends ConsumerWidget {
                           const Gap(10),
                           // Custom gradient progress bar
                           TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: progress),
+                            tween: Tween<double>(begin: 0, end: metrics.progress),
                             duration: const Duration(milliseconds: 1000),
                             curve: Curves.easeOutCubic,
                             builder: (context, animValue, child) {
@@ -1162,7 +1151,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildRecentTransactions(
     BuildContext context,
     WidgetRef ref,
-    AsyncValue transactionsAsync,
+    AsyncValue<List<AppTransaction>> transactionsAsync,
     Currency currency,
   ) {
     return transactionsAsync.when(
@@ -1219,6 +1208,7 @@ class DashboardScreen extends ConsumerWidget {
 
         final recent = transactions.take(10).toList();
         final categories = ref.watch(categoriesProvider).value ?? [];
+        final accounts = ref.watch(accountProvider).value ?? [];
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         final yesterday = today.subtract(const Duration(days: 1));
@@ -1261,121 +1251,12 @@ class DashboardScreen extends ConsumerWidget {
             lastLabel = label;
           }
 
-          final isIncome = tx.type == TransactionType.income;
-          final isTransfer = tx.type == TransactionType.transfer;
-
-          final color = isTransfer
-              ? AppTheme.transferColor(context)
-              : (isIncome
-                    ? AppTheme.incomeColor(context)
-                    : AppTheme.expenseColor(context));
-
-          final category = categories
-              .where((c) => c.id == tx.categoryId)
-              .firstOrNull;
-          final categoryName = category?.name ?? 'Others';
-          final displayTitle = tx.note.isEmpty ? categoryName : tx.note;
-
-          // Use category icon if available, fallback to type-based icon
-          final IconData txIcon;
-          if (isTransfer) {
-            txIcon = Icons.swap_horiz_rounded;
-          } else if (category != null) {
-            txIcon = IconUtils.getIcon(category.iconCodePoint);
-          } else {
-            txIcon = isIncome
-                ? Icons.arrow_downward_rounded
-                : Icons.arrow_upward_rounded;
-          }
-
-          final Color iconBgColor = isTransfer
-              ? color.withValues(alpha: 0.1)
-              : (category != null
-                    ? category.color.withValues(alpha: 0.1)
-                    : color.withValues(alpha: 0.1));
-          final Color iconColor = isTransfer
-              ? color
-              : (category != null ? category.color : color);
-
           items.add(
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticService.light();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: iconBgColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(txIcon, color: iconColor, size: 20),
-                      ),
-                      const Gap(14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              displayTitle,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const Gap(3),
-                            Text(
-                              isTransfer ? 'Transfer' : categoryName,
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            isTransfer
-                                ? NumberFormat.currency(
-                                    symbol: currency.symbol,
-                                  ).format(tx.amount)
-                                : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const Gap(2),
-                          Text(
-                            DateFormat.jm().format(tx.date),
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            TransactionTile.resolve(
+              transaction: tx,
+              categories: categories,
+              accounts: accounts,
+              currency: currency,
             ),
           );
 

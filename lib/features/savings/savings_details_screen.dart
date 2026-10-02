@@ -277,185 +277,139 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
-    return Container(
-          padding: const EdgeInsets.all(28),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient(context),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.25),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
+    return KoinSummaryCard(
+      shapeStyle: SummaryShapeStyle.savings,
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned(
-                top: -80,
-                right: -40,
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      width: 40,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -50,
-                left: -50,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      width: 24,
-                    ),
-                  ),
-                ),
-              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  Text(
+                    'Saved',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const Gap(6),
+                  AnimatedCounter(
+                    value: goal.currentAmount,
+                    formatter: (v) => currencyFormat.format(v),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.0,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: 0,
+                      end: (goal.isStash && !goal.hasTarget)
+                          ? 1.0
+                          : goal.progress,
+                    ),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, val, child) {
+                      return Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Text(
-                            'Saved',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.2,
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: CircularProgressIndicator(
+                              value: 1.0,
+                              strokeWidth: 4,
+                              color: Colors.white.withValues(
+                                alpha: 0.1,
+                              ),
                             ),
                           ),
-                          const Gap(6),
-                          AnimatedCounter(
-                            value: goal.currentAmount,
-                            formatter: (v) => currencyFormat.format(v),
-                            duration: const Duration(milliseconds: 1400),
-                            curve: Curves.easeOutCubic,
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: CircularProgressIndicator(
+                              value: val,
+                              strokeWidth: 4,
+                              strokeCap: StrokeCap.round,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            '${(val * 100).toInt()}%',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 32,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: -1.0,
-                              height: 1.1,
                             ),
                           ),
                         ],
-                      ),
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                        child: Center(
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(
-                              begin: 0,
-                              end: (goal.isStash && !goal.hasTarget)
-                                  ? 1.0
-                                  : goal.progress,
-                            ),
-                            duration: const Duration(milliseconds: 1400),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, val, child) {
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 56,
-                                    height: 56,
-                                    child: CircularProgressIndicator(
-                                      value: 1.0,
-                                      strokeWidth: 4,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 56,
-                                    height: 56,
-                                    child: CircularProgressIndicator(
-                                      value: val,
-                                      strokeWidth: 4,
-                                      strokeCap: StrokeCap.round,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${(val * 100).toInt()}%',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ).animate().scale(
-                        begin: const Offset(0.85, 0.85),
-                        end: const Offset(1.0, 1.0),
-                        duration: 600.ms,
-                        curve: Curves.elasticOut,
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                  const Gap(24),
-                  if (!goal.isStash || goal.hasTarget) ...[
-                    Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                    const Gap(16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatItem(
-                          context,
-                          label: 'Target',
-                          value: goal.targetAmount ?? 0.0,
-                          formatter: currencyFormat.format,
-                          alignment: CrossAxisAlignment.start,
-                        ),
-                        _buildStatItem(
-                          context,
-                          label: goal.remainingDays != null
-                              ? 'Left (${goal.remainingDays}d)'
-                              : 'Left',
-                          value: goal.remainingAmount ?? 0.0,
-                          formatter: currencyFormat.format,
-                          alignment: CrossAxisAlignment.end,
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
+                ),
+              ).animate().scale(
+                begin: const Offset(0.85, 0.85),
+                end: const Offset(1.0, 1.0),
+                duration: 600.ms,
+                curve: Curves.elasticOut,
               ),
             ],
           ),
-        )
+          const Gap(24),
+          if (!goal.isStash || goal.hasTarget) ...[
+            Container(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+            const Gap(16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatItem(
+                  context,
+                  label: 'Target',
+                  value: goal.targetAmount ?? 0.0,
+                  formatter: currencyFormat.format,
+                  alignment: CrossAxisAlignment.start,
+                ),
+                _buildStatItem(
+                  context,
+                  label: goal.remainingDays != null
+                      ? 'Left (${goal.remainingDays}d)'
+                      : 'Left',
+                  value: goal.remainingAmount ?? 0.0,
+                  formatter: currencyFormat.format,
+                  alignment: CrossAxisAlignment.end,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    )
         .animate()
         .fade(duration: 400.ms)
         .slideY(begin: 0.04, curve: Curves.easeOutCubic);

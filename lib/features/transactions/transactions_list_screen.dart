@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
-import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/features/transactions/widgets/filter_bottom_sheet.dart';
 import 'package:gap/gap.dart';
 
@@ -150,42 +149,25 @@ class TransactionsListScreen extends ConsumerWidget {
                   );
                 }
 
-                // Group transactions by date
-                final grouped = <String, List<AppTransaction>>{};
-                for (final tx in transactions) {
-                  final key = DateFormat.yMMMd().format(tx.date);
-                  grouped.putIfAbsent(key, () => []).add(tx);
-                }
-                final dateKeys = grouped.keys.toList();
+                // Group transactions into deep domain TransactionGroups
+                final groups = TransactionGroup.groupTransactions(transactions);
+                final accounts = accountsAsync.value ?? [];
 
                 return ListView.builder(
                   key: const ValueKey('transactions_list_builder'),
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                  itemCount: dateKeys.length,
+                  itemCount: groups.length,
                   itemBuilder: (context, sectionIndex) {
-                    final dateKey = dateKeys[sectionIndex];
-                    final txList = grouped[dateKey]!;
-
-                    double dailyTotal = 0;
-                    for (var tx in txList) {
-                      if (tx.type == TransactionType.income) {
-                        dailyTotal += tx.amount;
-                      } else if (tx.type == TransactionType.expense) {
-                        dailyTotal -= tx.amount;
-                      }
-                    }
-
-                    String formattedTotal = NumberFormat.currency(
-                      symbol: currency.symbol,
-                    ).format(dailyTotal.abs());
-                    if (dailyTotal > 0) formattedTotal = '+$formattedTotal';
-                    if (dailyTotal < 0) formattedTotal = '-$formattedTotal';
+                    final group = groups[sectionIndex];
+                    final dateKey = group.dateKey;
+                    final txList = group.transactions;
+                    final dailyTotal = group.dailyTotal;
 
                     Widget dayGroup = Padding(
                       key: GlobalObjectKey('day_padding_$dateKey'),
                       padding: EdgeInsets.only(
-                        bottom: sectionIndex == dateKeys.length - 1 ? 0 : 20,
+                        bottom: sectionIndex == groups.length - 1 ? 0 : 20,
                       ),
                       child: Container(
                         decoration: BoxDecoration(
@@ -278,175 +260,12 @@ class TransactionsListScreen extends ConsumerWidget {
                               ...txList.asMap().entries.map((entry) {
                                 final i = entry.key;
                                 final tx = entry.value;
-                                final isIncome =
-                                    tx.type == TransactionType.income;
-                                final isTransfer =
-                                    tx.type == TransactionType.transfer;
 
-                                final typeColor = isTransfer
-                                    ? AppTheme.transferColor(context)
-                                    : (isIncome
-                                          ? AppTheme.incomeColor(context)
-                                          : AppTheme.expenseColor(context));
-
-                                final category = categories
-                                    .where((c) => c.id == tx.categoryId)
-                                    .firstOrNull;
-
-                                final color = isTransfer
-                                    ? typeColor
-                                    : (category?.color ?? typeColor);
-
-                                final icon = isTransfer
-                                    ? Icons.swap_horiz_rounded
-                                    : (category != null
-                                          ? IconUtils.getIcon(
-                                              category.iconCodePoint,
-                                            )
-                                          : (isIncome
-                                                ? Icons.arrow_downward_rounded
-                                                : Icons.arrow_upward_rounded));
-
-                                final categoryName = isTransfer
-                                    ? 'Transfer'
-                                    : (categories
-                                              .where(
-                                                (c) => c.id == tx.categoryId,
-                                              )
-                                              .map((c) => c.name)
-                                              .firstOrNull ??
-                                          'Others');
-
-                                final accountName = accountsAsync.when(
-                                  data: (accounts) =>
-                                      accounts
-                                          .where((a) => a.id == tx.accountId)
-                                          .map((a) => a.name)
-                                          .firstOrNull ??
-                                      'Account',
-                                  loading: () => '...',
-                                  error: (error, stack) => 'Error',
-                                );
-
-                                final toAccountName = isTransfer
-                                    ? accountsAsync.when(
-                                        data: (accounts) =>
-                                            accounts
-                                                .where(
-                                                  (a) => a.id == tx.toAccountId,
-                                                )
-                                                .map((a) => a.name)
-                                                .firstOrNull ??
-                                            'Account',
-                                        loading: () => '...',
-                                        error: (error, stack) => 'Error',
-                                      )
-                                    : null;
-
-                                final displayTitle = tx.note.isEmpty
-                                    ? categoryName
-                                    : tx.note;
-
-                                final displaySubtitle = isTransfer
-                                    ? (tx.note.isEmpty
-                                          ? '$accountName → $toAccountName'
-                                          : 'Transfer • $accountName → $toAccountName')
-                                    : (tx.note.isEmpty
-                                          ? accountName
-                                          : '$categoryName • $accountName');
-
-                                final listItem = PressableScale(
-                                  onTap: () {
-                                    HapticService.light();
-                                    Navigator.push(
-                                      context,
-                                      SlideUpRoute(
-                                        page: AddTransactionScreen(
-                                          editingTransaction: tx,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 14,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: color.withValues(alpha: 0.1),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            icon,
-                                            color: color,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                displayTitle,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                displaySubtitle,
-                                                style: TextStyle(
-                                                  color:
-                                                      AppTheme.textLightColor(
-                                                        context,
-                                                      ),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              isTransfer
-                                                  ? NumberFormat.currency(
-                                                      symbol: currency.symbol,
-                                                    ).format(tx.amount)
-                                                  : '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: currency.symbol).format(tx.amount)}',
-                                              style: TextStyle(
-                                                color: typeColor,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 15,
-                                                letterSpacing: -0.5,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              DateFormat.jm().format(tx.date),
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.6),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                final listItem = TransactionTile.resolve(
+                                  transaction: tx,
+                                  categories: categories,
+                                  accounts: accounts,
+                                  currency: currency,
                                 );
 
                                 Widget txAnimated = SwipeToDeleteTile(
@@ -534,15 +353,7 @@ class TransactionsListScreen extends ConsumerWidget {
   ) {
     final primary = AppTheme.primaryColor(context);
     final hasFilters = !filter.isEmpty;
-
-    // Count non-query filters
-    int filterCount = 0;
-    if (filter.type != null) filterCount++;
-    if (filter.dateRange != null) filterCount++;
-    if (filter.categoryIds.isNotEmpty) filterCount += filter.categoryIds.length;
-    if (filter.accountIds.isNotEmpty) filterCount += filter.accountIds.length;
-    if (filter.minAmount != null) filterCount++;
-    if (filter.maxAmount != null) filterCount++;
+    final filterCount = filter.activeFilterCount;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
@@ -676,7 +487,7 @@ class TransactionsListScreen extends ConsumerWidget {
           ),
 
           // ── Active filter summary strip ──
-          if (hasFilters)
+          if (hasFilters && filter.summaryText.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child:
@@ -690,7 +501,7 @@ class TransactionsListScreen extends ConsumerWidget {
                           const Gap(6),
                           Expanded(
                             child: Text(
-                              _buildFilterSummary(filter),
+                              filter.summaryText,
                               style: TextStyle(
                                 color: AppTheme.textLightColor(
                                   context,
@@ -736,31 +547,5 @@ class TransactionsListScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _buildFilterSummary(TransactionFilter filter) {
-    final parts = <String>[];
-    if (filter.type != null) {
-      parts.add(
-        filter.type!.name[0].toUpperCase() + filter.type!.name.substring(1),
-      );
-    }
-    if (filter.dateRange != null) {
-      parts.add('Date range');
-    }
-    if (filter.categoryIds.isNotEmpty) {
-      parts.add(
-        '${filter.categoryIds.length} categor${filter.categoryIds.length == 1 ? 'y' : 'ies'}',
-      );
-    }
-    if (filter.accountIds.isNotEmpty) {
-      parts.add(
-        '${filter.accountIds.length} account${filter.accountIds.length == 1 ? '' : 's'}',
-      );
-    }
-    if (filter.minAmount != null || filter.maxAmount != null) {
-      parts.add('Amount range');
-    }
-    return parts.join(' • ');
   }
 }

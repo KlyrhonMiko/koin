@@ -98,7 +98,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                         ),
               ),
             ),
-            _buildSummaryCard(context, ref, currencySymbol, getCountOnly: true)
+            _buildExportActions(
+              context,
+              categories,
+              accounts,
+              currencySymbol,
+            )
                 .animate()
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                 .scale(
@@ -132,23 +137,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   Widget _buildSummaryCard(
     BuildContext context,
     WidgetRef ref,
-    String currencySymbol, {
-    bool getCountOnly = false,
-  }) {
+    String currencySymbol,
+  ) {
     final transactionsAsync = ref.watch(transactionProvider);
     if (transactionsAsync.value == null) return const SizedBox.shrink();
 
     final filtered = _currentReportFilter.apply(transactionsAsync.value!);
-
-    if (getCountOnly) {
-      return _buildExportActions(
-        context,
-        ref.watch(categoriesProvider).value ?? [],
-        ref.watch(accountProvider).value ?? [],
-        currencySymbol,
-      );
-    }
-
     final totalAmount = filtered.fold(0.0, (sum, tx) => sum + tx.amount);
 
     return Container(

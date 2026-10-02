@@ -76,16 +76,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               period: period,
             );
             final filteredTransactions = analysis.filteredTransactions;
-            final previousExpense = analysis.previousExpense;
-            final totalExpense = analysis.totalExpense;
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 _buildImmersiveHeader(
                   context,
-                  totalExpense,
-                  previousExpense,
+                  analysis,
                   currency,
                 ),
                 if (filteredTransactions.isEmpty)
@@ -109,7 +106,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         [
                               _buildChartSection(
                                 context,
-                                filteredTransactions,
+                                analysis,
                                 categories,
                                 currency,
                               ),
@@ -131,7 +128,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                               _buildTopCategoriesList(
                                 context,
                                 ref,
-                                filteredTransactions,
+                                analysis,
                                 categories,
                                 currency,
                               ),
@@ -177,8 +174,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildImmersiveHeader(
     BuildContext context,
-    double totalExpense,
-    double? previousExpense,
+    SpendingAnalysis analysis,
     Currency currency,
   ) {
     return SliverPadding(
@@ -209,7 +205,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             ),
                             const Gap(12),
                             AnimatedCounter(
-                              value: totalExpense,
+                              value: analysis.totalExpense,
                               formatter: (val) => NumberFormat.currency(
                                 symbol: currency.symbol,
                               ).format(val),
@@ -229,12 +225,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   _buildInlinePeriodSelector(),
-                                  if (previousExpense != null) ...[
+                                  if (analysis.previousExpense != null) ...[
                                     const Gap(10),
-                                    _buildTrendBadge(
-                                      totalExpense,
-                                      previousExpense,
-                                    ),
+                                    _buildTrendBadge(analysis),
                                   ],
                                 ],
                               ),
@@ -255,17 +248,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Widget _buildTrendBadge(double total, double previous) {
-    if (previous == 0) return const SizedBox.shrink();
+  Widget _buildTrendBadge(SpendingAnalysis analysis) {
+    if (analysis.previousExpense == null || analysis.previousExpense == 0) {
+      return const SizedBox.shrink();
+    }
 
-    final diff = total - previous;
-    final percent = (diff / previous * 100).abs();
-    final isIncrease = diff > 0;
-
-    final badgeColor = isIncrease
+    final badgeColor = analysis.isIncrease
         ? Colors.redAccent.shade100
         : Colors.greenAccent.shade200;
-    final icon = isIncrease
+    final icon = analysis.isIncrease
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
 
@@ -276,7 +267,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         Icon(icon, color: badgeColor, size: 14),
         const Gap(4),
         Text(
-          '${percent.toStringAsFixed(1)}%',
+          '${analysis.trendPercentage.toStringAsFixed(1)}%',
           style: TextStyle(
             color: Colors.white,
             fontSize: 13,
@@ -442,8 +433,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   String _getPeriodLabel() => _currentPeriod.formatPeriod(_baseDate);
 
-  DateTimeRange _getCurrentDateRange() => _currentPeriod.dateRange(_baseDate);
-
   Widget _buildInlinePeriodSelector() {
     final period = _currentPeriod;
     final isCurrentPeriod = period.isCurrentPeriod(_baseDate);
@@ -579,7 +568,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildChartSection(
     BuildContext context,
-    List<AppTransaction> expenses,
+    SpendingAnalysis analysis,
     List<TransactionCategory> categories,
     Currency currency,
   ) {
@@ -643,7 +632,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   key: const ValueKey(true),
                   child: _buildCategoryPieChart(
                     context,
-                    expenses,
+                    analysis,
                     categories,
                     currency,
                   ),
@@ -651,7 +640,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               : KeyedSubtree(
                   key: const ValueKey(false),
                   child: SpendingTrendChart(
-                    expenses: expenses,
+                    expenses: analysis.filteredTransactions,
                     currency: currency,
                     filterIndex: _selectedFilterIndex,
                     baseDate: _baseDate,
@@ -664,22 +653,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildCategoryPieChart(
     BuildContext context,
-    List<AppTransaction> expenses,
+    SpendingAnalysis analysis,
     List<TransactionCategory> categories,
     Currency currency,
   ) {
-    if (expenses.isEmpty) return const SizedBox.shrink();
+    if (analysis.categoryBreakdown.isEmpty) return const SizedBox.shrink();
 
-    Map<String, double> categorySpending = {};
-    for (var tx in expenses) {
-      categorySpending[tx.categoryId] =
-          (categorySpending[tx.categoryId] ?? 0) + tx.amount;
-    }
-
-    var sortedEntries = categorySpending.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    double totalSpent = expenses.fold(0, (s, t) => s + t.amount);
+    final breakdown = analysis.categoryBreakdown;
+    final totalSpent = analysis.totalExpense;
 
     return Container(
       height: 240,
@@ -736,14 +717,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         borderData: FlBorderData(show: false),
                         sectionsSpace: 4,
                         centerSpaceRadius: 46,
-                        sections: sortedEntries.asMap().entries.map((entry) {
+                        sections: breakdown.asMap().entries.map((entry) {
                           final index = entry.key;
                           final data = entry.value;
                           final isTouched = index == _touchedPieIndex;
                           final radius = isTouched ? 22.0 : 16.0;
 
                           final category = categories.firstWhere(
-                            (c) => c.id == data.key,
+                            (c) => c.id == data.categoryId,
                             orElse: () => TransactionCategory(
                               id: 'unknown',
                               name: 'Unknown',
@@ -755,7 +736,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
                           return PieChartSectionData(
                             color: category.color,
-                            value: data.value * value,
+                            value: data.amount * value,
                             title: '',
                             radius: radius * value,
                             showTitle: false,
@@ -796,15 +777,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 flex: 12,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: sortedEntries.take(4).map((data) {
-                    final index = sortedEntries.indexOf(data);
+                  children: breakdown.take(4).map((data) {
+                    final index = breakdown.indexOf(data);
                     final isTouched =
                         _touchedPieIndex == -1 || _touchedPieIndex == index;
                     final opacity = isTouched ? 1.0 : 0.4;
-                    final percent = (data.value / totalSpent) * 100;
+                    final percent = data.percentage;
 
                     final category = categories.firstWhere(
-                      (c) => c.id == data.key,
+                      (c) => c.id == data.categoryId,
                       orElse: () => TransactionCategory(
                         id: 'unknown',
                         name: 'Unknown',
@@ -849,7 +830,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 Text(
                                   NumberFormat.compactCurrency(
                                     symbol: currency.symbol,
-                                  ).format(data.value),
+                                  ).format(data.amount),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -887,27 +868,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   Widget _buildTopCategoriesList(
     BuildContext context,
     WidgetRef ref,
-    List<AppTransaction> expenses,
+    SpendingAnalysis analysis,
     List<TransactionCategory> categories,
     Currency currency,
   ) {
-    Map<String, double> categorySpending = {};
-    for (var tx in expenses) {
-      categorySpending[tx.categoryId] =
-          (categorySpending[tx.categoryId] ?? 0) + tx.amount;
-    }
-
-    if (categorySpending.isEmpty) return const SizedBox.shrink();
-
-    var sortedEntries = categorySpending.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    double totalSpent = expenses.fold(0, (s, t) => s + t.amount);
+    if (analysis.categoryBreakdown.isEmpty) return const SizedBox.shrink();
 
     return Column(
-      children: sortedEntries.map((entry) {
+      children: analysis.categoryBreakdown.map((item) {
         final category = categories.firstWhere(
-          (c) => c.id == entry.key,
+          (c) => c.id == item.categoryId,
           orElse: () => TransactionCategory(
             id: 'unknown',
             name: 'Unknown',
@@ -916,18 +886,17 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             type: TransactionType.expense,
           ),
         );
-        final percent = (entry.value / totalSpent) * 100;
+        final percent = item.percentage;
 
         return PressableScale(
           onTap: () {
             HapticService.light();
-            final dateRange = _getCurrentDateRange();
             ref
                 .read(transactionFilterProvider.notifier)
                 .updateFilter(
                   TransactionFilter(
                     categoryIds: {category.id},
-                    dateRange: dateRange,
+                    dateRange: analysis.currentDateRange,
                   ),
                 );
             ref.read(activityTabProvider.notifier).setIndex(1);
@@ -992,7 +961,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             ],
                           ),
                           AnimatedCounter(
-                            value: entry.value,
+                            value: item.amount,
                             formatter: (val) => NumberFormat.compactCurrency(
                               symbol: currency.symbol,
                             ).format(val),

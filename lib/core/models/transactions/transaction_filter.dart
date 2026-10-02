@@ -53,6 +53,45 @@ class TransactionFilter {
       maxAmount == null &&
       type == null;
 
+  /// The count of non-query filters actively applied.
+  int get activeFilterCount {
+    int count = 0;
+    if (type != null) count++;
+    if (dateRange != null) count++;
+    count += categoryIds.length;
+    count += accountIds.length;
+    if (minAmount != null) count++;
+    if (maxAmount != null) count++;
+    return count;
+  }
+
+  /// Localized summary description of active filter criteria.
+  String get summaryText {
+    final parts = <String>[];
+    if (type != null) {
+      parts.add(
+        type!.name[0].toUpperCase() + type!.name.substring(1),
+      );
+    }
+    if (dateRange != null) {
+      parts.add('Date range');
+    }
+    if (categoryIds.isNotEmpty) {
+      parts.add(
+        '${categoryIds.length} categor${categoryIds.length == 1 ? 'y' : 'ies'}',
+      );
+    }
+    if (accountIds.isNotEmpty) {
+      parts.add(
+        '${accountIds.length} account${accountIds.length == 1 ? '' : 's'}',
+      );
+    }
+    if (minAmount != null || maxAmount != null) {
+      parts.add('Amount range');
+    }
+    return parts.join(' • ');
+  }
+
   /// Pure domain predicate: returns whether [tx] satisfies this filter's criteria.
   bool matches(
     AppTransaction tx, {
