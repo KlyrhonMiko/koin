@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/database_helper.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
@@ -17,10 +18,7 @@ class BackupBundle {
   final String fileName;
   final Uint8List bytes;
 
-  const BackupBundle({
-    required this.fileName,
-    required this.bytes,
-  });
+  const BackupBundle({required this.fileName, required this.bytes});
 }
 
 /// Domain Seam: The interface encapsulating application maintenance, backup generation,
@@ -40,7 +38,7 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
   final DatabaseHelper _dbHelper;
 
   SqliteMaintenanceAdapter(this._ref, {DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<BackupBundle?> createBackup() async {
@@ -53,8 +51,9 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
       if (prefs.getInt('theme_mode') != null)
         'theme_mode': prefs.getInt('theme_mode')!.toString(),
       if (prefs.getInt('analysis_filter_index') != null)
-        'analysis_filter_index':
-            prefs.getInt('analysis_filter_index')!.toString(),
+        'analysis_filter_index': prefs
+            .getInt('analysis_filter_index')!
+            .toString(),
     };
     await _dbHelper.saveSettingsToDb(settings);
 
@@ -73,6 +72,8 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
   Future<bool> restoreBackup(String backupPath) async {
     final success = await _dbHelper.restoreDatabase(backupPath);
     if (!success) return false;
+
+    await _ref.read(categorySuggesterProvider).bootstrap();
 
     // Restore settings from db to SharedPreferences
     final settingsFromDb = await _dbHelper.loadSettingsFromDb();

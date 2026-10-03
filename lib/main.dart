@@ -7,8 +7,8 @@ import 'package:koin/features/features.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Auto-run ML bootstrap in the background via suggester adapter.
-  HybridMlSuggesterAdapter().bootstrap();
+  // Complete initial history training before the UI can request suggestions.
+  await HybridMlSuggesterAdapter().bootstrap();
 
   final sharedPrefs = await SharedPreferences.getInstance();
 

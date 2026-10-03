@@ -25,8 +25,7 @@ class CategorizationEngine {
   final Uuid _uuid = const Uuid();
 
   CategorizationEngine({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
-
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   // Phase 2: Sanitization & Tokenization
 
@@ -79,6 +78,7 @@ class CategorizationEngine {
     required DateTime date,
     required String currentAccountId,
   }) async {
+    await bootstrapFromHistory();
     final sanitizedString = _sanitize(rawText);
     final sign = amount >= 0 ? 1 : -1;
     final tokens = _tokenize(rawText);
@@ -379,13 +379,24 @@ class CategorizationEngine {
     required String destinationId,
   }) async {
     final db = await _dbHelper.database;
-    await _processFeedbackInternal(
-      db: db,
-      rawText: rawText,
-      amount: amount,
-      originId: originId,
-      destinationId: destinationId,
-    );
+    final sanitized = _sanitize(rawText);
+    if (sanitized.isEmpty) return;
+    // Keep explicit feedback from debt/planned-payment forms separately from
+    // ledger history so a history rebuild doesn't forget those choices.
+    await db.transaction((txn) async {
+      await txn.insert('categorization_feedback', {
+        'id': '${amount >= 0 ? 1 : -1}|$sanitized',
+        'rawText': rawText,
+        'amount': amount,
+        'originId': originId,
+        'destinationId': destinationId,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('app_settings', {
+        'key': 'categorization_history_dirty',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+    await bootstrapFromHistory();
   }
 
   Future<void> _processFeedbackInternal({
@@ -496,54 +507,86 @@ class CategorizationEngine {
     }
   }
 
-  /// Bootstraps the ML model using historical transactions.
-  /// Runs only once per device. Extremely fast for users with no data.
+  /// Synchronizes the model with all saved transactions when history changes.
+  /// Version 2 also repairs devices whose one-time bootstrap missed history.
   Future<void> bootstrapFromHistory() async {
     final db = await _dbHelper.database;
-
-    // Check if we already bootstrapped to avoid repeating the heavy lifting
-    final setting = await db.query(
-      'app_settings',
-      where: 'key = ?',
-      whereArgs: ['is_ml_bootstrapped'],
-    );
-
-    if (setting.isNotEmpty && setting.first['value'] == 'true') {
-      return; // Already trained
-    }
-
-    // Fetch all existing transactions
-    final transactions = await db.query('transactions');
-
-    if (transactions.isEmpty) {
-      // O(1) exit for users with no existing data
-      await db.insert('app_settings', {
-        'key': 'is_ml_bootstrapped',
-        'value': 'true',
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-      return;
-    }
-
-    // Wrap in a SQLite transaction for massive performance boost
+    // Read the marker and rebuild in one transaction so concurrent suggestions
+    // cannot train the same history twice or clear a newer dirty marker.
     await db.transaction((txn) async {
+      final settings = await txn.query(
+        'app_settings',
+        where: 'key IN (?, ?)',
+        whereArgs: [
+          'categorization_model_version',
+          'categorization_history_dirty',
+        ],
+      );
+      final values = {for (final row in settings) row['key']: row['value']};
+      if (values['categorization_model_version'] == '2' &&
+          values['categorization_history_dirty'] != 'true') {
+        return;
+      }
+
+      // Rebuild rather than append: edits/deletions must remove old learning,
+      // and repeated synchronization must not inflate token counts.
+      await txn.delete('categorization_rules');
+      await txn.delete('ml_frequency_dictionary');
+      final accounts = await txn.query('accounts', columns: ['id']);
+      final accountIds = accounts.map((row) => row['id']).toSet();
+      final categories = await txn.query('categories', columns: ['id', 'type']);
+      final categoryTypes = {
+        for (final row in categories) row['id']: row['type'],
+      };
+      bool validDestination(String destinationId, double amount) =>
+          accountIds.contains(destinationId) ||
+          categoryTypes[destinationId] ==
+              (amount >= 0
+                  ? TransactionType.income.name
+                  : TransactionType.expense.name);
+
+      final feedback = await txn.query(
+        'categorization_feedback',
+        orderBy: 'id',
+      );
+      for (final sample in feedback) {
+        final destinationId = sample['destinationId'] as String;
+        final amount = (sample['amount'] as num).toDouble();
+        if (!validDestination(destinationId, amount)) continue;
+        await _processFeedbackInternal(
+          db: txn,
+          rawText: sample['rawText'] as String,
+          amount: amount,
+          originId: sample['originId'] as String,
+          destinationId: destinationId,
+        );
+      }
+
+      final transactions = await txn.query(
+        'transactions',
+        orderBy: 'date ASC, id ASC',
+      );
       for (var tx in transactions) {
         final note = tx['title'] as String? ?? '';
         if (note.trim().isEmpty) continue;
 
         final amount = (tx['amount'] as num).toDouble();
         final type = tx['type'] as String;
-        final accountId = tx['accountId'] as String;
+        final accountId = tx['accountId'] as String?;
+        if (accountId == null || !accountIds.contains(accountId)) continue;
 
-        final signedAmount = type == TransactionType.expense.name
-            ? -amount
-            : amount;
+        // Transfers use the outgoing direction, matching live feedback.
+        final signedAmount = type == TransactionType.income.name
+            ? (amount.abs() == 0 ? 1.0 : amount.abs())
+            : -(amount.abs() == 0 ? 1.0 : amount.abs());
         final isTransfer = type == TransactionType.transfer.name;
 
         final destinationId = isTransfer
             ? (tx['toAccountId'] as String?)
             : (tx['categoryId'] as String?);
 
-        if (destinationId != null && destinationId.isNotEmpty) {
+        if (destinationId != null &&
+            validDestination(destinationId, signedAmount)) {
           await _processFeedbackInternal(
             db: txn,
             rawText: note,
@@ -554,10 +597,14 @@ class CategorizationEngine {
         }
       }
 
-      // Mark as completed
+      // Only commit the clean marker after the complete history was trained.
       await txn.insert('app_settings', {
-        'key': 'is_ml_bootstrapped',
-        'value': 'true',
+        'key': 'categorization_model_version',
+        'value': '2',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('app_settings', {
+        'key': 'categorization_history_dirty',
+        'value': 'false',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   }

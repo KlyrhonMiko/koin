@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 32,
+      version: 33,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -284,6 +284,39 @@ CREATE TABLE debt_items (
         // Column might already exist
       }
     }
+    if (oldVersion < 33) {
+      await _createCategorizationFeedbackTable(db);
+      await _createCategorizationHistoryTriggers(db);
+    }
+  }
+
+  Future<void> _createCategorizationFeedbackTable(Database db) async {
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS categorization_feedback (
+  id TEXT PRIMARY KEY,
+  rawText TEXT NOT NULL,
+  amount REAL NOT NULL,
+  originId TEXT NOT NULL,
+  destinationId TEXT NOT NULL
+)
+''');
+  }
+
+  /// Track every persisted history change, including writes through the ledger.
+  /// The model is rebuilt lazily before suggestions instead of at every write.
+  Future<void> _createCategorizationHistoryTriggers(Database db) async {
+    for (final table in ['transactions', 'categories', 'accounts']) {
+      for (final operation in ['INSERT', 'UPDATE', 'DELETE']) {
+        await db.execute('''
+CREATE TRIGGER IF NOT EXISTS categorization_${table}_${operation.toLowerCase()}
+AFTER $operation ON $table
+BEGIN
+  INSERT OR REPLACE INTO app_settings (key, value)
+  VALUES ('categorization_history_dirty', 'true');
+END
+''');
+      }
+    }
   }
 
   Future _createCategorizationTables(Database db) async {
@@ -496,6 +529,9 @@ CREATE TABLE transactions (
     await _createDebtsTables(db);
     await _createCategorizationTables(db);
 
+    await _createCategorizationFeedbackTable(db);
+    await _createCategorizationHistoryTriggers(db);
+
     // Insert default data
     await _insertDefaultCategories(db);
     await _insertDefaultAccounts(db);
@@ -616,6 +652,7 @@ CREATE TABLE transactions (
       await txn.delete('debts');
       await txn.delete('categorization_rules');
       await txn.delete('ml_frequency_dictionary');
+      await txn.delete('categorization_feedback');
       await txn.delete('app_settings');
     });
   }
@@ -864,7 +901,12 @@ CREATE TABLE transactions (
   Future<void> saveSettingsToDb(Map<String, String> settings) async {
     final db = await instance.database;
     await db.transaction((txn) async {
-      await txn.delete('app_settings');
+      // Backups replace UI settings, but must retain model synchronization state.
+      await txn.delete(
+        'app_settings',
+        where: 'key NOT IN (?, ?)',
+        whereArgs: ['categorization_model_version', 'categorization_history_dirty'],
+      );
       for (var entry in settings.entries) {
         await txn.insert('app_settings', {
           'key': entry.key,

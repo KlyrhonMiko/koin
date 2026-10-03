@@ -251,7 +251,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     AppTransaction newTransaction;
     AppTransaction? feeTransaction;
-    double effectiveAmount = amount;
 
     if (isTransfer) {
       final accounts = ref.read(accountProvider).value ?? [];
@@ -308,7 +307,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       );
       newTransaction = built.transferTransaction;
       feeTransaction = built.feeTransaction;
-      effectiveAmount = newTransaction.amount;
     } else {
       newTransaction = AppTransaction(
         id: widget.editingTransaction?.id ?? const Uuid().v4(),
@@ -321,19 +319,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       );
     }
 
-    // Feed the ultimate categorization decision back into the suggester
-    ref
-        .read(categorySuggesterProvider)
-        .recordFeedback(
-          text: _noteController.text,
-          amount: effectiveAmount,
-          type: _selectedType,
-          originAccountId: _selectedAccountId!,
-          destinationId: isTransfer
-              ? _selectedToAccountId!
-              : _selectedCategoryId!,
-        );
-
+    // Saved history trains the model through database change tracking.
+    // Sending separate feedback here would count the transaction twice.
     if (widget.editingTransaction != null) {
       ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
       if (feeTransaction != null) {
