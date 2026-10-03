@@ -73,31 +73,33 @@ class CashflowScheduleTab extends ConsumerWidget {
                   .where((a) => a.id == payment.accountId)
                   .firstOrNull;
 
-              final tile = SwipeToDeleteTile(
-                key: Key('cashflow_${payment.id}'),
-                margin: const EdgeInsets.only(bottom: 16),
-                borderRadius: BorderRadius.circular(24),
-                confirmTitle: _isIncome
-                    ? 'Delete Recurring Income?'
-                    : 'Delete Subscription?',
-                confirmDescription:
-                    'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
-                confirmLabel: _isIncome
-                    ? 'Delete Income'
-                    : 'Delete Subscription',
-                onDelete: () {
-                  HapticService.heavy();
-                  ref
-                      .read(plannedPaymentProvider.notifier)
-                      .deletePlannedPayment(payment.id);
-                },
-                child: _buildCard(
-                  context,
-                  ref,
-                  payment,
-                  category,
-                  account?.name,
-                  currency.symbol,
+              final tile = Padding(
+                padding: const EdgeInsets.only(bottom: KoinSpacing.cardGap),
+                child: SwipeToDeleteTile(
+                  key: Key('cashflow_${payment.id}'),
+                  borderRadius: BorderRadius.circular(24),
+                  confirmTitle: _isIncome
+                      ? 'Delete Recurring Income?'
+                      : 'Delete Subscription?',
+                  confirmDescription:
+                      'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
+                  confirmLabel: _isIncome
+                      ? 'Delete Income'
+                      : 'Delete Subscription',
+                  onDelete: () {
+                    HapticService.heavy();
+                    ref
+                        .read(plannedPaymentProvider.notifier)
+                        .deletePlannedPayment(payment.id);
+                  },
+                  child: _buildCard(
+                    context,
+                    ref,
+                    payment,
+                    category,
+                    account?.name,
+                    currency.symbol,
+                  ),
                 ),
               );
 
@@ -457,7 +459,7 @@ class CashflowScheduleTab extends ConsumerWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24, top: 8),
+        margin: const EdgeInsets.only(bottom: 24),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: Colors.transparent,

@@ -22,6 +22,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   bool _showEntranceAnimations = true;
   late final String _animationSessionKey;
   final GlobalKey _headerKey = GlobalKey();
+  final Set<int> _cardSwipePointers = {};
 
   // Add more tabs here in the future (e.g., 'Investments')
   static const _tabs = [
@@ -107,25 +108,40 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
         // TAB CONTENT (each tab scrolls independently)
         // ═══════════════════════════════════════════
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              AccountsTab(
-                animationSessionKey: _animationSessionKey,
-                showEntranceAnimations: _showEntranceAnimations,
-              ),
-              SavingsTab(showEntranceAnimations: _showEntranceAnimations),
-              DebtsTab(
-                animationSessionKey: _animationSessionKey,
-                showEntranceAnimations: _showEntranceAnimations,
-              ),
-              PlannedPaymentsTab(
-                showEntranceAnimations: _showEntranceAnimations,
-              ),
-              RecurringIncomesTab(
-                showEntranceAnimations: _showEntranceAnimations,
-              ),
-            ],
+          child: NotificationListener<SwipeToDeletePointerNotification>(
+            onNotification: (notification) {
+              setState(() {
+                if (notification.isDown) {
+                  _cardSwipePointers.add(notification.pointer);
+                } else {
+                  _cardSwipePointers.remove(notification.pointer);
+                }
+              });
+              return true;
+            },
+            child: TabBarView(
+              controller: _tabController,
+              physics: _cardSwipePointers.isNotEmpty
+                  ? const NeverScrollableScrollPhysics()
+                  : null,
+              children: [
+                AccountsTab(
+                  animationSessionKey: _animationSessionKey,
+                  showEntranceAnimations: _showEntranceAnimations,
+                ),
+                SavingsTab(showEntranceAnimations: _showEntranceAnimations),
+                DebtsTab(
+                  animationSessionKey: _animationSessionKey,
+                  showEntranceAnimations: _showEntranceAnimations,
+                ),
+                PlannedPaymentsTab(
+                  showEntranceAnimations: _showEntranceAnimations,
+                ),
+                RecurringIncomesTab(
+                  showEntranceAnimations: _showEntranceAnimations,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -170,20 +186,24 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    AnimatedBuilder(
-                      animation: _tabController,
-                      builder: (context, child) {
-                        return Text(
-                          _tabs[_tabController.index],
-                          style: TextStyle(
-                            color: AppTheme.textColor(context),
-                            fontSize: KoinTypography.summaryAmount,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.amountTracking,
-                            height: 1.2,
-                          ),
-                        );
-                      },
+                    Flexible(
+                      child: AnimatedBuilder(
+                        animation: _tabController,
+                        builder: (context, child) {
+                          return Text(
+                            _tabs[_tabController.index],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppTheme.textColor(context),
+                              fontSize: KoinTypography.summaryAmount,
+                              fontWeight: KoinTypography.headingWeight,
+                              letterSpacing: KoinTypography.amountTracking,
+                              height: 1.2,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                     const Gap(6),
                     Icon(

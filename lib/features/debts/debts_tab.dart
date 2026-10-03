@@ -93,21 +93,28 @@ class DebtsTab extends ConsumerWidget {
           proxyDecorator: koinReorderProxyDecorator,
           itemBuilder: (context, index) {
             final debt = debts[index];
-            return SwipeToDeleteTile(
+            return Padding(
               key: Key(debt.id),
-              margin: const EdgeInsets.only(bottom: 12),
-              borderRadius: BorderRadius.circular(24),
-              confirmTitle: 'Delete Credit/IOU?',
-              confirmDescription:
-                  'Are you sure you want to delete "${debt.personName}"? This action cannot be undone.',
-              onDelete: () {
-                ref.read(debtsProvider.notifier).deleteDebt(debt.id);
-              },
-              child: DebtCard(
-                debt: debt,
-                currencyFormat: fmt,
-                index: index,
-                showEntranceAnimations: showEntranceAnimations,
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SwipeToDeleteTile(
+                key: Key('dismiss_debt_${debt.id}'),
+                borderRadius: BorderRadius.circular(20),
+                fillRoundedCorners: true,
+                backgroundColor: AppTheme.errorColor(context),
+                icon: Icons.delete_rounded,
+                confirmTitle: 'Delete Credit/IOU?',
+                confirmDescription:
+                    'Are you sure you want to delete "${debt.personName}"? This action cannot be undone.',
+                onDelete: () {
+                  HapticService.heavy();
+                  ref.read(debtsProvider.notifier).deleteDebt(debt.id);
+                },
+                child: DebtCard(
+                  debt: debt,
+                  currencyFormat: fmt,
+                  index: index,
+                  showEntranceAnimations: showEntranceAnimations,
+                ),
               ),
             );
           },
@@ -244,7 +251,7 @@ class DebtsTab extends ConsumerWidget {
         Navigator.push(context, SlideUpRoute(page: const AddEditDebtScreen()));
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24, top: 8),
+        margin: const EdgeInsets.only(bottom: 24),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: Colors.transparent,
@@ -301,167 +308,148 @@ class DebtCard extends StatelessWidget {
         ? AppTheme.incomeColor(context)
         : AppTheme.expenseColor(context);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    Widget content = Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: PressableScale(
-        onTap: () {
-          HapticService.light();
-          Navigator.push(
-            context,
-            SlideUpRoute(page: DebtDetailsScreen(debtId: debt.id)),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.6),
-              width: 1.2,
+    Widget content = PressableScale(
+      onTap: () {
+        HapticService.light();
+        Navigator.push(
+          context,
+          SlideUpRoute(page: DebtDetailsScreen(debtId: debt.id)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: 0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Leading Icon/Avatar
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Leading Icon/Avatar
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.15),
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Icon(
-                    debt.type == DebtType.owedToMe
-                        ? Icons.arrow_downward_rounded
-                        : Icons.arrow_upward_rounded,
-                    color: color,
-                    size: 20,
-                  ),
+              child: Center(
+                child: Icon(
+                  debt.type == DebtType.owedToMe
+                      ? Icons.arrow_downward_rounded
+                      : Icons.arrow_upward_rounded,
+                  color: color,
+                  size: 20,
                 ),
               ),
-              const Gap(14),
-              // Texts
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      debt.personName,
-                      style: TextStyle(
-                        fontWeight: KoinTypography.labelWeight,
-                        fontSize: KoinTypography.compact,
-                        color: AppTheme.textLightColor(context),
-                        letterSpacing: -0.1,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Gap(4),
-                    Text(
-                      currencyFormat.format(debt.amount),
-                      style: TextStyle(
-                        fontWeight: KoinTypography.titleWeight,
-                        fontSize: KoinTypography.itemAmount,
-                        letterSpacing: KoinTypography.itemTracking,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Trailing Info
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+            const Gap(14),
+            // Texts
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isSettled)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                  Text(
+                    debt.personName,
+                    style: TextStyle(
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.body,
+                      color: AppTheme.textColor(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Gap(4),
+                  Text(
+                    currencyFormat.format(debt.amount),
+                    style: TextStyle(
+                      fontWeight: KoinTypography.supportingWeight,
+                      fontSize: KoinTypography.small,
+                      color: AppTheme.textLightColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Trailing Info
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isSettled)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'SETTLED',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
                       ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'SETTLED',
+                    ),
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      Text(
+                        '${currencyFormat.format(remaining)} left',
                         style: TextStyle(
                           color: color,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                          fontSize: KoinTypography.small,
+                          fontWeight: KoinTypography.labelWeight,
                         ),
                       ),
-                    )
-                  else ...[
-                    Row(
-                      children: [
-                        Text(
-                          '${currencyFormat.format(remaining)} left',
-                          style: TextStyle(
+                      const Gap(8),
+                      GestureDetector(
+                        onTap: () =>
+                            AddRepaymentSheet.show(context, debt: debt),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 14,
                             color: color,
-                            fontSize: KoinTypography.caption,
-                            fontWeight: KoinTypography.labelWeight,
                           ),
-                        ),
-                        const Gap(8),
-                        GestureDetector(
-                          onTap: () =>
-                              AddRepaymentSheet.show(context, debt: debt),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.add_rounded,
-                              size: 14,
-                              color: color,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (debt.dueDate != null) ...[
-                      const Gap(4),
-                      Text(
-                        _formatDueDate(debt.dueDate!),
-                        style: TextStyle(
-                          fontSize: KoinTypography.overline,
-                          fontWeight: KoinTypography.supportingWeight,
-                          color: debt.isOverdue()
-                              ? Colors.redAccent
-                              : AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.6),
                         ),
                       ),
                     ],
+                  ),
+                  if (debt.dueDate != null) ...[
+                    const Gap(4),
+                    Text(
+                      _formatDueDate(debt.dueDate!),
+                      style: TextStyle(
+                        fontSize: KoinTypography.overline,
+                        fontWeight: KoinTypography.supportingWeight,
+                        color: debt.isOverdue()
+                            ? Colors.redAccent
+                            : AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.6),
+                      ),
+                    ),
                   ],
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );

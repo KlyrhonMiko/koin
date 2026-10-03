@@ -643,18 +643,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.dividerColor(context)),
           boxShadow: [
-            if (isOver)
-              BoxShadow(
-                color: Colors.red.withValues(alpha: 0.08),
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
@@ -663,10 +661,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: category.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
+                    color: category.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     IconUtils.getIcon(category.iconCodePoint),
@@ -723,7 +722,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             value: spent,
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
-                              fontSize: KoinTypography.caption,
+                              fontSize: KoinTypography.small,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.6),
@@ -733,7 +732,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           Text(
                             ' / ',
                             style: TextStyle(
-                              fontSize: KoinTypography.caption,
+                              fontSize: KoinTypography.small,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.3),
@@ -743,7 +742,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             value: budget,
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
-                              fontSize: KoinTypography.caption,
+                              fontSize: KoinTypography.small,
                               color: AppTheme.textLightColor(
                                 context,
                               ).withValues(alpha: 0.8),
@@ -756,56 +755,55 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   ),
                 ),
                 Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isOver
-                            ? Colors.red.withValues(alpha: 0.1)
-                            : AppTheme.surfaceLightColor(context),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: AnimatedCounter(
-                        value: double.tryParse(percent) ?? 0,
-                        formatter: (v) => '${v.toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          color: isOver
-                              ? Colors.red
-                              : AppTheme.textLightColor(context),
-                          fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.caption,
-                        ),
-                      ),
-                    )
-                    .animate()
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.05, 1.05),
-                      duration: 800.ms,
-                      curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isOver
+                        ? Colors.red.withValues(alpha: 0.1)
+                        : AppTheme.surfaceLightColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: AnimatedCounter(
+                    value: double.tryParse(percent) ?? 0,
+                    formatter: (v) => '${v.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      color: isOver
+                          ? Colors.red
+                          : AppTheme.textLightColor(context),
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.caption,
                     ),
+                  ),
+                ).animate().scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.05, 1.05),
+                  duration: 800.ms,
+                  curve: Curves.easeInOut,
+                ),
               ],
             ),
-            const Gap(16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: progress),
-                duration: Duration(milliseconds: 700 + (index * 100)),
-                curve: Curves.easeOutCubic,
-                builder: (context, animatedProgress, _) {
-                  return LinearProgressIndicator(
-                    value: animatedProgress,
-                    minHeight: 6,
-                    backgroundColor: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isOver ? Colors.red : category.color,
-                    ),
-                  );
-                },
+            const Gap(8),
+            Padding(
+              padding: const EdgeInsets.only(left: 58),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: progress),
+                  duration: Duration(milliseconds: 700 + (index * 100)),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, animatedProgress, _) {
+                    return LinearProgressIndicator(
+                      value: animatedProgress,
+                      minHeight: 4,
+                      backgroundColor: AppTheme.surfaceLightColor(context),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isOver ? Colors.red : category.color,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ],

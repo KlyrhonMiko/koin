@@ -3,6 +3,17 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/sheets/confirmation_sheet.dart';
 
+/// Lets a surrounding pager yield horizontal gestures that start on a card.
+class SwipeToDeletePointerNotification extends Notification {
+  final int pointer;
+  final bool isDown;
+
+  const SwipeToDeletePointerNotification({
+    required this.pointer,
+    required this.isDown,
+  });
+}
+
 /// Consolidated, deep swipe-to-delete Dismissible tile.
 /// Encapsulates swipe physics, drag-threshold haptics, deletion backgrounds,
 /// and automated ConfirmationSheet integration.
@@ -105,24 +116,40 @@ class _SwipeToDeleteTileState extends State<SwipeToDeleteTile> {
       child: widget.child,
     );
 
-    if (!widget.fillRoundedCorners) return dismissible;
+    final content = !widget.fillRoundedCorners
+        ? dismissible
+        : Stack(
+            children: [
+              if (_swipeProgress > 0)
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: _RoundedSwipeBackgroundClipper(
+                      radius: bgRadius,
+                      progress: _swipeProgress,
+                      direction: _swipeDirection,
+                      textDirection: Directionality.of(context),
+                    ),
+                    child: ColoredBox(color: deleteBgColor),
+                  ),
+                ),
+              dismissible,
+            ],
+          );
 
-    return Stack(
-      children: [
-        if (_swipeProgress > 0)
-          Positioned.fill(
-            child: ClipPath(
-              clipper: _RoundedSwipeBackgroundClipper(
-                radius: bgRadius,
-                progress: _swipeProgress,
-                direction: _swipeDirection,
-                textDirection: Directionality.of(context),
-              ),
-              child: ColoredBox(color: deleteBgColor),
-            ),
-          ),
-        dismissible,
-      ],
+    return Listener(
+      onPointerDown: (event) => SwipeToDeletePointerNotification(
+        pointer: event.pointer,
+        isDown: true,
+      ).dispatch(context),
+      onPointerUp: (event) => SwipeToDeletePointerNotification(
+        pointer: event.pointer,
+        isDown: false,
+      ).dispatch(context),
+      onPointerCancel: (event) => SwipeToDeletePointerNotification(
+        pointer: event.pointer,
+        isDown: false,
+      ).dispatch(context),
+      child: content,
     );
   }
 }

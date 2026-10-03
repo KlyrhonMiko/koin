@@ -93,13 +93,29 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final goal = goals[index];
                     return Padding(
+                      key: ValueKey(goal.id),
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildListGoalCard(
-                        context,
-                        goal,
-                        index,
-                        currencyFormat,
-                        isDark,
+                      child: SwipeToDeleteTile(
+                        key: Key('dismiss_goal_${goal.id}'),
+                        borderRadius: BorderRadius.circular(20),
+                        fillRoundedCorners: true,
+                        backgroundColor: AppTheme.errorColor(context),
+                        icon: Icons.delete_rounded,
+                        confirmTitle: 'Delete Goal?',
+                        confirmDescription:
+                            'Are you sure you want to delete "${goal.name}"? This action cannot be undone.',
+                        onDelete: () {
+                          HapticService.heavy();
+                          ref
+                              .read(savingsGoalsProvider.notifier)
+                              .deleteGoal(goal.id);
+                        },
+                        child: _buildListGoalCard(
+                          context,
+                          goal,
+                          index,
+                          currencyFormat,
+                        ),
                       ),
                     );
                   }, childCount: goals.length),
@@ -107,7 +123,12 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(
+                    KoinSpacing.screenInset,
+                    0,
+                    KoinSpacing.screenInset,
+                    124,
+                  ),
                   child: _buildAddGoalButton(context),
                 ),
               ),
@@ -290,7 +311,6 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     SavingsGoal goal,
     int index,
     NumberFormat currencyFormat,
-    bool isDark,
   ) {
     final progressPercent = (goal.progress * 100).toInt();
     final isCompleted = goal.isCompleted;
@@ -315,22 +335,14 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : AppTheme.dividerColor(context).withValues(alpha: 0.4),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.03),
-              blurRadius: 16,
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
@@ -346,9 +358,9 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                       Text(
                         goal.name,
                         style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textColor(context),
+                          fontSize: KoinTypography.body,
+                          fontWeight: KoinTypography.titleWeight,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -356,10 +368,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                       const Gap(4),
                       Text(
                         currencyFormat.format(goal.currentAmount),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
+                        style: TextStyle(
+                          color: AppTheme.textLightColor(context),
+                          fontSize: KoinTypography.small,
+                          fontWeight: KoinTypography.supportingWeight,
                         ),
                       ),
                     ],
@@ -382,16 +394,16 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                       color: isCompleted
                           ? successGreen
                           : AppTheme.textColor(context),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.small,
                     ),
                   ),
                 ),
               ],
             ),
-            const Gap(20),
+            const Gap(8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(2),
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: goal.progress),
                 duration: Duration(milliseconds: 800 + (index * 100)),
@@ -399,11 +411,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 builder: (context, animatedProgress, _) {
                   return LinearProgressIndicator(
                     value: animatedProgress,
-                    backgroundColor: AppTheme.backgroundColor(context),
+                    backgroundColor: AppTheme.surfaceLightColor(context),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       isCompleted ? successGreen : accentColor,
                     ),
-                    minHeight: 6,
+                    minHeight: 4,
                   );
                 },
               ),
@@ -511,8 +523,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               'Add New Goal',
               style: TextStyle(
                 color: AppTheme.textLightColor(context),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontWeight: KoinTypography.labelWeight,
+                fontSize: KoinTypography.compact,
               ),
             ),
           ],
