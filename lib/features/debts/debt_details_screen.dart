@@ -382,7 +382,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               color: AppTheme.surfaceColor(context),
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -486,7 +487,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       ).withValues(alpha: 0.3),
                     ),
                     boxShadow: [
-                      BoxShadow(
+                      AppTheme.boxShadow(
+                        context,
                         color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
@@ -646,7 +648,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                             color: AppTheme.surfaceColor(context),
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(
+                              AppTheme.boxShadow(
+                                context,
                                 color: AppTheme.primaryColor(
                                   context,
                                 ).withValues(alpha: 0.06),
@@ -843,7 +846,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                             ).withValues(alpha: 0.3),
                           ),
                           boxShadow: [
-                            BoxShadow(
+                            AppTheme.boxShadow(
+                              context,
                               color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 8,
                               offset: const Offset(0, 2),

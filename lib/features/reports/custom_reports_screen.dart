@@ -153,7 +153,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -326,7 +327,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: AppTheme.primaryColor(
                         context,
                       ).withValues(alpha: 0.25),

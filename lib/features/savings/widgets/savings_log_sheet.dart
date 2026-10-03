@@ -98,7 +98,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         color: AppTheme.surfaceColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 24,
             offset: const Offset(0, -4),

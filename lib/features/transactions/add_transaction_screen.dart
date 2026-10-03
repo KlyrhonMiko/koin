@@ -731,7 +731,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             ),
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
-                              BoxShadow(
+                              AppTheme.boxShadow(
+                                context,
                                 color: typeColor.withValues(
                                   alpha: 0.15 + 0.2 * _pulseAnimation.value,
                                 ),
@@ -877,7 +878,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
               ),
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
@@ -952,7 +954,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
               ),
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
@@ -1043,7 +1046,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                       borderRadius: BorderRadius.circular(8),
                                       boxShadow: !_isTransferFeePercentage
                                           ? [
-                                              BoxShadow(
+                                              AppTheme.boxShadow(
+                                                context,
                                                 color: Colors.black.withValues(
                                                   alpha: 0.05,
                                                 ),
@@ -1088,7 +1092,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                       borderRadius: BorderRadius.circular(8),
                                       boxShadow: _isTransferFeePercentage
                                           ? [
-                                              BoxShadow(
+                                              AppTheme.boxShadow(
+                                                context,
                                                 color: Colors.black.withValues(
                                                   alpha: 0.05,
                                                 ),
@@ -1135,7 +1140,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
             ),
             boxShadow: [
-              BoxShadow(
+              AppTheme.boxShadow(
+                context,
                 color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 3),

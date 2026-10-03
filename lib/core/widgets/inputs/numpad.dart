@@ -317,7 +317,8 @@ class _NumPadState extends State<NumPad> {
               gradient: AppTheme.primaryGradient(context),
               borderRadius: BorderRadius.circular(keyRadius),
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
@@ -364,7 +365,8 @@ class _NumPadState extends State<NumPad> {
         boxShadow: widget.inline
             ? null
             : [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, -4),

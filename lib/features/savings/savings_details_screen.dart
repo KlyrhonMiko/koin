@@ -125,7 +125,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           borderRadius: BorderRadius.circular(20),
           gradient: AppTheme.primaryGradient(context),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(context,
               color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
@@ -601,7 +601,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
             ),
             boxShadow: [
-              BoxShadow(
+              AppTheme.boxShadow(context,
                 color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
@@ -749,7 +749,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(context,
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -824,7 +824,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                             color: AppTheme.primaryColor(context),
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(
+                              AppTheme.boxShadow(context,
                                 color: AppTheme.primaryColor(
                                   context,
                                 ).withValues(alpha: 0.25),
@@ -881,7 +881,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                             color: AppTheme.surfaceColor(context),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
-                              BoxShadow(
+                              AppTheme.boxShadow(context,
                                 color: Colors.black.withValues(alpha: 0.02),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),

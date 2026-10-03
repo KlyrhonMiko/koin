@@ -90,7 +90,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         color: AppTheme.surfaceColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 40,
             offset: const Offset(0, -10),
@@ -376,7 +377,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           gradient: AppTheme.primaryGradient(context),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(
+                            AppTheme.boxShadow(
+                              context,
                               color: primary.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
@@ -444,7 +446,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 ),
           boxShadow: isSelected
               ? [
-                  BoxShadow(
+                  AppTheme.boxShadow(
+                    context,
                     color: primary.withValues(alpha: 0.25),
                     blurRadius: 10,
                     offset: const Offset(0, 4),

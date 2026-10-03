@@ -465,7 +465,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: primaryColor.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
@@ -623,7 +624,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             borderRadius: BorderRadius.circular(10),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: activeColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
@@ -693,7 +695,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     ).withValues(alpha: 0.6),
                   ),
                   boxShadow: [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
@@ -788,7 +791,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                       ).withValues(alpha: 0.6),
                     ),
                     boxShadow: [
-                      BoxShadow(
+                      AppTheme.boxShadow(
+                        context,
                         color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
@@ -937,7 +941,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
           color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 3),

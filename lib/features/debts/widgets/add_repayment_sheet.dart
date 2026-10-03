@@ -113,7 +113,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           color: AppTheme.backgroundColor(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
               blurRadius: 32,
               offset: const Offset(0, -8),

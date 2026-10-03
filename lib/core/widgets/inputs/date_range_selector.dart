@@ -348,7 +348,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                         ),
                   boxShadow: isSelected
                       ? [
-                          BoxShadow(
+                          AppTheme.boxShadow(
+                            context,
                             color: AppTheme.primaryColor(
                               context,
                             ).withValues(alpha: 0.25),

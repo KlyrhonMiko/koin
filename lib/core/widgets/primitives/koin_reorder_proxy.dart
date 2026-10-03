@@ -20,7 +20,9 @@ Widget koinReorderProxyDecorator(
           elevation: elevation,
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          shadowColor: AppTheme.primaryColor(context).withValues(alpha: 0.3),
+          shadowColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.black.withValues(alpha: 0.12)
+              : AppTheme.primaryColor(context).withValues(alpha: 0.3),
           child: child,
         ),
       );

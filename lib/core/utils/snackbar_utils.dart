@@ -207,7 +207,8 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
                                 width: 1,
                               ),
                               boxShadow: [
-                                BoxShadow(
+                                AppTheme.boxShadow(
+                                  context,
                                   color: Colors.black.withValues(alpha: 0.2),
                                   blurRadius: 30,
                                   offset: const Offset(0, 10),

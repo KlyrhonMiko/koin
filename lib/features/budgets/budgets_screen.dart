@@ -323,7 +323,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             borderRadius: BorderRadius.circular(16),
             gradient: AppTheme.primaryGradient(context),
             boxShadow: [
-              BoxShadow(
+              AppTheme.boxShadow(
+                context,
                 color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
@@ -648,7 +649,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),

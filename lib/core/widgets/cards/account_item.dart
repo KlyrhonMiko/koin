@@ -56,12 +56,14 @@ class AccountItem extends StatelessWidget {
         boxShadow: isDark
             ? null
             : [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: baseColor.withValues(alpha: 0.3),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: baseColor.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
@@ -89,7 +91,8 @@ class AccountItem extends StatelessWidget {
         width: isSelected ? 2.5 : 1.2,
       ),
       boxShadow: [
-        BoxShadow(
+        AppTheme.boxShadow(
+          context,
           color: isDark
               ? Colors.black.withValues(alpha: 0.3)
               : Colors.black.withValues(alpha: 0.03),

@@ -213,7 +213,8 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
               color: AppTheme.surfaceColor(context),
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color:
                       (isExpense
                               ? AppTheme.expenseColor(context)
@@ -256,7 +257,8 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   ? AppTheme.dangerGradient
                   : AppTheme.successGradient,
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color:
                       (isExpense
                               ? AppTheme.expenseColor(context)
@@ -522,7 +524,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                     ),
                                     borderRadius: BorderRadius.circular(14),
                                     boxShadow: [
-                                      BoxShadow(
+                                      AppTheme.boxShadow(
+                                        context,
                                         color: category.color.withValues(
                                           alpha: 0.15,
                                         ),

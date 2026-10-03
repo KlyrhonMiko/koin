@@ -82,7 +82,8 @@ class MainLayout extends ConsumerWidget {
                       ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: Colors.black.withValues(
                             alpha: isDarkMode ? 0.4 : 0.08,
                           ),
@@ -288,7 +289,8 @@ class _GlowFAB extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: glowColor.withValues(alpha: 0.25),
             blurRadius: 18,
             spreadRadius: 0,

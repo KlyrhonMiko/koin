@@ -266,7 +266,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               color: selectedColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: selectedColor.withValues(alpha: 0.2),
                   blurRadius: 16,
                   spreadRadius: 2,
@@ -336,7 +337,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               color: selectedColor,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: selectedColor.withValues(alpha: 0.4),
                   blurRadius: 8,
                 ),

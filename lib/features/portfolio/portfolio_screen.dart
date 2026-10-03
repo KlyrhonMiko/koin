@@ -292,12 +292,14 @@ class _DropdownMenu extends StatelessWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 36,
               offset: const Offset(0, 12),
             ),
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
               blurRadius: 10,
               spreadRadius: 1,

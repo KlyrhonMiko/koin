@@ -477,7 +477,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                                     ),
                                     boxShadow: isSelected
                                         ? [
-                                            BoxShadow(
+                                            AppTheme.boxShadow(
+                                              context,
                                               color: primaryColor.withValues(
                                                 alpha: 0.3,
                                               ),
@@ -713,7 +714,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: primaryColor.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
@@ -753,7 +755,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 3),
@@ -839,7 +842,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 3),

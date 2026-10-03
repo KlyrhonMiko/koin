@@ -420,7 +420,8 @@ class DashboardScreen extends ConsumerWidget {
               color: AppTheme.surfaceColor(context),
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -537,7 +538,8 @@ class DashboardScreen extends ConsumerWidget {
         boxShadow: isDark
             ? null
             : [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: baseColor.withValues(alpha: 0.25),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
@@ -555,7 +557,8 @@ class DashboardScreen extends ConsumerWidget {
           width: 1,
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: isDark
                 ? Colors.black.withValues(alpha: 0.2)
                 : Colors.black.withValues(alpha: 0.04),
@@ -822,7 +825,8 @@ class DashboardScreen extends ConsumerWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 16,
               offset: const Offset(0, 4),
@@ -1037,7 +1041,8 @@ class DashboardScreen extends ConsumerWidget {
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
-              BoxShadow(
+              AppTheme.boxShadow(
+                context,
                 color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 16,
                 offset: const Offset(0, 4),

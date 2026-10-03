@@ -142,7 +142,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                       color: AppTheme.surfaceColor(context),
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: AppTheme.primaryColor(
                             context,
                           ).withValues(alpha: 0.1),
@@ -241,7 +242,8 @@ class CashflowScheduleTab extends ConsumerWidget {
             width: isOverdue && !_isIncome ? 1.5 : 1,
           ),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 20,
               offset: const Offset(0, 8),
@@ -422,7 +424,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                       color: AppTheme.primaryColor(context),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: AppTheme.primaryColor(
                             context,
                           ).withValues(alpha: 0.3),

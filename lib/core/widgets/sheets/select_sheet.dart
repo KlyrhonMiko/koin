@@ -58,14 +58,16 @@ class SelectSheetItem extends StatelessWidget {
                 : AppTheme.surfaceColor(context),
             boxShadow: selected
                 ? [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: primary.withValues(alpha: 0.1),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ]
                 : [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
@@ -232,7 +234,8 @@ Future<T?> showSelectSheet<T>({
                 color: AppTheme.surfaceColor(sheetContext),
                 border: Border.all(color: AppTheme.dividerColor(sheetContext)),
                 boxShadow: [
-                  BoxShadow(
+                  AppTheme.boxShadow(
+                    context,
                     color: Colors.black.withValues(alpha: 0.12),
                     blurRadius: 32,
                     offset: const Offset(0, -8),

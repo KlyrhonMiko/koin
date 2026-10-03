@@ -43,7 +43,8 @@ class BudgetProgressCard extends StatelessWidget {
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(
+              AppTheme.boxShadow(
+                context,
                 color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
@@ -132,7 +133,8 @@ class BudgetProgressCard extends StatelessWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),

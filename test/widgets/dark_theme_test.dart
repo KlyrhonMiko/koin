@@ -18,6 +18,13 @@ void main() {
       final theme = AppTheme.getTheme(accent, true);
       final scheme = theme.colorScheme;
       expect(scheme.primary, accent);
+      expect(
+        theme.elevatedButtonTheme.style!.backgroundColor!.resolve({}),
+        accent,
+      );
+      expect(theme.floatingActionButtonTheme.backgroundColor, accent);
+      expect(scheme.error, const Color(0xFFFF6B6B));
+      expect(scheme.secondary, const Color(0xFF34D399));
       expect(AppTheme.getTheme(accent, false).colorScheme.primary, accent);
       expect(
         contrast(scheme.onPrimary, scheme.primary),
@@ -39,8 +46,17 @@ void main() {
           theme: theme,
           home: Builder(
             builder: (context) {
+              expect(AppTheme.incomeColor(context), const Color(0xFF00D09E));
+              expect(AppTheme.expenseColor(context), const Color(0xFFFF6B6B));
+              expect(AppTheme.transferColor(context), const Color(0xFF3B82F6));
               final fill = AppTheme.primaryGradient(context);
               expect(fill.colors, [accent, accent.withValues(alpha: 0.8)]);
+              final shadow = AppTheme.boxShadow(
+                context,
+                color: accent.withValues(alpha: 0.4),
+                blurRadius: 20,
+              );
+              expect(shadow.color, Colors.black.withValues(alpha: 0.12));
               return const SizedBox();
             },
           ),
@@ -55,6 +71,13 @@ void main() {
         theme: AppTheme.getTheme(Colors.teal, false),
         home: Builder(
           builder: (context) {
+            expect(
+              AppTheme.boxShadow(
+                context,
+                color: Colors.teal.withValues(alpha: 0.3),
+              ).color,
+              Colors.teal.withValues(alpha: 0.3),
+            );
             expect(AppTheme.primaryGradient(context).colors, [
               Colors.teal,
               Colors.teal.withValues(alpha: 0.8),

@@ -325,12 +325,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           stops: const [0.2, 1.0],
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: baseColor.withValues(alpha: 0.3),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: baseColor.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 4),
@@ -354,7 +356,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         width: 1.2,
       ),
       boxShadow: [
-        BoxShadow(
+        AppTheme.boxShadow(
+          context,
           color: isDark
               ? Colors.black.withValues(alpha: 0.3)
               : Colors.black.withValues(alpha: 0.03),
@@ -730,7 +733,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               ),
                               boxShadow: isSelected
                                   ? [
-                                      BoxShadow(
+                                      AppTheme.boxShadow(
+                                        context,
                                         color: templateColor.withValues(
                                           alpha: 0.25,
                                         ),
@@ -1009,7 +1013,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                 ),
                                                 boxShadow: isSelected
                                                     ? [
-                                                        BoxShadow(
+                                                        AppTheme.boxShadow(
+                                                          context,
                                                           color: c.withValues(
                                                             alpha: 0.4,
                                                           ),
@@ -1108,7 +1113,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         ),
                         boxShadow: isSelected
                             ? [
-                                BoxShadow(
+                                AppTheme.boxShadow(
+                                  context,
                                   color: AppTheme.primaryColor(
                                     context,
                                   ).withValues(alpha: 0.15),

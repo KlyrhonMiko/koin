@@ -44,7 +44,7 @@ class KoinSummaryCard extends StatelessWidget {
     SummaryShapeStyle.defaultStyle => 2,
   };
 
-  Widget _buildCornerAccent(bool isDark) {
+  Widget _buildCornerAccent() {
     final useTile =
         shapeStyle == SummaryShapeStyle.savings ||
         shapeStyle == SummaryShapeStyle.analysis;
@@ -60,7 +60,7 @@ class KoinSummaryCard extends StatelessWidget {
             width: 116,
             height: 116,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: isDark ? 0.035 : 0.10),
+              color: Colors.white.withValues(alpha: 0.10),
               shape: useTile ? BoxShape.rectangle : BoxShape.circle,
               borderRadius: useTile ? BorderRadius.circular(32) : null,
             ),
@@ -83,7 +83,8 @@ class KoinSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         gradient: effectiveGradient,
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: isDark
                 ? Colors.black.withValues(alpha: 0.12)
                 : effectiveGlow.withValues(alpha: 0.25),
@@ -98,13 +99,12 @@ class KoinSummaryCard extends StatelessWidget {
             child: IgnorePointer(
               child: CardBackgroundShapes(
                 shapeType: _shapeType,
-                opacityMultiplier: isDark ? 0.4 : 1.4,
+                opacityMultiplier: 1.4,
               ),
             ),
           ),
           // The eclipse pattern already decorates opposite corners.
-          if (shapeStyle != SummaryShapeStyle.debtDetails)
-            _buildCornerAccent(isDark),
+          if (shapeStyle != SummaryShapeStyle.debtDetails) _buildCornerAccent(),
           Padding(padding: padding, child: child),
         ],
       ),

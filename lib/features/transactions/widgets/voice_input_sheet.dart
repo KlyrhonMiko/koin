@@ -398,7 +398,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                           ),
                           boxShadow: isListening
                               ? [
-                                  BoxShadow(
+                                  AppTheme.boxShadow(
+                                    context,
                                     color: primaryColor.withValues(
                                       alpha: 0.2 + 0.15 * _pulseAnimation.value,
                                     ),
@@ -408,7 +409,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                                 ]
                               : showPreview
                               ? [
-                                  BoxShadow(
+                                  AppTheme.boxShadow(
+                                    context,
                                     color: AppTheme.incomeColor(
                                       context,
                                     ).withValues(alpha: 0.25),
@@ -417,7 +419,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                                   ),
                                 ]
                               : [
-                                  BoxShadow(
+                                  AppTheme.boxShadow(
+                                    context,
                                     color: Colors.black.withValues(alpha: 0.08),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
@@ -617,7 +620,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         gradient: AppTheme.primaryGradient(context),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
-                          BoxShadow(
+                          AppTheme.boxShadow(
+                            context,
                             color: primaryColor.withValues(alpha: 0.25),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
@@ -674,7 +678,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
         ),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 3),

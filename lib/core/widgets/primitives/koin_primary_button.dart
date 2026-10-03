@@ -52,7 +52,8 @@ class KoinPrimaryButton extends StatelessWidget {
               ),
         boxShadow: isInteractive && !isDark
             ? [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: effectiveGlow.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),

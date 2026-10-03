@@ -10,20 +10,6 @@ class AppTheme {
   static const _darkSurface = Color(0xFF202427);
   static const _darkSurfaceLight = Color(0xFF292E32);
 
-  /// Soften semantic status colors; user-selected accents stay unchanged.
-  static Color _darkAccent(Color color) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl
-        .withSaturation((hsl.saturation * 0.45).clamp(0.0, 0.38))
-        .withLightness(hsl.lightness.clamp(0.64, 0.70))
-        .toColor();
-  }
-
-  static Color _statusColor(BuildContext context, Color color) =>
-      Theme.of(context).brightness == Brightness.dark
-      ? _darkAccent(color)
-      : color;
-
   static SystemUiOverlayStyle getSystemOverlayStyle(bool isDarkMode) {
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -53,17 +39,30 @@ class AppTheme {
   static Color secondaryColor(BuildContext context) =>
       Theme.of(context).colorScheme.secondary;
 
-  static Color incomeColor(BuildContext context) =>
-      _statusColor(context, const Color(0xFF00D09E));
-  static Color expenseColor(BuildContext context) =>
-      _statusColor(context, const Color(0xFFFF6B6B));
-  static Color transferColor(BuildContext context) =>
-      _statusColor(context, const Color(0xFF3B82F6));
+  static Color incomeColor(BuildContext context) => const Color(0xFF00D09E);
+  static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
+  static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
 
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? _darkSurfaceLight : const Color(0xFFF1F3F5);
   }
+
+  /// Colored halos become subtle neutral depth in dark mode.
+  static BoxShadow boxShadow(
+    BuildContext context, {
+    required Color color,
+    Offset offset = Offset.zero,
+    double blurRadius = 0,
+    double spreadRadius = 0,
+  }) => BoxShadow(
+    color: Theme.of(context).brightness == Brightness.dark
+        ? Colors.black.withValues(alpha: color.a.clamp(0.0, 0.12))
+        : color,
+    offset: offset,
+    blurRadius: blurRadius,
+    spreadRadius: spreadRadius,
+  );
 
   static LinearGradient primaryGradient(BuildContext context) {
     final primary = primaryColor(context);
@@ -107,12 +106,8 @@ class AppTheme {
         ? const Color(0xFF363C40)
         : const Color(0xFFE5E7EB);
 
-    final Color errorColor = isDarkMode
-        ? _darkAccent(const Color(0xFFFF6B6B))
-        : const Color(0xFFFF6B6B);
-    final Color secondaryColor = isDarkMode
-        ? _darkAccent(const Color(0xFF34D399))
-        : const Color(0xFF34D399);
+    const Color errorColor = Color(0xFFFF6B6B);
+    const Color secondaryColor = Color(0xFF34D399);
 
     final brightness = isDarkMode ? Brightness.dark : Brightness.light;
     final baseTheme = isDarkMode ? ThemeData.dark() : ThemeData.light();

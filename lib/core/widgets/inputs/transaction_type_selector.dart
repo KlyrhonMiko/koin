@@ -83,7 +83,8 @@ class TransactionTypeSelector extends StatelessWidget {
                     color: activeColor,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(
+                      AppTheme.boxShadow(
+                        context,
                         color: activeColor.withValues(alpha: 0.35),
                         blurRadius: 14,
                         offset: const Offset(0, 4),

@@ -521,7 +521,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
@@ -678,7 +679,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
@@ -918,7 +920,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(
+                AppTheme.boxShadow(
+                  context,
                   color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -1062,7 +1065,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 color: AppTheme.surfaceColor(context),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
+                  AppTheme.boxShadow(
+                    context,
                     color: AppTheme.primaryColor(
                       context,
                     ).withValues(alpha: 0.1),

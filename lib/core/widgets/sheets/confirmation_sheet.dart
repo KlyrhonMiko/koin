@@ -65,7 +65,8 @@ class ConfirmationSheet extends StatelessWidget {
         color: AppTheme.surfaceColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 40,
             offset: const Offset(0, -10),
@@ -85,7 +86,8 @@ class ConfirmationSheet extends StatelessWidget {
                   color: confirmColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(
+                    AppTheme.boxShadow(
+                      context,
                       color: confirmColor.withValues(alpha: 0.15),
                       blurRadius: 40,
                       spreadRadius: 5,
@@ -176,7 +178,8 @@ class ConfirmationSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
-                          BoxShadow(
+                          AppTheme.boxShadow(
+                            context,
                             color: confirmColor.withValues(alpha: 0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 5),

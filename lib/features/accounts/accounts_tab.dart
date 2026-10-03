@@ -199,7 +199,8 @@ class AccountsTab extends ConsumerWidget {
                       color: AppTheme.surfaceColor(context),
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(
+                        AppTheme.boxShadow(
+                          context,
                           color: AppTheme.primaryColor(
                             context,
                           ).withValues(alpha: 0.1),

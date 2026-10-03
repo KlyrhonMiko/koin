@@ -59,7 +59,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                           color: AppTheme.surfaceColor(context),
                                           shape: BoxShape.circle,
                                           boxShadow: [
-                                            BoxShadow(
+                                            AppTheme.boxShadow(
+                                              context,
                                               color: AppTheme.primaryColor(
                                                 context,
                                               ).withValues(alpha: 0.1),
@@ -182,7 +183,8 @@ class TransactionsListScreen extends ConsumerWidget {
                           color: AppTheme.surfaceColor(context),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
-                            BoxShadow(
+                            AppTheme.boxShadow(
+                              context,
                               color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
@@ -474,7 +476,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                 color: primary,
                                 shape: BoxShape.circle,
                                 boxShadow: [
-                                  BoxShadow(
+                                  AppTheme.boxShadow(
+                                    context,
                                     color: primary.withValues(alpha: 0.3),
                                     blurRadius: 6,
                                   ),

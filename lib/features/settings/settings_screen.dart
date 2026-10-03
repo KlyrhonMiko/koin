@@ -199,7 +199,8 @@ class SettingsScreen extends ConsumerWidget {
                                         : null,
                                     boxShadow: isSelected
                                         ? [
-                                            BoxShadow(
+                                            AppTheme.boxShadow(
+                                              context,
                                               color: color.withValues(
                                                 alpha: 0.5,
                                               ),
@@ -682,7 +683,8 @@ class SettingsScreen extends ConsumerWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
-            BoxShadow(
+            AppTheme.boxShadow(
+              context,
               color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 40,
               offset: const Offset(0, -10),
@@ -794,7 +796,8 @@ class SettingsScreen extends ConsumerWidget {
           ),
           boxShadow: isSelected
               ? [
-                  BoxShadow(
+                  AppTheme.boxShadow(
+                    context,
                     color: primaryColor.withValues(alpha: 0.15),
                     blurRadius: 16,
                     offset: const Offset(0, 4),

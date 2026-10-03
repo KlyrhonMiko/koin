@@ -155,7 +155,8 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
-          BoxShadow(
+          AppTheme.boxShadow(
+            context,
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
