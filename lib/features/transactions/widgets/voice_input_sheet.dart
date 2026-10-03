@@ -41,7 +41,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
+    );
     _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -49,9 +49,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     _ringController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
-    )..repeat();
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(voiceInputProvider.notifier).startListening();
     });
   }
@@ -268,6 +269,18 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(voiceInputProvider.select((state) => state.isListening), (
+      previous,
+      isListening,
+    ) {
+      if (isListening) {
+        _pulseController.repeat(reverse: true);
+        _ringController.repeat();
+      } else {
+        _pulseController.stop();
+        _ringController.stop();
+      }
+    });
     final state = ref.watch(voiceInputProvider);
     final primaryColor = AppTheme.primaryColor(context);
     final hasWords = state.lastWords.isNotEmpty;

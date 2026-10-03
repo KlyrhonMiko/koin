@@ -146,7 +146,7 @@ class MainLayout extends ConsumerWidget {
                     duration: const Duration(milliseconds: 600),
                     curve: Curves.easeOutBack,
                     offset: Offset.zero,
-                    child: _BreathingGlowFAB(
+                    child: _GlowFAB(
                       glowColor: AppTheme.primaryColor(context),
                       child: SizedBox(
                         width: 66,
@@ -274,67 +274,28 @@ class AnimatedClipRect extends StatelessWidget {
   }
 }
 
-/// A wrapper that adds a breathing glow shadow to the FAB.
-/// Uses a repeating animation to pulse the shadow blur radius
-/// for a subtle, premium "alive" feeling.
-class _BreathingGlowFAB extends StatefulWidget {
+/// Keep the FAB glow without continuously rendering frames while idle.
+class _GlowFAB extends StatelessWidget {
   final Widget child;
   final Color glowColor;
 
-  const _BreathingGlowFAB({required this.child, required this.glowColor});
-
-  @override
-  State<_BreathingGlowFAB> createState() => _BreathingGlowFABState();
-}
-
-class _BreathingGlowFABState extends State<_BreathingGlowFAB>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-    _glowAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const _GlowFAB({required this.child, required this.glowColor});
 
   @override
   Widget build(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) return widget.child;
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        final glowValue = _glowAnimation.value;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: widget.glowColor.withValues(
-                  alpha: 0.15 + 0.2 * glowValue,
-                ),
-                blurRadius: 10 + 16 * glowValue,
-                spreadRadius: -2 + 4 * glowValue,
-              ),
-            ],
+    if (Theme.of(context).brightness == Brightness.dark) return child;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withValues(alpha: 0.25),
+            blurRadius: 18,
+            spreadRadius: 0,
           ),
-          child: child,
-        );
-      },
-      child: widget.child,
+        ],
+      ),
+      child: child,
     );
   }
 }

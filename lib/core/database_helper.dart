@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 33,
+      version: 34,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -287,6 +287,15 @@ CREATE TABLE debt_items (
     if (oldVersion < 33) {
       await _createCategorizationFeedbackTable(db);
       await _createCategorizationHistoryTriggers(db);
+    }
+    // Repair databases opened by an intermediate version 33 development build.
+    if (oldVersion < 34) {
+      await _createCategorizationFeedbackTable(db);
+      await _createCategorizationHistoryTriggers(db);
+      await db.insert('app_settings', {
+        'key': 'categorization_history_dirty',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 

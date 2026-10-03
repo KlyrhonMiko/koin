@@ -778,10 +778,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         ),
                       ),
                     )
-                    .animate(
-                      onPlay: (controller) =>
-                          isOver ? controller.repeat(reverse: true) : null,
-                    )
+                    .animate()
                     .scale(
                       begin: const Offset(1, 1),
                       end: const Offset(1.05, 1.05),

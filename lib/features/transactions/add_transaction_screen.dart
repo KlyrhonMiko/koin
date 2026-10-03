@@ -72,7 +72,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
+    )..forward();
     _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -161,15 +161,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     if (!mounted) return;
     if (_noteController.text.trim().isEmpty) return;
 
-    double amount = double.tryParse(_amountController.text) ?? 0.0;
-
-    // We need an account ID to process internal transfers properly
-    if (amount == 0.0 && _selectedAccountId == null) return;
-
-    // Fix: Dart treats -0.0 >= 0 as true. If amount is empty (0.0),
-    // the CategorizationEngine will misinterpret expenses as income.
-    // We pass a dummy amount of 1.0 just to preserve the correct mathematical sign.
-    if (amount == 0.0) amount = 1.0;
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    // SuggestionContext preserves the direction of a blank amount for category
+    // matching while keeping the real zero available to transfer detection.
 
     _suggesterCoordinator.run(
       context: SuggestionContext(

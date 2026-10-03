@@ -79,6 +79,8 @@ class HybridMlSuggesterAdapter implements CategorySuggester {
       amount: context.signedAmount,
       date: context.date,
       currentAccountId: context.currentAccountId,
+      allowAmountBasedTransfer:
+          context.type == TransactionType.transfer && context.amount.abs() > 0,
     );
 
     if (result == null) return null;

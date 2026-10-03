@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/categorization/categorization_engine.dart';
+import 'package:koin/core/categorization/category_suggester.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/ledger/ledger.dart';
 import 'package:koin/core/models/models.dart';
@@ -104,6 +105,122 @@ void main() {
 
     expect((await suggest('Coffee shop'))?.destinationId, 'cat_food');
   });
+
+  Future<void> recordMatchingIncome() => ledger.recordTransaction(
+    transaction(
+      'gcash_income',
+      note: 'Allowance',
+      categoryId: 'cat_salary',
+      type: TransactionType.income,
+      date: DateTime(2026, 10, 3, 8, 30),
+    ).copyWith(amount: 1000, accountId: 'bank_account'),
+  );
+
+  Future<CategorySuggestion?> formSuggestion(
+    String text, {
+    double amount = 1000,
+    TransactionType type = TransactionType.expense,
+    String accountId = 'default_account',
+  }) => HybridMlSuggesterAdapter(engine: engine).suggest(
+    SuggestionContext(
+      text: text,
+      amount: amount,
+      type: type,
+      date: DateTime(2026, 10, 3, 9, 50),
+      currentAccountId: accountId,
+    ),
+  );
+
+  test(
+    'matching another account income cannot turn arbitrary notes into transfers',
+    () async {
+      await recordMatchingIncome();
+      for (final text in ['test', 'The Love Hypothesis']) {
+        expect(await formSuggestion(text), isNull);
+      }
+    },
+  );
+
+  test(
+    'burger learns Food from cheese burger despite other categories and matching income',
+    () async {
+      await recordMatchingIncome();
+      await ledger.recordTransaction(
+        transaction('food', note: 'Cheese burger'),
+      );
+      await ledger.recordTransaction(
+        transaction('travel', note: 'Bus ticket', categoryId: 'cat_transport'),
+      );
+      await ledger.recordTransaction(
+        transaction(
+          'transfer',
+          note: 'Savings deposit',
+          type: TransactionType.transfer,
+          toAccountId: 'bank_account',
+        ),
+      );
+
+      for (final text in ['burger', 'Grilled burger']) {
+        final suggestion = await formSuggestion(text);
+        expect(suggestion?.categoryId, 'cat_food');
+        expect(suggestion?.type, TransactionType.expense);
+        expect(suggestion?.isExactMatch, isFalse);
+      }
+      expect((await formSuggestion('Cheese burger'))?.isExactMatch, isTrue);
+      expect(
+        (await formSuggestion('burger', amount: 0))?.categoryId,
+        'cat_food',
+      );
+    },
+  );
+
+  test('conflicting word evidence still needs sufficient confidence', () async {
+    await ledger.recordTransaction(transaction('food', note: 'Cheese burger'));
+    await ledger.recordTransaction(
+      transaction('travel', note: 'Bus ticket', categoryId: 'cat_transport'),
+    );
+    expect(await formSuggestion('burger ticket'), isNull);
+  });
+
+  test(
+    'selected transfers can still pair accounts by real amount and date',
+    () async {
+      await recordMatchingIncome();
+      final suggestion = await formSuggestion(
+        'Move funds',
+        type: TransactionType.transfer,
+      );
+      expect(suggestion?.type, TransactionType.transfer);
+      expect(suggestion?.originAccountId, 'default_account');
+      expect(suggestion?.destinationAccountId, 'bank_account');
+      expect(
+        await formSuggestion(
+          'Move funds',
+          type: TransactionType.transfer,
+          accountId: '',
+        ),
+        isNull,
+      );
+
+      await ledger.recordTransaction(
+        transaction(
+          'one_peso',
+          note: 'Small allowance',
+          categoryId: 'cat_salary',
+          type: TransactionType.income,
+          date: DateTime(2026, 10, 3),
+        ).copyWith(amount: 1, accountId: 'bank_account'),
+      );
+      expect(
+        await formSuggestion(
+          'Move funds',
+          type: TransactionType.transfer,
+          amount: 0,
+        ),
+        isNull,
+      );
+    },
+  );
 
   test(
     'edits replace old categories and deleted transactions stop teaching',
@@ -251,13 +368,33 @@ void main() {
 
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
-      expect(await db.getVersion(), 33);
+      expect(await db.getVersion(), 34);
       expect((await suggest('Restored bakery'))?.destinationId, 'cat_food');
 
       await ledger.recordTransaction(
         transaction('after_restore', note: 'Train ticket'),
       );
       expect((await suggest('Train ticket'))?.destinationId, 'cat_food');
+    },
+  );
+
+  test(
+    'repairs an intermediate version 33 database without deleting history',
+    () async {
+      await ledger.recordTransaction(
+        transaction('repair', note: 'Repair bakery'),
+      );
+      await db.execute('DROP TABLE categorization_feedback');
+      await db.setVersion(33);
+      final backup = File('${directory.path}/intermediate_backup.db');
+      await File(await helper.getDatabaseFilePath()).copy(backup.path);
+
+      expect(await helper.restoreDatabase(backup.path), isTrue);
+      db = await helper.database;
+      expect(await db.getVersion(), 34);
+      expect(await db.query('categorization_feedback'), isEmpty);
+      expect((await suggest('Repair bakery'))?.destinationId, 'cat_food');
+      expect((await ledger.getTransactions()).single.id, 'repair');
     },
   );
 }

@@ -77,6 +77,7 @@ class CategorizationEngine {
     required double amount,
     required DateTime date,
     required String currentAccountId,
+    bool allowAmountBasedTransfer = false,
   }) async {
     await bootstrapFromHistory();
     final sanitizedString = _sanitize(rawText);
@@ -89,14 +90,20 @@ class CategorizationEngine {
       return exactMatch;
     }
 
-    // Step 2: The Internal Transfer Heuristic
-    final internalTransfer = await _checkInternalTransfer(
-      amount,
-      date,
-      currentAccountId,
-    );
-    if (internalTransfer != null) {
-      return internalTransfer;
+    // An amount/date coincidence cannot establish transfer intent. Use this
+    // account-pairing heuristic only after the caller has selected Transfer.
+    // Exact and partial-word history matching remain available for all notes.
+    if (allowAmountBasedTransfer &&
+        amount != 0 &&
+        currentAccountId.isNotEmpty) {
+      final internalTransfer = await _checkInternalTransfer(
+        amount,
+        date,
+        currentAccountId,
+      );
+      if (internalTransfer != null) {
+        return internalTransfer;
+      }
     }
 
     // Step 3: The Directional Probability Engine
@@ -260,7 +267,13 @@ class CategorizationEngine {
       tokenClassCounts[token] = {};
     }
 
-    final uniqueClasses = classCounts.keys.toList();
+    // A partial note needs shared word evidence, not a full-string match.
+    // Unrelated classes with no shared tokens must not dilute confidence in
+    // "burger" after learning "cheese burger" as Food.
+    final uniqueClasses = results
+        .map((row) => '${row['originId']}|${row['destinationId']}')
+        .toSet()
+        .toList();
 
     for (var row in results) {
       final token = row['token'] as String;
