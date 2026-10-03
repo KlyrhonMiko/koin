@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/forecasting/forecast_history.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
@@ -745,6 +746,7 @@ CREATE TABLE transactions (
       whereArgs: [transaction.id],
     );
   }
+
   // Savings Goals commands
   Future<SavingsGoal> insertSavingsGoal(SavingsGoal goal) async {
     final db = await instance.database;
@@ -984,7 +986,9 @@ CREATE TABLE transactions (
         where: 'debtId = ?',
         whereArgs: [debt.id],
       );
-      final existingItemIds = existingItems.map((r) => r['id'] as String).toSet();
+      final existingItemIds = existingItems
+          .map((r) => r['id'] as String)
+          .toSet();
       final newItemIds = items.map((i) => i.id).toSet();
 
       // Delete removed items
@@ -1101,33 +1105,25 @@ CREATE TABLE transactions (
   }
 
   // Forecasting Queries
+  Future<ForecastHistory> _getForecastHistory() async {
+    final transactions = await getTransactions();
+    final accounts = await getAccounts();
+    return ForecastHistory.fromTransactions(
+      transactions: transactions,
+      includedAccountIds: accounts
+          .where((account) => !account.excludeFromTotal)
+          .map((account) => account.id)
+          .toSet(),
+      referenceDate: DateTime.now(),
+    );
+  }
+
   Future<List<double>> getHistoricalVariableInflows() async {
-    final db = await instance.database;
-    final res = await db.rawQuery('''
-      SELECT strftime('%Y-%m', date) as period, SUM(amount) as total
-      FROM transactions
-      WHERE type = 'income'
-        AND plannedPaymentId IS NULL
-        AND accountId IN (SELECT id FROM accounts WHERE excludeFromTotal = 0)
-      GROUP BY strftime('%Y-%m', date)
-      ORDER BY period ASC
-    ''');
-    return res.map((r) => (r['total'] as num).toDouble()).toList();
+    return (await _getForecastHistory()).inflows;
   }
 
   Future<List<double>> getHistoricalVariableOutflows() async {
-    final db = await instance.database;
-    final res = await db.rawQuery('''
-      SELECT strftime('%Y-%m', date) as period, SUM(amount) as total
-      FROM transactions
-      WHERE type = 'expense'
-        AND plannedPaymentId IS NULL
-        AND debtRepaymentId IS NULL
-        AND accountId IN (SELECT id FROM accounts WHERE excludeFromTotal = 0)
-      GROUP BY strftime('%Y-%m', date)
-      ORDER BY period ASC
-    ''');
-    return res.map((r) => (r['total'] as num).toDouble()).toList();
+    return (await _getForecastHistory()).outflows;
   }
 
   Future<List<PlannedPayment>> getUnexcludedPlannedPayments() async {
