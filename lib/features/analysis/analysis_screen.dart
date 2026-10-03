@@ -916,11 +916,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 12,
+                  blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -928,18 +928,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: category.color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     IconUtils.getIcon(category.iconCodePoint),
                     color: category.color,
-                    size: 24,
+                    size: 20,
                   ),
                 ),
-                const Gap(16),
+                const Gap(14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -947,59 +948,64 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                category.name,
-                                style: const TextStyle(
-                                  fontWeight: KoinTypography.titleWeight,
-                                  fontSize: KoinTypography.itemTitle,
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    category.name,
+                                    style: const TextStyle(
+                                      fontWeight: KoinTypography.titleWeight,
+                                      fontSize: KoinTypography.body,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              const Gap(6),
-                              Text(
-                                '${percent.toStringAsFixed(0)}%',
-                                style: TextStyle(
-                                  fontWeight: KoinTypography.labelWeight,
-                                  fontSize: KoinTypography.small,
-                                  color: AppTheme.textLightColor(context),
+                                const Gap(6),
+                                Text(
+                                  '${percent.toStringAsFixed(0)}%',
+                                  style: TextStyle(
+                                    fontWeight: KoinTypography.labelWeight,
+                                    fontSize: KoinTypography.small,
+                                    color: AppTheme.textLightColor(context),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const Gap(12),
                           AnimatedCounter(
                             value: item.amount,
                             formatter: (val) => NumberFormat.compactCurrency(
                               symbol: currency.symbol,
                             ).format(val),
                             duration: const Duration(milliseconds: 1000),
-                            style: const TextStyle(
-                              fontWeight: KoinTypography.headingWeight,
-                              fontSize: KoinTypography.itemTitle,
-                              letterSpacing: -0.5,
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontWeight: KoinTypography.labelWeight,
+                              fontSize: KoinTypography.small,
                             ),
                           ),
                         ],
                       ),
                       const Gap(8),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(2),
                         child: Container(
-                          height: 6,
+                          height: 4,
                           alignment: Alignment.centerLeft,
                           decoration: BoxDecoration(
-                            color: AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.3),
+                            color: AppTheme.surfaceLightColor(context),
                           ),
                           child:
                               FractionallySizedBox(
                                 widthFactor: percent / 100,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(2),
                                     color: category.color,
                                   ),
                                 ),
