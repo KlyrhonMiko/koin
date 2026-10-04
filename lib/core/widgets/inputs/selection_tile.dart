@@ -73,9 +73,10 @@ class SelectionTile extends StatelessWidget {
                             ? KoinTypography.small
                             : KoinTypography.overline,
                         fontWeight: KoinTypography.supportingWeight,
-                        color: AppTheme.textLightColor(
+                        color: AppTheme.fieldHintColor(
                           context,
-                        ).withValues(alpha: asCard ? 0.7 : 0.65),
+                          lightOpacity: asCard ? 0.7 : 0.65,
+                        ),
                         letterSpacing: asCard ? null : 0.3,
                       ),
                     ),
@@ -91,9 +92,10 @@ class SelectionTile extends StatelessWidget {
                             : KoinTypography.supportingWeight,
                         color: hasSelection
                             ? AppTheme.textColor(context)
-                            : AppTheme.textLightColor(
+                            : AppTheme.fieldHintColor(
                                 context,
-                              ).withValues(alpha: 0.5),
+                                lightOpacity: 0.5,
+                              ),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -118,9 +120,7 @@ class SelectionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
-          ),
+          border: Border.all(color: AppTheme.fieldBorderColor(context)),
           boxShadow: [
             AppTheme.boxShadow(
               context,
@@ -172,7 +172,11 @@ class SelectionTile extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: hasSelection
-            ? selectedColor!.withValues(alpha: asCard ? 0.15 : 0.12)
+            ? selectedColor!.withValues(
+                alpha: AppTheme.hasEditorAppearance(context)
+                    ? 0.08
+                    : (asCard ? 0.15 : 0.12),
+              )
             : AppTheme.surfaceLightColor(context),
         borderRadius: BorderRadius.circular(radius),
       ),

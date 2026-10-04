@@ -36,7 +36,9 @@ class KoinGroupedCard extends StatelessWidget {
             Divider(
               height: 1,
               indent: dividerIndent,
-              color: AppTheme.dividerColor(context),
+              color: AppTheme.hasEditorAppearance(context)
+                  ? AppTheme.dividerColor(context).withValues(alpha: 0.45)
+                  : AppTheme.dividerColor(context),
             ),
           );
         }
@@ -49,7 +51,11 @@ class KoinGroupedCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: borderColor ?? AppTheme.dividerColor(context),
+          color:
+              borderColor ??
+              (AppTheme.hasEditorAppearance(context)
+                  ? AppTheme.fieldBorderColor(context)
+                  : AppTheme.dividerColor(context)),
         ),
       ),
       child: Material(
@@ -103,9 +109,16 @@ class KoinSettingTile extends StatelessWidget {
 
     final effectiveColor =
         iconColor ??
-        (isDestructive ? Colors.red : AppTheme.primaryColor(context));
+        (isDestructive
+            ? Colors.red
+            : AppTheme.hasEditorAppearance(context)
+            ? AppTheme.textLightColor(context)
+            : AppTheme.primaryColor(context));
     final effectiveBg =
-        iconBackgroundColor ?? effectiveColor.withValues(alpha: 0.1);
+        iconBackgroundColor ??
+        (AppTheme.hasEditorAppearance(context) && !isDestructive
+            ? AppTheme.surfaceLightColor(context)
+            : effectiveColor.withValues(alpha: 0.1));
 
     return Container(
       padding: const EdgeInsets.all(9),

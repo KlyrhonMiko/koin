@@ -5,5 +5,6 @@ export 'form_section_title.dart';
 export 'hero_amount_field.dart';
 export 'icon_palette_grid.dart';
 export 'numpad.dart';
+export 'koin_form_theme.dart';
 export 'selection_tile.dart';
 export 'transaction_type_selector.dart';

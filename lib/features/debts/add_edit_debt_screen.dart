@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
+import 'package:koin/features/debts/widgets/debt_purchase_card.dart';
 import 'package:uuid/uuid.dart';
 
 class AddEditDebtScreen extends ConsumerStatefulWidget {
@@ -207,7 +208,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context) {
     final isEdit = widget.debt != null;
     final primaryColor = AppTheme.primaryColor(context);
     final accountsState = ref.watch(accountProvider);
@@ -507,7 +510,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         color: AppTheme.backgroundColor(context),
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+            color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
             width: 1,
           ),
         ),
@@ -548,9 +551,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                 filled: true,
                 contentPadding: EdgeInsets.zero,
                 hintStyle: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.4),
+                  color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
                 ),
               ),
               onChanged: (_) => setState(() {}),
@@ -578,7 +579,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
         ),
       ),
       child: Row(
@@ -690,9 +691,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                   color: AppTheme.surfaceColor(context),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppTheme.dividerColor(
+                    color: AppTheme.fieldBorderColor(
                       context,
-                    ).withValues(alpha: 0.6),
+                      lightOpacity: 0.6,
+                    ),
                   ),
                   boxShadow: [
                     AppTheme.boxShadow(
@@ -748,9 +750,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             decoration: InputDecoration(
                               hintText: 'None',
                               hintStyle: TextStyle(
-                                color: AppTheme.textLightColor(
+                                color: AppTheme.fieldHintColor(
                                   context,
-                                ).withValues(alpha: 0.3),
+                                  lightOpacity: 0.3,
+                                ),
                               ),
                               isDense: true,
                               filled: false,
@@ -786,9 +789,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     color: AppTheme.surfaceColor(context),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppTheme.dividerColor(
+                      color: AppTheme.fieldBorderColor(
                         context,
-                      ).withValues(alpha: 0.6),
+                        lightOpacity: 0.6,
+                      ),
                     ),
                     boxShadow: [
                       AppTheme.boxShadow(
@@ -821,9 +825,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                             size: 16,
                             color: inst > 0
                                 ? primaryColor.withValues(alpha: 0.8)
-                                : AppTheme.textLightColor(
+                                : AppTheme.fieldHintColor(
                                     context,
-                                  ).withValues(alpha: 0.3),
+                                    lightOpacity: 0.3,
+                                  ),
                           ),
                           const Gap(8),
                           Expanded(
@@ -834,9 +839,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                                 fontWeight: KoinTypography.labelWeight,
                                 color: inst > 0
                                     ? AppTheme.textColor(context)
-                                    : AppTheme.textLightColor(
+                                    : AppTheme.fieldHintColor(
                                         context,
-                                      ).withValues(alpha: 0.35),
+                                        lightOpacity: 0.35,
+                                      ),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -938,7 +944,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
         ),
         boxShadow: [
           AppTheme.boxShadow(
@@ -988,9 +994,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                 decoration: InputDecoration(
                   hintText: 'Notes (Optional)',
                   hintStyle: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.45),
+                    color: AppTheme.fieldHintColor(context, lightOpacity: 0.45),
                     fontWeight: FontWeight.w400,
                     fontSize: KoinTypography.body,
                   ),
@@ -1083,14 +1087,31 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const FormSectionTitle.subhead(
-          title: 'Purchases / Sub-Plans (Optional)',
+        DebtPurchaseSectionHeader(
+          count: _items.length,
+          color: _selectedType == DebtType.owedToMe
+              ? AppTheme.incomeColor(context)
+              : AppTheme.expenseColor(context),
         ),
-        const Gap(12),
-        if (_items.isNotEmpty)
-          ..._items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+        const Gap(16),
+        ..._items.map(
+          (item) => Padding(
+            key: ValueKey('purchase_${item.id}'),
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SwipeToDeleteTile(
+              key: Key('dismiss_purchase_${item.id}'),
+              borderRadius: BorderRadius.circular(18),
+              fillRoundedCorners: true,
+              backgroundColor: AppTheme.errorColor(context),
+              icon: Icons.delete_rounded,
+              confirmTitle: 'Remove Purchase?',
+              confirmDescription:
+                  'Remove "${item.name}" from this credit? Changes are applied when you save.',
+              confirmLabel: 'Remove',
+              onDelete: () => setState(() {
+                _items.remove(item);
+                _updateAmountFromItems();
+              }),
               child: PressableScale(
                 onTap: () async {
                   HapticService.light();
@@ -1103,7 +1124,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     existingItem: item,
                     suggester: ref.read(categorySuggesterProvider),
                   );
-                  if (updatedItem != null) {
+                  if (updatedItem != null && mounted) {
                     setState(() {
                       final index = _items.indexOf(item);
                       if (index != -1) {
@@ -1113,91 +1134,21 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     });
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppTheme.dividerColor(
-                        context,
-                      ).withValues(alpha: 0.6),
-                    ),
+                child: DebtPurchaseCard(
+                  item: item,
+                  categories: categories,
+                  currencyFormat: NumberFormat.simpleCurrency(
+                    name: ref.watch(settingsProvider).currency.code,
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                fontWeight: KoinTypography.titleWeight,
-                                fontSize: KoinTypography.itemTitle,
-                                color: AppTheme.textColor(context),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Gap(4),
-                            Text(
-                              '${item.totalInstallments} months • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: KoinTypography.small,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(12),
-                      Text(
-                        NumberFormat.simpleCurrency(
-                          name: ref.read(settingsProvider).currency.code,
-                        ).format(item.amount),
-                        style: TextStyle(
-                          fontWeight: KoinTypography.headingWeight,
-                          fontSize: KoinTypography.itemTitle,
-                          color: primaryColor,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                      const Gap(12),
-                      GestureDetector(
-                        onTap: () async {
-                          HapticService.light();
-                          final confirm = await ConfirmationSheet.show(
-                            context: context,
-                            title: 'Remove Purchase?',
-                            description:
-                                'Are you sure you want to remove "${item.name}"? This will not update your existing credit limit.',
-                            confirmLabel: 'Remove',
-                            confirmColor: AppTheme.expenseColor(context),
-                            icon: Icons.delete_outline_rounded,
-                            isDanger: true,
-                          );
-                          if (confirm == true) {
-                            setState(() {
-                              _items.remove(item);
-                              _updateAmountFromItems();
-                            });
-                          }
-                        },
-                        child: Icon(
-                          Icons.remove_circle_outline_rounded,
-                          color: AppTheme.expenseColor(context),
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
+                  color: _selectedType == DebtType.owedToMe
+                      ? AppTheme.incomeColor(context)
+                      : AppTheme.expenseColor(context),
                 ),
               ),
             ),
           ),
+        ),
+        const Gap(6),
 
         PressableScale(
           onTap: () async {

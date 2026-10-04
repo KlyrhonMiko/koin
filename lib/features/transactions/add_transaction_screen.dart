@@ -513,7 +513,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Build
   // ═══════════════════════════════════════════════════════
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final categories = categoriesAsync.value ?? [];
     final settings = ref.watch(settingsProvider);
@@ -589,7 +591,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         color: AppTheme.backgroundColor(context),
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+            color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
             width: 1,
           ),
         ),
@@ -627,9 +629,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           ).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                            color: AppTheme.dividerColor(
+                            color: AppTheme.fieldBorderColor(
                               context,
-                            ).withValues(alpha: 0.5),
+                              lightOpacity: 0.5,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -669,9 +672,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           ).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                            color: AppTheme.dividerColor(
+                            color: AppTheme.fieldBorderColor(
                               context,
-                            ).withValues(alpha: 0.5),
+                              lightOpacity: 0.5,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -882,7 +886,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
               ),
               boxShadow: [
                 AppTheme.boxShadow(
@@ -927,9 +931,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       decoration: InputDecoration(
                         hintText: 'Add a note...',
                         hintStyle: TextStyle(
-                          color: AppTheme.textLightColor(
+                          color: AppTheme.fieldHintColor(
                             context,
-                          ).withValues(alpha: 0.45),
+                            lightOpacity: 0.45,
+                          ),
                           fontWeight: FontWeight.w400,
                           fontSize: KoinTypography.body,
                         ),
@@ -958,7 +963,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
               ),
               boxShadow: [
                 AppTheme.boxShadow(
@@ -1005,9 +1010,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             ? 'Percentage Fee (e.g. 0.5)'
                             : 'Fixed Fee (e.g. 10.00)',
                         hintStyle: TextStyle(
-                          color: AppTheme.textLightColor(
+                          color: AppTheme.fieldHintColor(
                             context,
-                          ).withValues(alpha: 0.45),
+                            lightOpacity: 0.45,
+                          ),
                           fontWeight: FontWeight.w400,
                           fontSize: KoinTypography.body,
                         ),
@@ -1023,9 +1029,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           padding: const EdgeInsets.all(6),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.dividerColor(
+                              color: AppTheme.fieldBorderColor(
                                 context,
-                              ).withValues(alpha: 0.08),
+                                lightOpacity: 0.08,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             padding: const EdgeInsets.all(3),
@@ -1144,7 +1151,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+              color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
             ),
             boxShadow: [
               AppTheme.boxShadow(
@@ -1409,7 +1416,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Divider(
         height: 1,
-        color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+        color: AppTheme.fieldBorderColor(context, lightOpacity: 0.5),
       ),
     );
   }

@@ -246,8 +246,8 @@ class SqliteLedgerAdapter implements Ledger {
           note: repayment.isIncrease
               ? 'Debt increase: ${debt.personName}'
               : (debt.type == DebtType.owedToMe
-                    ? 'Debt payment: ${debt.personName}'
-                    : 'Debt settlement: ${debt.personName}'),
+                    ? 'Payment from ${debt.personName}'
+                    : 'Payment to ${debt.personName}'),
           debtRepaymentId: repayment.id,
         );
 
@@ -392,7 +392,9 @@ class InMemoryLedgerAdapter implements Ledger {
         accountId: repayment.accountId!,
         note: repayment.isIncrease
             ? 'Debt increase: ${debt.personName}'
-            : 'Debt settlement: ${debt.personName}',
+            : (debt.type == DebtType.owedToMe
+                  ? 'Payment from ${debt.personName}'
+                  : 'Payment to ${debt.personName}'),
         debtRepaymentId: repayment.id,
       );
       _store[tx.id] = tx;

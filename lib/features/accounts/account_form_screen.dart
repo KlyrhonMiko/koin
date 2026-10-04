@@ -352,7 +352,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       border: Border.all(
         color: isDark
             ? Colors.white.withValues(alpha: 0.08)
-            : AppTheme.dividerColor(context).withValues(alpha: 0.6),
+            : AppTheme.fieldBorderColor(context, lightOpacity: 0.6),
         width: 1.2,
       ),
       boxShadow: [
@@ -403,7 +403,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         : AppTheme.textLightColor(context);
     final hintColor = colored
         ? Colors.white.withValues(alpha: 0.5)
-        : AppTheme.textLightColor(context).withValues(alpha: 0.5);
+        : AppTheme.fieldHintColor(context, lightOpacity: 0.5);
     final cursorColor = colored ? Colors.white : AppTheme.primaryColor(context);
 
     return AnimatedContainer(
@@ -581,7 +581,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context) {
     final isEditing = widget.account != null;
     final colors = AppTheme.accentColors;
     final cardBgColors = AppTheme.cardColors;
@@ -661,9 +663,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? selectedColor.withValues(alpha: 0.1)
-                                    : AppTheme.dividerColor(
+                                    : AppTheme.fieldBorderColor(
                                         context,
-                                      ).withValues(alpha: 0.15),
+                                        lightOpacity: 0.15,
+                                      ),
                                 borderRadius: BorderRadius.circular(13),
                                 border: Border.all(
                                   color: isSelected
@@ -676,9 +679,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 Icons.tune_rounded,
                                 color: isSelected
                                     ? selectedColor
-                                    : AppTheme.textLightColor(
+                                    : AppTheme.fieldHintColor(
                                         context,
-                                      ).withValues(alpha: 0.5),
+                                        lightOpacity: 0.5,
+                                      ),
                                 size: 22,
                               ),
                             ),
@@ -726,9 +730,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               border: Border.all(
                                 color: isSelected
                                     ? templateColor
-                                    : AppTheme.dividerColor(
+                                    : AppTheme.fieldBorderColor(
                                         context,
-                                      ).withValues(alpha: 0.3),
+                                        lightOpacity: 0.3,
+                                      ),
                                 width: isSelected ? 2.5 : 1,
                               ),
                               boxShadow: isSelected
@@ -913,9 +918,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                   ? AppTheme.primaryColor(
                                                       context,
                                                     ).withValues(alpha: 0.1)
-                                                  : AppTheme.dividerColor(
+                                                  : AppTheme.fieldBorderColor(
                                                       context,
-                                                    ).withValues(alpha: 0.1),
+                                                      lightOpacity: 0.1,
+                                                    ),
                                               borderRadius:
                                                   BorderRadius.circular(22),
                                               border: Border.all(
@@ -923,9 +929,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                     ? AppTheme.primaryColor(
                                                         context,
                                                       )
-                                                    : AppTheme.dividerColor(
+                                                    : AppTheme.fieldBorderColor(
                                                         context,
-                                                      ).withValues(alpha: 0.3),
+                                                        lightOpacity: 0.3,
+                                                      ),
                                                 width: selectedCardColor == null
                                                     ? 2
                                                     : 1,
@@ -1106,9 +1113,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         border: Border.all(
                           color: isSelected
                               ? AppTheme.primaryColor(context)
-                              : AppTheme.dividerColor(
+                              : AppTheme.fieldBorderColor(
                                   context,
-                                ).withValues(alpha: 0.15),
+                                  lightOpacity: 0.15,
+                                ),
                           width: 2.5,
                         ),
                         boxShadow: isSelected
@@ -1137,9 +1145,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     size: 20,
                                     color: isSelected
                                         ? AppTheme.primaryColor(context)
-                                        : AppTheme.textLightColor(
+                                        : AppTheme.fieldHintColor(
                                             context,
-                                          ).withValues(alpha: 0.5),
+                                            lightOpacity: 0.5,
+                                          ),
                                   ),
                                   const Gap(4),
                                   Text(
@@ -1217,11 +1226,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
+                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
                 ),
               ),
               child: Material(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
                 borderRadius: BorderRadius.circular(16),
                 clipBehavior: Clip.antiAlias,
                 child: SwitchListTile(
@@ -1258,11 +1267,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
+                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
                 ),
               ),
               child: Material(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.05),
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
                 borderRadius: BorderRadius.circular(16),
                 clipBehavior: Clip.antiAlias,
                 child: SwitchListTile(
@@ -1328,19 +1337,23 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.3),
-                    width: 1.5,
+                    color: AppTheme.hasEditorAppearance(context)
+                        ? AppTheme.fieldBorderColor(context)
+                        : AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.3),
+                    width: AppTheme.hasEditorAppearance(context) ? 1 : 1.5,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.3),
-                    width: 1.5,
+                    color: AppTheme.hasEditorAppearance(context)
+                        ? AppTheme.fieldBorderColor(context)
+                        : AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.3),
+                    width: AppTheme.hasEditorAppearance(context) ? 1 : 1.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(

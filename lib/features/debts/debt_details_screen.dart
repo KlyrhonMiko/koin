@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/add_edit_debt_screen.dart';
 import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
+import 'package:koin/features/debts/widgets/debt_purchase_card.dart';
 import 'package:koin/features/debts/widgets/add_repayment_sheet.dart';
 
 class DebtDetailsScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,32 @@ class DebtDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
+  final Set<String> _pendingRepaymentDeletions = {};
+
+  Future<void> _deleteRepayment(DebtRepayment repayment) async {
+    // A dismissed row must leave the tree before the provider refreshes.
+    setState(() => _pendingRepaymentDeletions.add(repayment.id));
+    try {
+      await ref.read(debtsProvider.notifier).deleteRepayment(repayment);
+      await ref.read(debtRepaymentsProvider(repayment.debtId).future);
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not delete payment',
+          subtitle: 'Please try again',
+        );
+      }
+    } finally {
+      // Even an immediate failure needs one frame without the dismissed row,
+      // so restoring it creates a fresh swipe state.
+      if (mounted) await WidgetsBinding.instance.endOfFrame;
+      if (mounted) {
+        setState(() => _pendingRepaymentDeletions.remove(repayment.id));
+      }
+    }
+  }
+
   void _addRepayment(
     BuildContext context,
     Debt debt, {
@@ -416,38 +443,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
-        Row(
-          children: [
-            Flexible(
-              child: Text(
-                'Sub-Plans / Purchases',
-                style: TextStyle(
-                  color: AppTheme.textColor(context),
-                  fontSize: KoinTypography.sectionTitle,
-                  fontWeight: KoinTypography.headingWeight,
-                  letterSpacing: KoinTypography.headingTracking,
-                ),
-              ),
-            ),
-            const Gap(10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${items.length}',
-                style: TextStyle(
-                  color: color,
-                  fontSize: KoinTypography.small,
-                  fontWeight: KoinTypography.headingWeight,
-                ),
-              ),
-            ),
-          ],
-        ),
+        DebtPurchaseSectionHeader(count: items.length, color: color),
         const Gap(16),
         // Item tiles
         ...items.asMap().entries.map((entry) {
@@ -495,99 +491,11 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                             }
                           }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: AppTheme.dividerColor(
-                                context,
-                              ).withValues(alpha: 0.3),
-                            ),
-                            boxShadow: [
-                              AppTheme.boxShadow(
-                                context,
-                                color: Colors.black.withValues(alpha: 0.02),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Builder(
-                                builder: (context) {
-                                  final categories =
-                                      ref.read(categoriesProvider).value ?? [];
-                                  final category = categories
-                                      .cast<TransactionCategory?>()
-                                      .firstWhere(
-                                        (c) => c?.id == item.categoryId,
-                                        orElse: () => null,
-                                      );
-
-                                  return Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: (category?.color ?? color)
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      category != null
-                                          ? IconUtils.getIcon(
-                                              category.iconCodePoint,
-                                            )
-                                          : Icons.shopping_bag_outlined,
-                                      color: category?.color ?? color,
-                                      size: 20,
-                                    ),
-                                  );
-                                },
-                              ),
-                              const Gap(16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.name,
-                                      style: TextStyle(
-                                        color: AppTheme.textColor(context),
-                                        fontWeight: KoinTypography.titleWeight,
-                                        fontSize: KoinTypography.body,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const Gap(4),
-                                    Text(
-                                      '${item.totalInstallments} payments • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
-                                      style: TextStyle(
-                                        color: AppTheme.textLightColor(context),
-                                        fontSize: KoinTypography.small,
-                                        fontWeight:
-                                            KoinTypography.supportingWeight,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Gap(12),
-                              Text(
-                                currencyFormat.format(item.amount),
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: KoinTypography.headingWeight,
-                                  fontSize: KoinTypography.itemTitle,
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            ],
-                          ),
+                        child: DebtPurchaseCard(
+                          item: item,
+                          categories: ref.watch(categoriesProvider).value ?? [],
+                          currencyFormat: currencyFormat,
+                          color: color,
                         ),
                       )
                       .animate()
@@ -656,15 +564,18 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required Color color,
   }) {
     return repaymentsAsync.when(
-      data: (repayments) {
+      data: (history) {
+        final repayments = history
+            .where((entry) => !_pendingRepaymentDeletions.contains(entry.id))
+            .toList();
+        Widget? emptyState;
         if (repayments.isEmpty) {
-          return Center(
+          emptyState = Center(
             child:
                 Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Gap(24),
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
@@ -758,21 +669,29 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               ],
             ),
             const Gap(16),
-            // Payment tiles with timeline
-            ...repayments.asMap().entries.map((entry) {
-              final index = entry.key;
-              final r = entry.value;
-              final isLast = index == repayments.length - 1;
-              return _buildRepaymentTile(
-                context,
-                repayment: r,
-                currencyFormat: currencyFormat,
-                color: color,
-                tileIndex: index,
-                paymentNumber: repayments.length - index,
-                isLast: isLast,
-              );
-            }),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child:
+                  emptyState ??
+                  Column(
+                    children: repayments.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final r = entry.value;
+                      final isLast = index == repayments.length - 1;
+                      return _buildRepaymentTile(
+                        context,
+                        repayment: r,
+                        currencyFormat: currencyFormat,
+                        color: color,
+                        tileIndex: index,
+                        paymentNumber: repayments.length - index,
+                        isLast: isLast,
+                      );
+                    }).toList(),
+                  ),
+            ),
           ],
         );
       },
@@ -798,9 +717,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
       confirmDescription:
           'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
       confirmLabel: 'Delete Payment',
-      onDelete: () {
-        ref.read(debtsProvider.notifier).deleteRepayment(repayment);
-      },
+      onDelete: () => _deleteRepayment(repayment),
       child:
           IntrinsicHeight(
                 child: Row(

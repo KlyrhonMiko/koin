@@ -5,6 +5,17 @@ import 'typography.dart';
 
 export 'typography.dart';
 
+/// Marks the quieter dark appearance used only by editors and Settings.
+class EditorAppearance extends ThemeExtension<EditorAppearance> {
+  const EditorAppearance();
+
+  @override
+  EditorAppearance copyWith() => this;
+
+  @override
+  EditorAppearance lerp(covariant EditorAppearance? other, double t) => this;
+}
+
 class AppTheme {
   static const _darkBackground = Color(0xFF171A1C);
   static const _darkSurface = Color(0xFF202427);
@@ -45,8 +56,27 @@ class AppTheme {
 
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (hasEditorAppearance(context)) return const Color(0xFF252B2F);
     return isDark ? _darkSurfaceLight : const Color(0xFFF1F3F5);
   }
+
+  static bool hasEditorAppearance(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark &&
+      Theme.of(context).extension<EditorAppearance>() != null;
+
+  static Color fieldHintColor(
+    BuildContext context, {
+    double lightOpacity = 0.45,
+  }) => hasEditorAppearance(context)
+      ? textLightColor(context)
+      : textLightColor(context).withValues(alpha: lightOpacity);
+
+  static Color fieldBorderColor(
+    BuildContext context, {
+    double lightOpacity = 0.7,
+  }) => dividerColor(
+    context,
+  ).withValues(alpha: hasEditorAppearance(context) ? 0.65 : lightOpacity);
 
   /// Colored halos become subtle neutral depth in dark mode.
   static BoxShadow boxShadow(

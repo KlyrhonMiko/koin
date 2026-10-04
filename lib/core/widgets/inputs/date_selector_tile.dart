@@ -116,9 +116,7 @@ class DateSelectorTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: 14,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.6),
+                  color: AppTheme.fieldHintColor(context, lightOpacity: 0.6),
                 ),
                 const Gap(6),
                 Text(
@@ -126,9 +124,7 @@ class DateSelectorTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: KoinTypography.small,
                     fontWeight: KoinTypography.labelWeight,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
+                    color: AppTheme.fieldHintColor(context, lightOpacity: 0.6),
                   ),
                 ),
               ],

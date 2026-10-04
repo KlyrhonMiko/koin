@@ -137,7 +137,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context) {
     final isEditing = widget.goal != null;
     final primaryColor = AppTheme.primaryColor(context);
     final settings = ref.watch(settingsProvider);
@@ -313,9 +315,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             color: AppTheme.surfaceColor(context),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: AppTheme.dividerColor(
+                              color: AppTheme.fieldBorderColor(
                                 context,
-                              ).withValues(alpha: 0.7),
+                                lightOpacity: 0.7,
+                              ),
                             ),
                             boxShadow: [
                               AppTheme.boxShadow(
@@ -358,9 +361,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                                     decoration: InputDecoration(
                                       hintText: 'Notes (Optional)',
                                       hintStyle: TextStyle(
-                                        color: AppTheme.textLightColor(
+                                        color: AppTheme.fieldHintColor(
                                           context,
-                                        ).withValues(alpha: 0.45),
+                                          lightOpacity: 0.45,
+                                        ),
                                         fontWeight: FontWeight.w400,
                                         fontSize: 15,
                                       ),
@@ -426,7 +430,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
         color: AppTheme.backgroundColor(context),
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+            color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
             width: 1,
           ),
         ),
@@ -463,9 +467,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                 filled: true,
                 contentPadding: EdgeInsets.zero,
                 hintStyle: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.4),
+                  color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
                 ),
               ),
               onChanged: (_) => setState(() {}),
@@ -496,7 +498,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                 border: Border.all(
                   color: _isStash
                       ? primaryColor.withValues(alpha: 0.3)
-                      : AppTheme.dividerColor(context).withValues(alpha: 0.5),
+                      : AppTheme.fieldBorderColor(context, lightOpacity: 0.5),
                 ),
               ),
               child: Row(

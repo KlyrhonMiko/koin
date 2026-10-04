@@ -13,7 +13,10 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) =>
+      KoinFormTheme(builder: (context) => _buildContent(context, ref));
+
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
@@ -47,64 +50,76 @@ class SettingsScreen extends ConsumerWidget {
               // App Branding Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 28,
-                  horizontal: 24,
-                ),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient(context),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.monetization_on_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const Gap(12),
-                    const Text(
-                      'Koin',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.screenTitle,
-                        fontWeight: KoinTypography.headingWeight,
-                        letterSpacing: KoinTypography.headingTracking,
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(
-                      'Personal Finance Tracker',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: KoinTypography.caption,
-                        fontWeight: KoinTypography.supportingWeight,
-                      ),
-                    ),
-                    const Gap(12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'v1.1.1',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: KoinTypography.small,
-                          fontWeight: KoinTypography.labelWeight,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
+                      ),
+                      padding: const EdgeInsets.all(1),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(21),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 88,
+                          height: 88,
+                          fit: BoxFit.cover,
+                          semanticLabel: 'Koin app icon',
+                        ),
+                      ),
+                    ),
+                    const Gap(20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Koin',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: KoinTypography.summaryAmount,
+                              fontWeight: KoinTypography.headingWeight,
+                              letterSpacing: KoinTypography.amountTracking,
+                            ),
+                          ),
+                          const Gap(4),
+                          Text(
+                            'Personal Finance Tracker',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: KoinTypography.caption,
+                              fontWeight: KoinTypography.supportingWeight,
+                            ),
+                          ),
+                          const Gap(12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'v1.1.2',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: KoinTypography.overline,
+                                fontWeight: KoinTypography.labelWeight,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -774,6 +789,7 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     final primaryColor = AppTheme.primaryColor(context);
     final surfaceColor = AppTheme.surfaceLightColor(context);
+    final isDark = AppTheme.hasEditorAppearance(context);
 
     return GestureDetector(
       onTap: () {
@@ -786,13 +802,15 @@ class SettingsScreen extends ConsumerWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected
+          color: isSelected && !isDark
               ? primaryColor.withValues(alpha: 0.08)
               : surfaceColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? primaryColor : AppTheme.dividerColor(context),
-            width: isSelected ? 2 : 1,
+            color: isSelected
+                ? primaryColor.withValues(alpha: isDark ? 0.7 : 1)
+                : AppTheme.fieldBorderColor(context, lightOpacity: 1),
+            width: isSelected ? (isDark ? 1.5 : 2) : 1,
           ),
           boxShadow: isSelected
               ? [
@@ -813,7 +831,7 @@ class SettingsScreen extends ConsumerWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? primaryColor : surfaceColor,
+                color: isSelected && !isDark ? primaryColor : surfaceColor,
                 shape: BoxShape.circle,
                 border: isSelected
                     ? null
@@ -827,7 +845,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Icon(
                 icon,
                 color: isSelected
-                    ? Colors.white
+                    ? (isDark ? primaryColor : Colors.white)
                     : AppTheme.textLightColor(context),
                 size: 28,
               ),

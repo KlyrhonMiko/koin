@@ -298,7 +298,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         color: AppTheme.backgroundColor(context),
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+            color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
             width: 1,
           ),
         ),
@@ -354,9 +354,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 filled: true,
                 contentPadding: EdgeInsets.zero,
                 hintStyle: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.4),
+                  color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
                 ),
               ),
               onChanged: (_) {
@@ -412,7 +410,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context) {
     final isEditing = widget.payment != null;
     final primaryColor = _isIncome
         ? AppTheme.incomeColor(context)
@@ -752,7 +752,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
         ),
         boxShadow: [
           AppTheme.boxShadow(
@@ -839,7 +839,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         color: AppTheme.surfaceColor(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.7),
+          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
         ),
         boxShadow: [
           AppTheme.boxShadow(
@@ -882,9 +882,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 decoration: InputDecoration(
                   hintText: 'Notes (Optional)',
                   hintStyle: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.45),
+                    color: AppTheme.fieldHintColor(context, lightOpacity: 0.45),
                     fontWeight: FontWeight.w400,
                     fontSize: KoinTypography.body,
                   ),
