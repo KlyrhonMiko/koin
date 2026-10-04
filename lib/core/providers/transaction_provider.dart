@@ -41,6 +41,13 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
   Future<void> updateTransaction(AppTransaction transaction) async {
     await _ledger.updateTransaction(transaction);
     await loadTransactions(showLoading: false);
+    final updated = state.value
+        ?.where((tx) => tx.id == transaction.id)
+        .firstOrNull;
+    if (updated?.debtRepaymentId != null) {
+      ref.invalidate(debtRepaymentsProvider);
+      await ref.read(debtsProvider.notifier).loadDebts();
+    }
   }
 
   Future<void> deleteTransaction(String id) async {

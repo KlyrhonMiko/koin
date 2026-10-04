@@ -419,13 +419,15 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         // Section header
         Row(
           children: [
-            Text(
-              'Sub-Plans / Purchases',
-              style: TextStyle(
-                color: AppTheme.textColor(context),
-                fontSize: KoinTypography.sectionTitle,
-                fontWeight: KoinTypography.headingWeight,
-                letterSpacing: KoinTypography.headingTracking,
+            Flexible(
+              child: Text(
+                'Sub-Plans / Purchases',
+                style: TextStyle(
+                  color: AppTheme.textColor(context),
+                  fontSize: KoinTypography.sectionTitle,
+                  fontWeight: KoinTypography.headingWeight,
+                  letterSpacing: KoinTypography.headingTracking,
+                ),
               ),
             ),
             const Gap(10),
@@ -451,127 +453,148 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         ...items.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
-          return PressableScale(
-                onTap: () async {
-                  HapticService.light();
-                  final categories = ref.read(categoriesProvider).value ?? [];
-                  final updatedItem = await showAddPurchaseSheet(
-                    context: context,
-                    debtType: debt.type,
-                    primaryColor: color,
-                    categories: categories,
-                    defaultDate: DateTime.now(),
-                    existingItem: item,
-                    suggester: ref.read(categorySuggesterProvider),
-                  );
-
-                  if (updatedItem != null) {
-                    await ref
-                        .read(debtsProvider.notifier)
-                        .saveDebtItem(debt, updatedItem);
-
-                    if (context.mounted) {
-                      KoinSnackBar.success(context, 'Purchase Updated');
-                    }
-                  }
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: AppTheme.dividerColor(
-                        context,
-                      ).withValues(alpha: 0.3),
-                    ),
-                    boxShadow: [
-                      AppTheme.boxShadow(
-                        context,
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Builder(
-                        builder: (context) {
+          return Padding(
+            key: ValueKey('purchase_${item.id}'),
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SwipeToDeleteTile(
+              key: Key('dismiss_purchase_${item.id}'),
+              borderRadius: BorderRadius.circular(18),
+              fillRoundedCorners: true,
+              backgroundColor: AppTheme.errorColor(context),
+              icon: Icons.delete_rounded,
+              confirmTitle: 'Delete Purchase?',
+              confirmDescription:
+                  'Delete "${item.name}"? This will update the credit total. This action cannot be undone.',
+              onDelete: () {
+                HapticService.heavy();
+                ref.read(debtsProvider.notifier).removeDebtItem(debt, item);
+              },
+              child:
+                  PressableScale(
+                        onTap: () async {
+                          HapticService.light();
                           final categories =
                               ref.read(categoriesProvider).value ?? [];
-                          final category = categories
-                              .cast<TransactionCategory?>()
-                              .firstWhere(
-                                (c) => c?.id == item.categoryId,
-                                orElse: () => null,
-                              );
-
-                          return Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: (category?.color ?? color).withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              category != null
-                                  ? IconUtils.getIcon(category.iconCodePoint)
-                                  : Icons.shopping_bag_outlined,
-                              color: category?.color ?? color,
-                              size: 20,
-                            ),
+                          final updatedItem = await showAddPurchaseSheet(
+                            context: context,
+                            debtType: debt.type,
+                            primaryColor: color,
+                            categories: categories,
+                            defaultDate: DateTime.now(),
+                            existingItem: item,
+                            suggester: ref.read(categorySuggesterProvider),
                           );
+
+                          if (updatedItem != null) {
+                            await ref
+                                .read(debtsProvider.notifier)
+                                .saveDebtItem(debt, updatedItem);
+
+                            if (context.mounted) {
+                              KoinSnackBar.success(context, 'Purchase Updated');
+                            }
+                          }
                         },
-                      ),
-                      const Gap(16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                color: AppTheme.textColor(context),
-                                fontWeight: KoinTypography.titleWeight,
-                                fontSize: KoinTypography.body,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceColor(context),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: AppTheme.dividerColor(
+                                context,
+                              ).withValues(alpha: 0.3),
                             ),
-                            const Gap(4),
-                            Text(
-                              '${item.totalInstallments} payments • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: KoinTypography.small,
-                                fontWeight: KoinTypography.supportingWeight,
+                            boxShadow: [
+                              AppTheme.boxShadow(
+                                context,
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Builder(
+                                builder: (context) {
+                                  final categories =
+                                      ref.read(categoriesProvider).value ?? [];
+                                  final category = categories
+                                      .cast<TransactionCategory?>()
+                                      .firstWhere(
+                                        (c) => c?.id == item.categoryId,
+                                        orElse: () => null,
+                                      );
+
+                                  return Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: (category?.color ?? color)
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      category != null
+                                          ? IconUtils.getIcon(
+                                              category.iconCodePoint,
+                                            )
+                                          : Icons.shopping_bag_outlined,
+                                      color: category?.color ?? color,
+                                      size: 20,
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Gap(16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: TextStyle(
+                                        color: AppTheme.textColor(context),
+                                        fontWeight: KoinTypography.titleWeight,
+                                        fontSize: KoinTypography.body,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const Gap(4),
+                                    Text(
+                                      '${item.totalInstallments} payments • Starts ${DateFormat.MMMd().format(item.firstPaymentDate)}',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(context),
+                                        fontSize: KoinTypography.small,
+                                        fontWeight:
+                                            KoinTypography.supportingWeight,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Gap(12),
+                              Text(
+                                currencyFormat.format(item.amount),
+                                style: TextStyle(
+                                  color: color,
+                                  fontWeight: KoinTypography.headingWeight,
+                                  fontSize: KoinTypography.itemTitle,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const Gap(12),
-                      Text(
-                        currencyFormat.format(item.amount),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: KoinTypography.headingWeight,
-                          fontSize: KoinTypography.itemTitle,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .animate()
-              .fadeIn(delay: Duration(milliseconds: 100 + 50 * index))
-              .slideY(begin: 0.1);
+                      )
+                      .animate()
+                      .fadeIn(delay: Duration(milliseconds: 100 + 50 * index))
+                      .slideY(begin: 0.1),
+            ),
+          );
         }),
         const Gap(6),
         PressableScale(

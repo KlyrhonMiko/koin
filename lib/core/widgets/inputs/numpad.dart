@@ -27,12 +27,27 @@ class NumPad extends StatefulWidget {
 class _NumPadState extends State<NumPad> {
   String _expression = '';
   String _result = '0';
+  bool _replaceOnNextDigit = false;
 
   @override
   void initState() {
     super.initState();
     _expression = widget.initialValue;
+    _replaceOnNextDigit = _expression.isNotEmpty;
     _calculate();
+  }
+
+  @override
+  void didUpdateWidget(covariant NumPad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Parents echo our expression on each key press, but can also reset it
+    // externally (for example, when switching budget modes).
+    if (widget.initialValue != oldWidget.initialValue &&
+        widget.initialValue != _expression) {
+      _expression = widget.initialValue;
+      _replaceOnNextDigit = _expression.isNotEmpty;
+      _calculate();
+    }
   }
 
   void _onPress(String value, NumPadAction action) {
@@ -40,6 +55,11 @@ class _NumPadState extends State<NumPad> {
       HapticService.light();
     }
     setState(() {
+      if (_replaceOnNextDigit &&
+          (action == NumPadAction.digit || action == NumPadAction.decimal)) {
+        _expression = '';
+      }
+      _replaceOnNextDigit = false;
       if (action == NumPadAction.digit) {
         final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
         if (lastPart.contains('.')) {
@@ -84,12 +104,14 @@ class _NumPadState extends State<NumPad> {
         }
       } else if (action == NumPadAction.done) {
         _expression = _result;
-        widget.onDone();
       }
 
       _calculate();
-      widget.onValueChanged(_expression, _result);
     });
+    widget.onValueChanged(_expression, _result);
+    if (action == NumPadAction.done) {
+      widget.onDone();
+    }
   }
 
   void _calculate() {

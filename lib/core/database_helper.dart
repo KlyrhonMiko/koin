@@ -785,12 +785,55 @@ CREATE TABLE transactions (
 
   Future<int> updateTransaction(AppTransaction transaction) async {
     final db = await instance.database;
-    return await db.update(
-      'transactions',
-      transaction.toMap(),
-      where: 'id = ?',
-      whereArgs: [transaction.id],
-    );
+    return await db.transaction((txn) async {
+      final rows = await txn.query(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [transaction.id],
+      );
+      if (rows.isEmpty) return 0;
+
+      final previous = AppTransaction.fromMap(rows.first);
+      // Editing financial fields must not detach the originating domain record.
+      final updated = transaction.copyWith(
+        plannedPaymentId: previous.plannedPaymentId,
+        debtRepaymentId: previous.debtRepaymentId,
+      );
+      if (updated.debtRepaymentId != null) {
+        final repayments = await txn.query(
+          'debt_repayments',
+          where: 'id = ?',
+          whereArgs: [updated.debtRepaymentId],
+        );
+        if (repayments.isNotEmpty) {
+          final repayment = DebtRepayment.fromMap(repayments.first);
+          await txn.update(
+            'debt_repayments',
+            {
+              'amount': updated.amount,
+              'date': updated.date.toIso8601String(),
+              'note': updated.note,
+              'accountId': updated.accountId,
+            },
+            where: 'id = ?',
+            whereArgs: [repayment.id],
+          );
+          final balanceColumn = repayment.isIncrease
+              ? 'amount'
+              : 'currentAmount';
+          await txn.execute(
+            'UPDATE debts SET $balanceColumn = $balanceColumn + ? WHERE id = ?',
+            [updated.amount - repayment.amount, repayment.debtId],
+          );
+        }
+      }
+      return await txn.update(
+        'transactions',
+        updated.toMap(),
+        where: 'id = ?',
+        whereArgs: [updated.id],
+      );
+    });
   }
 
   // Savings Goals commands

@@ -153,7 +153,9 @@ class SqliteLedgerAdapter implements Ledger {
             );
 
             await txn.execute(
-              'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
+              repayment.isIncrease
+                  ? 'UPDATE debts SET amount = amount - ? WHERE id = ?'
+                  : 'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
               [repayment.amount, repayment.debtId],
             );
           }
@@ -329,7 +331,12 @@ class InMemoryLedgerAdapter implements Ledger {
 
   @override
   Future<void> updateTransaction(AppTransaction transaction) async {
-    _store[transaction.id] = transaction;
+    final previous = _store[transaction.id];
+    if (previous == null) return;
+    _store[transaction.id] = transaction.copyWith(
+      plannedPaymentId: previous.plannedPaymentId,
+      debtRepaymentId: previous.debtRepaymentId,
+    );
   }
 
   @override

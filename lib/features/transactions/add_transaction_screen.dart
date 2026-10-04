@@ -316,7 +316,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     // Saved history trains the model through database change tracking.
     // Sending separate feedback here would count the transaction twice.
     if (widget.editingTransaction != null) {
-      ref.read(transactionProvider.notifier).updateTransaction(newTransaction);
+      ref
+          .read(transactionProvider.notifier)
+          .updateTransaction(
+            newTransaction.copyWith(
+              plannedPaymentId: widget.editingTransaction!.plannedPaymentId,
+              debtRepaymentId: widget.editingTransaction!.debtRepaymentId,
+            ),
+          );
       if (feeTransaction != null) {
         ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
       }
