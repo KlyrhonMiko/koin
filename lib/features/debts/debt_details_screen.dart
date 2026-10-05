@@ -440,6 +440,71 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     Color color,
   ) {
     final items = debt.items;
+
+    // Calculate paid amount per item by generating all installments
+    final List<_ItemInstallment> installments = [];
+    for (var item in items) {
+      if (item.totalInstallments > 0) {
+        final installmentAmount = item.amount / item.totalInstallments;
+        DateTime nextDate = item.firstPaymentDate;
+        for (int i = 0; i < item.totalInstallments; i++) {
+          installments.add(
+            _ItemInstallment(item.id, nextDate, installmentAmount),
+          );
+          nextDate = _advanceDate(
+            nextDate,
+            debt.frequency,
+            item.firstPaymentDate,
+          );
+        }
+      } else {
+        installments.add(
+          _ItemInstallment(item.id, item.firstPaymentDate, item.amount),
+        );
+      }
+    }
+
+    final Map<DateTime, List<_ItemInstallment>> groupedInstallments = {};
+    for (var inst in installments) {
+      final dateKey = DateTime(
+        inst.dueDate.year,
+        inst.dueDate.month,
+        inst.dueDate.day,
+      );
+      groupedInstallments.putIfAbsent(dateKey, () => []).add(inst);
+    }
+
+    final sortedDates = groupedInstallments.keys.toList()..sort();
+
+    double remainingPaid = debt.currentAmount;
+    final Map<String, double> paidAmounts = {
+      for (var item in items) item.id: 0.0,
+    };
+
+    for (var date in sortedDates) {
+      if (remainingPaid <= 0) break;
+      final group = groupedInstallments[date]!;
+      final double totalGroupAmount = group.fold(
+        0.0,
+        (sum, inst) => sum + inst.amount,
+      );
+
+      if (remainingPaid >= totalGroupAmount) {
+        for (var inst in group) {
+          paidAmounts[inst.itemId] =
+              (paidAmounts[inst.itemId] ?? 0.0) + inst.amount;
+        }
+        remainingPaid -= totalGroupAmount;
+      } else {
+        for (var inst in group) {
+          final double ratio = inst.amount / totalGroupAmount;
+          paidAmounts[inst.itemId] =
+              (paidAmounts[inst.itemId] ?? 0.0) + (remainingPaid * ratio);
+        }
+        remainingPaid = 0;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -465,42 +530,38 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 HapticService.heavy();
                 ref.read(debtsProvider.notifier).removeDebtItem(debt, item);
               },
-              child:
-                  PressableScale(
-                        onTap: () async {
-                          HapticService.light();
-                          final categories =
-                              ref.read(categoriesProvider).value ?? [];
-                          final updatedItem = await showAddPurchaseSheet(
-                            context: context,
-                            debtType: debt.type,
-                            primaryColor: color,
-                            categories: categories,
-                            defaultDate: DateTime.now(),
-                            existingItem: item,
-                            suggester: ref.read(categorySuggesterProvider),
-                          );
+              child: PressableScale(
+                onTap: () async {
+                  HapticService.light();
+                  final categories = ref.read(categoriesProvider).value ?? [];
+                  final updatedItem = await showAddPurchaseSheet(
+                    context: context,
+                    debtType: debt.type,
+                    primaryColor: color,
+                    categories: categories,
+                    defaultDate: DateTime.now(),
+                    existingItem: item,
+                    suggester: ref.read(categorySuggesterProvider),
+                  );
 
-                          if (updatedItem != null) {
-                            await ref
-                                .read(debtsProvider.notifier)
-                                .saveDebtItem(debt, updatedItem);
+                  if (updatedItem != null) {
+                    await ref
+                        .read(debtsProvider.notifier)
+                        .saveDebtItem(debt, updatedItem);
 
-                            if (context.mounted) {
-                              KoinSnackBar.success(context, 'Purchase Updated');
-                            }
-                          }
-                        },
-                        child: DebtPurchaseCard(
-                          item: item,
-                          categories: ref.watch(categoriesProvider).value ?? [],
-                          currencyFormat: currencyFormat,
-                          color: color,
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(delay: Duration(milliseconds: 100 + 50 * index))
-                      .slideY(begin: 0.1),
+                    if (context.mounted) {
+                      KoinSnackBar.success(context, 'Purchase Updated');
+                    }
+                  }
+                },
+                child: DebtPurchaseCard(
+                  item: item,
+                  categories: ref.watch(categoriesProvider).value ?? [],
+                  currencyFormat: currencyFormat,
+                  color: color,
+                  paidAmount: paidAmounts[item.id] ?? 0.0,
+                ),
+              ),
             ),
           );
         }),
@@ -669,13 +730,12 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               ],
             ),
             const Gap(16),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
               child:
                   emptyState ??
                   Column(
+                    key: const ValueKey('repayments_column'),
                     children: repayments.asMap().entries.map((entry) {
                       final index = entry.key;
                       final r = entry.value;
@@ -718,144 +778,171 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
       confirmLabel: 'Delete Payment',
       onDelete: () => _deleteRepayment(repayment),
-      child:
-          IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Timeline connector
-                    SizedBox(
-                      width: 32,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: Center(
-                              child: repayment.isIncrease
-                                  ? Icon(
-                                      Icons.arrow_upward_rounded,
-                                      size: 14,
-                                      color: color,
-                                    )
-                                  : Text(
-                                      '#$paymentNumber',
-                                      style: TextStyle(
-                                        color: color,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          if (!isLast)
-                            Expanded(
-                              child: Container(
-                                width: 2,
-                                margin: const EdgeInsets.symmetric(vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.dividerColor(
-                                    context,
-                                  ).withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Timeline connector
+            SizedBox(
+              width: 32,
+              child: Column(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Center(
+                      child: repayment.isIncrease
+                          ? Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 14,
+                              color: color,
+                            )
+                          : Text(
+                              '#$paymentNumber',
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
+                    ),
+                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.dividerColor(
+                            context,
+                          ).withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Gap(12),
+            // Payment card
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppTheme.dividerColor(
+                      context,
+                    ).withValues(alpha: 0.3),
+                  ),
+                  boxShadow: [
+                    AppTheme.boxShadow(
+                      context,
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            repayment.isIncrease
+                                ? (repayment.note?.isNotEmpty == true
+                                      ? repayment.note!
+                                      : 'Increased Credit')
+                                : (repayment.note?.isNotEmpty == true
+                                      ? repayment.note!
+                                      : 'Payment'),
+                            style: TextStyle(
+                              color: AppTheme.textColor(context),
+                              fontWeight: KoinTypography.labelWeight,
+                              fontSize: KoinTypography.body,
+                              letterSpacing: KoinTypography.itemTracking,
+                            ),
+                          ),
+                          const Gap(3),
+                          Text(
+                            DateFormat.yMMMd().format(repayment.date),
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontSize: KoinTypography.small,
+                              fontWeight: KoinTypography.supportingWeight,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const Gap(12),
-                    // Payment card
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.3),
-                          ),
-                          boxShadow: [
-                            AppTheme.boxShadow(
-                              context,
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    repayment.isIncrease
-                                        ? (repayment.note?.isNotEmpty == true
-                                              ? repayment.note!
-                                              : 'Increased Credit')
-                                        : (repayment.note?.isNotEmpty == true
-                                              ? repayment.note!
-                                              : 'Payment'),
-                                    style: TextStyle(
-                                      color: AppTheme.textColor(context),
-                                      fontWeight: KoinTypography.labelWeight,
-                                      fontSize: KoinTypography.body,
-                                      letterSpacing:
-                                          KoinTypography.itemTracking,
-                                    ),
-                                  ),
-                                  const Gap(3),
-                                  Text(
-                                    DateFormat.yMMMd().format(repayment.date),
-                                    style: TextStyle(
-                                      color: AppTheme.textLightColor(context),
-                                      fontSize: KoinTypography.small,
-                                      fontWeight:
-                                          KoinTypography.supportingWeight,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              currencyFormat.format(repayment.amount),
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: KoinTypography.headingWeight,
-                                fontSize: KoinTypography.itemTitle,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                          ],
-                        ),
+                    Text(
+                      currencyFormat.format(repayment.amount),
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: KoinTypography.headingWeight,
+                        fontSize: KoinTypography.itemTitle,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ],
                 ),
-              )
-              .animate()
-              .slideX(
-                begin: 0.1,
-                delay: Duration(milliseconds: 60 * tileIndex),
-                duration: 300.ms,
-                curve: Curves.easeOutCubic,
-              )
-              .fadeIn(
-                delay: Duration(milliseconds: 60 * tileIndex),
-                duration: 300.ms,
               ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
+
+DateTime _advanceDate(
+  DateTime date,
+  InstallmentFrequency frequency,
+  DateTime originalDate,
+) {
+  switch (frequency) {
+    case InstallmentFrequency.weekly:
+      return date.add(const Duration(days: 7));
+    case InstallmentFrequency.biweekly:
+      return date.add(const Duration(days: 14));
+    case InstallmentFrequency.monthly:
+      int newYear = date.year;
+      int newMonth = date.month + 1;
+      if (newMonth > 12) {
+        newYear += (newMonth - 1) ~/ 12;
+        newMonth = ((newMonth - 1) % 12) + 1;
+      }
+      final daysInNewMonth = DateTime(newYear, newMonth + 1, 0).day;
+      final newDay = originalDate.day > daysInNewMonth
+          ? daysInNewMonth
+          : originalDate.day;
+      return DateTime(newYear, newMonth, newDay);
+    case InstallmentFrequency.yearly:
+      final isLeapDay = originalDate.month == 2 && originalDate.day == 29;
+      final targetYear = date.year + 1;
+      final isTargetLeapYear =
+          (targetYear % 4 == 0 && targetYear % 100 != 0) ||
+          (targetYear % 400 == 0);
+      final newDay = (isLeapDay && !isTargetLeapYear) ? 28 : originalDate.day;
+      return DateTime(targetYear, originalDate.month, newDay);
+  }
+}
+
+class _ItemInstallment {
+  final String itemId;
+  final DateTime dueDate;
+  final double amount;
+
+  _ItemInstallment(this.itemId, this.dueDate, this.amount);
 }

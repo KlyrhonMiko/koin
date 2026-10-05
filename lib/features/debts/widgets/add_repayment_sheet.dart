@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/core.dart';
+import 'package:intl/intl.dart';
+import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:uuid/uuid.dart';
 
 /// Interactive modal sheet to log a payment or credit increase on a [Debt].
@@ -79,7 +81,13 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
         : AppTheme.expenseColor(context);
 
     if (!widget.isIncrease && !_accountInitialized && accounts.isNotEmpty) {
-      _selectedAccountId = accounts.first.id;
+      final prefs = ref.read(sharedPreferencesProvider);
+      final lastId = prefs.getString('last_repayment_account_id');
+      if (lastId != null && accounts.any((a) => a.id == lastId)) {
+        _selectedAccountId = lastId;
+      } else {
+        _selectedAccountId = accounts.first.id;
+      }
       _accountInitialized = true;
     }
 
@@ -89,6 +97,20 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
             orElse: () => null,
           )
         : null;
+
+    String? displayAccountName;
+    if (selectedAccount != null) {
+      final balance =
+          ref
+              .watch(dashboardStatsProvider)
+              .accountBalances[selectedAccount.id] ??
+          selectedAccount.initialBalance;
+      final balanceStr = balance == balance.toInt()
+          ? balance.toInt().toString()
+          : balance.toStringAsFixed(2);
+      displayAccountName =
+          '${selectedAccount.name} • ${settings.currency.symbol}$balanceStr';
+    }
 
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
@@ -138,7 +160,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                 letterSpacing: KoinTypography.headingTracking,
               ),
             ),
-            const Gap(32),
+
+            const Gap(24),
 
             // ── Amount Input Display ──
             Padding(
@@ -200,7 +223,20 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                             ),
                           ),
                         ),
-                      const Gap(12),
+                      if (!widget.isIncrease) ...[
+                        const Gap(12),
+                        Text(
+                          'Remaining Credit: ${NumberFormat.currency(symbol: settings.currency.symbol, customPattern: '\u00a4#,##0.##').format(widget.debt.remainingAmount)}',
+                          style: TextStyle(
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.supportingWeight,
+                            color: AppTheme.textLightColor(
+                              context,
+                            ).withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                      const Gap(16),
                       Container(
                         width: 48,
                         height: 3,
@@ -241,7 +277,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                           label: isAccountRequired
                               ? 'Account'
                               : 'Account (Optional)',
-                          selectedName: selectedAccount?.name,
+                          selectedName: displayAccountName,
                           selectedColor: selectedAccount?.color,
                           selectedIconCodePoint: selectedAccount?.iconCodePoint,
                           selectedLogoAsset: selectedAccount?.logoAsset,
@@ -395,6 +431,17 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     final amt = double.tryParse(amtStr) ?? 0.0;
     if (amt <= 0) return;
 
+    if (!widget.isIncrease &&
+        (amt * 100).round() > (widget.debt.remainingAmount * 100).round()) {
+      HapticService.error();
+      KoinSnackBar.error(
+        context,
+        'Amount Exceeds Credit',
+        subtitle: 'You cannot pay more than the remaining balance',
+      );
+      return;
+    }
+
     final isAccountRequired = !widget.isIncrease;
     final hasAccount = _selectedAccountId != null;
 
@@ -415,6 +462,31 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
             orElse: () => null,
           )
         : null;
+
+    if (selectedAccount != null &&
+        !selectedAccount.isCredit &&
+        !widget.isIncrease) {
+      final currentBalance =
+          ref
+              .read(dashboardStatsProvider)
+              .accountBalances[selectedAccount.id] ??
+          selectedAccount.initialBalance;
+      if ((amt * 100).round() > (currentBalance * 100).round()) {
+        HapticService.error();
+        KoinSnackBar.error(
+          context,
+          'Insufficient balance',
+          subtitle: 'A debit account cannot go negative',
+        );
+        return;
+      }
+    }
+
+    if (_selectedAccountId != null) {
+      ref
+          .read(sharedPreferencesProvider)
+          .setString('last_repayment_account_id', _selectedAccountId!);
+    }
 
     final repayment = DebtRepayment(
       id: const Uuid().v4(),

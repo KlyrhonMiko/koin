@@ -131,28 +131,83 @@ class Debt {
   int get remainingInstallmentsCount =>
       (totalInstallments - paidInstallmentsCount).clamp(0, totalInstallments);
 
+  DateTime _advanceDate(
+    DateTime date,
+    InstallmentFrequency frequency,
+    DateTime originalDate,
+  ) {
+    switch (frequency) {
+      case InstallmentFrequency.weekly:
+        return date.add(const Duration(days: 7));
+      case InstallmentFrequency.biweekly:
+        return date.add(const Duration(days: 14));
+      case InstallmentFrequency.monthly:
+        int newYear = date.year;
+        int newMonth = date.month + 1;
+        if (newMonth > 12) {
+          newYear += (newMonth - 1) ~/ 12;
+          newMonth = ((newMonth - 1) % 12) + 1;
+        }
+        final daysInNewMonth = DateTime(newYear, newMonth + 1, 0).day;
+        final newDay = originalDate.day > daysInNewMonth
+            ? daysInNewMonth
+            : originalDate.day;
+        return DateTime(newYear, newMonth, newDay);
+      case InstallmentFrequency.yearly:
+        final isLeapDay = originalDate.month == 2 && originalDate.day == 29;
+        final targetYear = date.year + 1;
+        final isTargetLeapYear =
+            (targetYear % 4 == 0 && targetYear % 100 != 0) ||
+            (targetYear % 400 == 0);
+        final newDay = (isLeapDay && !isTargetLeapYear) ? 28 : originalDate.day;
+        return DateTime(targetYear, originalDate.month, newDay);
+    }
+  }
+
+  Map<DateTime, double> get _installmentSchedule {
+    final Map<DateTime, double> groups = {};
+    for (var item in items) {
+      if (item.totalInstallments > 0) {
+        final installmentAmount = item.amount / item.totalInstallments;
+        DateTime nextDate = item.firstPaymentDate;
+        for (int i = 0; i < item.totalInstallments; i++) {
+          final dateKey = DateTime(nextDate.year, nextDate.month, nextDate.day);
+          groups[dateKey] = (groups[dateKey] ?? 0.0) + installmentAmount;
+          nextDate = _advanceDate(nextDate, frequency, item.firstPaymentDate);
+        }
+      } else {
+        final dateKey = DateTime(
+          item.firstPaymentDate.year,
+          item.firstPaymentDate.month,
+          item.firstPaymentDate.day,
+        );
+        groups[dateKey] = (groups[dateKey] ?? 0.0) + item.amount;
+      }
+    }
+    return groups;
+  }
+
   double get upcomingPaymentAmount {
     if (items.isNotEmpty) {
-      double totalInstallment = 0;
-      final targetDate = nextDueDate;
-      for (var item in items) {
-        if (item.totalInstallments > 0) {
-          bool hasStarted =
-              targetDate.year > item.firstPaymentDate.year ||
-              (targetDate.year == item.firstPaymentDate.year &&
-                  targetDate.month >= item.firstPaymentDate.month);
-          if (hasStarted) {
-            totalInstallment += item.amount / item.totalInstallments;
-          }
+      final schedule = _installmentSchedule;
+      final sortedDates = schedule.keys.toList()..sort();
+      double remainingPaid = currentAmount;
+
+      for (var date in sortedDates) {
+        final amount = schedule[date]!;
+        if (remainingPaid >= amount) {
+          remainingPaid -= amount;
+        } else {
+          return amount - remainingPaid;
         }
       }
-      return remainingAmount < totalInstallment
-          ? remainingAmount
-          : totalInstallment;
+      return 0.0;
     }
 
     if (totalInstallments > 0) {
       final perInstallment = amount / totalInstallments;
+      final unpaidCurrent = remainingAmount % perInstallment;
+      if (unpaidCurrent > 0) return unpaidCurrent;
       return remainingAmount < perInstallment
           ? remainingAmount
           : perInstallment;
@@ -162,6 +217,23 @@ class Debt {
 
   DateTime get nextDueDate {
     if (dueDate != null) return dueDate!;
+    if (items.isNotEmpty) {
+      final schedule = _installmentSchedule;
+      final sortedDates = schedule.keys.toList()..sort();
+      double remainingPaid = currentAmount;
+
+      for (var date in sortedDates) {
+        final amount = schedule[date]!;
+        if (remainingPaid >= amount) {
+          remainingPaid -= amount;
+        } else {
+          return date;
+        }
+      }
+      if (sortedDates.isNotEmpty) return sortedDates.last;
+      return startDate;
+    }
+
     if (totalInstallments <= 0) return startDate;
 
     final singleInstallment = amount / totalInstallments;
@@ -171,36 +243,7 @@ class Debt {
 
     DateTime next = startDate;
     for (int i = 0; i < installmentsPaid; i++) {
-      switch (frequency) {
-        case InstallmentFrequency.weekly:
-          next = next.add(const Duration(days: 7));
-          break;
-        case InstallmentFrequency.biweekly:
-          next = next.add(const Duration(days: 14));
-          break;
-        case InstallmentFrequency.monthly:
-          int newYear = next.year;
-          int newMonth = next.month + 1;
-          if (newMonth > 12) {
-            newYear += (newMonth - 1) ~/ 12;
-            newMonth = ((newMonth - 1) % 12) + 1;
-          }
-          final daysInNewMonth = DateTime(newYear, newMonth + 1, 0).day;
-          final newDay = startDate.day > daysInNewMonth
-              ? daysInNewMonth
-              : startDate.day;
-          next = DateTime(newYear, newMonth, newDay);
-          break;
-        case InstallmentFrequency.yearly:
-          final isLeapDay = startDate.month == 2 && startDate.day == 29;
-          final targetYear = next.year + 1;
-          final isTargetLeapYear =
-              (targetYear % 4 == 0 && targetYear % 100 != 0) ||
-              (targetYear % 400 == 0);
-          final newDay = (isLeapDay && !isTargetLeapYear) ? 28 : startDate.day;
-          next = DateTime(targetYear, startDate.month, newDay);
-          break;
-      }
+      next = _advanceDate(next, frequency, startDate);
     }
     return next;
   }
@@ -215,9 +258,11 @@ class Debt {
     final due = resolvedDueDate;
     if (due == null) return null;
     final ref = now ?? DateTime.now();
-    return DateTime(due.year, due.month, due.day)
-        .difference(DateTime(ref.year, ref.month, ref.day))
-        .inDays;
+    return DateTime(
+      due.year,
+      due.month,
+      due.day,
+    ).difference(DateTime(ref.year, ref.month, ref.day)).inDays;
   }
 
   /// Whether this unsettled debt has passed its due date relative to [now].
