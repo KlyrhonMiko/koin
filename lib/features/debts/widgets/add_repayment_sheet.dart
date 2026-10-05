@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/core.dart';
 import 'package:intl/intl.dart';
-import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:uuid/uuid.dart';
 
 /// Interactive modal sheet to log a payment or credit increase on a [Debt].

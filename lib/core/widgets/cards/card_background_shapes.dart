@@ -278,15 +278,4 @@ class CardBackgroundShapes extends StatelessWidget {
         return const SizedBox.shrink();
     }
   }
-
-  Widget _buildSmallShape(double size, double radius, double alpha) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        color: Colors.white.withValues(alpha: _getAlpha(alpha)),
-      ),
-    );
-  }
 }

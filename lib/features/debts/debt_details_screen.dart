@@ -489,7 +489,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         const Gap(16),
         // Item tiles
         ...items.asMap().entries.map((entry) {
-          final index = entry.key;
+
           final item = entry.value;
           return Padding(
             key: ValueKey('purchase_${item.id}'),
