@@ -14,6 +14,7 @@ class Account {
   final int? cardShapeType;
   final double transferFeeAmount;
   final bool isTransferFeePercentage;
+  final bool isCredit;
 
   Account({
     required this.id,
@@ -28,6 +29,7 @@ class Account {
     this.logoAsset,
     this.cardColorHex,
     this.cardShapeType,
+    this.isCredit = false,
   });
 
   Account copyWith({
@@ -43,6 +45,7 @@ class Account {
     String? Function()? logoAsset,
     String? Function()? cardColorHex,
     int? Function()? cardShapeType,
+    bool? isCredit,
   }) {
     return Account(
       id: id ?? this.id,
@@ -60,6 +63,7 @@ class Account {
       cardShapeType: cardShapeType != null
           ? cardShapeType()
           : this.cardShapeType,
+      isCredit: isCredit ?? this.isCredit,
     );
   }
 
@@ -77,6 +81,7 @@ class Account {
       'logoAsset': logoAsset,
       'cardColorHex': cardColorHex,
       'cardShapeType': cardShapeType,
+      'isCredit': isCredit ? 1 : 0,
     };
   }
 
@@ -94,6 +99,7 @@ class Account {
       logoAsset: map['logoAsset'],
       cardColorHex: map['cardColorHex'],
       cardShapeType: map['cardShapeType'],
+      isCredit: map['isCredit'] == 1,
     );
   }
 

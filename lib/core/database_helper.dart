@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 34,
+      version: 35,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -297,6 +297,15 @@ CREATE TABLE debt_items (
         'value': 'true',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    if (oldVersion < 35) {
+      try {
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN isCredit INTEGER DEFAULT 0',
+        );
+      } catch (e) {
+        // Column might already exist
+      }
+    }
   }
 
   Future<void> _createCategorizationFeedbackTable(Database db) async {
@@ -479,7 +488,8 @@ CREATE TABLE accounts (
   isTransferFeePercentage INTEGER DEFAULT 0,
   logoAsset TEXT,
   cardColorHex TEXT,
-  cardShapeType INTEGER
+  cardShapeType INTEGER,
+  isCredit INTEGER DEFAULT 0
 )
 ''');
   }

@@ -276,7 +276,7 @@ Future<T?> showSelectSheet<T>({
                       ],
                     ),
                   ),
-                  if (emptyMessage != null)
+                  if (emptyMessage != null && itemCount == 0)
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 22,

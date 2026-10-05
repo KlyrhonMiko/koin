@@ -22,6 +22,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late Color selectedColor;
   late bool excludeFromTotal;
   late bool isTransferFeePercentage;
+  late bool isCredit;
   String? selectedLogoAsset;
   String? selectedTemplateId;
   bool _colorInitialized = false;
@@ -89,6 +90,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         Icons.account_balance_wallet_rounded.codePoint;
     excludeFromTotal = widget.account?.excludeFromTotal ?? false;
     isTransferFeePercentage = widget.account?.isTransferFeePercentage ?? false;
+    isCredit = widget.account?.isCredit ?? false;
     selectedLogoAsset = widget.account?.logoAsset;
     selectedCardColor = widget.account?.cardColor;
     selectedCardShape = widget.account?.cardShapeType;
@@ -282,6 +284,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         colorHex:
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
         excludeFromTotal: excludeFromTotal,
+        isCredit: isCredit,
         transferFeeAmount: double.tryParse(transferFeeController.text) ?? 0.0,
         isTransferFeePercentage: isTransferFeePercentage,
         position: isEditing
@@ -1063,9 +1066,16 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     )
                   : const SizedBox.shrink(),
             ),
-            Row(
-              children: [
-                Icon(
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: _previewHasColoredBackground
+                  ? Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
                   Icons.auto_awesome_motion_rounded,
                   size: 16,
                   color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
@@ -1221,6 +1231,20 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               ),
             ),
             const Gap(24),
+                      ]
+                      .animate(interval: 40.ms)
+                      .fade(
+                        duration: 250.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .scale(
+                        begin: const Offset(0.95, 0.95),
+                        duration: 250.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
 
             Container(
               decoration: BoxDecoration(
@@ -1261,7 +1285,48 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 ),
               ),
             ),
-            const Gap(24),
+            const Gap(16),
+
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
+                ),
+              ),
+              child: Material(
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: SwitchListTile(
+                  title: const Text(
+                    'Credit Account',
+                    style: TextStyle(
+                      fontSize: KoinTypography.compact,
+                      fontWeight: KoinTypography.labelWeight,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Mark this account as a credit account',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: isCredit,
+                  onChanged: (value) {
+                    HapticService.light();
+                    setState(() => isCredit = value);
+                  },
+                  activeThumbColor: AppTheme.primaryColor(context),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const Gap(16),
 
             Container(
               decoration: BoxDecoration(
