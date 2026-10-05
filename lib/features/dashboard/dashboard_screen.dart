@@ -571,7 +571,7 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     // Selected or Hash based shapes for variety (Synchronized with AccountItem)
-    final shapeType = account.cardShapeType ?? (account.id.hashCode.abs() % 4);
+    final shapeType = account.cardShapeType ?? (account.id.hashCode.abs() % 8);
     List<Widget> backgroundShapes = [];
     if (isColored) {
       switch (shapeType) {

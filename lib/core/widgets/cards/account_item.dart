@@ -106,7 +106,7 @@ class AccountItem extends StatelessWidget {
   List<Widget> _buildBackgroundShapes(bool colored) {
     if (!colored) return const [];
 
-    final shapeType = account.cardShapeType ?? (account.id.hashCode.abs() % 4);
+    final shapeType = account.cardShapeType ?? (account.id.hashCode.abs() % 8);
     final opacityMultiplier = isPreview ? 3.0 : 1.0;
 
     return [

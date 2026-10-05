@@ -183,69 +183,90 @@ class CardBackgroundShapes extends StatelessWidget {
             ),
           ],
         );
-      case 6: // Waves/Ribbon
+      case 6: // Glassy Overlays
         return Stack(
           children: [
             Positioned(
-              right: -50,
-              bottom: -20,
+              right: -30,
+              bottom: -30,
               child: Transform.rotate(
                 angle: -0.2,
                 child: Container(
-                  width: 200,
-                  height: 60,
+                  width: 160,
+                  height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    color: Colors.white.withValues(alpha: _getAlpha(0.10)),
+                    borderRadius: BorderRadius.circular(32),
+                    color: Colors.white.withValues(alpha: _getAlpha(0.08)),
                   ),
                 ),
               ),
             ),
             Positioned(
-              right: -30,
-              bottom: 20,
+              right: 15,
+              bottom: 15,
               child: Transform.rotate(
                 angle: -0.2,
                 child: Container(
-                  width: 180,
-                  height: 40,
+                  width: 140,
+                  height: 100,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withValues(alpha: _getAlpha(0.06)),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: _getAlpha(0.15)),
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
             ),
           ],
         );
-      case 7: // Geometric Grid
+      case 7: // Diamond Pattern
         return Stack(
           children: [
             Positioned(
-              right: 20,
-              top: 10,
-              child: _buildSmallShape(24, 6, 0.08),
-            ),
-            Positioned(
-              right: 10,
-              top: 45,
-              child: _buildSmallShape(16, 16, 0.10),
-            ),
-            Positioned(
-              right: 45,
-              top: 35,
-              child: _buildSmallShape(20, 4, 0.07),
-            ),
-            Positioned(
-              right: -10,
-              bottom: 10,
+              right: -20,
+              top: 20,
               child: Transform.rotate(
-                angle: 0.4,
+                angle: 0.785,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: Colors.white.withValues(alpha: _getAlpha(0.07)),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 40,
+              top: -20,
+              child: Transform.rotate(
+                angle: 0.785,
                 child: Container(
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: _getAlpha(0.12)),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 30,
+              bottom: -30,
+              child: Transform.rotate(
+                angle: 0.785,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
                     color: Colors.white.withValues(alpha: _getAlpha(0.09)),
                   ),
                 ),

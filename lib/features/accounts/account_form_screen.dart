@@ -375,7 +375,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     if (!_previewHasColoredBackground) return const [];
 
     final shapeType =
-        selectedCardShape ?? (widget.account?.id.hashCode.abs() ?? 0) % 4;
+        selectedCardShape ?? (widget.account?.id.hashCode.abs() ?? 0) % 8;
     // AccountItem uses multiplier 3.0 for isPreview = true
     const opacityMultiplier = 3.0;
 
@@ -395,7 +395,6 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     Currency currency,
   ) {
     final colored = _previewHasColoredBackground;
-    final nameEnabled = selectedTemplateId == null;
 
     // Adaptive colors based on card background
     final primaryTextColor = colored
@@ -483,7 +482,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         ),
                         child: TextField(
                           controller: nameController,
-                          enabled: nameEnabled,
+                          enabled: true,
                           textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                             color: secondaryTextColor,
