@@ -166,23 +166,12 @@ class DebtsTab extends ConsumerWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${summary.activeCount} ACTIVE',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: KoinTypography.titleWeight,
-                        fontSize: KoinTypography.overline,
-                        letterSpacing: 0.5,
-                      ),
+                  Text(
+                    '${summary.activeCount} active',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: KoinTypography.caption,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   ),
                 ],
@@ -208,22 +197,12 @@ class DebtsTab extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      'Paid ${currencyFormat.format(totalRepaid)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: KoinTypography.labelWeight,
-                        fontSize: KoinTypography.small,
-                      ),
+                  Text(
+                    'Paid ${currencyFormat.format(totalRepaid)}',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.small,
                     ),
                   ),
                   Icon(
@@ -305,7 +284,10 @@ class DebtCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSettled = debt.isSettled;
     final remaining = debt.remainingAmount;
-    final color = debt.type == DebtType.owedToMe
+    final settledColor = AppTheme.incomeColor(context);
+    final color = isSettled
+        ? settledColor
+        : debt.type == DebtType.owedToMe
         ? AppTheme.incomeColor(context)
         : AppTheme.expenseColor(context);
 
@@ -322,6 +304,13 @@ class DebtCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(20),
+          border: isSettled
+              ? Border.all(
+                  color: settledColor.withValues(alpha: 0.3),
+                  width: 1,
+                  strokeAlign: BorderSide.strokeAlignInside,
+                )
+              : null,
           boxShadow: [
             AppTheme.boxShadow(
               context,
@@ -343,7 +332,9 @@ class DebtCard extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  debt.type == DebtType.owedToMe
+                  isSettled
+                      ? Icons.check_rounded
+                      : debt.type == DebtType.owedToMe
                       ? Icons.arrow_downward_rounded
                       : Icons.arrow_upward_rounded,
                   color: color,
@@ -384,23 +375,12 @@ class DebtCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (isSettled)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'SETTLED',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
+                  Text(
+                    'Paid off',
+                    style: TextStyle(
+                      color: settledColor,
+                      fontSize: KoinTypography.small,
+                      fontWeight: KoinTypography.labelWeight,
                     ),
                   )
                 else ...[

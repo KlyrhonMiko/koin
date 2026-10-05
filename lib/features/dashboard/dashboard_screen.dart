@@ -226,23 +226,12 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const Gap(12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      currency.code,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: KoinTypography.titleWeight,
-                        fontSize: KoinTypography.overline,
-                        letterSpacing: 0.5,
-                      ),
+                  Text(
+                    currency.code,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.caption,
                     ),
                   ),
                 ],
@@ -281,41 +270,31 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Net change chip
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      netChange >= 0
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
-                      color: Colors.white,
-                      size: 14,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    netChange >= 0
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: 14,
+                  ),
+                  const Gap(4),
+                  AnimatedCounter(
+                    value: netChange.abs(),
+                    lastValueToken: 'dashboard_net_change',
+                    formatter: (v) => settings.hideBalance
+                        ? '•••••• this month'
+                        : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
+                    duration: const Duration(milliseconds: 1200),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.small,
                     ),
-                    const Gap(4),
-                    AnimatedCounter(
-                      value: netChange.abs(),
-                      lastValueToken: 'dashboard_net_change',
-                      formatter: (v) => settings.hideBalance
-                          ? '•••••• this month'
-                          : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
-                      duration: const Duration(milliseconds: 1200),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: KoinTypography.labelWeight,
-                        fontSize: KoinTypography.small,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               // Small visual indicator of card type or app icon
               Icon(

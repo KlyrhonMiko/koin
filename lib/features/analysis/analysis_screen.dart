@@ -366,20 +366,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (isWarning) ...[
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.redAccent.shade100,
-                            size: 14,
-                          ),
-                          const Gap(4),
-                        ],
                         Text(
                           'Net Balance',
                           style: TextStyle(
-                            color: isWarning
-                                ? Colors.redAccent.shade100
-                                : Colors.white.withValues(alpha: 0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: KoinTypography.small,
                             fontWeight: KoinTypography.supportingWeight,
                           ),
@@ -390,9 +380,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     Text(
                       netStr,
                       style: TextStyle(
-                        color: isWarning
-                            ? Colors.redAccent.shade100
-                            : Colors.white,
+                        color: Colors.white,
                         fontSize: KoinTypography.body,
                         fontWeight: KoinTypography.headingWeight,
                       ),

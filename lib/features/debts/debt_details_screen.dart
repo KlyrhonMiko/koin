@@ -191,6 +191,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     final progress = debt.progress;
     final isSettled = debt.isSettled;
     final remaining = debt.remainingAmount;
+    final cardColor = isSettled ? AppTheme.incomeColor(context) : color;
 
     return KoinSummaryCard(
           shapeStyle: SummaryShapeStyle.debtDetails,
@@ -199,9 +200,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [color, color.withValues(alpha: 0.85)],
+            colors: [cardColor, cardColor.withValues(alpha: 0.85)],
           ),
-          glowColor: color,
+          glowColor: cardColor,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,50 +224,26 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Gap(12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      isSettled
-                          ? 'SETTLED'
-                          : debt.type == DebtType.owedToMe
-                          ? 'OWES YOU'
-                          : 'YOU OWE',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
                 ],
               ),
 
-              if (debt.totalInstallments > 0) ...[
-                const Gap(4),
-                Text(
-                  '${debt.totalInstallments} ${debt.frequency.name} payments',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: KoinTypography.small,
-                    fontWeight: KoinTypography.supportingWeight,
-                  ),
+              const Gap(4),
+              Text(
+                debt.totalInstallments > 0
+                    ? '${currencyFormat.format(debt.amount)} total · ${debt.totalInstallments} ${debt.frequency.name} payments'
+                    : '${currencyFormat.format(debt.amount)} total',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: KoinTypography.small,
+                  fontWeight: KoinTypography.supportingWeight,
                 ),
-              ],
+              ),
 
               const Gap(24),
 
               // Total Debt Amount
               AnimatedCounter(
-                value: debt.amount,
+                value: remaining,
                 formatter: (v) => currencyFormat.format(v),
                 duration: const Duration(milliseconds: 1400),
                 curve: Curves.easeOutCubic,
@@ -297,7 +274,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                         ),
                       ),
                       Text(
-                        '${currencyFormat.format(remaining)} left',
+                        '${currencyFormat.format(debt.amount - remaining)} paid',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: KoinTypography.caption,
