@@ -6,7 +6,7 @@ abstract final class KoinTypography {
   static const screenTitle = 24.0;
   static const formTitle = 28.0;
   static const sectionTitle = 18.0;
-  static const summaryAmount = 32.0;
+  static const summaryAmount = 38.0;
   static const inputAmount = 48.0;
   static const itemAmount = 17.0;
   static const cardAmount = 20.0;

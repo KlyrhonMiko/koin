@@ -285,26 +285,15 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   ),
                   const Gap(8),
                   // Progress Track
-                  Container(
-                    height: 8,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Stack(
-                      children: [
-                        FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress.clamp(0.0, 1.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ],
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: progress.clamp(0.0, 1.0),
+                      minHeight: 4,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -746,15 +735,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required int paymentNumber,
     required bool isLast,
   }) {
-    return SwipeToDeleteTile(
-      key: Key(repayment.id),
-      margin: const EdgeInsets.only(bottom: 10),
-      borderRadius: BorderRadius.circular(18),
-      confirmTitle: 'Delete Payment?',
-      confirmDescription:
-          'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
-      confirmLabel: 'Delete Payment',
-      onDelete: () => _deleteRepayment(repayment),
+    return Padding(
+      key: ValueKey('repayment_row_${repayment.id}'),
+      padding: const EdgeInsets.only(bottom: 10),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -807,72 +790,83 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             const Gap(12),
             // Payment card
             Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.3),
+              child: SwipeToDeleteTile(
+                key: Key('dismiss_repayment_${repayment.id}'),
+                borderRadius: BorderRadius.circular(18),
+                fillRoundedCorners: true,
+                backgroundColor: AppTheme.errorColor(context),
+                icon: Icons.delete_rounded,
+                confirmTitle: 'Delete Payment?',
+                confirmDescription:
+                    'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
+                confirmLabel: 'Delete Payment',
+                onDelete: () => _deleteRepayment(repayment),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
-                  boxShadow: [
-                    AppTheme.boxShadow(
-                      context,
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppTheme.dividerColor(
+                        context,
+                      ).withValues(alpha: 0.3),
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            repayment.isIncrease
-                                ? (repayment.note?.isNotEmpty == true
-                                      ? repayment.note!
-                                      : 'Increased Credit')
-                                : (repayment.note?.isNotEmpty == true
-                                      ? repayment.note!
-                                      : 'Payment'),
-                            style: TextStyle(
-                              color: AppTheme.textColor(context),
-                              fontWeight: KoinTypography.labelWeight,
-                              fontSize: KoinTypography.body,
-                              letterSpacing: KoinTypography.itemTracking,
-                            ),
-                          ),
-                          const Gap(3),
-                          Text(
-                            DateFormat.yMMMd().format(repayment.date),
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontSize: KoinTypography.small,
-                              fontWeight: KoinTypography.supportingWeight,
-                            ),
-                          ),
-                        ],
+                    boxShadow: [
+                      AppTheme.boxShadow(
+                        context,
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                    Text(
-                      currencyFormat.format(repayment.amount),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: KoinTypography.headingWeight,
-                        fontSize: KoinTypography.itemTitle,
-                        letterSpacing: -0.3,
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              repayment.isIncrease
+                                  ? (repayment.note?.isNotEmpty == true
+                                        ? repayment.note!
+                                        : 'Increased Credit')
+                                  : (repayment.note?.isNotEmpty == true
+                                        ? repayment.note!
+                                        : 'Payment'),
+                              style: TextStyle(
+                                color: AppTheme.textColor(context),
+                                fontWeight: KoinTypography.labelWeight,
+                                fontSize: KoinTypography.body,
+                                letterSpacing: KoinTypography.itemTracking,
+                              ),
+                            ),
+                            const Gap(3),
+                            Text(
+                              DateFormat.yMMMd().format(repayment.date),
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context),
+                                fontSize: KoinTypography.small,
+                                fontWeight: KoinTypography.supportingWeight,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        currencyFormat.format(repayment.amount),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: KoinTypography.headingWeight,
+                          fontSize: KoinTypography.itemTitle,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -176,7 +176,7 @@ class DebtsTab extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(12),
+              const Gap(16),
               AnimatedCounter(
                 value: netBalance,
                 lastValueToken: animationSessionKey != null
@@ -193,7 +193,7 @@ class DebtsTab extends ConsumerWidget {
                   height: KoinTypography.amountHeight,
                 ),
               ),
-              const Gap(24),
+              const Gap(16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

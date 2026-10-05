@@ -238,7 +238,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const Gap(12),
+          const Gap(16),
           settings.hideBalance
               ? const Text(
                   '••••••',
@@ -250,22 +250,27 @@ class DashboardScreen extends ConsumerWidget {
                     height: KoinTypography.amountHeight,
                   ),
                 )
-              : AnimatedCounter(
-                  value: stats.currentBalance,
-                  lastValueToken: 'dashboard_total_balance',
-                  formatter: (v) =>
-                      NumberFormat.currency(symbol: currency.symbol).format(v),
-                  duration: const Duration(milliseconds: 1400),
-                  curve: Curves.easeOutCubic,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: KoinTypography.summaryAmount,
-                    fontWeight: KoinTypography.headingWeight,
-                    letterSpacing: KoinTypography.amountTracking,
-                    height: KoinTypography.amountHeight,
+              : FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedCounter(
+                    value: stats.currentBalance,
+                    lastValueToken: 'dashboard_total_balance',
+                    formatter: (v) => NumberFormat.currency(
+                      symbol: currency.symbol,
+                    ).format(v),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: KoinTypography.summaryAmount,
+                      fontWeight: KoinTypography.headingWeight,
+                      letterSpacing: KoinTypography.amountTracking,
+                      height: KoinTypography.amountHeight,
+                    ),
                   ),
                 ),
-          const Gap(20),
+          const Gap(16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -300,7 +305,7 @@ class DashboardScreen extends ConsumerWidget {
               Icon(
                 Icons.contactless_outlined,
                 color: Colors.white.withValues(alpha: 0.4),
-                size: 24,
+                size: 20,
               ),
             ],
           ),
