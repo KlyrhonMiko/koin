@@ -3,20 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/features.dart';
+import 'package:koin/core/widgets/app_startup.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(AppStartup(initialize: _initializeApp));
+}
 
+Future<Widget> _initializeApp() async {
   // Complete initial history training before the UI can request suggestions.
   await HybridMlSuggesterAdapter().bootstrap();
 
   final sharedPrefs = await SharedPreferences.getInstance();
 
-  runApp(
-    ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
-      child: const MyApp(),
-    ),
+  return ProviderScope(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
+    child: const MyApp(),
   );
 }
 
