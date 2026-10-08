@@ -1,15 +1,31 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <!-- Receipt + add: one consistent outline, sized for a 24dp system tile. -->
+    <!-- Koin's smiling coin, simplified for a monochrome system tile.
+         The open rim leaves clear space for the add-entry affordance. -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M19,11C19.3,6.2 15.7,2 11,2
+            C6,2 2,6 2,11C2,16 6,20 11,20" />
+    <!-- The rising eyes and smile echo the tilted face in assets/logo.png. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8.5,10C8.7,11.3 8.2,12.3 7.3,12.4
+            C6.4,12.5 5.7,11.6 5.5,10.3C5.3,9 5.8,8 6.7,7.9
+            C7.6,7.8 8.3,8.7 8.5,10Z
+            M14.3,8.5C14.5,9.8 14,10.8 13.1,10.9
+            C12.2,11 11.5,10.1 11.3,8.8C11.1,7.5 11.6,6.5 12.5,6.4
+            C13.4,6.3 14.1,7.2 14.3,8.5Z
+            M8.2,14.1C10,14.2 11.8,13.7 13.3,12.6
+            C13.7,12.3 14,12.5 13.9,13C13.6,14.8 12.4,16 10.9,16.1
+            C9.7,16.2 8.6,15.7 8,14.8C7.8,14.4 7.9,14.1 8.2,14.1Z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFFFF"
         android:strokeWidth="2"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M17.5,10.5V3.5Q17.5,2.5 16.5,2.5H4.5Q3.5,2.5 3.5,3.5V21.5
-            L6.5,19.5L9.5,21.5L12.5,19.5
-            M7,7H14M7,11H11
-            M18,14V21M14.5,17.5H21.5" />
+        android:pathData="M18.5,14.5L18.5,21.5M15,18L22,18" />
 </vector>
