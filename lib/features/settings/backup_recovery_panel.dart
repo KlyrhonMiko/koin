@@ -116,137 +116,171 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
         final busy = status.busy || _acting;
         final colors = Theme.of(context).colorScheme;
         final latest = status.copies.isEmpty ? null : status.copies.first;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        final supporting = Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant);
+        const inset = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+        Widget divider() => Divider(
+          height: 1,
+          indent: 16,
+          endIndent: 16,
+          color: AppTheme.dividerColor(context),
+        );
+        Widget action(
+          String title,
+          IconData icon,
+          Future<void> Function() callback, {
+          String? subtitle,
+          bool enabled = true,
+        }) => ListTile(
+          contentPadding: inset,
+          title: Text(title),
+          subtitle: subtitle == null ? null : Text(subtitle, style: supporting),
+          trailing: Icon(icon, size: 20),
+          enabled: enabled && !busy,
+          onTap: enabled && !busy ? () => _run(callback) : null,
+        );
+
+        return KoinGroupedCard(
+          autoDivide: false,
           children: [
-            KoinGroupedCard(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          status.localError
-                              ? 'Recovery copy needs attention'
-                              : status.busy
-                              ? 'Saving recovery copy…'
-                              : latest == null
-                              ? 'Preparing your first recovery copy'
-                              : 'Local recovery is on',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
+            // Stretch the status block so its text starts at the card inset,
+            // rather than centering an intrinsically sized column.
+            SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        status.localError
+                            ? 'Backup needs attention'
+                            : status.busy
+                            ? 'Saving a backup…'
+                            : 'Automatic backups',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      latest == null
+                          ? 'Your first copy will be saved on this device.'
+                          : 'On this device · ${DateFormat.MMMd().add_jm().format(latest.createdAt)}',
+                      style: supporting,
+                    ),
+                    if (status.localError) ...[
                       const SizedBox(height: 8),
                       Text(
-                        latest == null
-                            ? 'Koin saves copies automatically while you use the app.'
-                            : 'Last copy: ${_date(latest.createdAt)}\n${status.copies.length} of 3 copies · ${_size(status.storageBytes)}',
-                        style: TextStyle(color: colors.onSurfaceVariant),
+                        'Check free space, then try again.',
+                        style: supporting,
                       ),
-                      if (status.localError) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Check free space on your device, then try again.',
-                        ),
-                        TextButton(
-                          onPressed: busy
-                              ? null
-                              : () => _run(() => service.check(force: true)),
-                          child: const Text('Try again'),
-                        ),
-                      ],
+                      TextButton(
+                        onPressed: busy
+                            ? null
+                            : () => _run(() => service.check(force: true)),
+                        child: const Text('Try again'),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.restore_rounded),
-                  title: const Text('Restore a recovery copy'),
-                  subtitle: Text(
-                    latest == null
-                        ? 'Available after the first copy is saved'
-                        : 'Choose from your recent copies',
-                  ),
-                  enabled: latest != null && !busy,
-                  onTap: latest == null || busy
-                      ? null
-                      : () => _run(() => _chooseCopy(service, status.copies)),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'These copies stay on this device and may be removed when Koin is uninstalled. Keep a backup on another device to protect against losing this one.',
-              style: TextStyle(color: colors.onSurfaceVariant),
+            divider(),
+            action(
+              'Restore data',
+              Icons.restore_rounded,
+              () => _chooseCopy(service, status.copies),
+              enabled: latest != null,
+              subtitle: latest == null
+                  ? 'Available after the first backup'
+                  : null,
             ),
-            const SizedBox(height: 16),
-            KoinGroupedCard(
+            divider(),
+            ExpansionTile(
+              tilePadding: inset,
+              childrenPadding: EdgeInsets.zero,
+              shape: const Border(),
+              collapsedShape: const Border(),
+              title: const Text('More backup options'),
+              subtitle: status.externalError
+                  ? Text('Folder backup needs attention', style: supporting)
+                  : null,
               children: [
                 if (service.external.supported) ...[
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(
-                      status.destinationLabel == null
-                          ? 'Set up folder backup'
-                          : 'Backup folder: ${status.destinationLabel}',
-                    ),
-                    subtitle: Text(
-                      status.externalError
-                          ? 'Folder unavailable. Reconnect it or choose another folder.'
-                          : status.destinationLabel == null
-                          ? 'Choose a local folder or USB drive once'
-                          : status.externalAt == null
-                          ? 'Waiting for the first folder backup'
-                          : 'Last backup: ${_date(status.externalAt!)}',
-                    ),
-                    enabled: !busy,
-                    onTap: busy
-                        ? null
-                        : () => _run(() async {
-                            await service.setupExternal();
-                          }),
+                  action(
+                    status.destinationLabel == null
+                        ? 'Choose a backup folder'
+                        : 'Change backup folder',
+                    Icons.folder_outlined,
+                    () async {
+                      await service.setupExternal();
+                    },
+                    subtitle: status.externalError
+                        ? 'Reconnect your folder or choose another.'
+                        : status.destinationLabel ??
+                              'Optional · local folder or USB drive',
                   ),
-                  if (status.destinationLabel != null)
+                  if (status.destinationLabel != null) ...[
+                    if (status.externalAt != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            'Folder updated ${_date(status.externalAt!)}',
+                            style: supporting,
+                          ),
+                        ),
+                      ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Wrap(
-                        spacing: 8,
-                        children: [
-                          TextButton(
-                            onPressed: busy
-                                ? null
-                                : () => _run(() => service.check(force: true)),
-                            child: const Text('Back up now'),
-                          ),
-                          TextButton(
-                            onPressed: busy
-                                ? null
-                                : () => _run(service.disconnectExternal),
-                            child: const Text('Disconnect folder'),
-                          ),
-                        ],
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Wrap(
+                          spacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () =>
+                                        _run(() => service.check(force: true)),
+                              child: const Text('Back up now'),
+                            ),
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => _run(service.disconnectExternal),
+                              child: const Text('Disconnect'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ],
                 ],
-                ListTile(
-                  leading: const Icon(Icons.upload_file_rounded),
-                  title: const Text('Export a backup'),
-                  subtitle: const Text(
-                    'Save a compressed copy to a location you choose',
-                  ),
-                  enabled: !busy,
-                  onTap: busy ? null : () => _run(widget.onExport),
+                action(
+                  'Export a backup',
+                  Icons.upload_file_rounded,
+                  widget.onExport,
                 ),
-                ListTile(
-                  leading: const Icon(Icons.download_rounded),
-                  title: const Text('Import a backup'),
-                  subtitle: const Text(
-                    'Restore a Koin backup or an earlier .db export',
+                action(
+                  'Import a backup',
+                  Icons.download_rounded,
+                  widget.onImport,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      '${status.copies.length} of 3 copies · ${_size(status.storageBytes)}\n'
+                      'Local copies may be removed on uninstall. Keep an exported copy on another device in case you lose this one.',
+                      style: supporting,
+                    ),
                   ),
-                  enabled: !busy,
-                  onTap: busy ? null : () => _run(widget.onImport),
                 ),
               ],
             ),

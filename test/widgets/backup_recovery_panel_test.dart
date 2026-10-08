@@ -159,8 +159,8 @@ void main() {
         brightness: brightness,
         capture: true,
       );
-      expect(find.text('Local recovery is on'), findsOneWidget);
-      expect(find.textContaining('23.4 KB'), findsOneWidget);
+      expect(find.text('Automatic backups'), findsOneWidget);
+      expect(find.text('Export a backup').hitTestable(), findsNothing);
     }
   });
 
@@ -170,9 +170,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await render(tester, size: const Size(375, 812));
-    ListTile tile() => tester.widget<ListTile>(
-      find.widgetWithText(ListTile, 'Restore a recovery copy'),
-    );
+    ListTile tile() =>
+        tester.widget<ListTile>(find.widgetWithText(ListTile, 'Restore data'));
     expect(tile().enabled, isFalse);
     service.status.value = RecoveryStatus(
       copies: [RecoveryCopy('test', DateTime(2026), 100)],
@@ -186,4 +185,30 @@ void main() {
     await tester.pump();
     expect(tile().enabled, isFalse);
   });
+
+  testWidgets(
+    'status aligns with actions and secondary options are disclosed on demand',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      service.status.value = RecoveryStatus(
+        copies: [RecoveryCopy('test', DateTime(2026, 10, 8), 24000)],
+      );
+      await render(tester, size: const Size(375, 812));
+      final statusLeft = tester.getTopLeft(find.text('Automatic backups')).dx;
+      final restoreLeft = tester.getTopLeft(find.text('Restore data')).dx;
+      expect(statusLeft, closeTo(restoreLeft, 1));
+      expect(find.text('Export a backup').hitTestable(), findsNothing);
+      await tester.tap(find.text('More backup options'));
+      await tester.pumpAndSettle();
+      expect(find.text('Export a backup').hitTestable(), findsOneWidget);
+      expect(find.text('Import a backup').hitTestable(), findsOneWidget);
+      expect(find.textContaining('23.4 KB'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await render(tester, size: const Size(375, 812), scale: 2);
+      await tester.tap(find.text('More backup options'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
