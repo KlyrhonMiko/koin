@@ -10,12 +10,14 @@ import android.graphics.drawable.Icon
 import android.os.Build
 
 class MainActivity : FlutterActivity() {
+    private var backupFolderBridge: BackupFolderBridge? = null
     private var channel: MethodChannel? = null
     private var dartReady = false
     private var pendingQuickEntry = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        backupFolderBridge = BackupFolderBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         pendingQuickEntry = pendingQuickEntry || intent?.action == QUICK_ENTRY_ACTION
         if (intent?.action == QUICK_ENTRY_ACTION) intent.action = Intent.ACTION_MAIN
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
@@ -70,7 +72,14 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (backupFolderBridge?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        backupFolderBridge?.dispose()
+        backupFolderBridge = null
         channel?.setMethodCallHandler(null)
         channel = null
         dartReady = false

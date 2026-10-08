@@ -5,6 +5,7 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/features.dart';
 import 'package:koin/core/widgets/app_startup.dart';
 import 'package:koin/core/services/quick_transaction_service.dart';
+import 'package:koin/core/maintenance/recovery_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +40,10 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _quickTransactions.initialize(_openQuickTransaction);
+      if (mounted) {
+        _quickTransactions.initialize(_openQuickTransaction);
+        ref.read(recoveryServiceProvider).start();
+      }
     });
   }
 

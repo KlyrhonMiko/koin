@@ -4,6 +4,7 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/forecasting/forecast_history.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:koin/core/maintenance/database_snapshot.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -963,11 +964,26 @@ CREATE TABLE transactions (
   Future<void> saveSettingsToDb(Map<String, String> settings) async {
     final db = await instance.database;
     await db.transaction((txn) async {
+      final current = await txn.query(
+        'app_settings',
+        where: 'key NOT IN (?, ?)',
+        whereArgs: [
+          'categorization_model_version',
+          'categorization_history_dirty',
+        ],
+      );
+      if (current.length == settings.length &&
+          current.every((row) => settings[row['key']] == row['value'])) {
+        return;
+      }
       // Backups replace UI settings, but must retain model synchronization state.
       await txn.delete(
         'app_settings',
         where: 'key NOT IN (?, ?)',
-        whereArgs: ['categorization_model_version', 'categorization_history_dirty'],
+        whereArgs: [
+          'categorization_model_version',
+          'categorization_history_dirty',
+        ],
       );
       for (var entry in settings.entries) {
         await txn.insert('app_settings', {
@@ -1242,7 +1258,8 @@ CREATE TABLE transactions (
 
   Future close() async {
     final db = await instance.database;
-    db.close();
+    await db.close();
+    _database = null;
   }
 
   Future<String> getDatabaseFilePath() async {
@@ -1254,9 +1271,20 @@ CREATE TABLE transactions (
   }
 
   Future<bool> restoreDatabase(String backupPath) async {
+    String? rollbackPath;
+    String? targetPath;
+    var rollbackReady = false;
     try {
+      // Validate before closing or touching the user's current database.
+      await DatabaseSnapshot.validate(backupPath);
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'koin.db');
+      targetPath = path;
+      rollbackPath = join(dbPath, 'koin_restore_rollback.db');
+      final rollback = File(rollbackPath);
+      if (await rollback.exists()) await rollback.delete();
+      await DatabaseSnapshot.create(await database, rollbackPath);
+      rollbackReady = true;
 
       if (_database != null) {
         await _database!.close();
@@ -1274,13 +1302,30 @@ CREATE TABLE transactions (
       }
 
       final sourceFile = File(backupPath);
-      await sourceFile.copy(path);
+      final incoming = File('$path.incoming');
+      await incoming.writeAsBytes(await sourceFile.readAsBytes(), flush: true);
+      await incoming.rename(path);
 
       // Test initialization
       await database;
+      await rollback.delete();
       return true;
     } catch (e) {
-      debugPrint("Error restoring database: \$e");
+      if (rollbackReady &&
+          rollbackPath != null &&
+          targetPath != null &&
+          await File(rollbackPath).exists()) {
+        await _database?.close();
+        _database = null;
+        for (final suffix in ['-wal', '-shm']) {
+          final file = File('$targetPath$suffix');
+          if (await file.exists()) await file.delete();
+        }
+        await File(rollbackPath).copy(targetPath);
+        await File(rollbackPath).delete();
+        await database;
+      }
+      debugPrint('Error restoring database: $e');
       return false;
     }
   }

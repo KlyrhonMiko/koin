@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/database_helper.dart';
+import 'package:koin/core/maintenance/database_snapshot.dart';
+import 'package:koin/core/maintenance/recovery_store.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:koin/core/categorization/category_suggester.dart';
 
 import 'package:koin/core/providers/account_provider.dart';
@@ -57,20 +61,39 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
     };
     await _dbHelper.saveSettingsToDb(settings);
 
-    final dbPath = await _dbHelper.getDatabaseFilePath();
-    final file = File(dbPath);
-    if (!await file.exists()) return null;
-
-    final dateStr = DateFormat('yyyy_MM_dd').format(DateTime.now());
-    final fileName = 'koin_backup_$dateStr';
-    final bytes = await file.readAsBytes();
-
-    return BackupBundle(fileName: fileName, bytes: bytes);
+    final temp = await (await getTemporaryDirectory()).createTemp(
+      'koin_snapshot_',
+    );
+    try {
+      final path = p.join(temp.path, 'snapshot.db');
+      await DatabaseSnapshot.create(await _dbHelper.database, path);
+      final dateStr = DateFormat('yyyy_MM_dd_HHmmss').format(DateTime.now());
+      return BackupBundle(
+        fileName: 'koin_backup_$dateStr',
+        bytes: await File(path).readAsBytes(),
+      );
+    } finally {
+      await temp.delete(recursive: true);
+    }
   }
 
   @override
   Future<bool> restoreBackup(String backupPath) async {
-    final success = await _dbHelper.restoreDatabase(backupPath);
+    final temp = await (await getTemporaryDirectory()).createTemp(
+      'koin_restore_',
+    );
+    bool success;
+    try {
+      final decoded = await compute(
+        decodeBackup,
+        await File(backupPath).readAsBytes(),
+      );
+      final path = p.join(temp.path, 'restore.db');
+      await File(path).writeAsBytes(decoded, flush: true);
+      success = await _dbHelper.restoreDatabase(path);
+    } finally {
+      await temp.delete(recursive: true);
+    }
     if (!success) return false;
 
     await _ref.read(categorySuggesterProvider).bootstrap();

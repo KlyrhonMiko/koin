@@ -24,6 +24,8 @@ Koin is designed to offer a premium and effortless experience for managing your 
 - **Financial Analysis**: Deep dive with expense breakdowns, category rankings, and time-frame filtering.
 - **Personalized UI**: Dark and light modes with vibrant accent colors, plus glassmorphic and neumorphic elements.
 - **Private & Secure**: Your data stays on your device using local SQLite storage.
+- **Backup & Recovery**: Koin checks for changes every 10 seconds while open and when moving between foreground and background. It keeps up to three verified, compressed local recovery copies, skips unchanged snapshots, and shows their dates and storage use in Settings. Local copies can be lost with the device or removed on uninstall.
+- **Optional Folder Backups**: Android, Windows, and Linux can remember a user-selected local folder or USB drive and update it while Koin is running. Keep a copy on a separate device for device-loss protection. Other platforms can export compressed `.koin` files manually. Imports also support earlier `.db` exports. Backups contain personal financial data; choose a private destination.
 
 ## Technologies Used
 

@@ -6,7 +6,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
+import 'package:koin/core/maintenance/recovery_store.dart';
+import 'package:koin/core/maintenance/recovery_service.dart';
+import 'backup_recovery_panel.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/core/services/quick_transaction_service.dart';
 
@@ -283,25 +286,13 @@ class SettingsScreen extends ConsumerWidget {
 
               // ── Data Management ──
               const FormSectionTitle.subhead(
-                title: 'Data Management',
+                title: 'Backup & recovery',
                 padding: EdgeInsets.only(left: 4),
               ),
               const Gap(12),
-              KoinGroupedCard(
-                children: [
-                  KoinSettingTile(
-                    title: 'Backup Data',
-                    subtitle: 'Export your data to a safe place',
-                    icon: Icons.upload_file_rounded,
-                    onTap: () => _handleBackup(context, ref),
-                  ),
-                  KoinSettingTile(
-                    title: 'Restore Data',
-                    subtitle: 'Import data from a backup file',
-                    icon: Icons.download_rounded,
-                    onTap: () => _handleRestore(context, ref),
-                  ),
-                ],
+              BackupRecoveryPanel(
+                onExport: () => _handleBackup(context, ref),
+                onImport: () => _handleRestore(context, ref),
               ),
               const Gap(KoinSpacing.sectionGap),
 
@@ -363,35 +354,21 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {
-    final confirmed = await _showConfirmationBottomSheet(
-      context,
-      title: 'Backup Data',
-      message:
-          'Are you sure you want to backup your database? This will save the backup file directly to your device.',
-      confirmText: 'Backup',
-      icon: Icons.upload_file_rounded,
-    );
-
-    if (confirmed != true) return;
-
     try {
-      final maintenance = ref.read(appMaintenanceProvider);
-      final bundle = await maintenance.createBackup();
+      final bundle = await ref.read(recoveryServiceProvider).exportBackup();
 
       if (bundle != null) {
         // Prompt user for save location
-        final savedPath = await FileSaver.instance.saveAs(
-          name: bundle.fileName,
-          bytes: bundle.bytes,
-          fileExtension: 'db',
-          mimeType: MimeType.other,
+        final savedPath = await FilePicker.saveFile(
+          fileName: '${bundle.fileName}.koin',
+          bytes: await compute(compressBackup, bundle.bytes),
         );
 
-        if (context.mounted && savedPath != null && savedPath.isNotEmpty) {
+        if (context.mounted && savedPath != null) {
           KoinSnackBar.success(
             context,
             'Backup saved successfully',
-            subtitle: 'Your database is now safe',
+            subtitle: 'Saved to the location you selected',
           );
         }
       } else {
@@ -415,34 +392,37 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _handleRestore(BuildContext context, WidgetRef ref) async {
-    final confirmed = await _showConfirmationBottomSheet(
-      context,
-      title: 'Restore Data',
-      message:
-          'Restoring data will replace all your current app data. Are you sure you want to continue?',
-      confirmText: 'Restore',
-      icon: Icons.download_rounded,
-      isDestructive: true,
-    );
-
-    if (confirmed != true) return;
-
     try {
       final file = await FilePicker.pickFile();
       if (file != null) {
+        if (!context.mounted) return;
+        final confirmed = await _showConfirmationBottomSheet(
+          context,
+          title: 'Import this backup?',
+          message:
+              'Replace your current data with ${file.name}? A recovery copy of your current data will be kept first.',
+          confirmText: 'Restore',
+          icon: Icons.download_rounded,
+          isDestructive: true,
+        );
+        if (confirmed != true) return;
         String? path = file.path;
         File? tempFile;
         try {
           if (path == null) {
             final bytes = await file.readAsBytes();
             final tempDir = await getTemporaryDirectory();
-            tempFile = File(p.join(tempDir.path, file.name));
+            tempFile = File(
+              p.join(
+                tempDir.path,
+                'koin_import_${DateTime.now().microsecondsSinceEpoch}.koin',
+              ),
+            );
             await tempFile.writeAsBytes(bytes);
             path = tempFile.path;
           }
 
-          final maintenance = ref.read(appMaintenanceProvider);
-          final success = await maintenance.restoreBackup(path);
+          final success = await ref.read(recoveryServiceProvider).restore(path);
 
           if (!context.mounted) return;
 
@@ -472,7 +452,8 @@ class SettingsScreen extends ConsumerWidget {
         KoinSnackBar.error(
           context,
           'Error restoring data',
-          subtitle: 'Check the backup file and try again: $e',
+          subtitle:
+              'Choose a valid Koin backup and check available storage, then try again.',
         );
       }
     }
@@ -486,14 +467,16 @@ class SettingsScreen extends ConsumerWidget {
       context,
       title: 'Delete All Records',
       message:
-          'Are you sure you want to delete all your transaction records? This action cannot be undone.',
+          'Delete all transactions from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete',
       icon: Icons.delete_sweep_rounded,
       isDestructive: true,
     );
 
     if (confirmed == true && context.mounted) {
-      await ref.read(appMaintenanceProvider).clearTransactions();
+      await ref
+          .read(recoveryServiceProvider)
+          .runMaintenance(ref.read(appMaintenanceProvider).clearTransactions);
 
       if (context.mounted) {
         KoinSnackBar.success(
@@ -510,14 +493,16 @@ class SettingsScreen extends ConsumerWidget {
       context,
       title: 'Delete All Data',
       message:
-          'This will delete all transactions, savings logs, accounts, and categories. Are you sure?',
+          'Delete all transactions, savings logs, accounts, and categories from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete Data',
       icon: Icons.delete_forever_rounded,
       isDestructive: true,
     );
 
     if (confirmed == true && context.mounted) {
-      await ref.read(appMaintenanceProvider).clearAllData();
+      await ref
+          .read(recoveryServiceProvider)
+          .runMaintenance(ref.read(appMaintenanceProvider).clearAllData);
 
       if (context.mounted) {
         KoinSnackBar.success(
@@ -534,14 +519,16 @@ class SettingsScreen extends ConsumerWidget {
       context,
       title: 'Factory Reset',
       message:
-          'This will completely wipe out your database and settings, restoring the app directly back to its initial state. Are you absolutely certain?',
+          'Reset your current database and settings to their initial state? Recovery copies and exported backups are kept.',
       confirmText: 'Factory Reset',
       icon: Icons.restore_rounded,
       isDestructive: true,
     );
 
     if (confirmed == true && context.mounted) {
-      await ref.read(appMaintenanceProvider).factoryReset();
+      await ref
+          .read(recoveryServiceProvider)
+          .runMaintenance(ref.read(appMaintenanceProvider).factoryReset);
 
       if (context.mounted) {
         KoinSnackBar.success(
