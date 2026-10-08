@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- Receipt + add: one consistent outline, sized for a 24dp system tile. -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M17.5,10.5V3.5Q17.5,2.5 16.5,2.5H4.5Q3.5,2.5 3.5,3.5V21.5
+            L6.5,19.5L9.5,21.5L12.5,19.5
+            M7,7H14M7,11H11
+            M18,14V21M14.5,17.5H21.5" />
+</vector>

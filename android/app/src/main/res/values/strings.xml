@@ -1,0 +1,4 @@
+<resources>
+    <string name="quick_transaction_tile_label">Koin · Add entry</string>
+    <string name="quick_transaction_tile_description">Add an expense or income in Koin</string>
+</resources>
