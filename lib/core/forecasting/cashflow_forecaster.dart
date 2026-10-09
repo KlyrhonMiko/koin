@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:koin/core/models/models.dart';
+import 'forecast_evaluation.dart';
 
 /// Projection timeframe for financial cashflow forecasts.
 enum ForecastHorizon {
@@ -33,6 +34,13 @@ class ForecastData {
   final double currentBaseline;
   final double predictedNetBalance;
   final bool isWarning;
+  final List<DailyBalanceProjection> dailyBalances;
+  final DateTime? firstShortfallDate;
+  final double? lowerNetBalance;
+  final double? upperNetBalance;
+  final int historyMonths;
+  final ForecastEvaluation? inflowEvaluation;
+  final ForecastEvaluation? outflowEvaluation;
 
   const ForecastData({
     required this.forecastedInflow,
@@ -40,7 +48,21 @@ class ForecastData {
     required this.currentBaseline,
     required this.predictedNetBalance,
     required this.isWarning,
+    this.dailyBalances = const [],
+    this.firstShortfallDate,
+    this.lowerNetBalance,
+    this.upperNetBalance,
+    this.historyMonths = 0,
+    this.inflowEvaluation,
+    this.outflowEvaluation,
   });
+}
+
+class DailyBalanceProjection {
+  final DateTime date;
+  final double balance;
+
+  const DailyBalanceProjection({required this.date, required this.balance});
 }
 
 /// Projects variable monthly cashflow with an EMA and known commitments using
@@ -332,10 +354,18 @@ class CashflowForecaster {
     final start = _day(referenceDate ?? DateTime.now());
     final end = horizonEnd(horizon, start);
     // Scale only unknown variable flows. Known commitments use actual dates.
-    var forecastedInflow =
-        calculateEMA(historicalVariableInflows) * horizon.scaleFactor;
-    var forecastedOutflow =
-        calculateEMA(historicalVariableOutflows) * horizon.scaleFactor;
+    final inflowEvaluation = ForecastEvaluation.select(
+      historicalVariableInflows,
+    );
+    final outflowEvaluation = ForecastEvaluation.select(
+      historicalVariableOutflows,
+    );
+    final variableInflow =
+        inflowEvaluation.monthlyEstimate * horizon.scaleFactor;
+    final variableOutflow =
+        outflowEvaluation.monthlyEstimate * horizon.scaleFactor;
+    var forecastedInflow = variableInflow;
+    var forecastedOutflow = variableOutflow;
     for (final payment in plannedPayments) {
       if (payment.endDate != null && _day(payment.endDate!).isBefore(start)) {
         continue;
@@ -355,12 +385,78 @@ class CashflowForecaster {
     final predictedNetBalance =
         currentBaseline + forecastedInflow - forecastedOutflow;
 
+    // End-of-day balances put scheduled cashflows on their actual dates.
+    // Unknown variable flows are spread evenly; intra-day ordering is unknown.
+    final dates = <DateTime>[];
+    for (
+      var day = start;
+      day.isBefore(end);
+      day = DateTime(day.year, day.month, day.day + 1)
+    ) {
+      dates.add(day);
+    }
+    final dailyBalances = <DailyBalanceProjection>[];
+    DateTime? shortfall = currentBaseline < 0 ? start : null;
+    for (var i = 0; i < dates.length; i++) {
+      final day = dates[i];
+      final through = DateTime(day.year, day.month, day.day + 1);
+      var balance =
+          currentBaseline +
+          (variableInflow - variableOutflow) * (i + 1) / dates.length;
+      for (final payment in plannedPayments) {
+        if (payment.endDate != null && _day(payment.endDate!).isBefore(start)) {
+          continue;
+        }
+        final amount = payment.amount * _paymentCount(payment, through);
+        if (payment.type == TransactionType.income) balance += amount;
+        if (payment.type == TransactionType.expense) balance -= amount;
+      }
+      for (final debt in debts) {
+        final amount = _debtProjection(debt, through);
+        if (debt.type == DebtType.owedToMe) balance += amount;
+        if (debt.type == DebtType.iOwe) balance -= amount;
+      }
+      for (final goal in savingsGoals) {
+        balance -= _savingsProjection(goal, start, through);
+      }
+      dailyBalances.add(DailyBalanceProjection(date: day, balance: balance));
+      if (balance < 0) shortfall ??= day;
+    }
+    final errors = ForecastEvaluation.netErrors(
+      historicalVariableInflows,
+      historicalVariableOutflows,
+    );
+    // An empirical scenario range, not a calibrated probability interval.
+    // Linear scaling avoids assuming independent monthly errors. At least six
+    // held-out errors are needed; known commitments are held fixed.
+    final hasRange = errors.length >= 6;
+    final lower = hasRange
+        ? predictedNetBalance +
+              math.min(0, ForecastEvaluation.quantile(errors, 0.1)) *
+                  horizon.scaleFactor
+        : null;
+    final upper = hasRange
+        ? predictedNetBalance +
+              math.max(0, ForecastEvaluation.quantile(errors, 0.9)) *
+                  horizon.scaleFactor
+        : null;
+
     return ForecastData(
       forecastedInflow: forecastedInflow,
       forecastedOutflow: forecastedOutflow,
       currentBaseline: currentBaseline,
       predictedNetBalance: predictedNetBalance,
-      isWarning: predictedNetBalance < 0,
+      isWarning: shortfall != null,
+      dailyBalances: List.unmodifiable(dailyBalances),
+      firstShortfallDate: shortfall,
+      lowerNetBalance: lower,
+      upperNetBalance: upper,
+      historyMonths: math.min(
+        historicalVariableInflows.length,
+        historicalVariableOutflows.length,
+      ),
+      inflowEvaluation: inflowEvaluation,
+      outflowEvaluation: outflowEvaluation,
     );
   }
 }

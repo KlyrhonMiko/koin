@@ -1,9 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/forecasting/forecast_history.dart';
 
 /// Domain Seam: The interface for querying historical variable cashflows and unexcluded schedules for forecasting.
 abstract class ForecastRepository {
+  Future<ForecastHistory> getHistory({
+    required List<AppTransaction> transactions,
+    required List<Account> accounts,
+    required DateTime referenceDate,
+  });
   Future<List<double>> getHistoricalVariableInflows();
   Future<List<double>> getHistoricalVariableOutflows();
   Future<List<PlannedPayment>> getUnexcludedPlannedPayments();
@@ -14,7 +20,21 @@ class SqliteForecastAdapter implements ForecastRepository {
   final DatabaseHelper _dbHelper;
 
   SqliteForecastAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+
+  @override
+  Future<ForecastHistory> getHistory({
+    required List<AppTransaction> transactions,
+    required List<Account> accounts,
+    required DateTime referenceDate,
+  }) async => ForecastHistory.fromTransactions(
+    transactions: transactions,
+    includedAccountIds: accounts
+        .where((a) => !a.excludeFromTotal)
+        .map((a) => a.id)
+        .toSet(),
+    referenceDate: referenceDate,
+  );
 
   @override
   Future<List<double>> getHistoricalVariableInflows() =>
@@ -42,10 +62,22 @@ class InMemoryForecastAdapter implements ForecastRepository {
   });
 
   @override
-  Future<List<double>> getHistoricalVariableInflows() async => List.unmodifiable(inflows);
+  Future<ForecastHistory> getHistory({
+    required List<AppTransaction> transactions,
+    required List<Account> accounts,
+    required DateTime referenceDate,
+  }) async => ForecastHistory(
+    inflows: List.unmodifiable(inflows),
+    outflows: List.unmodifiable(outflows),
+  );
 
   @override
-  Future<List<double>> getHistoricalVariableOutflows() async => List.unmodifiable(outflows);
+  Future<List<double>> getHistoricalVariableInflows() async =>
+      List.unmodifiable(inflows);
+
+  @override
+  Future<List<double>> getHistoricalVariableOutflows() async =>
+      List.unmodifiable(outflows);
 
   @override
   Future<List<PlannedPayment>> getUnexcludedPlannedPayments() async =>

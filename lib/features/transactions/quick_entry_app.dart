@@ -360,7 +360,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             _saving ||
             _saved ||
             _closing ||
-            suggestion.type != _type) {
+            suggestion.type != _type ||
+            !suggestion.canAutoApply) {
           return;
         }
         final category = (ref.read(categoriesProvider).value ?? [])

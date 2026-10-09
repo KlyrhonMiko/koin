@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
+import 'widgets/forecast_summary.dart';
 import 'dart:ui';
 import 'dart:math' show pi;
 
@@ -194,9 +195,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
                 [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
                           Text(
                             'Total Spent',
@@ -211,33 +214,35 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         ],
                       ),
                       const Gap(12),
-                      AnimatedCounter(
-                        value: analysis.totalExpense,
-                        formatter: (val) => NumberFormat.currency(
-                          symbol: currency.symbol,
-                        ).format(val),
-                        duration: const Duration(milliseconds: 1000),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: KoinTypography.summaryAmount,
-                          fontWeight: KoinTypography.headingWeight,
-                          letterSpacing: KoinTypography.amountTracking,
-                          height: KoinTypography.amountHeight,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedCounter(
+                          value: analysis.totalExpense,
+                          formatter: (val) => NumberFormat.currency(
+                            symbol: currency.symbol,
+                          ).format(val),
+                          duration: const Duration(milliseconds: 1000),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: KoinTypography.summaryAmount,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.amountTracking,
+                            height: KoinTypography.amountHeight,
+                          ),
                         ),
                       ),
                       const Gap(12),
-                      SizedBox(
-                        height: 24,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            _buildInlinePeriodSelector(),
-                            if (analysis.previousExpense != null) ...[
-                              const Gap(10),
-                              _buildTrendBadge(analysis),
-                            ],
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          _buildInlinePeriodSelector(),
+                          if (analysis.previousExpense != null) ...[
+                            _buildTrendBadge(analysis),
                           ],
-                        ),
+                        ],
                       ),
                       const Gap(24),
                       _buildIntegratedForecast(context, currency),
@@ -291,135 +296,17 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildIntegratedForecast(BuildContext context, Currency currency) {
     final forecastAsync = ref.watch(forecastProvider(_selectedFilterIndex));
-
-    Widget buildRow({
-      required String inflowStr,
-      required String outflowStr,
-      required String netStr,
-      bool isWarning = false,
-    }) {
-      return Column(
-        children: [
-          Container(
-            height: 1,
-            width: double.infinity,
-            color: Colors.white.withValues(alpha: 0.15),
-          ),
-          const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Inflow',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: KoinTypography.small,
-                        fontWeight: KoinTypography.supportingWeight,
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(
-                      inflowStr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.body,
-                        fontWeight: KoinTypography.titleWeight,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Outflow',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: KoinTypography.small,
-                        fontWeight: KoinTypography.supportingWeight,
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(
-                      outflowStr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.body,
-                        fontWeight: KoinTypography.titleWeight,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Net Balance',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: KoinTypography.small,
-                            fontWeight: KoinTypography.supportingWeight,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(4),
-                    Text(
-                      netStr,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.body,
-                        fontWeight: KoinTypography.headingWeight,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: forecastAsync.when(
-        data: (forecast) {
-          if (forecast.forecastedInflow == 0 &&
-              forecast.forecastedOutflow == 0) {
-            return const SizedBox.shrink();
-          }
-          return buildRow(
-            inflowStr: NumberFormat.currency(
-              symbol: currency.symbol,
-            ).format(forecast.forecastedInflow),
-            outflowStr: NumberFormat.currency(
-              symbol: currency.symbol,
-            ).format(forecast.forecastedOutflow),
-            netStr: NumberFormat.currency(
-              symbol: currency.symbol,
-            ).format(forecast.predictedNetBalance),
-            isWarning: forecast.isWarning,
-          );
-        },
-        loading: () =>
-            buildRow(inflowStr: '...', outflowStr: '...', netStr: '...'),
-        error: (e, st) => const SizedBox.shrink(),
+    return forecastAsync.when(
+      data: (forecast) => ForecastSummary(
+        forecast: forecast,
+        currency: currency,
+        horizon: ForecastHorizon.fromIndex(_selectedFilterIndex),
       ),
+      loading: () => const Text(
+        'Estimating balance...',
+        style: TextStyle(color: Colors.white, fontSize: KoinTypography.small),
+      ),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 
@@ -450,13 +337,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           ),
         ),
         const Gap(6),
-        Text(
-          _getPeriodLabel(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: KoinTypography.caption,
-            fontWeight: KoinTypography.titleWeight,
-            letterSpacing: 0.3,
+        Flexible(
+          child: Text(
+            _getPeriodLabel(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: KoinTypography.caption,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
         const Gap(6),

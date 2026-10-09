@@ -40,6 +40,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   bool _isTransferFeePercentage = false;
   String _currentExpression = '';
   int _autoCatKey = 0;
+  bool _manualCategory = false;
+  bool _categorySuggested = false;
+  CategorySuggestion? _pendingCategorySuggestion;
 
   late AnimationController _colorAnimController;
   late AnimationController _pulseController;
@@ -158,62 +161,63 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   void _runAutoCategorization() {
+    _suggesterCoordinator.cancel();
     if (!mounted) return;
-    if (_noteController.text.trim().isEmpty) return;
+    if (_pendingCategorySuggestion != null) {
+      setState(() => _pendingCategorySuggestion = null);
+    }
+    if (_categorySuggested && !_manualCategory) {
+      setState(() {
+        _selectedCategoryId = null;
+        _categorySuggested = false;
+      });
+    }
+    if (_noteController.text.trim().isEmpty ||
+        _manualCategory ||
+        widget.editingTransaction != null) {
+      return;
+    }
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     // SuggestionContext preserves the direction of a blank amount for category
     // matching while keeping the real zero available to transfer detection.
 
+    final context = SuggestionContext(
+      text: _noteController.text,
+      amount: amount,
+      type: _selectedType,
+      date: _selectedDate,
+      currentAccountId: _selectedAccountId ?? '',
+    );
     _suggesterCoordinator.run(
-      context: SuggestionContext(
-        text: _noteController.text,
-        amount: amount,
-        type: _selectedType,
-        date: _selectedDate,
-        currentAccountId: _selectedAccountId ?? '',
-      ),
+      context: context,
       onSuggested: (suggestion) {
-        if (!mounted) return;
-        bool changed = false;
-        bool categoryChanged = false;
-        if (suggestion.type != _selectedType) changed = true;
-
-        if (suggestion.isTransfer) {
-          if (_selectedToAccountId != suggestion.destinationAccountId) {
-            changed = true;
-          }
-          if (_selectedAccountId != suggestion.originAccountId) {
-            changed = true;
-          }
-        } else {
-          if (_selectedCategoryId != suggestion.categoryId) {
-            changed = true;
-            categoryChanged = true;
-          }
-          if (_selectedAccountId != suggestion.originAccountId) changed = true;
+        if (!mounted ||
+            _manualCategory ||
+            context.text != _noteController.text ||
+            context.type != _selectedType ||
+            context.currentAccountId != (_selectedAccountId ?? '') ||
+            context.date != _selectedDate ||
+            suggestion.type != _selectedType) {
+          return;
         }
-
-        if (changed) {
-          HapticService.light();
-          setState(() {
-            if (categoryChanged) _autoCatKey++;
-            _selectedType = suggestion.type;
-            if (suggestion.isTransfer) {
-              _selectedToAccountId = suggestion.destinationAccountId;
-              _selectedAccountId = suggestion.originAccountId;
-              _selectedCategoryId = null;
-            } else {
-              _selectedCategoryId = suggestion.categoryId;
-              _selectedAccountId = suggestion.originAccountId;
-              _selectedToAccountId = null;
-            }
-          });
-          _onTypeChanged(
-            _selectedType,
-            ref.read(categoriesProvider).value ?? [],
-          );
+        if (suggestion.isTransfer) return;
+        final category = _categoryById(
+          ref.read(categoriesProvider).value ?? [],
+          suggestion.categoryId,
+        );
+        if (category == null || category.type != _selectedType) return;
+        if (!suggestion.canAutoApply) {
+          setState(() => _pendingCategorySuggestion = suggestion);
+          return;
         }
+        if (_selectedCategoryId == category.id) return;
+        HapticService.light();
+        setState(() {
+          _autoCatKey++;
+          _selectedCategoryId = category.id;
+          _categorySuggested = true;
+        });
       },
     );
   }
@@ -412,6 +416,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedType = result.type;
         if (result.category != null) {
           _selectedCategoryId = result.category!.id;
+          _manualCategory = true;
         }
         if (result.account != null) {
           _selectedAccountId = result.account!.id;
@@ -511,6 +516,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     TransactionType newType,
     List<TransactionCategory> categories,
   ) {
+    _suggesterCoordinator.cancel();
+    _pendingCategorySuggestion = null;
     final oldColor = _getTypeColor(context);
     HapticService.selection();
     setState(() {
@@ -521,6 +528,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             cat.type != _selectedType &&
             _selectedType != TransactionType.transfer) {
           _selectedCategoryId = null;
+          _manualCategory = false;
         }
       }
       if (_selectedType == TransactionType.transfer &&
@@ -1371,7 +1379,35 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     end: const Offset(1, 1),
                                   );
                             }
-                            return child;
+                            final suggestedCategory = _categoryById(
+                              categories,
+                              _pendingCategorySuggestion?.categoryId,
+                            );
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                child,
+                                if (suggestedCategory != null)
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      _suggesterCoordinator.cancel();
+                                      setState(() {
+                                        _selectedCategoryId =
+                                            suggestedCategory.id;
+                                        _manualCategory = true;
+                                        _pendingCategorySuggestion = null;
+                                      });
+                                    },
+                                    icon: const Icon(
+                                      Icons.auto_awesome_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Use suggested category: ${suggestedCategory.name}',
+                                    ),
+                                  ),
+                              ],
+                            );
                           },
                         ),
                 ),
@@ -1526,7 +1562,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       indicatorColor: _getTypeColor(context),
     );
     if (id != null && mounted) {
-      setState(() => _selectedCategoryId = id);
+      _suggesterCoordinator.cancel();
+      setState(() {
+        _selectedCategoryId = id;
+        _manualCategory = true;
+        _categorySuggested = false;
+        _pendingCategorySuggestion = null;
+      });
     }
   }
 

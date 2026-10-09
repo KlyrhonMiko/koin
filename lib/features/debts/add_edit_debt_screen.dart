@@ -34,6 +34,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   late TabController _tabController;
   List<DebtItem> _items = [];
   Timer? _debounceTimer;
+  bool _manualCategory = false;
   int _autoCatKey = 0;
 
   @override
@@ -86,7 +87,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   }
 
   Future<void> _runAutoCategorization() async {
-    if (!mounted) return;
+    if (!mounted || _manualCategory || widget.debt != null) return;
     final notes = _notesController.text.trim();
     if (notes.isEmpty) return;
 
@@ -109,7 +110,15 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         ),
       );
 
-      if (suggestion != null && mounted) {
+      if (suggestion != null &&
+          mounted &&
+          suggestion.canAutoApply &&
+          !_manualCategory &&
+          notes == _notesController.text.trim() &&
+          targetType ==
+              (_selectedType == DebtType.owedToMe
+                  ? TransactionType.income
+                  : TransactionType.expense)) {
         final categories = ref.read(categoriesProvider).value ?? [];
         final matchedCat = categories
             .where((c) => c.id == suggestion.categoryId)
@@ -1033,7 +1042,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       categoriesOverride: categories,
     );
     if (id != null && mounted) {
-      setState(() => _selectedCategoryId = id);
+      setState(() {
+        _selectedCategoryId = id;
+        _manualCategory = true;
+      });
     }
   }
 

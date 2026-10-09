@@ -100,26 +100,29 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           ),
         );
 
-        if (suggestion != null) {
+        if (suggestion != null &&
+            suggestion.canAutoApply &&
+            suggestion.type == parsed.type &&
+            parsed.category == null) {
           TransactionCategory? cat = parsed.category;
           Account? acc = parsed.account;
           Account? toAcc = parsed.toAccount;
 
           if (suggestion.isTransfer) {
             try {
-              acc = accounts.firstWhere(
+              acc ??= accounts.firstWhere(
                 (a) => a.id == suggestion.originAccountId,
               );
             } catch (_) {}
             try {
-              toAcc = accounts.firstWhere(
+              toAcc ??= accounts.firstWhere(
                 (a) => a.id == suggestion.destinationAccountId,
               );
             } catch (_) {}
             cat = null;
           } else {
             try {
-              acc = accounts.firstWhere(
+              acc ??= accounts.firstWhere(
                 (a) => a.id == suggestion.originAccountId,
               );
             } catch (_) {}

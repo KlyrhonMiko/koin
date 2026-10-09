@@ -32,8 +32,11 @@ Future<DebtItem?> showAddPurchaseSheet({
     debounceDuration: const Duration(milliseconds: 350),
   );
   int autoCatKey = 0;
+  bool manualCategory = existingItem != null;
 
   void runAutoCategorize(void Function(void Function()) setSheetState) {
+    coordinator.cancel();
+    if (manualCategory) return;
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
@@ -52,6 +55,11 @@ Future<DebtItem?> showAddPurchaseSheet({
         currentAccountId: '',
       ),
       onSuggested: (suggestion) {
+        if (manualCategory ||
+            !suggestion.canAutoApply ||
+            name.trim() != trimmed) {
+          return;
+        }
         final matched = categories
             .where((c) => c.id == suggestion.categoryId && c.type == targetType)
             .firstOrNull;
@@ -186,6 +194,8 @@ Future<DebtItem?> showAddPurchaseSheet({
                               categoriesOverride: categories,
                             );
                             if (id != null) {
+                              manualCategory = true;
+                              coordinator.cancel();
                               setSheetState(
                                 () => selectedCategory = categories.firstWhere(
                                   (c) => c.id == id,

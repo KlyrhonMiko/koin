@@ -35,6 +35,10 @@ class CategorySuggestion {
   final double confidence;
   final bool isExactMatch;
 
+  /// Whether evidence is sufficient for automatic application. Confidence is
+  /// an evidence score, not a calibrated probability of being correct.
+  final bool canAutoApply;
+
   const CategorySuggestion({
     this.categoryId,
     this.originAccountId,
@@ -42,6 +46,7 @@ class CategorySuggestion {
     required this.type,
     required this.confidence,
     this.isExactMatch = false,
+    this.canAutoApply = true,
   });
 
   bool get isTransfer => type == TransactionType.transfer;
@@ -79,11 +84,18 @@ class HybridMlSuggesterAdapter implements CategorySuggester {
       amount: context.signedAmount,
       date: context.date,
       currentAccountId: context.currentAccountId,
+      requestedType: context.type,
       allowAmountBasedTransfer:
           context.type == TransactionType.transfer && context.amount.abs() > 0,
     );
 
-    if (result == null) return null;
+    if (result == null || result.type != context.type) return null;
+    if (result.type == TransactionType.transfer &&
+        (result.originId == result.destinationId ||
+            (context.currentAccountId.isNotEmpty &&
+                result.originId != context.currentAccountId))) {
+      return null;
+    }
 
     if (result.type == TransactionType.transfer) {
       return CategorySuggestion(
@@ -92,14 +104,18 @@ class HybridMlSuggesterAdapter implements CategorySuggester {
         type: TransactionType.transfer,
         confidence: result.confidence,
         isExactMatch: result.isExactMatch,
+        canAutoApply: result.canAutoApply,
       );
     } else {
       return CategorySuggestion(
         categoryId: result.destinationId,
-        originAccountId: result.originId.isNotEmpty ? result.originId : null,
+        originAccountId: context.currentAccountId.isNotEmpty
+            ? context.currentAccountId
+            : null,
         type: result.type,
         confidence: result.confidence,
         isExactMatch: result.isExactMatch,
+        canAutoApply: result.canAutoApply,
       );
     }
   }
@@ -178,6 +194,7 @@ class DebouncedSuggesterCoordinator {
   final CategorySuggester _suggester;
   final Duration debounceDuration;
   Timer? _timer;
+  int _revision = 0;
 
   DebouncedSuggesterCoordinator({
     required CategorySuggester suggester,
@@ -188,13 +205,14 @@ class DebouncedSuggesterCoordinator {
     required SuggestionContext context,
     required void Function(CategorySuggestion suggestion) onSuggested,
   }) {
-    _timer?.cancel();
+    cancel();
+    final revision = _revision;
     if (context.text.trim().isEmpty) return;
 
     _timer = Timer(debounceDuration, () async {
       try {
         final suggestion = await _suggester.suggest(context);
-        if (suggestion != null) {
+        if (suggestion != null && revision == _revision) {
           onSuggested(suggestion);
         }
       } catch (_) {
@@ -204,6 +222,7 @@ class DebouncedSuggesterCoordinator {
   }
 
   void cancel() {
+    _revision++;
     _timer?.cancel();
     _timer = null;
   }

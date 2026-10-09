@@ -39,6 +39,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   bool _isAutoProcess = false;
   Timer? _debounceTimer;
   int _autoCatKey = 0;
+  bool _manualCategory = false;
+  int _suggestionRevision = 0;
 
   bool get _isIncome => _selectedType == TransactionType.income;
   String get _domainNoun => _isIncome ? 'Recurring Income' : 'Planned Payment';
@@ -77,6 +79,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   void _onTitleChanged() {
+    _suggestionRevision++;
     if (widget.payment != null) return;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(
@@ -86,8 +89,9 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   Future<void> _runAutoCategorization() async {
-    if (!mounted) return;
+    if (!mounted || _manualCategory || widget.payment != null) return;
     if (_titleController.text.trim().isEmpty) return;
+    final revision = _suggestionRevision;
 
     double amount = double.tryParse(_amountController.text) ?? 1.0;
     if (amount == 0.0) amount = 1.0;
@@ -104,7 +108,11 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         ),
       );
 
-      if (suggestion != null && mounted) {
+      if (suggestion != null &&
+          mounted &&
+          suggestion.canAutoApply &&
+          !_manualCategory &&
+          revision == _suggestionRevision) {
         if (!suggestion.isTransfer) {
           final categories = ref.read(categoriesProvider).value ?? [];
           final matchingCat = categories
@@ -390,7 +398,11 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       subtitle: 'Choose a category for this ${_domainNoun.toLowerCase()}',
     );
     if (id != null && mounted) {
-      setState(() => _selectedCategoryId = id);
+      _suggestionRevision++;
+      setState(() {
+        _selectedCategoryId = id;
+        _manualCategory = true;
+      });
     }
   }
 

@@ -1,7 +1,55 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
 
+class PendingSuggester extends TestStubSuggesterAdapter {
+  final pending = Completer<CategorySuggestion?>();
+  @override
+  Future<CategorySuggestion?> suggest(SuggestionContext context) =>
+      pending.future;
+}
+
 void main() {
+  for (final action in ['cancel', 'dispose', 'replace with blank input']) {
+    testWidgets('ignores in-flight suggestions after $action', (tester) async {
+      final adapter = PendingSuggester();
+      final coordinator = DebouncedSuggesterCoordinator(
+        suggester: adapter,
+        debounceDuration: const Duration(milliseconds: 10),
+      );
+      var called = false;
+      SuggestionContext context(String text) => SuggestionContext(
+        text: text,
+        amount: 10,
+        type: TransactionType.expense,
+        date: DateTime(2026, 10, 1),
+        currentAccountId: 'cash',
+      );
+      coordinator.run(
+        context: context('Coffee'),
+        onSuggested: (_) => called = true,
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+      if (action == 'cancel') coordinator.cancel();
+      if (action == 'dispose') coordinator.dispose();
+      if (action == 'replace with blank input') {
+        coordinator.run(
+          context: context(''),
+          onSuggested: (_) => called = true,
+        );
+      }
+      adapter.pending.complete(
+        const CategorySuggestion(
+          categoryId: 'food',
+          type: TransactionType.expense,
+          confidence: 0.9,
+        ),
+      );
+      await tester.pump();
+      expect(called, isFalse);
+      coordinator.dispose();
+    });
+  }
   group('CategorySuggester Seam & Adapters', () {
     test(
       'SuggestionContext correctly calculates signed amount for expense and income',

@@ -38,12 +38,15 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
       .where((account) => !account.excludeFromTotal)
       .map((account) => account.id)
       .toSet();
-  final variableInflows = await forecastRepo.getHistoricalVariableInflows();
-  final variableOutflows = await forecastRepo.getHistoricalVariableOutflows();
+  final history = await forecastRepo.getHistory(
+    transactions: transactions,
+    accounts: accounts,
+    referenceDate: now,
+  );
 
   return CashflowForecaster.calculate(
-    historicalVariableInflows: variableInflows,
-    historicalVariableOutflows: variableOutflows,
+    historicalVariableInflows: history.inflows,
+    historicalVariableOutflows: history.outflows,
     plannedPayments: payments
         .where((payment) => includedIds.contains(payment.accountId))
         .toList(),

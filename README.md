@@ -30,7 +30,7 @@ Koin brings accounts, transactions, budgets, debts, and savings into one place. 
 | **Cashflow planning** | Organize recurring income and payments, see upcoming commitments, and project balances over the next week, month, or year. |
 | **Debts & credit** | Track money owed in either direction, itemized purchases, installment plans, and repayment history. |
 | **Savings goals** | Build savings goals and stashes. Explore how changes to contributions or deadlines affect your plan with Savings Coach. |
-| **Faster entry** | Get category and account suggestions from your history, use voice input, or open a standalone entry window from Android Quick Settings. |
+| **Faster entry** | Get category suggestions from your history, use voice input, or open a standalone entry window from Android Quick Settings. |
 
 Light and dark themes, adjustable accent colors, bank templates, and consistent numeric keypads make Koin easy to personalize and use day to day.
 

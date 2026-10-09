@@ -10,6 +10,7 @@ class CategorizationResult {
   final TransactionType type;
   final double confidence;
   final bool isExactMatch;
+  final bool canAutoApply;
 
   CategorizationResult({
     required this.originId,
@@ -17,6 +18,7 @@ class CategorizationResult {
     required this.type,
     required this.confidence,
     this.isExactMatch = false,
+    this.canAutoApply = false,
   });
 }
 
@@ -31,9 +33,7 @@ class CategorizationEngine {
 
   List<String> _tokenize(String rawText) {
     // Strip all non-alphabetical characters and convert to lowercase
-    final sanitized = rawText
-        .replaceAll(RegExp(r'[^a-zA-Z\s]'), '')
-        .toLowerCase();
+    final sanitized = _sanitize(rawText);
 
     // Split into isolated words
     final words = sanitized
@@ -54,12 +54,12 @@ class CategorizationEngine {
       'out',
       'are',
     };
-    return words.where((w) => w.length >= 3 && !stopWords.contains(w)).toList();
+    return words.where((w) => !stopWords.contains(w)).toSet().toList();
   }
 
   String _sanitize(String rawText) {
     return rawText
-        .replaceAll(RegExp(r'[^a-zA-Z\s]'), ' ')
+        .replaceAll(RegExp(r'[^\p{L}\p{M}\p{N}\s]', unicode: true), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .toLowerCase()
         .trim();
@@ -78,6 +78,7 @@ class CategorizationEngine {
     required DateTime date,
     required String currentAccountId,
     bool allowAmountBasedTransfer = false,
+    TransactionType? requestedType,
   }) async {
     await bootstrapFromHistory();
     final sanitizedString = _sanitize(rawText);
@@ -85,7 +86,11 @@ class CategorizationEngine {
     final tokens = _tokenize(rawText);
 
     // Step 1: The Exact Match Layer
-    final exactMatch = await _checkExactMatch(sanitizedString, sign);
+    final exactMatch = await _checkExactMatch(
+      sanitizedString,
+      sign,
+      requestedType,
+    );
     if (exactMatch != null) {
       return exactMatch;
     }
@@ -108,12 +113,18 @@ class CategorizationEngine {
 
     // Step 3: The Directional Probability Engine
     if (tokens.isEmpty) return null;
-    return await _calculateProbability(tokens, sign, currentAccountId);
+    return await _calculateProbability(
+      tokens,
+      sign,
+      currentAccountId,
+      requestedType,
+    );
   }
 
   Future<CategorizationResult?> _checkExactMatch(
     String sanitizedString,
     int sign,
+    TransactionType? requestedType,
   ) async {
     if (sanitizedString.isEmpty) return null;
 
@@ -134,13 +145,24 @@ class CategorizationEngine {
         whereArgs: [destinationId],
       );
       final isTransfer = isTransferResult.isNotEmpty;
+      if (requestedType != null &&
+          (isTransfer != (requestedType == TransactionType.transfer))) {
+        continue;
+      }
+      final evidence = await _exactEvidence(
+        db,
+        sanitizedString,
+        sign,
+        destinationId,
+      );
 
       if (isTransfer) {
         return CategorizationResult(
           originId: originId,
           destinationId: destinationId,
           type: TransactionType.transfer,
-          confidence: 1.0, // 100% confidence for exact match
+          confidence: evidence.score,
+          canAutoApply: false,
           isExactMatch: true,
         );
       }
@@ -164,13 +186,53 @@ class CategorizationEngine {
             originId: originId,
             destinationId: destinationId,
             type: sign >= 0 ? TransactionType.income : TransactionType.expense,
-            confidence: 1.0, // 100% confidence for exact match
+            confidence: evidence.score,
+            canAutoApply: evidence.automatic,
             isExactMatch: true,
           );
         }
       }
     }
     return null;
+  }
+
+  Future<({double score, bool automatic})> _exactEvidence(
+    Database db,
+    String note,
+    int sign,
+    String destinationId,
+  ) async {
+    final feedback = await db.query('categorization_feedback');
+    if (feedback.any(
+      (row) =>
+          _sanitize(row['rawText'] as String) == note &&
+          ((row['amount'] as num) >= 0 ? 1 : -1) == sign &&
+          row['destinationId'] == destinationId,
+    )) {
+      return (score: 0.95, automatic: true);
+    }
+    final samples = await db.query(
+      'transactions',
+      columns: ['title', 'type', 'categoryId', 'toAccountId'],
+    );
+    var total = 0;
+    var supporting = 0;
+    for (final sample in samples) {
+      final type = sample['type'];
+      if ((type == TransactionType.income.name ? 1 : -1) != sign ||
+          _sanitize(sample['title'] as String? ?? '') != note) {
+        continue;
+      }
+      total++;
+      final destination = type == TransactionType.transfer.name
+          ? sample['toAccountId']
+          : sample['categoryId'];
+      if (destination == destinationId) supporting++;
+    }
+    return (
+      score: (supporting + 1) / (total + 2),
+      automatic: supporting >= 3 && supporting / total >= 0.9,
+    );
   }
 
   Future<CategorizationResult?> _checkInternalTransfer(
@@ -218,7 +280,7 @@ class CategorizationEngine {
         originId: originId,
         destinationId: destinationId,
         type: TransactionType.transfer,
-        confidence: 1.0, // 100% confidence for internal transfers
+        confidence: 0.5, // Amount/date pairing is only a suggestion.
         isExactMatch: false,
       );
     }
@@ -229,6 +291,7 @@ class CategorizationEngine {
     List<String> tokens,
     int sign,
     String currentAccountId,
+    TransactionType? requestedType,
   ) async {
     final db = await _dbHelper.database;
 
@@ -236,11 +299,25 @@ class CategorizationEngine {
     final placeholders = List.filled(tokens.length, '?').join(',');
     final queryArgs = [...tokens, sign];
 
-    final results = await db.query(
+    var results = await db.query(
       'ml_frequency_dictionary',
       where: 'token IN ($placeholders) AND sign = ?',
       whereArgs: queryArgs,
     );
+    if (requestedType != null) {
+      final destinations = await db.query(
+        requestedType == TransactionType.transfer ? 'accounts' : 'categories',
+        columns: ['id'],
+        where: requestedType == TransactionType.transfer ? null : 'type = ?',
+        whereArgs: requestedType == TransactionType.transfer
+            ? null
+            : [requestedType.name],
+      );
+      final allowed = destinations.map((row) => row['id']).toSet();
+      results = results
+          .where((row) => allowed.contains(row['destinationId']))
+          .toList();
+    }
 
     if (results.isEmpty) return null;
 
@@ -250,18 +327,38 @@ class CategorizationEngine {
 
     // Aggregate probabilities against historical data matching the sign
     final classTotalsQuery = await db.rawQuery(
-      'SELECT originId, destinationId, SUM(occurrences) as total FROM ml_frequency_dictionary WHERE sign = ? GROUP BY originId, destinationId',
+      'SELECT destinationId, SUM(occurrences) as total FROM ml_frequency_dictionary WHERE sign = ? GROUP BY destinationId',
       [sign],
     );
 
     for (var row in classTotalsQuery) {
-      final classKey = '${row['originId']}|${row['destinationId']}';
+      final classKey = row['destinationId'] as String;
       final total = (row['total'] as num).toInt();
       classCounts[classKey] = total;
       totalDocs += total;
     }
 
     if (totalDocs == 0) return null;
+    // Priors count examples, while likelihood denominators count words.
+    final documentRows = await db.rawQuery(
+      '''
+SELECT destinationId, COUNT(*) AS count FROM (
+  SELECT CASE WHEN type = 'transfer' THEN toAccountId ELSE categoryId END AS destinationId
+  FROM transactions
+  WHERE TRIM(COALESCE(title, '')) != ''
+    AND CASE WHEN type = 'income' THEN 1 ELSE -1 END = ?
+  UNION ALL
+  SELECT destinationId FROM categorization_feedback
+  WHERE CASE WHEN amount >= 0 THEN 1 ELSE -1 END = ?
+) GROUP BY destinationId
+''',
+      [sign, sign],
+    );
+    final documentCounts = {
+      for (final row in documentRows)
+        row['destinationId']: (row['count'] as num).toInt(),
+    };
+    final documentTotal = documentCounts.values.fold<int>(0, (a, b) => a + b);
 
     for (var token in tokens) {
       tokenClassCounts[token] = {};
@@ -271,16 +368,17 @@ class CategorizationEngine {
     // Unrelated classes with no shared tokens must not dilute confidence in
     // "burger" after learning "cheese burger" as Food.
     final uniqueClasses = results
-        .map((row) => '${row['originId']}|${row['destinationId']}')
+        .map((row) => row['destinationId'] as String)
         .toSet()
         .toList();
 
     for (var row in results) {
       final token = row['token'] as String;
-      final classKey = '${row['originId']}|${row['destinationId']}';
+      final classKey = row['destinationId'] as String;
       final count = (row['occurrences'] as num).toInt();
       if (tokenClassCounts.containsKey(token)) {
-        tokenClassCounts[token]![classKey] = count;
+        tokenClassCounts[token]![classKey] =
+            (tokenClassCounts[token]![classKey] ?? 0) + count;
       }
     }
 
@@ -297,7 +395,9 @@ class CategorizationEngine {
     // Score Calculation
     for (var classKey in uniqueClasses) {
       final classTotal = classCounts[classKey]!;
-      double logProb = log(classTotal / totalDocs); // P(Class)
+      double logProb = log(
+        (documentCounts[classKey] ?? 1) / max(1, documentTotal),
+      );
 
       for (var token in tokens) {
         final tokenCountInClass = tokenClassCounts[token]?[classKey] ?? 0;
@@ -318,7 +418,7 @@ class CategorizationEngine {
     // Convert to a normalized confidence score
     double sumExp = 0;
     for (var classKey in uniqueClasses) {
-      double lp = log(classCounts[classKey]! / totalDocs);
+      double lp = log((documentCounts[classKey] ?? 1) / max(1, documentTotal));
       for (var token in tokens) {
         final tc = tokenClassCounts[token]?[classKey] ?? 0;
         lp += log((tc + 1) / (classCounts[classKey]! + vocabSize));
@@ -326,13 +426,21 @@ class CategorizationEngine {
       sumExp += exp(lp - bestScore);
     }
 
-    final confidence = 1.0 / sumExp;
+    final posterior = 1.0 / sumExp;
+    final matchedCounts = tokens
+        .map((token) => tokenClassCounts[token]?[bestClass] ?? 0)
+        .where((count) => count > 0)
+        .toList();
+    final support = matchedCounts.reduce(min);
+    final coverage = matchedCounts.length / tokens.length;
+    final confidence = posterior * support / (support + 2) * coverage;
 
-    // Threshold Check: Auto-apply if it exceeds 70% confidence
-    if (confidence >= 0.70) {
-      final parts = bestClass.split('|');
-      final originId = parts[0];
-      final destinationId = parts[1];
+    // Ambiguous ranking abstains; automatic application additionally requires
+    // repeated evidence, a stronger margin, and sufficient word coverage.
+    if (posterior >= 0.70) {
+      final originId = currentAccountId;
+      final destinationId = bestClass;
+      final canAutoApply = support >= 3 && posterior >= 0.9 && coverage >= 0.75;
 
       final isTransferResult = await db.query(
         'accounts',
@@ -347,6 +455,7 @@ class CategorizationEngine {
           destinationId: destinationId,
           type: TransactionType.transfer,
           confidence: confidence,
+          canAutoApply: false,
         );
       }
 
@@ -373,6 +482,7 @@ class CategorizationEngine {
           destinationId: destinationId,
           type: sign >= 0 ? TransactionType.income : TransactionType.expense,
           confidence: confidence,
+          canAutoApply: canAutoApply,
         );
       }
 
@@ -521,7 +631,7 @@ class CategorizationEngine {
   }
 
   /// Synchronizes the model with all saved transactions when history changes.
-  /// Version 2 also repairs devices whose one-time bootstrap missed history.
+  /// Version 3 also refreshes normalization and distinct words per example.
   Future<void> bootstrapFromHistory() async {
     final db = await _dbHelper.database;
     // Read the marker and rebuild in one transaction so concurrent suggestions
@@ -536,7 +646,7 @@ class CategorizationEngine {
         ],
       );
       final values = {for (final row in settings) row['key']: row['value']};
-      if (values['categorization_model_version'] == '2' &&
+      if (values['categorization_model_version'] == '3' &&
           values['categorization_history_dirty'] != 'true') {
         return;
       }
@@ -557,23 +667,6 @@ class CategorizationEngine {
               (amount >= 0
                   ? TransactionType.income.name
                   : TransactionType.expense.name);
-
-      final feedback = await txn.query(
-        'categorization_feedback',
-        orderBy: 'id',
-      );
-      for (final sample in feedback) {
-        final destinationId = sample['destinationId'] as String;
-        final amount = (sample['amount'] as num).toDouble();
-        if (!validDestination(destinationId, amount)) continue;
-        await _processFeedbackInternal(
-          db: txn,
-          rawText: sample['rawText'] as String,
-          amount: amount,
-          originId: sample['originId'] as String,
-          destinationId: destinationId,
-        );
-      }
 
       final transactions = await txn.query(
         'transactions',
@@ -610,10 +703,28 @@ class CategorizationEngine {
         }
       }
 
+      // Explicit corrections take precedence over conflicting ledger history.
+      final feedback = await txn.query(
+        'categorization_feedback',
+        orderBy: 'id',
+      );
+      for (final sample in feedback) {
+        final destinationId = sample['destinationId'] as String;
+        final amount = (sample['amount'] as num).toDouble();
+        if (!validDestination(destinationId, amount)) continue;
+        await _processFeedbackInternal(
+          db: txn,
+          rawText: sample['rawText'] as String,
+          amount: amount,
+          originId: sample['originId'] as String,
+          destinationId: destinationId,
+        );
+      }
+
       // Only commit the clean marker after the complete history was trained.
       await txn.insert('app_settings', {
         'key': 'categorization_model_version',
-        'value': '2',
+        'value': '3',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       await txn.insert('app_settings', {
         'key': 'categorization_history_dirty',

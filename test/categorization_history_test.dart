@@ -183,6 +183,92 @@ void main() {
   });
 
   test(
+    'one shared word suggests without claiming certainty or auto-applying',
+    () async {
+      await ledger.recordTransaction(transaction('one', note: 'Cheese burger'));
+      final result = await formSuggestion('burger');
+      expect(result?.categoryId, 'cat_food');
+      expect(result!.confidence, lessThan(0.7));
+      expect(result.canAutoApply, isFalse);
+      expect((await formSuggestion('Cheese burger'))!.canAutoApply, isFalse);
+    },
+  );
+
+  test(
+    'category evidence combines accounts and preserves the selected account',
+    () async {
+      for (var i = 0; i < 3; i++) {
+        await ledger.recordTransaction(
+          transaction(
+            'sample_$i',
+            note: 'Cheese burger',
+          ).copyWith(accountId: i == 0 ? 'default_account' : 'bank_account'),
+        );
+      }
+      final result = await formSuggestion(
+        'burger',
+        accountId: 'default_account',
+      );
+      expect(result?.categoryId, 'cat_food');
+      expect(result!.canAutoApply, isTrue);
+      expect(result.originAccountId, 'default_account');
+    },
+  );
+
+  test(
+    'repeated words in one note do not create independent evidence',
+    () async {
+      await ledger.recordTransaction(
+        transaction('repeat', note: 'burger burger burger'),
+      );
+      expect((await formSuggestion('burger'))!.canAutoApply, isFalse);
+      expect(await occurrences('burger'), 1);
+    },
+  );
+
+  test(
+    'normalization retains Unicode, short names, and merchant digits',
+    () async {
+      await ledger.recordTransaction(transaction('unicode', note: 'Café 24'));
+      expect((await formSuggestion('CAFÉ—24'))?.isExactMatch, isTrue);
+      expect(await formSuggestion('Café 25'), isNotNull);
+      expect((await formSuggestion('Café 25'))!.isExactMatch, isFalse);
+      await ledger.recordTransaction(transaction('short', note: 'SM'));
+      expect((await formSuggestion('SM store'))?.categoryId, 'cat_food');
+    },
+  );
+
+  test('explicit correction wins over old history after rebuilding', () async {
+    await ledger.recordTransaction(transaction('old', note: 'Coffee shop'));
+    await engine.processFeedback(
+      rawText: 'Coffee shop',
+      amount: -25,
+      originId: 'default_account',
+      destinationId: 'cat_transport',
+    );
+    await ledger.recordTransaction(transaction('unrelated', note: 'Bread'));
+    final result = await formSuggestion('Coffee shop');
+    expect(result?.categoryId, 'cat_transport');
+    expect(result!.canAutoApply, isTrue);
+    expect(result.confidence, lessThan(1));
+  });
+
+  test(
+    'historical transfers cannot change an expense form into a transfer',
+    () async {
+      await ledger.recordTransaction(
+        transaction(
+          'move',
+          note: 'Savings deposit',
+          type: TransactionType.transfer,
+          toAccountId: 'bank_account',
+        ),
+      );
+      expect(await formSuggestion('Savings deposit'), isNull);
+    },
+  );
+
+  test(
     'selected transfers can still pair accounts by real amount and date',
     () async {
       await recordMatchingIncome();
