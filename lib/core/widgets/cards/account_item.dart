@@ -19,6 +19,7 @@ class AccountItem extends StatelessWidget {
   final bool isPreview;
   final bool isSelected;
   final String? animationSessionKey;
+  final bool animateBalance;
 
   const AccountItem({
     super.key,
@@ -31,6 +32,7 @@ class AccountItem extends StatelessWidget {
     this.isPreview = false,
     this.isSelected = false,
     this.animationSessionKey,
+    this.animateBalance = true,
   });
 
   /// Whether the card has a coloured (non-default) background.
@@ -216,6 +218,19 @@ class AccountItem extends StatelessWidget {
                                     fontWeight: KoinTypography.titleWeight,
                                     fontSize: KoinTypography.itemAmount,
                                     letterSpacing: 2,
+                                  ),
+                                )
+                              : !animateBalance
+                              ? Text(
+                                  NumberFormat.currency(
+                                    symbol: currencySymbol,
+                                  ).format(balance),
+                                  style: TextStyle(
+                                    color: colored
+                                        ? Colors.white
+                                        : AppTheme.textColor(context),
+                                    fontWeight: KoinTypography.titleWeight,
+                                    fontSize: KoinTypography.itemAmount,
                                   ),
                                 )
                               : AnimatedCounter(

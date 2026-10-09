@@ -36,6 +36,17 @@ class QuickTransactionService {
     }
   }
 
+  static Future<void> openStandalone() async {
+    if (!isAndroid) return;
+    try {
+      await channel.invokeMethod<void>('openQuickEntry');
+    } on MissingPluginException {
+      // The separate window is available after updating the Android build.
+    } on PlatformException {
+      // Do not interrupt a normal app launch if Android rejects the shortcut.
+    }
+  }
+
   void dispose() {
     _disposed = true;
     if (isAndroid) channel.setMethodCallHandler(null);

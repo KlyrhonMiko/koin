@@ -28,11 +28,10 @@ class AddTransactionTileService : TileService() {
 
     @Suppress("DEPRECATION")
     private fun openTransaction() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            action = MainActivity.QUICK_ENTRY_ACTION
+        val intent = Intent(this, QuickEntryActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

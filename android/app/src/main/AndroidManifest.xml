@@ -26,6 +26,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".QuickEntryActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.example.koin.quickentry"
+            android:excludeFromRecents="true"
+            android:theme="@style/QuickEntryTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/QuickEntryTheme" />
+        </activity>
         <service
             android:name=".AddTransactionTileService"
             android:exported="true"

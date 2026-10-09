@@ -11,7 +11,6 @@ import 'package:koin/core/maintenance/recovery_store.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
 import 'backup_recovery_panel.dart';
 import 'package:koin/core/core.dart';
-import 'package:koin/core/services/quick_transaction_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -273,13 +272,6 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () =>
                         _showCurrencyPicker(context, ref, settings.currency),
                   ),
-                  if (QuickTransactionService.isAndroid)
-                    KoinSettingTile(
-                      title: 'Add to Control Center',
-                      subtitle: 'Open the transaction form with a quick tile',
-                      icon: Icons.add_box_outlined,
-                      onTap: () => _handleAddQuickTile(context),
-                    ),
                 ],
               ),
               const Gap(KoinSpacing.sectionGap),
@@ -333,24 +325,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _handleAddQuickTile(BuildContext context) async {
-    final result = await QuickTransactionService.addTile();
-    if (!context.mounted) return;
-    switch (result) {
-      case 'added':
-        KoinSnackBar.success(context, 'Koin tile added to Control Center');
-      case 'alreadyAdded':
-        KoinSnackBar.success(context, 'Koin tile is already in Control Center');
-      case 'declined':
-        break;
-      default:
-        KoinSnackBar.info(
-          context,
-          'Open Control Center, tap Edit, then add Koin · Add entry.',
-        );
-    }
   }
 
   Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {

@@ -51,6 +51,12 @@ class AppTheme {
       Theme.of(context).colorScheme.secondary;
 
   static Color incomeColor(BuildContext context) => const Color(0xFF00D09E);
+
+  /// Income and success foregrounds that remain readable on light surfaces.
+  static Color incomeContentColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? incomeColor(context)
+      : const Color(0xFF007A5D);
   static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
   static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
 

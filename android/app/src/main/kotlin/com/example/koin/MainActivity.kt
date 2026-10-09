@@ -23,6 +23,12 @@ class MainActivity : FlutterActivity() {
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         channel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                "openQuickEntry" -> {
+                    startActivity(Intent(this, QuickEntryActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    })
+                    result.success(null)
+                }
                 "getLaunchAction" -> {
                     dartReady = true
                     val action = if (pendingQuickEntry) "addTransaction" else null

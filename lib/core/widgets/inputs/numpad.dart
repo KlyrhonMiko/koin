@@ -10,6 +10,7 @@ class NumPad extends StatefulWidget {
   final String initialValue;
   final bool compact;
   final bool inline;
+  final String doneLabel;
 
   const NumPad({
     super.key,
@@ -18,6 +19,7 @@ class NumPad extends StatefulWidget {
     this.initialValue = '',
     this.compact = false,
     this.inline = false,
+    this.doneLabel = 'Save',
   });
 
   @override
@@ -179,6 +181,7 @@ class _NumPadState extends State<NumPad> {
     return Expanded(
       flex: flex,
       child: _AnimatedKeyWrapper(
+        label: text == '.' ? 'Decimal point' : text,
         onTap: () => _onPress(
           text,
           text == '.' ? NumPadAction.decimal : NumPadAction.digit,
@@ -216,6 +219,13 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       child: _AnimatedKeyWrapper(
+        label: switch (value) {
+          '+' => 'Add',
+          '-' => 'Subtract',
+          '*' => 'Multiply',
+          '/' => 'Divide',
+          _ => display,
+        },
         onTap: () => _onPress(value, NumPadAction.operator),
         child: Padding(
           padding: EdgeInsets.all(keyPad),
@@ -258,6 +268,9 @@ class _NumPadState extends State<NumPad> {
     return Expanded(
       flex: flex,
       child: _AnimatedKeyWrapper(
+        label: action == NumPadAction.backspace
+            ? 'Delete last digit'
+            : 'Clear amount',
         onTap: () => _onPress(text ?? '', action),
         child: Padding(
           padding: EdgeInsets.all(keyPad),
@@ -293,6 +306,7 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       child: _AnimatedKeyWrapper(
+        label: 'Equals',
         onTap: () => _onPress('=', NumPadAction.equals),
         child: Padding(
           padding: EdgeInsets.all(keyPad),
@@ -326,6 +340,7 @@ class _NumPadState extends State<NumPad> {
     return Expanded(
       flex: flex,
       child: _AnimatedKeyWrapper(
+        label: widget.doneLabel,
         onTap: () {
           HapticService.success();
           _onPress('Done', NumPadAction.done);
@@ -350,14 +365,25 @@ class _NumPadState extends State<NumPad> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                Icon(
+                  Icons.check_rounded,
+                  color:
+                      AppTheme.primaryColor(context).computeLuminance() > 0.179
+                      ? Colors.black
+                      : Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  'Save',
+                  widget.doneLabel,
                   style: TextStyle(
                     fontSize: c ? 15.5 : 16.0,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color:
+                        AppTheme.primaryColor(context).computeLuminance() >
+                            0.179
+                        ? Colors.black
+                        : Colors.white,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -463,14 +489,17 @@ class _NumPadState extends State<NumPad> {
   }
 }
 
-/// Animated wrapper that provides scale-bounce feedback on key press.
-/// Scales down to 0.88 on tap-down with a fast ease-in, then springs
-/// back to 1.0 on tap-up/cancel with an easeOutBack overshoot curve.
+/// Subtle press feedback with explicit accessible button labels.
 class _AnimatedKeyWrapper extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
+  final String label;
 
-  const _AnimatedKeyWrapper({required this.child, required this.onTap});
+  const _AnimatedKeyWrapper({
+    required this.child,
+    required this.onTap,
+    required this.label,
+  });
 
   @override
   State<_AnimatedKeyWrapper> createState() => _AnimatedKeyWrapperState();
@@ -486,14 +515,14 @@ class _AnimatedKeyWrapperState extends State<_AnimatedKeyWrapper>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 80),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 120),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeIn,
-        reverseCurve: Curves.easeOutBack,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeOutCubic,
       ),
     );
   }
@@ -519,12 +548,18 @@ class _AnimatedKeyWrapperState extends State<_AnimatedKeyWrapper>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+    return Semantics(
+      button: true,
+      label: widget.label,
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: _onTapDown,
+        onTapUp: _onTapUp,
+        onTapCancel: _onTapCancel,
+        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+      ),
     );
   }
 }
