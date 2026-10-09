@@ -1,71 +1,96 @@
-# Koin
+<p align="center">
+  <img src="https://raw.githubusercontent.com/KlyrhonMiko/koin/main/assets/logo.png" alt="Koin" width="96" height="96">
+</p>
 
-A sophisticated, modern, and interactive personal finance tracker built with Flutter.
+<h1 align="center">Koin</h1>
 
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-![Riverpod](https://img.shields.io/badge/Riverpod-000000?style=for-the-badge&logo=dart&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+<p align="center">
+  Personal finance, thoughtfully organized.<br>
+  Track your money today. Plan for what comes next.
+</p>
 
-## Overview
+<p align="center">
+  <a href="https://github.com/KlyrhonMiko/koin/releases/latest"><strong>Download for Android</strong></a>
+  &nbsp; · &nbsp;
+  <a href="#features">Features</a>
+  &nbsp; · &nbsp;
+  <a href="#development">Development</a>
+</p>
 
-Koin is designed to offer a premium and effortless experience for managing your money. With interactive visualizations, multi-account support, and intuitive savings goals, Koin helps you take control of your financial future. The architecture focuses on privacy, storing all data locally on your device.
+---
 
-## What's New (v1.1.1)
+Koin brings accounts, transactions, budgets, debts, and savings into one place. Built with Flutter, it stores financial records locally and uses your transaction history to suggest categories and project future cashflow.
 
-- **Redesigned Debts Page**: Improved clarity and tracking for managing debts.
-- **Performance**: Upgraded Gradle configuration and minor bug fixes for smoother operation.
+## Features
 
-## Key Features
+| Feature | What you can do |
+| :--- | :--- |
+| **Everyday tracking** | Manage multiple accounts, record income and expenses, and transfer money with fixed or percentage fees. Search and filter your transaction history. |
+| **Budgets & insights** | Set category budgets, follow spending trends, compare periods, and export reports as CSV or PDF. |
+| **Cashflow planning** | Organize recurring income and payments, see upcoming commitments, and project balances over the next week, month, or year. |
+| **Debts & credit** | Track money owed in either direction, itemized purchases, installment plans, and repayment history. |
+| **Savings goals** | Build savings goals and stashes. Explore how changes to contributions or deadlines affect your plan with Savings Coach. |
+| **Faster entry** | Get category and account suggestions from your history, use voice input, or open a standalone entry window from Android Quick Settings. |
 
-- **Multi-Account Management**: Effortlessly track and manage cash, bank accounts, and savings.
-- **Interactive Dashboard**: Gain insights with beautiful charts, real-time summaries, and an activity-first approach.
-- **Savings Tracker**: Set, visualize, and achieve your financial goals.
-- **Financial Analysis**: Deep dive with expense breakdowns, category rankings, and time-frame filtering.
-- **Personalized UI**: Dark and light modes with vibrant accent colors, plus glassmorphic and neumorphic elements.
-- **Private & Secure**: Your data stays on your device using local SQLite storage.
-- **Backup & Recovery**: Koin checks for changes every 10 seconds while open and when moving between foreground and background. It keeps up to three verified, compressed local recovery copies, skips unchanged snapshots, and shows their dates and storage use in Settings. Local copies can be lost with the device or removed on uninstall.
-- **Optional Folder Backups**: Android, Windows, and Linux can remember a user-selected local folder or USB drive and update it while Koin is running. Keep a copy on a separate device for device-loss protection. Other platforms can export compressed `.koin` files manually. Imports also support earlier `.db` exports. Backups contain personal financial data; choose a private destination.
+Light and dark themes, adjustable accent colors, bank templates, and consistent numeric keypads make Koin easy to personalize and use day to day.
 
-## Technologies Used
+> This README describes the current source. Some features are part of the upcoming release; see the [release draft](docs/release-notes-next.md) for changes since `v1.1.2`.
 
-- **Framework**: [Flutter](https://flutter.dev/) (v3.x)
-- **Language**: [Dart](https://dart.dev/)
-- **State Management**: [Riverpod](https://riverpod.dev/)
-- **Database**: [SQLite](https://pub.dev/packages/sqflite)
-- **Charts**: [fl_chart](https://pub.dev/packages/fl_chart)
-- **Animations**: [flutter_animate](https://pub.dev/packages/flutter_animate)
+## Get started
 
-## Download
+Download the APK from the [latest GitHub release](https://github.com/KlyrhonMiko/koin/releases/latest), open it on your Android device, and follow the installation prompts. Android may ask you to allow installation from your browser or file manager.
 
-Get the latest version directly from our [GitHub Releases](https://github.com/KlyrhonMiko/koin/releases).
+For quick entry, add **Koin · Add entry** from the Android Quick Settings tile editor. Use it to record a transaction or claim recurring income without opening the full app.
 
-[![Download APK](https://img.shields.io/badge/Download_APK_v1.1.2-4CAF50?style=for-the-badge&logo=android&logoColor=white)](https://github.com/KlyrhonMiko/koin/releases/download/v1.1.2/koin_v1.1.2.apk)
+## Your data
 
-> [!TIP]
-> **For Android users:** Download the `koin.apk` file, open it on your device, and follow the prompts to install. You may need to enable "Install from Unknown Sources" in your settings.
+Financial records and category learning stay on your device. Cashflow forecasts use your history and scheduled commitments; they are estimates that change as your records change. Read more about [how forecasting works](docs/forecasting.md).
 
-## Getting Started
+Koin checks for changes every 10 seconds while open and when moving between foreground and background. It keeps up to **three verified local recovery copies**, with dates, storage use, and restore options in Settings.
 
-To run this project locally, follow these steps:
+- **Folder backups:** Android, Windows, and Linux can save copies to a selected local folder or USB drive while Koin is running.
+- **Manual export:** Save a compressed `.koin` backup. Earlier `.db` backups can still be imported.
+- **Device-loss protection:** Keep an exported copy on another device. Local copies may be removed on uninstall, and backup files contain personal financial data.
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/KlyrhonMiko/koin.git
-   ```
+## Development
 
-2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
+Install a Flutter SDK with Dart compatible with `^3.11.3` and the platform tooling for your target device. Dependencies are defined in [pubspec.yaml](pubspec.yaml).
 
-3. **Run the application**
-   ```bash
-   flutter run
-   ```
+```bash
+git clone https://github.com/KlyrhonMiko/koin.git
+cd koin
+flutter pub get
+flutter run
+```
 
-## Project Structure
+**Check the project**
 
-- `/lib/core`: Core utilities, themes, and shared models/providers.
-- `/lib/features`: Feature-specific modules (accounts, analysis, dashboard, savings).
-- `/lib/main.dart`: Entry point and global configuration.
+```bash
+flutter analyze
+flutter test
+```
+
+**Build an Android APK**
+
+```bash
+flutter build apk --release
+```
+
+<details>
+<summary><strong>Architecture & technology</strong></summary>
+
+Koin uses **Flutter and Dart**, **Riverpod** for state management, and **SQLite** for financial records. Charts use fl_chart; reports use pdf and csv.
+
+| Location | Purpose |
+| :--- | :--- |
+| `lib/main.dart` | Main app and Android quick-entry entrypoints |
+| `lib/core/` | Domain models, ledger, repositories, state, forecasting, categorization, and recovery |
+| `lib/core/widgets/` | Shared cards, inputs, controls, and sheets |
+| `lib/features/` | Screens and feature-specific flows |
+| `assets/` | App icon and bank logos |
+| `test/` | Domain, integration, architecture, and widget tests |
+| `docs/` | Forecast details and release notes |
+
+See the [domain glossary](GLOSSARY.md) for the concepts used throughout the codebase.
+
+</details>
