@@ -16,60 +16,100 @@ class ForecastSummary extends StatelessWidget {
     required this.horizon,
   });
 
+  String get _periodLabel => switch (horizon) {
+    ForecastHorizon.weekly => 'Next 7 days',
+    ForecastHorizon.monthly => 'Next month',
+    ForecastHorizon.yearly => 'Next year',
+  };
+
   @override
   Widget build(BuildContext context) {
     final format = NumberFormat.currency(symbol: currency.symbol);
+    final shortfall = forecast.firstShortfallDate;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Divider(color: Colors.white.withValues(alpha: 0.15)),
-        const Gap(8),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 8,
-          children: [
-            const Text(
-              'Estimated balance',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: KoinTypography.body,
-              ),
-            ),
-            Text(
-              format.format(forecast.predictedNetBalance),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: KoinTypography.body,
-                fontWeight: KoinTypography.headingWeight,
-              ),
-            ),
-          ],
-        ),
-        if (forecast.firstShortfallDate != null) ...[
-          const Gap(8),
-          Text(
-            'Review payments before ${DateFormat.MMMd().format(forecast.firstShortfallDate!)}.',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: KoinTypography.small,
-            ),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(48, 48),
+            alignment: Alignment.centerLeft,
           ),
-        ],
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(48, 48),
-            ),
-            onPressed: () => _showDetails(context, format),
-            child: const Text('Forecast details'),
+          onPressed: () => _showDetails(context, format),
+          child: Row(
+            children: [
+              if (shortfall != null) ...[
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  semanticLabel:
+                      'Review payments before ${DateFormat.MMMd().format(shortfall)}',
+                ),
+                const Gap(8),
+              ],
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    const Text(
+                      'Forecast',
+                      style: TextStyle(fontSize: KoinTypography.small),
+                    ),
+                    Text(
+                      format.format(forecast.predictedNetBalance),
+                      style: const TextStyle(
+                        fontSize: KoinTypography.body,
+                        fontWeight: KoinTypography.headingWeight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(4),
+              const Icon(Icons.chevron_right_rounded, size: 20),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _metric(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked =
+              constraints.maxWidth < 300 ||
+              MediaQuery.textScalerOf(context).scale(14) > 21;
+          final labelWidget = Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          );
+          final valueWidget = Text(
+            value,
+            textAlign: TextAlign.end,
+            style: Theme.of(context).textTheme.titleSmall,
+          );
+          return stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [labelWidget, const Gap(4), valueWidget],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: labelWidget),
+                    const Gap(12),
+                    Flexible(fit: FlexFit.tight, child: valueWidget),
+                  ],
+                );
+        },
+      ),
     );
   }
 
@@ -80,78 +120,97 @@ class ForecastSummary extends StatelessWidget {
       showDragHandle: true,
       backgroundColor: AppTheme.surfaceColor(context),
       builder: (context) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Forecast details',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const Gap(8),
-              Text(switch (horizon) {
-                ForecastHorizon.weekly => 'An estimate for the next 7 days.',
-                ForecastHorizon.monthly => 'An estimate for the next month.',
-                ForecastHorizon.yearly => 'An estimate for the next year.',
-              }),
-              const Gap(20),
-              for (final metric in [
-                ('Starting balance', forecast.currentBaseline),
-                ('Expected income', forecast.forecastedInflow),
-                ('Expected outgoings', forecast.forecastedOutflow),
-                ('Estimated balance', forecast.predictedNetBalance),
-              ]) ...[
-                Text(metric.$1, style: Theme.of(context).textTheme.labelLarge),
-                const Gap(4),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  format.format(metric.$2),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Gap(16),
-              ],
-              if (forecast.firstShortfallDate != null) ...[
-                Text(
-                  'Payments to review',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  'Forecast details',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const Gap(4),
                 Text(
-                  'Upcoming payments could exceed your available balance on ${DateFormat.MMMd().format(forecast.firstShortfallDate!)}. Check their timing against your next income.',
-                ),
-                const Gap(20),
-              ],
-              if (forecast.lowerNetBalance != null &&
-                  forecast.upperNetBalance != null) ...[
-                Text(
-                  'Possible balance range',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Gap(4),
-                Text(
-                  '${format.format(forecast.lowerNetBalance)} to ${format.format(forecast.upperNetBalance)}',
+                  '$_periodLabel · Estimated balance',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const Gap(8),
-                const Text(
-                  'Based on past changes in income and spending. Your scheduled payments stay the same in this estimate.',
+                Text(
+                  format.format(forecast.predictedNetBalance),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: KoinTypography.headingWeight,
+                  ),
                 ),
-              ] else
-                const Text(
-                  'More history will help us estimate a balance range.',
+                if (forecast.firstShortfallDate != null) ...[
+                  const Gap(12),
+                  Text(
+                    'Your balance may run short on ${DateFormat.MMMd().format(forecast.firstShortfallDate!)}. Review upcoming payments.',
+                  ),
+                ],
+                const Gap(16),
+                _metric(
+                  context,
+                  'Starting balance',
+                  format.format(forecast.currentBaseline),
                 ),
-              const Gap(16),
-              Text(
-                forecast.historyMonths == 0
-                    ? 'There is not enough history yet to estimate everyday income and spending. This estimate uses your planned payments, debts, and savings goals.'
-                    : 'This estimate combines your recent history with planned payments, debts, and money set aside for savings goals. Unscheduled income and spending are spread across the period.',
-              ),
-              const Gap(16),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Done'),
-              ),
-            ],
+                _metric(
+                  context,
+                  'Expected income',
+                  format.format(forecast.forecastedInflow),
+                ),
+                _metric(
+                  context,
+                  'Expected outgoings',
+                  format.format(forecast.forecastedOutflow),
+                ),
+                const Gap(8),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 12),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  title: const Text('How this is estimated'),
+                  children: [
+                    if (forecast.lowerNetBalance != null &&
+                        forecast.upperNetBalance != null) ...[
+                      Text(
+                        'Possible balance range',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const Gap(4),
+                      Text(
+                        '${format.format(forecast.lowerNetBalance)} to ${format.format(forecast.upperNetBalance)}',
+                      ),
+                      const Gap(8),
+                      const Text(
+                        'Based on past changes in income and spending. Scheduled payments stay the same.',
+                      ),
+                      const Gap(12),
+                    ] else ...[
+                      const Text(
+                        'More history will help us estimate a balance range.',
+                      ),
+                      const Gap(12),
+                    ],
+                    Text(
+                      forecast.historyMonths == 0
+                          ? 'With no spending history yet, this estimate uses your planned payments, debts, and savings goals.'
+                          : 'Based on recent income and spending, planned payments, debts, and savings goals. Unscheduled income and spending are spread across the period.',
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -44,6 +44,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   late bool _isPercentMode;
   late String _currentExpression;
   late String _currentResult;
+  String? _validationError;
 
   @override
   void initState() {
@@ -52,11 +53,13 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     if (_isPercentMode &&
         widget.category.budgetPercent != null &&
         widget.category.budgetPercent! > 0) {
-      _currentExpression = widget.category.budgetPercent!.toStringAsFixed(0);
+      _currentExpression = NumberFormat(
+        '0.##',
+      ).format(widget.category.budgetPercent!);
     } else if (!_isPercentMode &&
         widget.category.budget != null &&
         widget.category.budget! > 0) {
-      _currentExpression = widget.category.budget!.toStringAsFixed(0);
+      _currentExpression = NumberFormat('0.##').format(widget.category.budget!);
     } else {
       _currentExpression = '';
     }
@@ -80,6 +83,19 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     final currency = widget.currency;
     final totalIncome = widget.totalIncome;
     final fmt = NumberFormat.currency(symbol: currency.symbol);
+    final otherCategories = (ref.watch(categoriesProvider).value ?? []).where(
+      (c) => c.id != category.id && c.type == TransactionType.expense,
+    );
+    final otherPercent = otherCategories
+        .where((c) => c.isPercentBudget)
+        .fold(0.0, (sum, c) => sum + (c.budgetPercent ?? 0));
+    final otherBudget = otherCategories.fold(
+      0.0,
+      (sum, c) => sum + c.resolvedBudget(totalIncome),
+    );
+    final value = double.tryParse(_currentResult) ?? 0;
+    final allocation =
+        otherBudget + (_isPercentMode ? totalIncome * value / 100 : value);
 
     double? resolvedAmount;
     if (_isPercentMode && _currentResult.isNotEmpty) {
@@ -202,6 +218,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               _isPercentMode = false;
                               _currentExpression = '';
                               _currentResult = '';
+                              _validationError = null;
                             });
                           }
                         },
@@ -237,6 +254,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               _isPercentMode = true;
                               _currentExpression = '';
                               _currentResult = '';
+                              _validationError = null;
                             });
                           }
                         },
@@ -331,33 +349,15 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                           KoinSpacing.screenInset,
                           12,
                         ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: category.color.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                size: 16,
-                                color: category.color.withValues(alpha: 0.7),
-                              ),
-                              const Gap(8),
-                              Text(
-                                '$_currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
-                                style: TextStyle(
-                                  fontSize: KoinTypography.caption,
-                                  fontWeight: KoinTypography.labelWeight,
-                                  color: category.color,
-                                ),
-                              ),
-                            ],
+                        child: Text(
+                          totalIncome <= 0
+                              ? 'No income recorded yet — budget will update when income is tracked'
+                              : '$_currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: KoinTypography.compact,
+                            fontWeight: KoinTypography.supportingWeight,
+                            color: AppTheme.textLightColor(context),
                           ),
                         ),
                       )
@@ -381,6 +381,28 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                     : const SizedBox.shrink(),
               ),
             ],
+            if (_validationError != null || totalIncome > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  KoinSpacing.screenInset,
+                  0,
+                  KoinSpacing.screenInset,
+                  12,
+                ),
+                child: Text(
+                  _validationError ??
+                      (allocation > totalIncome
+                          ? '${fmt.format(allocation - totalIncome)} over recorded income across all budgets'
+                          : '${fmt.format(totalIncome - allocation)} unallocated across all budgets'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: KoinTypography.small,
+                    color: _validationError != null || allocation > totalIncome
+                        ? AppTheme.expenseColor(context)
+                        : AppTheme.textLightColor(context),
+                  ),
+                ),
+              ),
             const Gap(4),
             // Quick presets
             SingleChildScrollView(
@@ -390,7 +412,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
               ),
               child: Row(
                 children: _isPercentMode
-                    ? [5, 10, 15, 20, 25, 30].map((pct) {
+                    ? [5, 10, 20, 30, 50, 75, 100].map((pct) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: GestureDetector(
@@ -399,6 +421,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               setState(() {
                                 _currentExpression = pct.toString();
                                 _currentResult = pct.toString();
+                                _validationError = null;
                               });
                             },
                             child: Container(
@@ -440,6 +463,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               setState(() {
                                 _currentExpression = amount.toString();
                                 _currentResult = amount.toString();
+                                _validationError = null;
                               });
                             },
                             child: Container(
@@ -477,10 +501,29 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                 setState(() {
                   _currentExpression = expr;
                   _currentResult = res;
+                  _validationError = null;
                 });
               },
               onDone: () {
                 final value = double.tryParse(_currentResult);
+                if (value == null ||
+                    !value.isFinite ||
+                    value <= 0 ||
+                    (_isPercentMode && value > 100)) {
+                  setState(
+                    () => _validationError = _isPercentMode
+                        ? 'Enter a percentage greater than 0 and up to 100.'
+                        : 'Enter a budget amount greater than 0.',
+                  );
+                  return;
+                }
+                if (_isPercentMode && otherPercent + value > 100.000001) {
+                  setState(
+                    () => _validationError =
+                        'Percentage budgets exceed 100%. Up to ${NumberFormat('0.##').format((100 - otherPercent).clamp(0, 100))}% is available.',
+                  );
+                  return;
+                }
                 if (_isPercentMode) {
                   _saveUpdatedCategory(category.withPercentBudget(value));
                 } else {

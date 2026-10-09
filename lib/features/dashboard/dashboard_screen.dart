@@ -186,6 +186,16 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     final currency = settings.currency;
     final netChange = stats.totalIncome - stats.totalExpense;
+    final monthlyAmount = NumberFormat.compactCurrency(
+      symbol: currency.symbol,
+    ).format(netChange.abs());
+    final monthlySummary = settings.hideBalance
+        ? 'This month: ••••••'
+        : netChange == 0
+        ? 'Income matched spending this month'
+        : netChange > 0
+        ? 'Earned $monthlyAmount more than spent this month'
+        : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
       padding: const EdgeInsets.all(24),
@@ -271,43 +281,13 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ),
           const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Net change chip
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    netChange >= 0
-                        ? Icons.arrow_upward_rounded
-                        : Icons.arrow_downward_rounded,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    size: 14,
-                  ),
-                  const Gap(4),
-                  AnimatedCounter(
-                    value: netChange.abs(),
-                    lastValueToken: 'dashboard_net_change',
-                    formatter: (v) => settings.hideBalance
-                        ? '•••••• this month'
-                        : '${NumberFormat.compactCurrency(symbol: currency.symbol).format(v)} this month',
-                    duration: const Duration(milliseconds: 1200),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.small,
-                    ),
-                  ),
-                ],
-              ),
-              // Small visual indicator of card type or app icon
-              Icon(
-                Icons.contactless_outlined,
-                color: Colors.white.withValues(alpha: 0.4),
-                size: 20,
-              ),
-            ],
+          Text(
+            monthlySummary,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: KoinTypography.labelWeight,
+              fontSize: KoinTypography.small,
+            ),
           ),
         ],
       ),

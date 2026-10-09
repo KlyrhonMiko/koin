@@ -294,18 +294,28 @@ void main() {
       tester,
     ) async {
       await launch(tester, const AnalysisScreen(), scale: scale);
-      expect(find.text('Review payments before Oct 12.'), findsOneWidget);
+      expect(find.text('Forecast'), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.text('Possible balance range'), findsNothing);
       expect(find.text('Expected income'), findsNothing);
       expect(find.text(r'$600.00'), findsOneWidget);
       await capture(tester, 'forecast-scale-$scale');
-      await tester.ensureVisible(find.text('Forecast details'));
-      await tester.tap(find.text('Forecast details'));
+      await tester.ensureVisible(find.text('Forecast'));
+      await tester.tap(find.text('Forecast'));
+      await tester.pumpAndSettle();
+      expect(find.text('Possible balance range'), findsNothing);
+      expect(find.text('Expected income'), findsOneWidget);
+      expect(
+        find.textContaining('Your balance may run short on Oct 12'),
+        findsOneWidget,
+      );
+      if (scale == 1) await capture(tester, 'forecast-details');
+      await tester.ensureVisible(find.text('How this is estimated'));
+      await tester.tap(find.text('How this is estimated'));
       await tester.pumpAndSettle();
       expect(find.text('Possible balance range'), findsOneWidget);
-      expect(find.text('Expected income'), findsOneWidget);
       await tester.ensureVisible(find.text('Possible balance range'));
-      if (scale == 1) await capture(tester, 'forecast-details');
+      if (scale == 1) await capture(tester, 'forecast-explanation');
       await tester.ensureVisible(find.text('Done'));
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();

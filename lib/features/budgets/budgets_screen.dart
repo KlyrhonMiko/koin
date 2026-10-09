@@ -692,31 +692,19 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (isPercent) ...[
-                            const Gap(8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${category.budgetPercent}%',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.primaryColor(context),
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
+                      if (isPercent) ...[
+                        const Gap(2),
+                        Text(
+                          '${NumberFormat('0.##').format(category.budgetPercent)}% of income',
+                          style: TextStyle(
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.supportingWeight,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                      ],
                       const Gap(4),
                       Row(
                         children: [

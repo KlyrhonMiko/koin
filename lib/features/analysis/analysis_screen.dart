@@ -190,26 +190,30 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       sliver: SliverToBoxAdapter(
         child: KoinSummaryCard(
           shapeStyle: SummaryShapeStyle.analysis,
-          padding: const EdgeInsets.all(KoinSpacing.summaryInset),
+          padding: const EdgeInsets.fromLTRB(
+            KoinSpacing.summaryInset,
+            KoinSpacing.summaryInset,
+            KoinSpacing.summaryInset,
+            8,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
                 [
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 12,
-                        runSpacing: 8,
+                      Row(
                         children: [
-                          Text(
-                            'Total Spent',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: KoinTypography.caption,
-                              fontWeight: KoinTypography.labelWeight,
-                              letterSpacing: 0.5,
+                          Expanded(
+                            child: Text(
+                              'Total Spent',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: KoinTypography.caption,
+                                fontWeight: KoinTypography.labelWeight,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
+                          const Gap(12),
                           _buildGlassFilterControl(context),
                         ],
                       ),
@@ -244,7 +248,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           ],
                         ],
                       ),
-                      const Gap(24),
+                      const Gap(12),
                       _buildIntegratedForecast(context, currency),
                     ]
                     .animate(interval: 40.ms)
