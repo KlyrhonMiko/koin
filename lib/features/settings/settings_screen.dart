@@ -114,7 +114,7 @@ class SettingsScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              'v1.1.2',
+                              'v1.1.3',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: KoinTypography.overline,
