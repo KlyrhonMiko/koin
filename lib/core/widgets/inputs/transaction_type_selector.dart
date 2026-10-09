@@ -114,14 +114,17 @@ class TransactionTypeSelector extends StatelessWidget {
                                   : AppTheme.textLightColor(context),
                             ),
                             const Gap(5),
-                            Text(
-                              t.$1,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppTheme.textLightColor(context),
-                                fontWeight: KoinTypography.titleWeight,
-                                fontSize: KoinTypography.caption,
+                            Flexible(
+                              child: Text(
+                                t.$1,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppTheme.textLightColor(context),
+                                  fontWeight: KoinTypography.titleWeight,
+                                  fontSize: KoinTypography.caption,
+                                ),
                               ),
                             ),
                           ],

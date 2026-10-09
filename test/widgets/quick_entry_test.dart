@@ -109,6 +109,7 @@ void main() {
     bool dark = false,
     double height = 680,
     double width = 360,
+    bool settle = true,
   }) async {
     tester.view.physicalSize = Size(width, height);
     tester.view.devicePixelRatio = 1;
@@ -125,7 +126,7 @@ void main() {
         child: const QuickEntryApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) await tester.pumpAndSettle();
   }
 
   Future<void> tap(WidgetTester tester, String text) async {
@@ -153,6 +154,42 @@ void main() {
     await tap(tester, account);
   }
 
+  for (final reduceMotion in [false, true]) {
+    testWidgets('window enters and exits smoothly, reduced=$reduceMotion', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          FakeAccessibilityFeatures(disableAnimations: reduceMotion);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await launch(tester, settle: false);
+      final handle = find.byKey(const ValueKey('quick-entry-drag-area'));
+      final initialY = tester.getTopLeft(handle).dy;
+      if (reduceMotion) {
+        expect(initialY, closeTo(0, 1));
+      } else {
+        expect(initialY, greaterThan(20));
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      if (!reduceMotion) {
+        expect(tester.getTopLeft(handle).dy, lessThan(initialY));
+        expect(tester.getTopLeft(handle).dy, greaterThan(0));
+      }
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(handle).dy, closeTo(0, 1));
+      await tester.tap(find.byTooltip('Cancel'));
+      await tester.pump();
+      expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
+      // Back during the exit must not issue a second close request.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(windowCalls.where((c) => c.method == 'close'), hasLength(1));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets(
     'standalone selector never builds the main app and cancel saves nothing',
     (tester) async {
@@ -164,11 +201,7 @@ void main() {
       expect(
         (windowCalls.last.arguments as Map)['height'],
         closeTo(
-          tester
-                  .getBottomRight(
-                    find.widgetWithText(ListTile, 'Open app'),
-                  )
-                  .dy +
+          tester.getBottomRight(find.widgetWithText(ListTile, 'Open app')).dy +
               16,
           1,
         ),
@@ -264,6 +297,8 @@ void main() {
       await launch(tester);
       await tap(tester, 'Add transaction');
       await tap(tester, 'Expense');
+      expect(find.byType(NumPad), findsNothing);
+      await tap(tester, 'Cash');
       await amount(tester, '125');
       expect(find.byType(DateSelectorTile), findsNothing);
       await tester.enterText(find.byType(TextField).first, 'Lunch');
@@ -278,7 +313,6 @@ void main() {
       );
       await tap(tester, 'Select category');
       await tap(tester, 'Food');
-      await pickAccount(tester, 'Select account', 'Cash');
       await tap(tester, 'Next');
       expect(find.text('Confirm transaction'), findsOneWidget);
       expect(find.text('Lunch'), findsOneWidget);
@@ -350,6 +384,8 @@ void main() {
         );
         await tap(tester, 'Add transaction');
         await tap(tester, 'Expense');
+        expect(find.byType(NumPad), findsNothing);
+        await tap(tester, 'Cash');
         await amount(tester, '125');
         await tap(tester, 'Select category');
         final before = tester.getTopLeft(find.byTooltip('Cancel'));
@@ -384,6 +420,8 @@ void main() {
     await launch(tester);
     await tap(tester, 'Add transaction');
     await tap(tester, 'Income');
+    expect(find.byType(NumPad), findsNothing);
+    await tap(tester, 'Cash');
     expect(find.bySemanticsLabel('Delete last digit'), findsOneWidget);
     expect(find.bySemanticsLabel('Next'), findsOneWidget);
     await tap(tester, 'Next');
@@ -420,8 +458,9 @@ void main() {
       await launch(tester);
       await tap(tester, 'Add transaction');
       await tap(tester, 'Transfer');
+      expect(find.byType(NumPad), findsNothing);
+      await tap(tester, 'Cash');
       await amount(tester, '500');
-      await pickAccount(tester, 'Select account', 'Cash');
       await pickAccount(tester, 'Select receiving account', 'Bank');
       await tester.enterText(find.byType(TextField).last, '20');
       await tap(tester, 'Next');
@@ -458,23 +497,69 @@ void main() {
     await tester.pumpAndSettle();
     await tap(tester, 'Add transaction');
     await tap(tester, 'Income');
+    expect(find.byType(NumPad), findsNothing);
+    await tap(tester, 'Cash');
     await tap(tester, 'Next');
     expect(find.text('Enter an amount greater than zero'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
   });
-  testWidgets('insufficient balance keeps review open and does not save', (
+  testWidgets(
+    'changing accounts preserves amount and refreshes available balance',
+    (tester) async {
+      await launch(tester);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Expense');
+      expect(find.byType(NumPad), findsNothing);
+      await tap(tester, 'Cash');
+      await tap(tester, '1');
+      await tap(tester, '2');
+      await tap(tester, '5');
+      final expression = tester
+          .widget<NumPad>(find.byType(NumPad))
+          .initialValue;
+      await tap(tester, 'Cash');
+      await tap(tester, 'Bank');
+      expect(
+        tester.widget<NumPad>(find.byType(NumPad)).initialValue,
+        expression,
+      );
+      expect(find.text('Amount exceeds available balance'), findsOneWidget);
+      await tap(tester, 'Next');
+      expect(find.text('Insufficient balance in Bank'), findsOneWidget);
+      await tap(tester, 'Bank');
+      await tap(tester, 'Cash');
+      expect(find.text('Amount exceeds available balance'), findsNothing);
+      await tap(tester, 'Next');
+      expect(find.text('Details'), findsOneWidget);
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<NumPad>(find.byType(NumPad)).initialValue,
+        expression,
+      );
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NumPad), findsNothing);
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add transaction'), findsOneWidget);
+      expect(await providers.read(transactionProvider.future), isEmpty);
+    },
+  );
+
+  testWidgets('insufficient balance stays on amount entry without saving', (
     tester,
   ) async {
     await launch(tester);
     await tap(tester, 'Add transaction');
     await tap(tester, 'Expense');
+    expect(find.byType(NumPad), findsNothing);
+    await tap(tester, 'Cash');
+    expect(find.textContaining('Available:'), findsOneWidget);
     await amount(tester, '6000');
-    await tap(tester, 'Select category');
-    await tap(tester, 'Food');
-    await pickAccount(tester, 'Select account', 'Cash');
-    await tap(tester, 'Next');
-    await tap(tester, 'Confirm & save');
     expect(find.text('Insufficient balance in Cash'), findsOneWidget);
+    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    expect(find.byType(NumPad), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
   });

@@ -115,6 +115,7 @@ enum _Step {
   details,
   review,
   category,
+  sourceAccount,
   account,
   destination,
   success,
@@ -146,6 +147,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   bool _saved = false;
   String? _error;
   late final AnimationController _sheetOffset;
+  late final AnimationController _windowMotion;
+  late final Animation<double> _windowProgress;
+  bool _closing = false;
   late final AnimationController _stepFade;
   late final Animation<double> _stepOpacity;
   final _scroll = ScrollController();
@@ -168,17 +172,30 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   void initState() {
     super.initState();
     _sheetOffset = AnimationController.unbounded(vsync: this);
+    _windowMotion = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+      reverseDuration: const Duration(milliseconds: 180),
+    );
+    _windowProgress = _windowMotion.drive(
+      CurveTween(curve: Curves.easeOutCubic),
+    );
     _stepFade = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 160),
       value: 1,
     );
     _stepOpacity = _stepFade.drive(CurveTween(curve: Curves.easeOutCubic));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _resize());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _resize();
+      _windowMotion.forward();
+    });
   }
 
   @override
   void dispose() {
+    _windowMotion.dispose();
     _sheetOffset.dispose();
     _stepFade.dispose();
     _scroll.dispose();
@@ -263,17 +280,28 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     }
   }
 
+  Future<void> _dismiss([String method = 'close']) async {
+    if (_closing || _saving) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _closing = true);
+    _sheetOffset.stop();
+    await _windowMotion.reverse();
+    if (mounted) await _windowCall(method);
+  }
+
   void _back() {
-    if (_saving) return;
+    if (_saving || _closing) return;
     switch (_step) {
       case _Step.action:
       case _Step.success:
-        _windowCall('close');
+        _dismiss();
       case _Step.type:
       case _Step.income:
         _go(_Step.action);
+      case _Step.sourceAccount:
+        _go(_Step.type);
       case _Step.amount:
-        _go(_income == null ? _Step.type : _Step.income);
+        _go(_income == null ? _Step.sourceAccount : _Step.income);
       case _Step.details:
         _go(_Step.amount);
       case _Step.review:
@@ -292,7 +320,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _income = null;
     }
     _type = type;
-    _go(_Step.amount);
+    _pickerReturnStep = _Step.amount;
+    _go(_Step.sourceAccount);
   }
 
   void _selectIncome(PlannedPayment income) {
@@ -314,6 +343,22 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     if (_saving || _saved) return;
     if (!_amount.isFinite || _amount <= 0) {
       _showError('Enter an amount greater than zero');
+      return;
+    }
+    final account = (ref.read(accountProvider).value ?? [])
+        .where((a) => a.id == _accountId)
+        .firstOrNull;
+    if (account == null) {
+      _showError('Choose an account');
+      return;
+    }
+    final balance =
+        ref.read(dashboardStatsProvider).accountBalances[account.id] ??
+        account.initialBalance;
+    if (_type != TransactionType.income &&
+        !account.isCredit &&
+        _amount > balance) {
+      _showError('Insufficient balance in ${account.name}');
       return;
     }
     if (_income != null) {
@@ -462,6 +507,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _Step.amount => _income?.title ?? '$_typeLabel amount',
       _Step.details => 'Details',
       _Step.category => 'Category',
+      _Step.sourceAccount => _transfer ? 'From account' : 'Choose account',
       _Step.account => 'Account',
       _Step.destination => 'Receiving account',
       _Step.success => _income != null ? 'Income claimed' : 'Transaction saved',
@@ -474,11 +520,29 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         if (!didPop) _back();
       },
       child: AnimatedBuilder(
-        animation: _sheetOffset,
-        builder: (context, child) => Transform.translate(
-          offset: Offset(0, _sheetOffset.value.clamp(0.0, double.infinity)),
-          child: child,
-        ),
+        animation: Listenable.merge([_sheetOffset, _windowProgress]),
+        builder: (context, child) {
+          final progress = _windowProgress.value;
+          final reduceMotion = MediaQuery.disableAnimationsOf(context);
+          return IgnorePointer(
+            ignoring: _closing,
+            child: Opacity(
+              opacity: progress,
+              child: Transform.translate(
+                offset: Offset(
+                  0,
+                  _sheetOffset.value.clamp(0.0, double.infinity) +
+                      (reduceMotion ? 0 : (1 - progress) * 24),
+                ),
+                child: Transform.scale(
+                  alignment: Alignment.bottomCenter,
+                  scale: reduceMotion ? 1 : 0.97 + progress * 0.03,
+                  child: child,
+                ),
+              ),
+            ),
+          );
+        },
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           child: Scaffold(
@@ -520,7 +584,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                               final velocity = details.primaryVelocity ?? 0;
                               if (_sheetOffset.value >= 48 ||
                                   (_sheetOffset.value > 12 && velocity > 650)) {
-                                _windowCall('close');
+                                _dismiss();
                               } else {
                                 _returnSheet(velocity);
                               }
@@ -557,9 +621,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   ),
                                 ),
                                 IconButton(
-                                  onPressed: _saving
-                                      ? null
-                                      : () => _windowCall('close'),
+                                  onPressed: _saving ? null : () => _dismiss(),
                                   tooltip: _step == _Step.success
                                       ? 'Close'
                                       : 'Cancel',
@@ -576,8 +638,20 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                     child: SingleChildScrollView(
                       controller: _scroll,
                       key: ValueKey(_step),
-                      child: FadeTransition(
-                        opacity: _stepOpacity,
+                      child: AnimatedBuilder(
+                        animation: _stepOpacity,
+                        builder: (context, child) => FadeTransition(
+                          opacity: _stepOpacity,
+                          child: Transform.translate(
+                            offset: Offset(
+                              0,
+                              MediaQuery.disableAnimationsOf(context)
+                                  ? 0
+                                  : (1 - _stepOpacity.value) * 8,
+                            ),
+                            child: child,
+                          ),
+                        ),
                         child: Column(
                           key: _contentKey,
                           mainAxisSize: MainAxisSize.min,
@@ -611,7 +685,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                         'Open app',
                                         'Continue in Koin',
                                         Icons.open_in_new_rounded,
-                                        () => _windowCall('openApp'),
+                                        () => _dismiss('openApp'),
                                       ),
                                     ],
                                   ),
@@ -653,6 +727,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   ),
                                   _Step.category => _categoryChoices(
                                     categories,
+                                  ),
+                                  _Step.sourceAccount => _accountChoices(
+                                    accounts,
+                                    destination: false,
                                   ),
                                   _Step.account => _accountChoices(
                                     accounts,
@@ -802,7 +880,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: () => _windowCall('close'),
+          onPressed: () => _dismiss(),
           child: const Text('Close'),
         ),
       ],
@@ -828,7 +906,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         : baseColor;
     return Column(
       children: [
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+        if (_income == null) ...[
+          _amountAccount(accounts, currency),
+          const SizedBox(height: 16),
+        ],
         Text(
           currency.code,
           style: TextStyle(
@@ -896,6 +978,49 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           onDone: _nextAmount,
         ),
       ],
+    );
+  }
+
+  Widget _amountAccount(AsyncValue<List<Account>> accounts, Currency currency) {
+    final account = (accounts.value ?? [])
+        .where((a) => a.id == _accountId)
+        .firstOrNull;
+    final balance = account == null
+        ? null
+        : ref.watch(dashboardStatsProvider).accountBalances[account.id] ??
+              account.initialBalance;
+    final format = NumberFormat.currency(symbol: currency.symbol);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SelectionTile(
+            label: _transfer ? 'From account' : 'Account',
+            selectedName: account?.name,
+            selectedColor: account?.color,
+            selectedIconCodePoint: account?.iconCodePoint,
+            selectedLogoAsset: account?.logoAsset,
+            fallbackIcon: Icons.account_balance_wallet_outlined,
+            placeholder: 'Select account',
+            onTap: _openAccountPicker,
+          ),
+          if (account != null && balance != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${account.isCredit ? 'Balance' : 'Available'}: ${format.format(balance)}',
+              style: TextStyle(color: AppTheme.textLightColor(context)),
+            ),
+            if (_type != TransactionType.income &&
+                !account.isCredit &&
+                _amount > balance)
+              Text(
+                'Amount exceeds available balance',
+                style: TextStyle(color: AppTheme.errorColor(context)),
+              ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1036,7 +1161,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                         _feePercentage = account.isTransferFeePercentage;
                       }
                     }
-                    _go(_pickerReturnStep);
+                    _go(
+                      _step == _Step.sourceAccount
+                          ? _Step.amount
+                          : _pickerReturnStep,
+                    );
                   },
                 ),
               ),

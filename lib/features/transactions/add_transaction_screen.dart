@@ -246,21 +246,48 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     AppTransaction newTransaction;
     AppTransaction? feeTransaction;
 
+    final debitAccount = _accountById(
+      ref.read(accountProvider).value ?? [],
+      _selectedAccountId,
+    );
+    if (_selectedType != TransactionType.income &&
+        debitAccount != null &&
+        !debitAccount.isCredit) {
+      final balance = _availableBalance(debitAccount);
+      if (amount > balance) {
+        HapticService.error();
+        _showErrorSnackbar(
+          'Insufficient balance',
+          subtitle:
+              'Available in ${debitAccount.name}: ${NumberFormat.currency(symbol: ref.read(settingsProvider).currency.symbol).format(balance)}',
+        );
+        return;
+      }
+    }
+
     if (isTransfer) {
       final accounts = ref.read(accountProvider).value ?? [];
       final selectedAccount = accounts
           .where((a) => a.id == _selectedAccountId)
           .firstOrNull;
       final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
-      final feeAmount = _isTransferFeePercentage ? (amount * (enteredFee / 100)) : enteredFee;
+      final feeAmount = _isTransferFeePercentage
+          ? (amount * (enteredFee / 100))
+          : enteredFee;
 
       if (selectedAccount != null && !selectedAccount.isCredit) {
-        final currentBalance = ref.read(dashboardStatsProvider).accountBalances[selectedAccount.id] ?? selectedAccount.initialBalance;
+        final currentBalance =
+            ref
+                .read(dashboardStatsProvider)
+                .accountBalances[selectedAccount.id] ??
+            selectedAccount.initialBalance;
         double previousDeduction = 0.0;
-        if (widget.editingTransaction != null && widget.editingTransaction!.accountId == selectedAccount.id && widget.editingTransaction!.type == TransactionType.transfer) {
+        if (widget.editingTransaction != null &&
+            widget.editingTransaction!.accountId == selectedAccount.id &&
+            widget.editingTransaction!.type == TransactionType.transfer) {
           previousDeduction = widget.editingTransaction!.amount;
         }
-        
+
         if (currentBalance + previousDeduction - (amount + feeAmount) < 0) {
           HapticService.error();
           _showErrorSnackbar(
@@ -329,30 +356,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         categoryId: _selectedCategoryId!,
         accountId: _selectedAccountId!,
       );
-
-      if (_selectedType == TransactionType.expense) {
-        final accounts = ref.read(accountProvider).value ?? [];
-        final selectedAccount = accounts
-            .where((a) => a.id == _selectedAccountId)
-            .firstOrNull;
-        
-        if (selectedAccount != null && !selectedAccount.isCredit) {
-          final currentBalance = ref.read(dashboardStatsProvider).accountBalances[selectedAccount.id] ?? selectedAccount.initialBalance;
-          double previousDeduction = 0.0;
-          if (widget.editingTransaction != null && widget.editingTransaction!.type == TransactionType.expense) {
-            previousDeduction = widget.editingTransaction!.amount;
-          }
-
-          if (currentBalance + previousDeduction - amount < 0) {
-            HapticService.error();
-            _showErrorSnackbar(
-              'Insufficient balance',
-              subtitle: 'A debit account cannot go negative',
-            );
-            return;
-          }
-        }
-      }
     }
 
     // Saved history trains the model through database change tracking.
@@ -591,7 +594,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.fastOutSlowIn,
-                child: MediaQuery.of(context).viewInsets.bottom == 0
+                child:
+                    MediaQuery.of(context).viewInsets.bottom == 0 &&
+                        _selectedAccountId != null
                     ? NumPad(
                         key: const ValueKey('numpad'),
                         compact: true,
@@ -754,7 +759,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
             child: _buildTypeSelector(context, typeColor),
           ),
-          const Gap(24),
+          const Gap(8),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
+            child: _buildSourceAccount(context, currency),
+          ),
+          const Gap(12),
           // ── Hero amount with voice button ──
           Stack(
             clipBehavior: Clip.none,
@@ -1207,7 +1219,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           child: Column(
             children: [
               // Category (non-transfer only)
-            AnimatedSwitcher(
+              AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, anim) => SizeTransition(
                   sizeFactor: anim,
@@ -1221,42 +1233,52 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             builder: (context) {
                               Widget child = SelectionTile(
                                 asCard: false,
-                                  fallbackIcon: Icons.category_rounded,
-                                  label: 'Category',
-                                  selectedName: _categoryById(categories, _selectedCategoryId)?.name,
-                                  selectedColor: _categoryById(categories, _selectedCategoryId)?.color,
-                                  selectedIconCodePoint: _categoryById(categories, _selectedCategoryId)?.iconCodePoint,
-                                  placeholder: 'Select category',
-                                  onTap: () => _openCategoryPicker(context, categories),
-                                  trailing: Container(
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.surfaceLightColor(context),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: IconButton(
-                                      tooltip: 'Manage categories',
-                                      onPressed: () {
-                                        HapticService.light();
-                                        Navigator.push(
-                                          context,
-                                          SlideUpRoute(
-                                            page: const CategoryManagerScreen(),
-                                          ),
-                                        );
-                                      },
-                                      icon: Icon(
-                                        Icons.tune_rounded,
-                                        size: 18,
-                                        color: AppTheme.textLightColor(context),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 36,
-                                        minHeight: 36,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                    ),
+                                fallbackIcon: Icons.category_rounded,
+                                label: 'Category',
+                                selectedName: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.name,
+                                selectedColor: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.color,
+                                selectedIconCodePoint: _categoryById(
+                                  categories,
+                                  _selectedCategoryId,
+                                )?.iconCodePoint,
+                                placeholder: 'Select category',
+                                onTap: () =>
+                                    _openCategoryPicker(context, categories),
+                                trailing: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceLightColor(context),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                );
+                                  child: IconButton(
+                                    tooltip: 'Manage categories',
+                                    onPressed: () {
+                                      HapticService.light();
+                                      Navigator.push(
+                                        context,
+                                        SlideUpRoute(
+                                          page: const CategoryManagerScreen(),
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      Icons.tune_rounded,
+                                      size: 18,
+                                      color: AppTheme.textLightColor(context),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              );
 
                               if (_autoCatKey > 0) {
                                 child = child
@@ -1284,94 +1306,79 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                               return child;
                             },
                           ),
-                          _buildDivider(context),
                         ],
                       )
                     : const SizedBox.shrink(key: ValueKey('no_cat')),
               ),
 
-              // Account
-              Consumer(
-                builder: (context, ref, child) {
-                  final accountsAsync = ref.watch(accountProvider);
+              // Receiving account for transfers.
+              if (_selectedType == TransactionType.transfer)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final accountsAsync = ref.watch(accountProvider);
 
-                  return accountsAsync.when(
-                    data: (accounts) {
-                      if (_selectedAccountId == null && accounts.isNotEmpty) {
-                        _selectedAccountId = accounts.first.id;
-                      }
+                    return accountsAsync.when(
+                      data: (accounts) {
+                        final currency = ref.watch(settingsProvider).currency;
+                        final acc2 = _accountById(
+                          accounts,
+                          _selectedToAccountId,
+                        );
+                        final acc2Balance = acc2 != null
+                            ? (ref
+                                      .watch(dashboardStatsProvider)
+                                      .accountBalances[acc2.id] ??
+                                  acc2.initialBalance)
+                            : 0.0;
+                        final acc2Name = acc2 != null
+                            ? '${acc2.name} • ${currency.symbol}$acc2Balance'
+                            : null;
 
-                      final currency = ref.watch(settingsProvider).currency;
-                      final acc1 = _accountById(accounts, _selectedAccountId);
-                      final acc1Balance = acc1 != null ? (ref.watch(dashboardStatsProvider).accountBalances[acc1.id] ?? acc1.initialBalance) : 0.0;
-                      final acc1Name = acc1 != null ? '${acc1.name} • ${currency.symbol}$acc1Balance' : null;
-
-                      final acc2 = _accountById(accounts, _selectedToAccountId);
-                      final acc2Balance = acc2 != null ? (ref.watch(dashboardStatsProvider).accountBalances[acc2.id] ?? acc2.initialBalance) : 0.0;
-                      final acc2Name = acc2 != null ? '${acc2.name} • ${currency.symbol}$acc2Balance' : null;
-
-                      return Column(
-                        children: [
-                          SelectionTile(
-                            asCard: false,
-                              fallbackIcon: Icons.account_balance_wallet_rounded,
-                              label: _selectedType == TransactionType.transfer ? 'From' : 'Account',
-                              selectedName: acc1Name,
-                              selectedColor: _accountById(accounts, _selectedAccountId)?.color,
-                              selectedIconCodePoint: _accountById(accounts, _selectedAccountId)?.iconCodePoint,
-                              selectedLogoAsset: _accountById(accounts, _selectedAccountId)?.logoAsset,
-                              placeholder: 'Select account',
-                              onTap: () => _openAccountPicker(
-                                context,
-                                accounts,
-                                title: 'Account',
-                                subtitle: _selectedType == TransactionType.transfer
-                                    ? 'Choose where the money leaves from'
-                                    : 'Choose the account for this transaction',
-                                selectedId: _selectedAccountId,
-                                onSelected: (id) => setState(() {
-                                  _selectedAccountId = id;
-                                  if (_selectedType == TransactionType.transfer && _selectedToAccountId == id) {
-                                    _selectedToAccountId = null;
-                                  }
-                                  if (_selectedType == TransactionType.transfer) {
-                                    final acc = _accountById(accounts, id);
-                                    _updateTransferFee(acc);
-                                  }
-                                }),
-                              ),
-                            ),
-                          // To Account (transfer only)
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            transitionBuilder: (child, anim) => SizeTransition(
-                              sizeFactor: anim,
-                              child: FadeTransition(
-                                opacity: anim,
-                                child: child,
-                              ),
-                            ),
-                            child: _selectedType == TransactionType.transfer
-                                ? Column(
-                                    key: const ValueKey('to_acc'),
-                                    children: [
-                                      _buildDivider(context),
-                                      SelectionTile(
-                                        asCard: false,
-                                          fallbackIcon: Icons.account_balance_wallet_rounded,
+                        return Column(
+                          children: [
+                            // To Account (transfer only)
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, anim) =>
+                                  SizeTransition(
+                                    sizeFactor: anim,
+                                    child: FadeTransition(
+                                      opacity: anim,
+                                      child: child,
+                                    ),
+                                  ),
+                              child: _selectedType == TransactionType.transfer
+                                  ? Column(
+                                      key: const ValueKey('to_acc'),
+                                      children: [
+                                        SelectionTile(
+                                          asCard: false,
+                                          fallbackIcon: Icons
+                                              .account_balance_wallet_rounded,
                                           label: 'To',
                                           selectedName: acc2Name,
-                                          selectedColor: _accountById(accounts, _selectedToAccountId)?.color,
-                                          selectedIconCodePoint: _accountById(accounts, _selectedToAccountId)?.iconCodePoint,
-                                          selectedLogoAsset: _accountById(accounts, _selectedToAccountId)?.logoAsset,
+                                          selectedColor: _accountById(
+                                            accounts,
+                                            _selectedToAccountId,
+                                          )?.color,
+                                          selectedIconCodePoint: _accountById(
+                                            accounts,
+                                            _selectedToAccountId,
+                                          )?.iconCodePoint,
+                                          selectedLogoAsset: _accountById(
+                                            accounts,
+                                            _selectedToAccountId,
+                                          )?.logoAsset,
                                           placeholder: 'Select destination',
                                           onTap: () => _openAccountPicker(
                                             context,
                                             accounts,
                                             title: 'Destination',
-                                            subtitle: 'Choose where the money arrives',
+                                            subtitle:
+                                                'Choose where the money arrives',
                                             selectedId: _selectedToAccountId,
-                                            excludeAccountId: _selectedAccountId,
+                                            excludeAccountId:
+                                                _selectedAccountId,
                                             onSelected: (id) => setState(() {
                                               if (_selectedAccountId == id) {
                                                 _selectedToAccountId = null;
@@ -1381,37 +1388,39 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                             }),
                                           ),
                                         ),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(key: ValueKey('no_to')),
+                                      ],
+                                    )
+                                  : const SizedBox.shrink(
+                                      key: ValueKey('no_to'),
+                                    ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppTheme.primaryColor(context),
                           ),
-                        ],
-                      );
-                    },
-                    loading: () => Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppTheme.primaryColor(context),
                         ),
                       ),
-                    ),
-                    error: (err, stack) => Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Error: $err',
-                        style: TextStyle(
-                          color: AppTheme.errorColor(context),
-                          fontSize: KoinTypography.caption,
+                      error: (err, stack) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Error: $err',
+                          style: TextStyle(
+                            color: AppTheme.errorColor(context),
+                            fontSize: KoinTypography.caption,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
             ],
           ),
         ),
@@ -1419,18 +1428,96 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // Selection Row — two-line label + value with icon
-  // ═══════════════════════════════════════════════════════
-  Widget _buildDivider(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(
-        height: 1,
-        color: AppTheme.fieldBorderColor(context, lightOpacity: 0.5),
+  double _availableBalance(Account account) {
+    final balance =
+        ref.read(dashboardStatsProvider).accountBalances[account.id] ??
+        account.initialBalance;
+    final previous = widget.editingTransaction;
+    // Editing replaces the original debit, so its amount is available again.
+    if (previous?.accountId == account.id &&
+        (previous?.type == TransactionType.expense ||
+            previous?.type == TransactionType.transfer)) {
+      return balance + previous!.amount;
+    }
+    return balance;
+  }
+
+  Widget _buildSourceAccount(BuildContext context, Currency currency) {
+    final accounts = ref.watch(accountProvider);
+    ref.watch(dashboardStatsProvider);
+    final account = _accountById(accounts.value ?? [], _selectedAccountId);
+    final balance = account == null ? null : _availableBalance(account);
+    final label = _selectedType == TransactionType.transfer
+        ? 'From account'
+        : 'Account';
+    return accounts.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (_, _) => TextButton(
+        onPressed: () => ref.invalidate(accountProvider),
+        child: const Text('Could not load accounts. Try again'),
+      ),
+      data: (all) => TextButton(
+        onPressed: () => _openAccountPicker(
+          context,
+          all,
+          title: label,
+          subtitle: 'Choose an account before entering the amount',
+          selectedId: _selectedAccountId,
+          onSelected: (id) => setState(() {
+            _selectedAccountId = id;
+            if (_selectedToAccountId == id) _selectedToAccountId = null;
+            if (_selectedType == TransactionType.transfer) {
+              _updateTransferFee(_accountById(all, id));
+            }
+          }),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.account_balance_wallet_outlined, size: 20),
+            const Gap(10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account == null
+                        ? 'Select account'
+                        : '$label: ${account.name}',
+                    style: TextStyle(color: AppTheme.textColor(context)),
+                  ),
+                  if (account != null && balance != null)
+                    Text(
+                      '${account.isCredit ? 'Balance' : 'Available'}: ${NumberFormat.currency(symbol: currency.symbol).format(balance)}',
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(context),
+                        fontSize: KoinTypography.caption,
+                      ),
+                    ),
+                  if (account != null &&
+                      !account.isCredit &&
+                      _selectedType != TransactionType.income &&
+                      (double.tryParse(_amountController.text) ?? 0) >
+                          (balance ?? 0))
+                    Text(
+                      'Amount exceeds available balance',
+                      style: TextStyle(
+                        color: AppTheme.errorColor(context),
+                        fontSize: KoinTypography.caption,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+          ],
+        ),
       ),
     );
   }
+
+  // ═══════════════════════════════════════════════════════
+  // Selection Row — two-line label + value with icon
+  // ═══════════════════════════════════════════════════════
 
   // ═══════════════════════════════════════════════════════
 
