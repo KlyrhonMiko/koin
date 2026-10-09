@@ -173,13 +173,64 @@ void main() {
       }
       tester.platformDispatcher.accessibilityFeaturesTestValue =
           FakeAccessibilityFeatures(disableAnimations: true);
-      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
       await tester.tap(find.text('Expense'));
       await tester.pump();
       expect(find.text('Select category'), findsOneWidget);
       expect(find.text('Select destination'), findsNothing);
     },
   );
+
+  testWidgets('note keyboard hands back to keypad without a layout bounce', (
+    tester,
+  ) async {
+    final providers = container();
+    addTearDown(providers.dispose);
+    await pumpScreen(
+      tester,
+      providers,
+      const AddTransactionScreen(),
+      width: 360,
+      height: 900,
+    );
+    tester.view.viewPadding = const FakeViewPadding(bottom: 24);
+    addTearDown(tester.view.resetViewPadding);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('7'));
+    await tester.pumpAndSettle();
+
+    final note = find.byType(TextField).first;
+    await tester.tap(note);
+    await tester.enterText(note, 'Lunch');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 380);
+    await tester.pumpAndSettle();
+    final currency = find.text(providers.read(settingsProvider).currency.code);
+    var previousY = tester.getTopLeft(currency).dy;
+
+    for (final inset in [340.0, 300.0, 260.0, 180.0, 60.0, 0.0]) {
+      tester.view.viewInsets = FakeViewPadding(bottom: inset);
+      await tester.pump(const Duration(milliseconds: 16));
+      final y = tester.getTopLeft(currency).dy;
+      expect(y, greaterThanOrEqualTo(previousY - 0.1));
+      previousY = y;
+      expect(tester.takeException(), isNull);
+    }
+
+    // Once the keyboard is gone, the fields must already be in their final
+    // position rather than sliding back up as the keypad grows.
+    final restoredY = tester.getTopLeft(currency).dy;
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(currency).dy, closeTo(restoredY, 0.1));
+    expect(find.byType(NumPad), findsOneWidget);
+    expect(tester.widget<TextField>(note).controller!.text, 'Lunch');
+    await tester.tap(find.text('8'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '78');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('editing shows availability with the original debit restored', (
     tester,

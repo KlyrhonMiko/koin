@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ void main() {
   late SharedPreferences prefs;
   late ProviderContainer providers;
   late List<MethodCall> windowCalls;
+  late _QuickEntrySuggester suggester;
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   setUpAll(() async {
@@ -21,6 +23,7 @@ void main() {
     prefs = await SharedPreferences.getInstance();
   });
   setUp(() {
+    suggester = _QuickEntrySuggester();
     windowCalls = [];
     messenger.setMockMethodCallHandler(quickWindowChannel, (call) async {
       windowCalls.add(call);
@@ -28,6 +31,7 @@ void main() {
     });
     providers = ProviderContainer(
       overrides: [
+        categorySuggesterProvider.overrideWithValue(suggester),
         sharedPreferencesProvider.overrideWithValue(prefs),
         ledgerProvider.overrideWithValue(InMemoryLedgerAdapter()),
         accountRepositoryProvider.overrideWithValue(
@@ -481,7 +485,7 @@ void main() {
     await pickAccount(tester, 'Select account', 'Cash');
     await amount(tester, '500');
     await pickAccount(tester, 'Select receiving account', 'Bank');
-    await tester.enterText(find.byType(TextField).first, '20');
+    await tester.enterText(find.byType(TextField).last, '20');
     expect(find.text('Amount received'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
     await tap(tester, 'Save transaction');
@@ -585,6 +589,110 @@ void main() {
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
   });
 
+  testWidgets(
+    'note suggests a category without changing the selected account',
+    (tester) async {
+      suggester.stubbedSuggestion = const CategorySuggestion(
+        categoryId: 'food',
+        originAccountId: 'bank',
+        type: TransactionType.expense,
+        confidence: 0.95,
+      );
+      await launch(tester);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Expense');
+      await pickAccount(tester, 'Select account', 'Cash');
+      await amount(tester, '125');
+      await tester.enterText(find.byType(TextField), 'Lunch');
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(find.text('Food'), findsOneWidget);
+      expect(find.textContaining('Suggested from note'), findsOneWidget);
+      expect(find.text('Account: Cash'), findsOneWidget);
+      expect(suggester.requests.single.signedAmount, -125);
+      expect(suggester.requests.single.currentAccountId, 'cash');
+      await tap(tester, 'Save transaction');
+      final entries = await providers.read(transactionProvider.future);
+      expect(entries.single.categoryId, 'food');
+      expect(entries.single.accountId, 'cash');
+    },
+  );
+
+  testWidgets('clearing a note ignores an in-flight suggestion', (
+    tester,
+  ) async {
+    final prediction = Completer<CategorySuggestion?>();
+    suggester.pending = prediction;
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '125');
+    await tester.enterText(find.byType(TextField), 'Lunch');
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(suggester.requests, hasLength(1));
+    await tester.enterText(find.byType(TextField), '');
+    prediction.complete(
+      const CategorySuggestion(
+        categoryId: 'food',
+        type: TransactionType.expense,
+        confidence: 0.95,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Select category'), findsOneWidget);
+    expect(find.textContaining('Suggested from note'), findsNothing);
+    await tap(tester, 'Save transaction');
+    expect(find.text('Choose a category'), findsOneWidget);
+    expect(await providers.read(transactionProvider.future), isEmpty);
+  });
+
+  testWidgets('manual category wins over delayed and subsequent suggestions', (
+    tester,
+  ) async {
+    await providers
+        .read(categoryRepositoryProvider)
+        .insertCategory(
+          TransactionCategory(
+            id: 'other',
+            name: 'Other',
+            iconCodePoint: Icons.category.codePoint,
+            colorHex: '#008080',
+            type: TransactionType.expense,
+          ),
+        );
+    final prediction = Completer<CategorySuggestion?>();
+    suggester.pending = prediction;
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '125');
+    await tester.enterText(find.byType(TextField), 'Lunch');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tap(tester, 'Select category');
+    await tap(tester, 'Other');
+    prediction.complete(
+      const CategorySuggestion(
+        categoryId: 'food',
+        type: TransactionType.expense,
+        confidence: 0.95,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Burger');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    expect(suggester.requests, hasLength(1));
+    expect(find.text('Other'), findsOneWidget);
+    expect(find.textContaining('Suggested from note'), findsNothing);
+    await tap(tester, 'Save transaction');
+    expect(
+      (await providers.read(transactionProvider.future)).single.categoryId,
+      'other',
+    );
+  });
+
   testWidgets('saving rechecks debit balance after amount entry', (
     tester,
   ) async {
@@ -605,4 +713,15 @@ void main() {
     expect(find.text('Expense details'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
   });
+}
+
+class _QuickEntrySuggester extends TestStubSuggesterAdapter {
+  final requests = <SuggestionContext>[];
+  Completer<CategorySuggestion?>? pending;
+
+  @override
+  Future<CategorySuggestion?> suggest(SuggestionContext context) {
+    requests.add(context);
+    return pending?.future ?? super.suggest(context);
+  }
 }

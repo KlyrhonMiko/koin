@@ -134,6 +134,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   PlannedPayment? _income;
   final _note = TextEditingController();
   final _fee = TextEditingController();
+  late final DebouncedSuggesterCoordinator _suggester;
+  int _suggestionRevision = 0;
+  bool _manualCategory = false;
+  bool _categorySuggested = false;
   String _expression = '';
   double _amount = 0;
   String? _categoryId;
@@ -169,6 +173,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   @override
   void initState() {
     super.initState();
+    _suggester = DebouncedSuggesterCoordinator(
+      suggester: ref.read(categorySuggesterProvider),
+    );
     _sheetOffset = AnimationController.unbounded(vsync: this);
     _windowMotion = AnimationController(
       vsync: this,
@@ -193,6 +200,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
 
   @override
   void dispose() {
+    _suggestionRevision++;
+    _suggester.dispose();
     _windowMotion.dispose();
     _sheetOffset.dispose();
     _stepFade.dispose();
@@ -280,6 +289,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
 
   Future<void> _dismiss([String method = 'close']) async {
     if (_closing || _saving) return;
+    _suggestionRevision++;
+    _suggester.cancel();
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _closing = true);
     _sheetOffset.stop();
@@ -310,15 +321,65 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   void _selectType(TransactionType type) {
     if (_income != null || _type != type) {
       _categoryId = null;
+      _manualCategory = false;
+      _categorySuggested = false;
       _destinationId = null;
       _income = null;
     }
     _type = type;
     _pickerReturnStep = _Step.amount;
     _go(_Step.amount);
+    _suggestCategory();
+  }
+
+  void _suggestCategory() {
+    if (!mounted || _saving || _saved || _closing) return;
+    final revision = ++_suggestionRevision;
+    _suggester.cancel();
+    if (_categorySuggested) {
+      setState(() {
+        _categoryId = null;
+        _categorySuggested = false;
+      });
+    }
+    if (_manualCategory || _income != null || _transfer) {
+      return;
+    }
+    _suggester.run(
+      context: SuggestionContext(
+        text: _note.text,
+        amount: _amount,
+        type: _type,
+        date: _date,
+        currentAccountId: _accountId ?? '',
+      ),
+      onSuggested: (suggestion) {
+        if (!mounted ||
+            revision != _suggestionRevision ||
+            _manualCategory ||
+            _saving ||
+            _saved ||
+            _closing ||
+            suggestion.type != _type) {
+          return;
+        }
+        final category = (ref.read(categoriesProvider).value ?? [])
+            .where((c) => c.id == suggestion.categoryId && c.type == _type)
+            .firstOrNull;
+        if (category == null) return;
+        setState(() {
+          _categoryId = category.id;
+          _categorySuggested = true;
+          _error = null;
+        });
+      },
+    );
   }
 
   void _selectIncome(PlannedPayment income) {
+    _suggestionRevision++;
+    _suggester.cancel();
+    _categorySuggested = false;
     // Returning to the same income keeps the user's amount and account edits.
     if (_income?.id != income.id) {
       _income = income;
@@ -406,6 +467,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _showError(error);
       return;
     }
+    _suggestionRevision++;
+    _suggester.cancel();
     setState(() {
       _saving = true;
       _error = null;
@@ -958,11 +1021,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           compact: true,
           initialValue: _expression,
           doneLabel: _saving ? 'Saving…' : 'Next',
-          onValueChanged: (expression, result) => setState(() {
-            _expression = expression;
-            _amount = double.tryParse(result) ?? 0;
-            _error = null;
-          }),
+          onValueChanged: (expression, result) {
+            setState(() {
+              _expression = expression;
+              _amount = double.tryParse(result) ?? 0;
+              _error = null;
+            });
+            _suggestCategory();
+          },
           onDone: _nextAmount,
         ),
       ],
@@ -1099,6 +1165,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                     iconCodePoint: category.iconCodePoint,
                     selected: category.id == _categoryId,
                     onTap: () {
+                      _suggestionRevision++;
+                      _suggester.cancel();
+                      _manualCategory = true;
+                      _categorySuggested = false;
                       _categoryId = category.id;
                       _go(_pickerReturnStep);
                     },
@@ -1152,6 +1222,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                       }
                     }
                     _go(_pickerReturnStep);
+                    _suggestCategory();
                   },
                 ),
               ),
@@ -1321,6 +1392,15 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           style: TextStyle(color: AppTheme.textLightColor(context)),
         ),
         const SizedBox(height: 16),
+        TextField(
+          controller: _note,
+          onChanged: (_) => _suggestCategory(),
+          decoration: const InputDecoration(
+            labelText: 'Note (optional)',
+            hintText: 'What was this for?',
+          ),
+        ),
+        const SizedBox(height: 16),
         if (!_transfer) ...[
           SelectionTile(
             label: 'Category',
@@ -1331,6 +1411,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             placeholder: 'Select category',
             onTap: _openCategoryPicker,
           ),
+          if (_categorySuggested)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Suggested from note · Tap category to change',
+                style: TextStyle(color: AppTheme.textLightColor(context)),
+              ),
+            ),
           const SizedBox(height: 12),
         ],
         if (_transfer) ...[
@@ -1367,13 +1455,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           ),
           const SizedBox(height: 12),
         ],
-        TextField(
-          controller: _note,
-          decoration: const InputDecoration(
-            labelText: 'Note (optional)',
-            hintText: 'What was this for?',
-          ),
-        ),
       ],
     );
   }

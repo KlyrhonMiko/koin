@@ -567,6 +567,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final currency = settings.currency;
     final typeColor = _getTypeColor(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
 
     return AnimatedBuilder(
       animation: _colorAnimController,
@@ -577,6 +579,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor(context),
+          // The input area below reserves the larger of the keyboard and
+          // keypad heights, so the scaffold must not subtract the inset again.
+          resizeToAvoidBottomInset: false,
           body: Column(
             children: [
               Expanded(
@@ -616,11 +621,25 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   ),
                 ),
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.fastOutSlowIn,
-                child: MediaQuery.of(context).viewInsets.bottom == 0
-                    ? NumPad(
+              Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  SizedBox(width: double.infinity, height: keyboardHeight),
+                  // Keep the keypad's natural height and draft state during
+                  // keyboard dismissal. A separate size animation would expand
+                  // the form first, then push it back up when the keypad returns.
+                  Visibility(
+                    visible: keyboardHeight == 0,
+                    maintainState: true,
+                    maintainAnimation: true,
+                    maintainSize: true,
+                    child: MediaQuery(
+                      data: mediaQuery.copyWith(
+                        padding: mediaQuery.padding.copyWith(
+                          bottom: mediaQuery.viewPadding.bottom,
+                        ),
+                      ),
+                      child: NumPad(
                         key: const ValueKey('numpad'),
                         compact: true,
                         initialValue: _currentExpression,
@@ -631,12 +650,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           });
                         },
                         onDone: () => _saveTransaction(),
-                      )
-                    : const SizedBox(
-                        key: ValueKey('empty'),
-                        width: double.infinity,
-                        height: 0,
                       ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1273,7 +1290,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   children: [
                     for (final child in previousChildren)
                       IgnorePointer(child: ExcludeSemantics(child: child)),
-                    if (currentChild != null) currentChild,
+                    ?currentChild,
                   ],
                 ),
                 child: KeyedSubtree(
