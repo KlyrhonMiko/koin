@@ -1,5 +1,6 @@
 package com.example.koin
 
+import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
@@ -35,8 +36,24 @@ class AddTransactionTileService : TileService() {
             )
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // The tile can be tapped without any Koin activity being visible.
+            // Android 15+ requires the creator to explicitly grant background
+            // launch privileges; otherwise this only works soon after using Koin.
+            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                ActivityOptions.makeBasic().apply {
+                    setPendingIntentCreatorBackgroundActivityStartMode(
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS
+                        } else {
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                        }
+                    )
+                }.toBundle()
+            } else null
             val pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                options
             )
             startActivityAndCollapse(pendingIntent)
         } else {

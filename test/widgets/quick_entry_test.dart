@@ -130,7 +130,10 @@ void main() {
   }
 
   Future<void> tap(WidgetTester tester, String text) async {
-    final finder = find.text(text);
+    final exact = find.text(text);
+    final finder = exact.evaluate().isNotEmpty
+        ? exact
+        : find.textContaining('$text • ');
     await tester.ensureVisible(finder.last);
     await tester.tap(finder.last);
     await tester.pumpAndSettle();
@@ -292,19 +295,19 @@ void main() {
     );
   }
   testWidgets(
-    'custom expense uses amount, details and confirmation before saving',
+    'custom expense starts with amount and saves directly from details',
     (tester) async {
       await launch(tester);
       await tap(tester, 'Add transaction');
       await tap(tester, 'Expense');
-      expect(find.byType(NumPad), findsNothing);
-      await tap(tester, 'Cash');
+      expect(find.byType(NumPad), findsOneWidget);
+      await pickAccount(tester, 'Select account', 'Cash');
       await amount(tester, '125');
       expect(find.byType(DateSelectorTile), findsNothing);
       await tester.enterText(find.byType(TextField).first, 'Lunch');
       await tap(tester, 'Select category');
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.text('Details'), findsNothing);
+      expect(find.text('Expense details'), findsNothing);
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
       expect(
@@ -313,12 +316,27 @@ void main() {
       );
       await tap(tester, 'Select category');
       await tap(tester, 'Food');
+      await tap(tester, 'Edit');
+      expect(find.textContaining('Cash • '), findsOneWidget);
+      expect(find.textContaining('Available:'), findsNothing);
       await tap(tester, 'Next');
-      expect(find.text('Confirm transaction'), findsOneWidget);
-      expect(find.text('Lunch'), findsOneWidget);
+      expect(find.text('Food'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Lunch',
+      );
+      expect(find.text('Confirm transaction'), findsNothing);
       expect(await providers.read(transactionProvider.future), isEmpty);
-      await tap(tester, 'Confirm & save');
+      final save = tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Save transaction'),
+          )
+          .onPressed!;
+      save();
+      save();
+      await tester.pumpAndSettle();
       final entries = await providers.read(transactionProvider.future);
+      expect(entries, hasLength(1));
       expect(entries.single.note, 'Lunch');
       expect(entries.single.amount, 125);
       expect(entries.single.categoryId, 'food');
@@ -384,8 +402,8 @@ void main() {
         );
         await tap(tester, 'Add transaction');
         await tap(tester, 'Expense');
-        expect(find.byType(NumPad), findsNothing);
-        await tap(tester, 'Cash');
+        expect(find.byType(NumPad), findsOneWidget);
+        await pickAccount(tester, 'Select account', 'Cash');
         await amount(tester, '125');
         await tap(tester, 'Select category');
         final before = tester.getTopLeft(find.byTooltip('Cancel'));
@@ -393,7 +411,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.getTopLeft(find.byTooltip('Cancel')), before);
         await tap(tester, 'Category 15');
-        expect(find.text('Details'), findsOneWidget);
+        expect(find.text('Expense details'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -420,8 +438,7 @@ void main() {
     await launch(tester);
     await tap(tester, 'Add transaction');
     await tap(tester, 'Income');
-    expect(find.byType(NumPad), findsNothing);
-    await tap(tester, 'Cash');
+    expect(find.byType(NumPad), findsOneWidget);
     expect(find.bySemanticsLabel('Delete last digit'), findsOneWidget);
     expect(find.bySemanticsLabel('Next'), findsOneWidget);
     await tap(tester, 'Next');
@@ -437,8 +454,10 @@ void main() {
     );
     expect(
       tester.getBottomRight(find.text('Enter an amount greater than zero')).dy,
-      lessThanOrEqualTo(680),
+      lessThan(tester.getTopLeft(find.text('Select account')).dy),
     );
+    await tap(tester, '1');
+    expect(find.text('Enter an amount greater than zero'), findsNothing);
     semantics.dispose();
   });
   testWidgets('reduced motion returns the sheet immediately', (tester) async {
@@ -452,35 +471,33 @@ void main() {
     expect(tester.getTopLeft(handle).dy, closeTo(0, 1));
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
   });
-  testWidgets(
-    'transfer confirms both accounts and records the fee atomically',
-    (tester) async {
-      await launch(tester);
-      await tap(tester, 'Add transaction');
-      await tap(tester, 'Transfer');
-      expect(find.byType(NumPad), findsNothing);
-      await tap(tester, 'Cash');
-      await amount(tester, '500');
-      await pickAccount(tester, 'Select receiving account', 'Bank');
-      await tester.enterText(find.byType(TextField).last, '20');
-      await tap(tester, 'Next');
-      expect(find.text('Amount received'), findsOneWidget);
-      expect(await providers.read(transactionProvider.future), isEmpty);
-      await tap(tester, 'Confirm & save');
-      final entries = await providers.read(transactionProvider.future);
-      expect(entries, hasLength(2));
-      final transfer = entries.firstWhere(
-        (t) => t.type == TransactionType.transfer,
-      );
-      expect(transfer.amount, 480);
-      expect(transfer.accountId, 'cash');
-      expect(transfer.toAccountId, 'bank');
-      expect(
-        entries.firstWhere((t) => t.type == TransactionType.expense).amount,
-        20,
-      );
-    },
-  );
+  testWidgets('transfer previews net amount and records the fee atomically', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    expect(find.byType(NumPad), findsOneWidget);
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '500');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await tester.enterText(find.byType(TextField).first, '20');
+    expect(find.text('Amount received'), findsOneWidget);
+    expect(await providers.read(transactionProvider.future), isEmpty);
+    await tap(tester, 'Save transaction');
+    final entries = await providers.read(transactionProvider.future);
+    expect(entries, hasLength(2));
+    final transfer = entries.firstWhere(
+      (t) => t.type == TransactionType.transfer,
+    );
+    expect(transfer.amount, 480);
+    expect(transfer.accountId, 'cash');
+    expect(transfer.toAccountId, 'bank');
+    expect(
+      entries.firstWhere((t) => t.type == TransactionType.expense).amount,
+      20,
+    );
+  });
   testWidgets('empty income list and invalid amounts cannot record anything', (
     tester,
   ) async {
@@ -497,8 +514,7 @@ void main() {
     await tester.pumpAndSettle();
     await tap(tester, 'Add transaction');
     await tap(tester, 'Income');
-    expect(find.byType(NumPad), findsNothing);
-    await tap(tester, 'Cash');
+    expect(find.byType(NumPad), findsOneWidget);
     await tap(tester, 'Next');
     expect(find.text('Enter an amount greater than zero'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
@@ -509,16 +525,23 @@ void main() {
       await launch(tester);
       await tap(tester, 'Add transaction');
       await tap(tester, 'Expense');
-      expect(find.byType(NumPad), findsNothing);
-      await tap(tester, 'Cash');
+      expect(find.byType(NumPad), findsOneWidget);
+      await pickAccount(tester, 'Select account', 'Cash');
       await tap(tester, '1');
       await tap(tester, '2');
       await tap(tester, '5');
+      final accountSummary =
+          'Cash • ${providers.read(settingsProvider).currency.symbol}5,000';
+      expect(find.text(accountSummary), findsOneWidget);
+      expect(find.textContaining('Available:'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('125')).dy,
+        lessThan(tester.getTopLeft(find.text(accountSummary)).dy),
+      );
       final expression = tester
           .widget<NumPad>(find.byType(NumPad))
           .initialValue;
-      await tap(tester, 'Cash');
-      await tap(tester, 'Bank');
+      await pickAccount(tester, 'Cash', 'Bank');
       expect(
         tester.widget<NumPad>(find.byType(NumPad)).initialValue,
         expression,
@@ -530,16 +553,13 @@ void main() {
       await tap(tester, 'Cash');
       expect(find.text('Amount exceeds available balance'), findsNothing);
       await tap(tester, 'Next');
-      expect(find.text('Details'), findsOneWidget);
-      await tester.tap(find.byTooltip('Back'));
-      await tester.pumpAndSettle();
+      expect(find.text('Expense details'), findsOneWidget);
+      expect(find.text('Select account'), findsNothing);
+      await tap(tester, 'Edit');
       expect(
         tester.widget<NumPad>(find.byType(NumPad)).initialValue,
         expression,
       );
-      await tester.tap(find.byTooltip('Back'));
-      await tester.pumpAndSettle();
-      expect(find.byType(NumPad), findsNothing);
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
       expect(find.text('Add transaction'), findsOneWidget);
@@ -553,14 +573,36 @@ void main() {
     await launch(tester);
     await tap(tester, 'Add transaction');
     await tap(tester, 'Expense');
-    expect(find.byType(NumPad), findsNothing);
-    await tap(tester, 'Cash');
-    expect(find.textContaining('Available:'), findsOneWidget);
+    expect(find.byType(NumPad), findsOneWidget);
+    await pickAccount(tester, 'Select account', 'Cash');
+    expect(find.textContaining('Cash • '), findsOneWidget);
+    expect(find.textContaining('Available:'), findsNothing);
     await amount(tester, '6000');
     expect(find.text('Insufficient balance in Cash'), findsOneWidget);
     expect(find.text('Amount exceeds available balance'), findsOneWidget);
     expect(find.byType(NumPad), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
+  });
+
+  testWidgets('saving rechecks debit balance after amount entry', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '125');
+    await tap(tester, 'Select category');
+    await tap(tester, 'Food');
+    final repository = providers.read(accountRepositoryProvider);
+    final cash = (await repository.getAccounts()).firstWhere(
+      (a) => a.id == 'cash',
+    );
+    await repository.updateAccount(cash.copyWith(initialBalance: 100));
+    await tap(tester, 'Save transaction');
+    expect(find.text('Insufficient balance in Cash'), findsOneWidget);
+    expect(find.text('Expense details'), findsOneWidget);
+    expect(await providers.read(transactionProvider.future), isEmpty);
   });
 }

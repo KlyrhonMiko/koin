@@ -113,9 +113,7 @@ enum _Step {
   income,
   amount,
   details,
-  review,
   category,
-  sourceAccount,
   account,
   destination,
   success,
@@ -298,14 +296,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       case _Step.type:
       case _Step.income:
         _go(_Step.action);
-      case _Step.sourceAccount:
-        _go(_Step.type);
       case _Step.amount:
-        _go(_income == null ? _Step.sourceAccount : _Step.income);
+        _go(_income == null ? _Step.type : _Step.income);
       case _Step.details:
         _go(_Step.amount);
-      case _Step.review:
-        _go(_income == null ? _Step.details : _Step.amount);
       case _Step.category:
       case _Step.account:
       case _Step.destination:
@@ -321,7 +315,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     }
     _type = type;
     _pickerReturnStep = _Step.amount;
-    _go(_Step.sourceAccount);
+    _go(_Step.amount);
   }
 
   void _selectIncome(PlannedPayment income) {
@@ -369,6 +363,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   String? _validateDetails() {
+    if (!_amount.isFinite || _amount <= 0) {
+      return 'Enter an amount greater than zero';
+    }
     final accounts = ref.read(accountProvider).value ?? [];
     if (!accounts.any((a) => a.id == _accountId)) return 'Choose an account';
     if (_transfer) {
@@ -390,15 +387,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       }
     }
     return null;
-  }
-
-  void _review() {
-    final error = _validateDetails();
-    if (error != null) {
-      _showError(error);
-      return;
-    }
-    _go(_Step.review);
   }
 
   TransferDraft get _transferDraft => TransferDraft(
@@ -505,14 +493,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _Step.type => 'Add transaction',
       _Step.income => 'Claim income',
       _Step.amount => _income?.title ?? '$_typeLabel amount',
-      _Step.details => 'Details',
+      _Step.details => '$_typeLabel details',
       _Step.category => 'Category',
-      _Step.sourceAccount => _transfer ? 'From account' : 'Choose account',
       _Step.account => 'Account',
       _Step.destination => 'Receiving account',
       _Step.success => _income != null ? 'Income claimed' : 'Transaction saved',
-      _Step.review =>
-        _income != null ? 'Confirm income claim' : 'Confirm transaction',
     };
     return PopScope(
       canPop: false,
@@ -728,10 +713,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   _Step.category => _categoryChoices(
                                     categories,
                                   ),
-                                  _Step.sourceAccount => _accountChoices(
-                                    accounts,
-                                    destination: false,
-                                  ),
                                   _Step.account => _accountChoices(
                                     accounts,
                                     destination: false,
@@ -740,15 +721,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                     accounts,
                                     destination: true,
                                   ),
-                                  _Step.review => _summary(
-                                    accounts.value ?? [],
-                                    categories.value ?? [],
-                                    currency.symbol,
-                                  ),
                                 },
                               ),
                             ),
-                            if (_error != null)
+                            if (_error != null && _step != _Step.amount)
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
@@ -768,7 +744,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   ),
                                 ),
                               ),
-                            if (_step == _Step.details || _step == _Step.review)
+                            if (_step == _Step.details)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   20,
@@ -777,19 +753,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   20,
                                 ),
                                 child: FilledButton(
-                                  onPressed: _saving || _saved
-                                      ? null
-                                      : (_step == _Step.review
-                                            ? _save
-                                            : _review),
+                                  onPressed: _saving || _saved ? null : _save,
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Text(
-                                      _saving
-                                          ? 'Saving…'
-                                          : _step == _Step.review
-                                          ? 'Confirm & save'
-                                          : 'Next',
+                                      _saving ? 'Saving…' : 'Save transaction',
                                     ),
                                   ),
                                 ),
@@ -907,10 +875,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     return Column(
       children: [
         const SizedBox(height: 12),
-        if (_income == null) ...[
-          _amountAccount(accounts, currency),
-          const SizedBox(height: 16),
-        ],
         Text(
           currency.code,
           style: TextStyle(
@@ -953,6 +917,22 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         ),
         if (_expression.contains(RegExp(r'[+\-*/]')))
           Text('= ${currency.symbol}${NumberFormat('0.##').format(_amount)}'),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Focus(
+              focusNode: _errorFocus,
+              child: Semantics(
+                key: _errorKey,
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.errorColor(context)),
+                ),
+              ),
+            ),
+          ),
         const SizedBox(height: 12),
         Container(
           width: 48,
@@ -962,7 +942,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
+        if (_income == null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _accountDetails(accounts, currency),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (_income != null) ...[
           _claimSelectors(accounts, categories),
           const SizedBox(height: 16),
@@ -974,6 +961,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           onValueChanged: (expression, result) => setState(() {
             _expression = expression;
             _amount = double.tryParse(result) ?? 0;
+            _error = null;
           }),
           onDone: _nextAmount,
         ),
@@ -981,7 +969,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     );
   }
 
-  Widget _amountAccount(AsyncValue<List<Account>> accounts, Currency currency) {
+  Widget _accountDetails(
+    AsyncValue<List<Account>> accounts,
+    Currency currency,
+  ) {
     final account = (accounts.value ?? [])
         .where((a) => a.id == _accountId)
         .firstOrNull;
@@ -989,15 +980,17 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         ? null
         : ref.watch(dashboardStatsProvider).accountBalances[account.id] ??
               account.initialBalance;
-    final format = NumberFormat.currency(symbol: currency.symbol);
+    final format = NumberFormat('#,##0.##');
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SelectionTile(
             label: _transfer ? 'From account' : 'Account',
-            selectedName: account?.name,
+            selectedName: account == null || balance == null
+                ? null
+                : '${account.name} • ${currency.symbol}${format.format(balance)}',
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
@@ -1005,19 +998,16 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             placeholder: 'Select account',
             onTap: _openAccountPicker,
           ),
-          if (account != null && balance != null) ...[
+          if (account != null &&
+              balance != null &&
+              _type != TransactionType.income &&
+              !account.isCredit &&
+              _amount > balance) ...[
             const SizedBox(height: 8),
             Text(
-              '${account.isCredit ? 'Balance' : 'Available'}: ${format.format(balance)}',
-              style: TextStyle(color: AppTheme.textLightColor(context)),
+              'Amount exceeds available balance',
+              style: TextStyle(color: AppTheme.errorColor(context)),
             ),
-            if (_type != TransactionType.income &&
-                !account.isCredit &&
-                _amount > balance)
-              Text(
-                'Amount exceeds available balance',
-                style: TextStyle(color: AppTheme.errorColor(context)),
-              ),
           ],
         ],
       ),
@@ -1161,11 +1151,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                         _feePercentage = account.isTransferFeePercentage;
                       }
                     }
-                    _go(
-                      _step == _Step.sourceAccount
-                          ? _Step.amount
-                          : _pickerReturnStep,
-                    );
+                    _go(_pickerReturnStep);
                   },
                 ),
               ),
@@ -1288,32 +1274,53 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     if (accounts.isLoading || categories.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    final account = accounts.value!
-        .where((a) => a.id == _accountId)
-        .firstOrNull;
     final destination = accounts.value!
         .where((a) => a.id == _destinationId)
         .firstOrNull;
     final category = categories.value!
         .where((c) => c.id == _categoryId)
         .firstOrNull;
+    final account = accounts.value!
+        .where((a) => a.id == _accountId)
+        .firstOrNull;
+    final currency = ref.watch(settingsProvider).currency;
+    final format = NumberFormat.currency(symbol: currency.symbol);
+    final enteredFee = double.tryParse(_fee.text.isEmpty ? '0' : _fee.text);
+    final resolvedFee = enteredFee == null
+        ? null
+        : _feePercentage
+        ? _amount * enteredFee / 100
+        : enteredFee;
+    final validFee =
+        resolvedFee != null &&
+        resolvedFee.isFinite &&
+        resolvedFee >= 0 &&
+        resolvedFee < _amount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_income == null) ...[
-          TextField(
-            controller: _note,
-            decoration: const InputDecoration(
-              labelText: 'Note',
-              hintText: 'What was this for?',
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                format.format(_amount),
+                style: const TextStyle(
+                  fontSize: KoinTypography.summaryAmount,
+                  fontWeight: KoinTypography.headingWeight,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-        ] else
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text('Claiming ${_income!.title}'),
-          ),
+            TextButton(
+              onPressed: () => _go(_Step.amount),
+              child: const Text('Edit'),
+            ),
+          ],
+        ),
+        Text(
+          '${_transfer ? 'From' : 'Account'}: ${account?.name ?? 'Unavailable account'}',
+          style: TextStyle(color: AppTheme.textLightColor(context)),
+        ),
+        const SizedBox(height: 16),
         if (!_transfer) ...[
           SelectionTile(
             label: 'Category',
@@ -1326,17 +1333,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           ),
           const SizedBox(height: 12),
         ],
-        SelectionTile(
-          label: _transfer ? 'From account' : 'Account',
-          selectedName: account?.name,
-          selectedColor: account?.color,
-          selectedIconCodePoint: account?.iconCodePoint,
-          selectedLogoAsset: account?.logoAsset,
-          fallbackIcon: Icons.account_balance_wallet_outlined,
-          placeholder: 'Select account',
-          onTap: _openAccountPicker,
-        ),
-        const SizedBox(height: 12),
         if (_transfer) ...[
           SelectionTile(
             label: 'To account',
@@ -1351,6 +1347,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           const SizedBox(height: 12),
           TextField(
             controller: _fee,
+            onChanged: (_) => setState(() {}),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Transfer fee (optional)',
@@ -1362,54 +1359,21 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             value: _feePercentage,
             onChanged: (value) => setState(() => _feePercentage = value),
           ),
-        ],
-      ],
-    );
-  }
-
-  Widget _summary(
-    List<Account> accounts,
-    List<TransactionCategory> categories,
-    String symbol,
-  ) {
-    String accountName(String? id) =>
-        accounts.where((a) => a.id == id).firstOrNull?.name ??
-        'Unavailable account';
-    final format = NumberFormat.currency(symbol: symbol);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          format.format(_amount),
-          style: const TextStyle(
-            fontSize: KoinTypography.summaryAmount,
-            fontWeight: KoinTypography.headingWeight,
-          ),
-        ),
-        const SizedBox(height: 24),
-        _line('Type', _income == null ? _typeLabel : 'Income claim'),
-        if (_income != null)
-          _line('Income', _income!.title)
-        else if (_note.text.trim().isNotEmpty)
-          _line('Note', _note.text.trim()),
-        if (!_transfer)
-          _line(
-            'Category',
-            categories.where((c) => c.id == _categoryId).firstOrNull?.name ??
-                'Unavailable category',
-          ),
-        _line(_transfer ? 'From' : 'Account', accountName(_accountId)),
-        if (_transfer) ...[
-          _line('To', accountName(_destinationId)),
-          _line('Fee', format.format(_transferDraft.calculateFeeAmount())),
           _line(
             'Amount received',
-            format.format(_transferDraft.calculateNetAmount()),
+            validFee
+                ? format.format(_amount - resolvedFee)
+                : 'Enter a valid fee',
           ),
+          const SizedBox(height: 12),
         ],
-        _line('Date', DateFormat.yMMMd().format(_date)),
-        const SizedBox(height: 16),
-        const Text('Check the details before saving.'),
+        TextField(
+          controller: _note,
+          decoration: const InputDecoration(
+            labelText: 'Note (optional)',
+            hintText: 'What was this for?',
+          ),
+        ),
       ],
     );
   }

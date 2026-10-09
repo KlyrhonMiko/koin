@@ -579,24 +579,47 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           backgroundColor: AppTheme.backgroundColor(context),
           body: Column(
             children: [
-              _buildHeader(context, animatedColor, currency, isDark),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    KoinSpacing.screenInset,
-                    8,
-                    KoinSpacing.screenInset,
-                    16,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Column(
+                    children: [
+                      Expanded(
+                        child: _buildHeader(
+                          context,
+                          animatedColor,
+                          currency,
+                          isDark,
+                        ),
+                      ),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: (constraints.maxHeight - 260).clamp(
+                            0.0,
+                            constraints.maxHeight * 0.55,
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(
+                            KoinSpacing.screenInset,
+                            8,
+                            KoinSpacing.screenInset,
+                            12,
+                          ),
+                          child: _buildFormSection(
+                            context,
+                            categories,
+                            animatedColor,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: _buildFormSection(context, categories, animatedColor),
                 ),
               ),
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.fastOutSlowIn,
-                child:
-                    MediaQuery.of(context).viewInsets.bottom == 0 &&
-                        _selectedAccountId != null
+                child: MediaQuery.of(context).viewInsets.bottom == 0
                     ? NumPad(
                         key: const ValueKey('numpad'),
                         compact: true,
@@ -760,67 +783,75 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             child: _buildTypeSelector(context, typeColor),
           ),
           const Gap(8),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KoinSpacing.screenInset,
-            ),
-            child: _buildSourceAccount(context, currency),
-          ),
-          const Gap(12),
           // ── Hero amount with voice button ──
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              _buildHeroAmount(context, currency, typeColor),
-              Positioned(
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return PressableScale(
-                        onTap: _showVoiceInputSheet,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                typeColor,
-                                typeColor.withValues(alpha: 0.8),
-                              ],
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildHeroAmount(context, currency, typeColor),
+                        Positioned(
+                          right: 16,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, child) {
+                                return PressableScale(
+                                  onTap: _showVoiceInputSheet,
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          typeColor,
+                                          typeColor.withValues(alpha: 0.8),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        AppTheme.boxShadow(
+                                          context,
+                                          color: typeColor.withValues(
+                                            alpha:
+                                                0.15 +
+                                                0.2 * _pulseAnimation.value,
+                                          ),
+                                          blurRadius:
+                                              12 + 6 * _pulseAnimation.value,
+                                          spreadRadius: 1,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.mic_rounded,
+                                      size: 22,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              AppTheme.boxShadow(
-                                context,
-                                color: typeColor.withValues(
-                                  alpha: 0.15 + 0.2 * _pulseAnimation.value,
-                                ),
-                                blurRadius: 12 + 6 * _pulseAnimation.value,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.mic_rounded,
-                            size: 22,
-                            color: Colors.white,
                           ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-          const Gap(24),
+          const Gap(16),
         ],
       ),
     );
@@ -852,6 +883,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: KoinSpacing.screenInset),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Currency label
           Text(
@@ -886,7 +918,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   _currentExpression.isEmpty ? '0' : _currentExpression,
                   key: ValueKey(_currentExpression),
                   style: TextStyle(
-                    fontSize: KoinTypography.inputAmount,
+                    fontSize: KoinTypography.inputAmount + 16,
                     fontWeight: KoinTypography.headingWeight,
                     color: hasAmount
                         ? typeColor
@@ -1218,213 +1250,164 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ),
           child: Column(
             children: [
-              // Category (non-transfer only)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, anim) => SizeTransition(
-                  sizeFactor: anim,
-                  child: FadeTransition(opacity: anim, child: child),
-                ),
-                child: _selectedType != TransactionType.transfer
-                    ? Column(
-                        key: const ValueKey('cat_section'),
-                        children: [
-                          Builder(
-                            builder: (context) {
-                              Widget child = SelectionTile(
-                                asCard: false,
-                                fallbackIcon: Icons.category_rounded,
-                                label: 'Category',
-                                selectedName: _categoryById(
-                                  categories,
-                                  _selectedCategoryId,
-                                )?.name,
-                                selectedColor: _categoryById(
-                                  categories,
-                                  _selectedCategoryId,
-                                )?.color,
-                                selectedIconCodePoint: _categoryById(
-                                  categories,
-                                  _selectedCategoryId,
-                                )?.iconCodePoint,
-                                placeholder: 'Select category',
-                                onTap: () =>
-                                    _openCategoryPicker(context, categories),
-                                trailing: Container(
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.surfaceLightColor(context),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: IconButton(
-                                    tooltip: 'Manage categories',
-                                    onPressed: () {
-                                      HapticService.light();
-                                      Navigator.push(
-                                        context,
-                                        SlideUpRoute(
-                                          page: const CategoryManagerScreen(),
-                                        ),
-                                      );
-                                    },
-                                    icon: Icon(
-                                      Icons.tune_rounded,
-                                      size: 18,
-                                      color: AppTheme.textLightColor(context),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 36,
-                                      minHeight: 36,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                ),
-                              );
-
-                              if (_autoCatKey > 0) {
-                                child = child
-                                    .animate(key: ValueKey(_autoCatKey))
-                                    .shimmer(
-                                      duration: 400.ms,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.2),
-                                    )
-                                    .scale(
-                                      duration: 150.ms,
-                                      curve: Curves.easeOut,
-                                      begin: const Offset(1, 1),
-                                      end: const Offset(1.02, 1.02),
-                                    )
-                                    .then()
-                                    .scale(
-                                      duration: 250.ms,
-                                      curve: Curves.easeOutBack,
-                                      begin: const Offset(1.02, 1.02),
-                                      end: const Offset(1, 1),
-                                    );
-                              }
-                              return child;
-                            },
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink(key: ValueKey('no_cat')),
+              _buildSourceAccount(
+                context,
+                ref.watch(settingsProvider).currency,
               ),
-
-              // Receiving account for transfers.
-              if (_selectedType == TransactionType.transfer)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final accountsAsync = ref.watch(accountProvider);
-
-                    return accountsAsync.when(
-                      data: (accounts) {
-                        final currency = ref.watch(settingsProvider).currency;
-                        final acc2 = _accountById(
-                          accounts,
-                          _selectedToAccountId,
-                        );
-                        final acc2Balance = acc2 != null
-                            ? (ref
-                                      .watch(dashboardStatsProvider)
-                                      .accountBalances[acc2.id] ??
-                                  acc2.initialBalance)
-                            : 0.0;
-                        final acc2Name = acc2 != null
-                            ? '${acc2.name} • ${currency.symbol}$acc2Balance'
-                            : null;
-
-                        return Column(
-                          children: [
-                            // To Account (transfer only)
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, anim) =>
-                                  SizeTransition(
-                                    sizeFactor: anim,
-                                    child: FadeTransition(
-                                      opacity: anim,
-                                      child: child,
-                                    ),
-                                  ),
-                              child: _selectedType == TransactionType.transfer
-                                  ? Column(
-                                      key: const ValueKey('to_acc'),
-                                      children: [
-                                        SelectionTile(
-                                          asCard: false,
-                                          fallbackIcon: Icons
-                                              .account_balance_wallet_rounded,
-                                          label: 'To',
-                                          selectedName: acc2Name,
-                                          selectedColor: _accountById(
-                                            accounts,
-                                            _selectedToAccountId,
-                                          )?.color,
-                                          selectedIconCodePoint: _accountById(
-                                            accounts,
-                                            _selectedToAccountId,
-                                          )?.iconCodePoint,
-                                          selectedLogoAsset: _accountById(
-                                            accounts,
-                                            _selectedToAccountId,
-                                          )?.logoAsset,
-                                          placeholder: 'Select destination',
-                                          onTap: () => _openAccountPicker(
-                                            context,
-                                            accounts,
-                                            title: 'Destination',
-                                            subtitle:
-                                                'Choose where the money arrives',
-                                            selectedId: _selectedToAccountId,
-                                            excludeAccountId:
-                                                _selectedAccountId,
-                                            onSelected: (id) => setState(() {
-                                              if (_selectedAccountId == id) {
-                                                _selectedToAccountId = null;
-                                              } else {
-                                                _selectedToAccountId = id;
-                                              }
-                                            }),
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : const SizedBox.shrink(
-                                      key: ValueKey('no_to'),
-                                    ),
-                            ),
-                          ],
-                        );
-                      },
-                      loading: () => Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppTheme.primaryColor(context),
-                          ),
-                        ),
-                      ),
-                      error: (err, stack) => Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Error: $err',
-                          style: TextStyle(
-                            color: AppTheme.errorColor(context),
-                            fontSize: KoinTypography.caption,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+              Divider(
+                height: 1,
+                indent: 64,
+                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.5),
+              ),
+              AnimatedSwitcher(
+                key: ValueKey(MediaQuery.disableAnimationsOf(context)),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
+                switchInCurve: const Cubic(0.23, 1, 0.32, 1),
+                switchOutCurve: const Cubic(0.23, 1, 0.32, 1),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                layoutBuilder: (currentChild, previousChildren) => Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    for (final child in previousChildren)
+                      IgnorePointer(child: ExcludeSemantics(child: child)),
+                    if (currentChild != null) currentChild,
+                  ],
                 ),
+                child: KeyedSubtree(
+                  key: ValueKey(_selectedType == TransactionType.transfer),
+                  child: _selectedType == TransactionType.transfer
+                      ? _buildDestinationAccount(context)
+                      : Builder(
+                          builder: (context) {
+                            Widget child = SelectionTile(
+                              asCard: false,
+                              fallbackIcon: Icons.category_rounded,
+                              label: 'Category',
+                              selectedName: _categoryById(
+                                categories,
+                                _selectedCategoryId,
+                              )?.name,
+                              selectedColor: _categoryById(
+                                categories,
+                                _selectedCategoryId,
+                              )?.color,
+                              selectedIconCodePoint: _categoryById(
+                                categories,
+                                _selectedCategoryId,
+                              )?.iconCodePoint,
+                              placeholder: 'Select category',
+                              onTap: () =>
+                                  _openCategoryPicker(context, categories),
+                              trailing: Container(
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceLightColor(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: IconButton(
+                                  tooltip: 'Manage categories',
+                                  onPressed: () {
+                                    HapticService.light();
+                                    Navigator.push(
+                                      context,
+                                      SlideUpRoute(
+                                        page: const CategoryManagerScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: Icon(
+                                    Icons.tune_rounded,
+                                    size: 18,
+                                    color: AppTheme.textLightColor(context),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            );
+
+                            if (_autoCatKey > 0) {
+                              child = child
+                                  .animate(key: ValueKey(_autoCatKey))
+                                  .shimmer(
+                                    duration: 400.ms,
+                                    color: AppTheme.primaryColor(
+                                      context,
+                                    ).withValues(alpha: 0.2),
+                                  )
+                                  .scale(
+                                    duration: 150.ms,
+                                    curve: Curves.easeOut,
+                                    begin: const Offset(1, 1),
+                                    end: const Offset(1.02, 1.02),
+                                  )
+                                  .then()
+                                  .scale(
+                                    duration: 250.ms,
+                                    curve: Curves.easeOutBack,
+                                    begin: const Offset(1.02, 1.02),
+                                    end: const Offset(1, 1),
+                                  );
+                            }
+                            return child;
+                          },
+                        ),
+                ),
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDestinationAccount(BuildContext context) {
+    final accounts = ref.watch(accountProvider);
+    final currency = ref.watch(settingsProvider).currency;
+    final balances = ref.watch(dashboardStatsProvider).accountBalances;
+    return accounts.when(
+      data: (all) {
+        final account = _accountById(all, _selectedToAccountId);
+        final balance = account == null
+            ? null
+            : balances[account.id] ?? account.initialBalance;
+        return SelectionTile(
+          asCard: false,
+          fallbackIcon: Icons.account_balance_wallet_rounded,
+          label: 'To',
+          selectedName: account == null || balance == null
+              ? null
+              : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(balance)}',
+          selectedColor: account?.color,
+          selectedIconCodePoint: account?.iconCodePoint,
+          selectedLogoAsset: account?.logoAsset,
+          placeholder: 'Select destination',
+          onTap: () => _openAccountPicker(
+            context,
+            all,
+            title: 'Destination',
+            subtitle: 'Choose where the money arrives',
+            selectedId: _selectedToAccountId,
+            excludeAccountId: _selectedAccountId,
+            onSelected: (id) => setState(() {
+              _selectedToAccountId = id == _selectedAccountId ? null : id;
+            }),
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(20),
+        child: LinearProgressIndicator(),
+      ),
+      error: (_, _) => TextButton(
+        onPressed: () => ref.invalidate(accountProvider),
+        child: const Text('Could not load accounts. Try again'),
+      ),
     );
   }
 
@@ -1456,61 +1439,50 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         onPressed: () => ref.invalidate(accountProvider),
         child: const Text('Could not load accounts. Try again'),
       ),
-      data: (all) => TextButton(
-        onPressed: () => _openAccountPicker(
-          context,
-          all,
-          title: label,
-          subtitle: 'Choose an account before entering the amount',
-          selectedId: _selectedAccountId,
-          onSelected: (id) => setState(() {
-            _selectedAccountId = id;
-            if (_selectedToAccountId == id) _selectedToAccountId = null;
-            if (_selectedType == TransactionType.transfer) {
-              _updateTransferFee(_accountById(all, id));
-            }
-          }),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.account_balance_wallet_outlined, size: 20),
-            const Gap(10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    account == null
-                        ? 'Select account'
-                        : '$label: ${account.name}',
-                    style: TextStyle(color: AppTheme.textColor(context)),
-                  ),
-                  if (account != null && balance != null)
-                    Text(
-                      '${account.isCredit ? 'Balance' : 'Available'}: ${NumberFormat.currency(symbol: currency.symbol).format(balance)}',
-                      style: TextStyle(
-                        color: AppTheme.textLightColor(context),
-                        fontSize: KoinTypography.caption,
-                      ),
-                    ),
-                  if (account != null &&
-                      !account.isCredit &&
-                      _selectedType != TransactionType.income &&
-                      (double.tryParse(_amountController.text) ?? 0) >
-                          (balance ?? 0))
-                    Text(
-                      'Amount exceeds available balance',
-                      style: TextStyle(
-                        color: AppTheme.errorColor(context),
-                        fontSize: KoinTypography.caption,
-                      ),
-                    ),
-                ],
+      data: (all) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SelectionTile(
+            asCard: false,
+            fallbackIcon: Icons.account_balance_wallet_outlined,
+            label: label,
+            selectedName: account == null || balance == null
+                ? null
+                : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(balance)}',
+            selectedColor: account?.color,
+            selectedIconCodePoint: account?.iconCodePoint,
+            selectedLogoAsset: account?.logoAsset,
+            placeholder: 'Select account',
+            onTap: () => _openAccountPicker(
+              context,
+              all,
+              title: label,
+              subtitle: 'Choose the account for this transaction',
+              selectedId: _selectedAccountId,
+              onSelected: (id) => setState(() {
+                _selectedAccountId = id;
+                if (_selectedToAccountId == id) _selectedToAccountId = null;
+                if (_selectedType == TransactionType.transfer) {
+                  _updateTransferFee(_accountById(all, id));
+                }
+              }),
+            ),
+          ),
+          if (account != null &&
+              !account.isCredit &&
+              _selectedType != TransactionType.income &&
+              (double.tryParse(_amountController.text) ?? 0) > (balance ?? 0))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(64, 0, 16, 12),
+              child: Text(
+                'Amount exceeds available balance',
+                style: TextStyle(
+                  color: AppTheme.errorColor(context),
+                  fontSize: KoinTypography.caption,
+                ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-          ],
-        ),
+        ],
       ),
     );
   }

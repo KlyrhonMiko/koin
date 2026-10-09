@@ -23,9 +23,7 @@ dependencies:
   shared_preferences: ^2.5.5
   share_plus: ^13.3.0
   file_picker: ^13.1.0
-  file_saver: ^0.4.0
   lottie: ^3.6.1
-  rive: ^0.14.11
   flutter_staggered_animations: ^1.1.1
   pdf: ^3.13.1
   csv: ^8.0.0

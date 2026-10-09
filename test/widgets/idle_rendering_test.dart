@@ -121,7 +121,7 @@ void main() {
   }
 
   testWidgets(
-    'main transaction form requires account before keypad on a small screen',
+    'main transaction form shows keypad immediately and account below amount',
     (tester) async {
       final providers = container();
       addTearDown(providers.dispose);
@@ -133,18 +133,51 @@ void main() {
         height: 760,
       );
       await tester.pumpAndSettle();
-      expect(find.byType(NumPad), findsNothing);
+      expect(find.byType(NumPad), findsOneWidget);
+      expect(
+        tester
+            .getTopLeft(
+              find.text(providers.read(settingsProvider).currency.code),
+            )
+            .dy,
+        lessThan(tester.getTopLeft(find.text('Select account')).dy),
+      );
+      await tester.tap(find.text('7'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '7');
       await tester.tap(find.text('Select account'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cash'));
       await tester.pumpAndSettle();
       expect(find.byType(NumPad), findsOneWidget);
-      expect(find.textContaining('Available:'), findsOneWidget);
+      expect(find.textContaining('Cash • '), findsOneWidget);
+      expect(find.textContaining('Available:'), findsNothing);
+      expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '7');
       expect(
-        tester.getTopLeft(find.textContaining('Available:')).dy,
+        tester.getTopLeft(find.textContaining('Cash • ')).dy,
         lessThan(tester.getTopLeft(find.byType(NumPad)).dy),
       );
       expect(tester.takeException(), isNull);
+      final amountSize = tester.getRect(find.text('7').first).size;
+      for (final type in ['Transfer', 'Income', 'Expense', 'Transfer']) {
+        await tester.tap(find.text(type));
+        for (var frame = 0; frame < 26; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(tester.takeException(), isNull, reason: '$type frame $frame');
+          final frameSize = tester.getRect(find.text('7').first).size;
+          expect(frameSize.width, closeTo(amountSize.width, 0.1));
+          expect(frameSize.height, closeTo(amountSize.height, 0.1));
+        }
+        expect(find.byType(NumPad), findsOneWidget);
+        expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '7');
+      }
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await tester.tap(find.text('Expense'));
+      await tester.pump();
+      expect(find.text('Select category'), findsOneWidget);
+      expect(find.text('Select destination'), findsNothing);
     },
   );
 
@@ -165,10 +198,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(NumPad), findsOneWidget);
-    expect(find.textContaining('Available:'), findsOneWidget);
+    expect(find.textContaining('Cash • '), findsOneWidget);
     expect(
-      find.textContaining('Available:').evaluate().single.widget,
-      isA<Text>().having((text) => text.data, 'available', contains('100.00')),
+      find.textContaining('Cash • ').evaluate().single.widget,
+      isA<Text>().having((text) => text.data, 'available', endsWith('100')),
     );
     expect(find.text('Amount exceeds available balance'), findsNothing);
     expect(tester.takeException(), isNull);
