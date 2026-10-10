@@ -10,8 +10,13 @@ abstract class SavingsRepository {
   Future<void> deleteSavingsGoal(String id);
   Future<List<SavingsLog>> getSavingsLogs(String goalId);
   Future<void> insertSavingsLog(SavingsLog log);
+  Future<void> insertSavingsLogs(
+    List<SavingsLog> logs, {
+    double? spendingAmount,
+  });
   Future<void> updateSavingsLog(SavingsLog oldLog, SavingsLog newLog);
   Future<void> deleteSavingsLog(SavingsLog log);
+  Future<void> rollbackSpendingRelease(String transactionId);
 }
 
 /// Concrete SQLite Adapter: delegates to DatabaseHelper.
@@ -19,7 +24,7 @@ class SqliteSavingsAdapter implements SavingsRepository {
   final DatabaseHelper _dbHelper;
 
   SqliteSavingsAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<SavingsGoal>> getSavingsGoals() => _dbHelper.getSavingsGoals();
@@ -43,14 +48,26 @@ class SqliteSavingsAdapter implements SavingsRepository {
       _dbHelper.getSavingsLogs(goalId);
 
   @override
-  Future<void> insertSavingsLog(SavingsLog log) => _dbHelper.insertSavingsLog(log);
+  Future<void> insertSavingsLog(SavingsLog log) =>
+      _dbHelper.insertSavingsLog(log);
+
+  @override
+  Future<void> insertSavingsLogs(
+    List<SavingsLog> logs, {
+    double? spendingAmount,
+  }) => _dbHelper.insertSavingsLogs(logs, spendingAmount: spendingAmount);
 
   @override
   Future<void> updateSavingsLog(SavingsLog oldLog, SavingsLog newLog) =>
       _dbHelper.updateSavingsLog(oldLog, newLog);
 
   @override
-  Future<void> deleteSavingsLog(SavingsLog log) => _dbHelper.deleteSavingsLog(log);
+  Future<void> deleteSavingsLog(SavingsLog log) =>
+      _dbHelper.deleteSavingsLog(log);
+
+  @override
+  Future<void> rollbackSpendingRelease(String transactionId) =>
+      _dbHelper.rollbackSavingsRelease(transactionId);
 }
 
 /// In-Memory Test Adapter: provides deterministic savings persistence for testing.
@@ -103,7 +120,36 @@ class InMemorySavingsAdapter implements SavingsRepository {
   }
 
   @override
+  Future<void> insertSavingsLogs(
+    List<SavingsLog> logs, {
+    double? spendingAmount,
+  }) async {
+    for (final log in logs) {
+      await insertSavingsLog(log);
+    }
+  }
+
+  @override
+  Future<void> rollbackSpendingRelease(String transactionId) async {
+    final logs = _logs.values
+        .expand((l) => l)
+        .where((l) => l.transactionId == transactionId)
+        .toList();
+    for (final log in logs) {
+      _removeLog(log);
+    }
+  }
+
+  @override
   Future<void> updateSavingsLog(SavingsLog oldLog, SavingsLog newLog) async {
+    final current = _logs[oldLog.goalId]
+        ?.where((l) => l.id == oldLog.id)
+        .firstOrNull;
+    if (current?.transactionId != null) {
+      throw StateError(
+        'Automatic releases are read only. Edit the linked transaction instead.',
+      );
+    }
     final list = _logs[newLog.goalId];
     if (list != null) {
       final idx = list.indexWhere((l) => l.id == oldLog.id);
@@ -122,6 +168,17 @@ class InMemorySavingsAdapter implements SavingsRepository {
 
   @override
   Future<void> deleteSavingsLog(SavingsLog log) async {
+    final current = _logs[log.goalId]?.where((l) => l.id == log.id).firstOrNull;
+    if (current == null) return;
+    if (current.transactionId != null) {
+      throw StateError(
+        'Automatic releases are read only. Delete the linked transaction instead.',
+      );
+    }
+    _removeLog(current);
+  }
+
+  void _removeLog(SavingsLog log) {
     final list = _logs[log.goalId];
     if (list != null) {
       list.removeWhere((l) => l.id == log.id);

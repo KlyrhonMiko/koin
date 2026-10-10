@@ -88,25 +88,55 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
     await loadGoals();
   });
 
-  Future<void> updateLog(SavingsLog oldLog, SavingsLog newLog) =>
-      _writeLog(() async {
-        final logs = await _repository.getSavingsLogs(oldLog.goalId);
-        final currentLog = logs.where((l) => l.id == oldLog.id).firstOrNull;
-        if (currentLog == null) {
-          throw const SavingsBalanceException(
-            'This savings entry is no longer available',
-          );
-        }
-        await _validateLog(newLog, oldLog: currentLog);
-        await _repository.updateSavingsLog(currentLog, newLog);
-        ref.invalidate(savingsLogsProvider(newLog.goalId));
-        await loadGoals();
-      });
+  /// Persist all automatic releases together, retaining savings activity history.
+  Future<void> releaseForSpending(
+    List<SavingsLog> logs, {
+    double? spendingAmount,
+  }) => _writeLog(() async {
+    for (final log in logs) {
+      if (log.amount >= 0) {
+        throw const SavingsBalanceException('Enter a valid release amount');
+      }
+      await _validateLog(log);
+    }
+    await _repository.insertSavingsLogs(logs, spendingAmount: spendingAmount);
+    for (final log in logs) {
+      ref.invalidate(savingsLogsProvider(log.goalId));
+    }
+    await loadGoals();
+  });
+
+  Future<void> updateLog(
+    SavingsLog oldLog,
+    SavingsLog newLog,
+  ) => _writeLog(() async {
+    final logs = await _repository.getSavingsLogs(oldLog.goalId);
+    final currentLog = logs.where((l) => l.id == oldLog.id).firstOrNull;
+    if (currentLog == null) {
+      throw const SavingsBalanceException(
+        'This savings entry is no longer available',
+      );
+    }
+    if (currentLog.transactionId != null) {
+      throw const SavingsBalanceException(
+        'Automatic releases are read only. Edit the linked transaction instead.',
+      );
+    }
+    await _validateLog(newLog, oldLog: currentLog);
+    await _repository.updateSavingsLog(currentLog, newLog);
+    ref.invalidate(savingsLogsProvider);
+    await loadGoals();
+  });
 
   Future<void> deleteLog(SavingsLog log) => _writeLog(() async {
     final logs = await _repository.getSavingsLogs(log.goalId);
     final current = logs.where((l) => l.id == log.id).firstOrNull;
     if (current == null) return;
+    if (current.transactionId != null) {
+      throw const SavingsBalanceException(
+        'Automatic releases are read only. Delete the linked transaction instead.',
+      );
+    }
     await _validateLog(
       SavingsLog(
         id: current.id,
@@ -116,9 +146,16 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
       ),
     );
     await _repository.deleteSavingsLog(current);
-    ref.invalidate(savingsLogsProvider(log.goalId));
+    ref.invalidate(savingsLogsProvider);
     await loadGoals();
   });
+
+  Future<void> rollbackDraftRelease(String transactionId) =>
+      _writeLog(() async {
+        await _repository.rollbackSpendingRelease(transactionId);
+        ref.invalidate(savingsLogsProvider);
+        await loadGoals();
+      });
 }
 
 final savingsGoalsProvider =
@@ -164,9 +201,8 @@ class SavingsBalanceException implements Exception {
   const SavingsBalanceException(this.message);
 }
 
-/// Only subtract funded reservations from accounts already counted in the total.
-/// Account balances and income/expense metrics remain unchanged.
-double excludedSavingsFromDashboard(
+/// Dashboard display balances exclude opted-out savings without changing the ledger.
+Map<String, double> dashboardAccountBalances(
   DashboardStats stats,
   Iterable<SavingsGoal> goals,
 ) {
@@ -180,16 +216,39 @@ double excludedSavingsFromDashboard(
     }
     reserved[id] = (reserved[id] ?? 0) + goal.currentAmount;
   }
-  return stats.accounts.where((a) => !a.excludeFromTotal).fold<double>(0, (
-    sum,
-    account,
-  ) {
-    final balance = (stats.accountBalances[account.id] ?? 0).clamp(
-      0,
-      double.infinity,
-    );
-    return sum + (reserved[account.id] ?? 0).clamp(0, balance);
-  });
+  return {
+    for (final account in stats.accounts)
+      account.id:
+          (stats.accountBalances[account.id] ?? 0) -
+          (reserved[account.id] ?? 0).clamp(
+            0,
+            (stats.accountBalances[account.id] ?? 0).clamp(0, double.infinity),
+          ),
+  };
+}
+
+final dashboardAccountBalancesProvider = Provider<Map<String, double>>(
+  (ref) => dashboardAccountBalances(
+    ref.watch(dashboardStatsProvider),
+    ref.watch(savingsGoalsProvider).value ?? [],
+  ),
+);
+
+/// Only subtract funded reservations from accounts already counted in the total.
+double excludedSavingsFromDashboard(
+  DashboardStats stats,
+  Iterable<SavingsGoal> goals,
+) {
+  final displayedBalances = dashboardAccountBalances(stats, goals);
+  return stats.accounts
+      .where((a) => !a.excludeFromTotal)
+      .fold<double>(
+        0,
+        (sum, account) =>
+            sum +
+            (stats.accountBalances[account.id] ?? 0) -
+            (displayedBalances[account.id] ?? 0),
+      );
 }
 
 final dashboardExcludedSavingsProvider = Provider<double>(

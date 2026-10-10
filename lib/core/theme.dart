@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'typography.dart';
 
 export 'typography.dart';
@@ -150,6 +149,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: KoinTypography.fontFamily,
       brightness: brightness,
       primaryColor: primaryColor,
       dividerColor: dividerColor,
@@ -193,95 +193,112 @@ class AppTheme {
               onError: Colors.white,
             ),
       scaffoldBackgroundColor: backgroundColor,
-      textTheme: GoogleFonts.outfitTextTheme(baseTheme.textTheme).copyWith(
-        displayLarge: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.inputAmount,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: -2,
-          height: KoinTypography.amountHeight,
-        ),
-        displayMedium: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.summaryAmount,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.amountTracking,
-          height: KoinTypography.amountHeight,
-        ),
-        displaySmall: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.formTitle,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.headingTracking,
-        ),
-        headlineLarge: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.formTitle,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.headingTracking,
-        ),
-        headlineMedium: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.screenTitle,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.headingTracking,
-        ),
-        headlineSmall: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.sectionTitle,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.headingTracking,
-        ),
-        titleLarge: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.sectionTitle,
-          fontWeight: KoinTypography.headingWeight,
-          letterSpacing: KoinTypography.headingTracking,
-        ),
-        titleMedium: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.itemTitle,
-          fontWeight: KoinTypography.titleWeight,
-          letterSpacing: KoinTypography.itemTracking,
-        ),
-        titleSmall: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.compact,
-          fontWeight: KoinTypography.titleWeight,
-          letterSpacing: KoinTypography.itemTracking,
-        ),
-        bodyLarge: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.body,
-          fontWeight: KoinTypography.labelWeight,
-        ),
-        bodyMedium: GoogleFonts.outfit(
-          color: textLightColor,
-          fontSize: KoinTypography.caption,
-          fontWeight: KoinTypography.supportingWeight,
-        ),
-        bodySmall: GoogleFonts.outfit(
-          color: textLightColor,
-          fontSize: KoinTypography.small,
-          fontWeight: KoinTypography.supportingWeight,
-        ),
-        labelLarge: GoogleFonts.outfit(
-          color: textColor,
-          fontSize: KoinTypography.itemTitle,
-          fontWeight: KoinTypography.titleWeight,
-        ),
-        labelMedium: GoogleFonts.outfit(
-          color: textLightColor,
-          fontSize: KoinTypography.small,
-          fontWeight: KoinTypography.labelWeight,
-        ),
-        labelSmall: GoogleFonts.outfit(
-          color: textLightColor,
-          fontSize: KoinTypography.overline,
-          fontWeight: KoinTypography.titleWeight,
-          letterSpacing: KoinTypography.overlineTracking,
-        ),
-      ),
+      textTheme: baseTheme.textTheme
+          .apply(fontFamily: KoinTypography.fontFamily)
+          .copyWith(
+            displayLarge: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.inputAmount,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: -2,
+              height: KoinTypography.amountHeight,
+            ),
+            displayMedium: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.summaryAmount,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.amountTracking,
+              height: KoinTypography.amountHeight,
+            ),
+            displaySmall: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.formTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
+            ),
+            headlineLarge: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.formTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
+            ),
+            headlineMedium: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.screenTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
+            ),
+            headlineSmall: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.sectionTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
+            ),
+            titleLarge: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.sectionTitle,
+              fontWeight: KoinTypography.headingWeight,
+              letterSpacing: KoinTypography.headingTracking,
+            ),
+            titleMedium: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.itemTitle,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: KoinTypography.itemTracking,
+            ),
+            titleSmall: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.compact,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: KoinTypography.itemTracking,
+            ),
+            bodyLarge: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.body,
+              fontWeight: KoinTypography.labelWeight,
+            ),
+            bodyMedium: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textLightColor,
+              fontSize: KoinTypography.caption,
+              fontWeight: KoinTypography.supportingWeight,
+            ),
+            bodySmall: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textLightColor,
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.supportingWeight,
+            ),
+            labelLarge: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textColor,
+              fontSize: KoinTypography.itemTitle,
+              fontWeight: KoinTypography.titleWeight,
+            ),
+            labelMedium: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textLightColor,
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.labelWeight,
+            ),
+            labelSmall: TextStyle(
+              fontFamily: KoinTypography.fontFamily,
+              color: textLightColor,
+              fontSize: KoinTypography.overline,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: KoinTypography.overlineTracking,
+            ),
+          ),
       appBarTheme: AppBarTheme(
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -289,7 +306,8 @@ class AppTheme {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: IconThemeData(color: textColor),
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           color: textColor,
           fontSize: KoinTypography.screenTitle,
           fontWeight: KoinTypography.headingWeight,
@@ -315,7 +333,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.outfit(
+          textStyle: TextStyle(
+            fontFamily: KoinTypography.fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -325,7 +344,8 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
-          textStyle: GoogleFonts.outfit(
+          textStyle: TextStyle(
+            fontFamily: KoinTypography.fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -358,8 +378,16 @@ class AppTheme {
           horizontal: 20,
           vertical: 18,
         ),
-        hintStyle: GoogleFonts.outfit(color: textLightColor, fontSize: 15),
-        labelStyle: GoogleFonts.outfit(color: textLightColor, fontSize: 15),
+        hintStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
+          color: textLightColor,
+          fontSize: 15,
+        ),
+        labelStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
+          color: textLightColor,
+          fontSize: 15,
+        ),
         prefixIconColor: textLightColor,
         suffixIconColor: textLightColor,
       ),
@@ -369,11 +397,13 @@ class AppTheme {
         unselectedItemColor: textLightColor,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.outfit(
+        selectedLabelStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: GoogleFonts.outfit(
+        unselectedLabelStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -388,20 +418,23 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: surfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           color: textColor,
           fontSize: KoinTypography.screenTitle,
           fontWeight: KoinTypography.headingWeight,
           letterSpacing: KoinTypography.headingTracking,
         ),
-        contentTextStyle: GoogleFonts.outfit(
+        contentTextStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           color: textLightColor,
           fontSize: 15,
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: surfaceColor,
-        contentTextStyle: GoogleFonts.outfit(
+        contentTextStyle: TextStyle(
+          fontFamily: KoinTypography.fontFamily,
           color: textColor,
           fontSize: 14,
           fontWeight: FontWeight.w600,

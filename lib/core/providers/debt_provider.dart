@@ -70,22 +70,22 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
     } else {
       updatedItems = [...debt.items, item];
     }
-    final newAmount = updatedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
-    final updatedDebt = debt.copyWith(
-      amount: newAmount,
-      items: updatedItems,
+    final newAmount = updatedItems.fold<double>(
+      0.0,
+      (sum, i) => sum + i.amount,
     );
+    final updatedDebt = debt.copyWith(amount: newAmount, items: updatedItems);
     await saveDebt(updatedDebt);
   }
 
   /// Removes an item from a debt and recalculates the parent debt amount atomically.
   Future<void> removeDebtItem(Debt debt, DebtItem item) async {
     final updatedItems = debt.items.where((i) => i.id != item.id).toList();
-    final newAmount = updatedItems.fold<double>(0.0, (sum, i) => sum + i.amount);
-    final updatedDebt = debt.copyWith(
-      amount: newAmount,
-      items: updatedItems,
+    final newAmount = updatedItems.fold<double>(
+      0.0,
+      (sum, i) => sum + i.amount,
     );
+    final updatedDebt = debt.copyWith(amount: newAmount, items: updatedItems);
     await saveDebt(updatedDebt);
   }
 
@@ -96,12 +96,14 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
     required Debt debt,
     required DebtRepayment repayment,
     required String? categoryId,
+    String? transactionId,
   }) async {
     final ledger = ref.read(ledgerProvider);
     final tx = await ledger.recordDebtRepayment(
       debt: debt,
       repayment: repayment,
       categoryId: categoryId,
+      transactionId: transactionId,
     );
     ref.invalidate(debtRepaymentsProvider(repayment.debtId));
     ref.invalidate(transactionProvider);
@@ -152,4 +154,3 @@ final debtSummaryProvider = Provider<DebtSummary>((ref) {
   final debts = ref.watch(debtsProvider).value ?? [];
   return DebtSummary.calculate(debts);
 });
-

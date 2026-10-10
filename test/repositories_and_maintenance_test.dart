@@ -342,7 +342,7 @@ void main() {
         TransferDraftValidationError.invalidAmount,
       );
 
-      // Fee exceeds amount
+      // Fees are additional debits and may exceed the transfer amount.
       final draftFeeTooHigh = TransferDraft(
         sourceAccountId: 'acc_1',
         destinationAccountId: 'acc_2',
@@ -352,7 +352,7 @@ void main() {
       );
       expect(
         draftFeeTooHigh.validate(),
-        TransferDraftValidationError.feeExceedsAmount,
+        isNull,
       );
 
       // Valid draft
@@ -391,7 +391,8 @@ void main() {
       expect(fee, 10.0); // 2% of 500
 
       final net = draft.calculateNetAmount(accountWithPercentageFee);
-      expect(net, 490.0);
+      expect(net, 500.0);
+      expect(draft.calculateTotalDebit(accountWithPercentageFee), 510.0);
 
       final transactions = draft.buildTransactions(
         existingId: 'custom_id',
@@ -399,7 +400,7 @@ void main() {
       );
 
       expect(transactions.transferTransaction.id, 'custom_id');
-      expect(transactions.transferTransaction.amount, 490.0);
+      expect(transactions.transferTransaction.amount, 500.0);
       expect(transactions.transferTransaction.type, TransactionType.transfer);
       expect(transactions.transferTransaction.toAccountId, 'acc_2');
 
@@ -408,6 +409,47 @@ void main() {
       expect(transactions.feeTransaction!.type, TransactionType.expense);
       expect(transactions.feeTransaction!.accountId, 'acc_1');
       expect(transactions.feeTransaction!.note, 'Transfer Fee: Savings Transfer');
+    });
+
+    test('fixed fee is deducted only from the sending account', () {
+      final draft = TransferDraft(
+        sourceAccountId: 'source',
+        destinationAccountId: 'destination',
+        rawAmount: 300,
+        enteredFee: 10,
+        date: now,
+      );
+      final built = draft.buildTransactions();
+      final balances = DashboardStats.calculate(
+        accounts: [
+          Account(id: 'source', name: 'Source', iconCodePoint: 1,
+              colorHex: '#000', initialBalance: 1000),
+          Account(id: 'destination', name: 'Destination', iconCodePoint: 1,
+              colorHex: '#000'),
+        ],
+        transactions: [built.transferTransaction, built.feeTransaction!],
+      ).accountBalances;
+      expect(balances['source'], 690);
+      expect(balances['destination'], 300);
+    });
+
+    test('zero fee creates only a transfer; invalid fees are rejected', () {
+      for (final fee in [0.0, -1.0, double.nan, double.infinity]) {
+        final draft = TransferDraft(
+          sourceAccountId: 'source',
+          destinationAccountId: 'destination',
+          rawAmount: 300,
+          enteredFee: fee,
+          date: now,
+        );
+        if (fee == 0) {
+          expect(draft.validate(), isNull);
+          expect(draft.buildTransactions().feeTransaction, isNull);
+          expect(draft.calculateTotalDebit(), 300);
+        } else {
+          expect(draft.validate(), TransferDraftValidationError.invalidFee);
+        }
+      }
     });
   });
 

@@ -242,7 +242,7 @@ void main() {
         await db.setVersion(35);
         await helper.close();
         db = await helper.database;
-        expect(await db.getVersion(), 36);
+        expect(await db.getVersion(), 37);
         final migrated = (await helper.getSavingsGoals()).single;
         expect(migrated.currentAmount, 250);
         expect(migrated.includeInDashboardBalance, true);

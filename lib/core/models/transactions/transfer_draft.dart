@@ -7,7 +7,7 @@ enum TransferDraftValidationError {
   missingRequiredFields,
   sameAccount,
   invalidAmount,
-  feeExceedsAmount,
+  invalidFee,
 }
 
 /// Deep Domain Module: Encapsulates transfer fee computation, validation rules,
@@ -39,11 +39,13 @@ class TransferDraft {
     if (sourceAccountId == destinationAccountId) {
       return TransferDraftValidationError.sameAccount;
     }
-    if (rawAmount <= 0) {
+    if (!rawAmount.isFinite || rawAmount <= 0) {
       return TransferDraftValidationError.invalidAmount;
     }
-    if (calculateFeeAmount() >= rawAmount) {
-      return TransferDraftValidationError.feeExceedsAmount;
+    if (!enteredFee.isFinite ||
+        enteredFee < 0 ||
+        !calculateTotalDebit().isFinite) {
+      return TransferDraftValidationError.invalidFee;
     }
     return null;
   }
@@ -64,25 +66,22 @@ class TransferDraft {
     return enteredFee;
   }
 
-  /// Calculates the net transfer amount after deducting the fee.
-  double calculateNetAmount([Account? sourceAccount]) {
-    final fee = calculateFeeAmount(sourceAccount);
-    return rawAmount - fee;
-  }
+  /// The receiving account gets the full entered transfer amount.
+  double calculateNetAmount([Account? sourceAccount]) => rawAmount;
+
+  /// The sending account pays the transfer amount plus the separate fee.
+  double calculateTotalDebit([Account? sourceAccount]) =>
+      rawAmount + calculateFeeAmount(sourceAccount);
 
   /// Builds the transfer transaction and optional fee transaction.
   ({AppTransaction transferTransaction, AppTransaction? feeTransaction})
-      buildTransactions({
-    String? existingId,
-    Account? sourceAccount,
-  }) {
+  buildTransactions({String? existingId, Account? sourceAccount}) {
     final feeAmount = calculateFeeAmount(sourceAccount);
-    final netAmount = rawAmount - feeAmount;
 
     final transferTx = AppTransaction(
       id: existingId ?? const Uuid().v4(),
       note: note,
-      amount: netAmount,
+      amount: rawAmount,
       date: date,
       type: TransactionType.transfer,
       categoryId: 'cat_others',

@@ -90,6 +90,13 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
 
   void _submit() async {
     if (_saving) return;
+    if (widget.log?.transactionId != null) {
+      setState(
+        () => _saveError =
+            'Automatic release: read only. Edit the linked transaction to change it.',
+      );
+      return;
+    }
     final amount = double.tryParse(_evaluatedResult);
     final available = _availableBalance();
     String? error;
@@ -124,8 +131,9 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         final confirmed = await ConfirmationSheet.show(
           context: context,
           title: 'Release savings?',
-          description:
-              '${money.format(amount)} will be available to spend. ${money.format((available ?? 0) - amount!)} remains in ${widget.goal.name}.',
+          description: widget.log?.transactionId != null
+              ? 'This release is read only. Edit the linked transaction to change it.'
+              : '${money.format(amount)} will be available to spend. ${money.format((available ?? 0) - amount!)} remains in ${widget.goal.name}.',
           confirmLabel: 'Release savings',
           confirmColor: AppTheme.primaryColor(context),
           icon: Icons.south_west_rounded,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:uuid/uuid.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/category_provider.dart';
@@ -56,12 +57,14 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
     if (result == null || !context.mounted) return false;
 
     final isExpense = payment.type == TransactionType.expense;
+    final transactionId = const Uuid().v4();
     if (isExpense &&
         !await confirmSavingsSpending(
           context: context,
           ref: ref,
           accountId: result.accountId,
           amount: result.amount,
+          transactionId: transactionId,
         )) {
       return false;
     }
@@ -74,6 +77,7 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
           amount: result.amount,
           accountId: result.accountId,
           categoryId: result.categoryId,
+          transactionId: transactionId,
         );
 
     if (context.mounted) {

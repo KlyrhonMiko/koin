@@ -481,6 +481,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       }
     }
 
+    final transactionId = const Uuid().v4();
     if (!widget.isIncrease &&
         _selectedAccountId != null &&
         !await confirmSavingsSpending(
@@ -488,6 +489,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           ref: ref,
           accountId: _selectedAccountId!,
           amount: amt,
+          transactionId: transactionId,
         )) {
       return;
     }
@@ -517,6 +519,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           debt: widget.debt,
           repayment: repayment,
           categoryId: widget.debt.categoryId,
+          transactionId: transactionId,
         );
 
     if (!mounted) return;

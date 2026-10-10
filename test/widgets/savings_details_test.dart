@@ -20,12 +20,16 @@ void main() {
     WidgetTester tester,
     SavingsGoal goal, {
     bool list = false,
+    List<SavingsLog> logs = const [],
   }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final repository = InMemorySavingsAdapter(initial: [goal]);
+    for (final log in logs) {
+      await repository.insertSavingsLog(log);
+    }
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -45,6 +49,123 @@ void main() {
     await tester.pumpAndSettle();
     return repository;
   }
+
+  testWidgets('automatic release explains read-only status and blocks edit and swipe', (
+    tester,
+  ) async {
+    final goal = SavingsGoal(
+      id: 'goal',
+      name: 'End of Year',
+      currentAmount: 500,
+      startDate: DateTime(2026),
+      isStash: true,
+    );
+    final repository = await showSavings(
+      tester,
+      goal,
+      logs: [
+        SavingsLog(
+          id: 'automatic',
+          goalId: 'goal',
+          amount: -437,
+          date: DateTime(2026, 10, 10),
+          transactionId: 'expense',
+        ),
+        SavingsLog(
+          id: 'manual',
+          goalId: 'goal',
+          amount: 20,
+          date: DateTime(2026),
+        ),
+      ],
+    );
+    final indicator = find.text('Auto release · Read only');
+    void expectConnectedTimeline() {
+      final firstDot = tester.getRect(
+        find.byKey(const ValueKey('timeline-dot-automatic')),
+      );
+      final secondDot = tester.getRect(
+        find.byKey(const ValueKey('timeline-dot-manual')),
+      );
+      final below = tester.getRect(
+        find.byKey(const ValueKey('timeline-below-automatic')),
+      );
+      final above = tester.getRect(
+        find.byKey(const ValueKey('timeline-above-manual')),
+      );
+      expect(below.top, closeTo(firstDot.center.dy, 0.01));
+      expect(below.bottom, closeTo(above.top, 0.01));
+      expect(above.bottom, closeTo(secondDot.center.dy, 0.01));
+      expect(below.center.dx, closeTo(firstDot.center.dx, 0.01));
+      expect(above.center.dx, closeTo(secondDot.center.dx, 0.01));
+      final firstCard = tester.getRect(find.byKey(const Key('automatic')));
+      final secondCard = tester.getRect(find.byKey(const Key('manual')).first);
+      expect(secondCard.top - firstCard.bottom, closeTo(12, 0.01));
+    }
+
+    await tester.ensureVisible(indicator);
+    await tester.pumpAndSettle();
+    expectConnectedTimeline();
+    expect(indicator, findsOneWidget);
+    expect(
+      find.text(
+        'Managed by its transaction. Edit or delete that transaction to update this release.',
+      ),
+      findsNothing,
+    );
+    await tester.longPress(indicator);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Managed by its transaction. Edit or delete that transaction to update this release.',
+      ),
+      findsNothing,
+    );
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+    await tester.tap(indicator);
+    await tester.pumpAndSettle();
+    expectConnectedTimeline();
+    expect(
+      find.text(
+        'Managed by its transaction. Edit or delete that transaction to update this release.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('automatic')),
+        matching: find.byType(Tooltip),
+      ),
+      findsNothing,
+    );
+    await tester.tap(indicator);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Managed by its transaction. Edit or delete that transaction to update this release.',
+      ),
+      findsNothing,
+    );
+    expect(find.byType(SavingsLogSheet), findsNothing);
+    await tester.drag(
+      find.byKey(const Key('automatic')).first,
+      const Offset(-200, 0),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Entry?'), findsNothing);
+    expect((await repository.getSavingsLogs('goal')).length, 2);
+    expect((await repository.getSavingsGoals()).single.currentAmount, 83);
+    await tester.ensureVisible(find.byKey(const Key('manual')).first);
+    await tester.tap(find.byKey(const Key('manual')).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SavingsLogSheet), findsOneWidget);
+    expect(
+      tester.widget<SavingsLogSheet>(find.byType(SavingsLogSheet)).log?.id,
+      'manual',
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('Targetless stash has a compact card and no progress ring', (
     tester,

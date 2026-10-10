@@ -125,7 +125,7 @@ void main() {
   );
 
   testWidgets(
-    'reserved funds warn but record anyway never changes allocations',
+    'bottom sheet releases only the shortfall and cancellation preserves savings',
     (tester) async {
       GoogleFonts.config.allowRuntimeFetching = false;
       SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
@@ -161,20 +161,117 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Record expense'));
       await tester.pumpAndSettle();
-      expect(find.text('This uses reserved savings'), findsOneWidget);
-      expect(find.textContaining('13.00'), findsOneWidget);
+      expect(find.text('Use savings for this?'), findsOneWidget);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.textContaining('You have ₱13.00 available.'), findsOneWidget);
+      expect(find.textContaining('37.00'), findsNWidgets(2));
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(accepted, false);
+      expect((await repository.getSavingsGoals()).single.currentAmount, 250);
       await tester.tap(find.text('Record expense'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Record anyway'));
+      // Start above the scrollable content, in the sheet's drag-handle area.
+      final sheetTop = tester.getTopLeft(find.byType(BottomSheet));
+      await tester.flingFrom(
+        Offset(
+          tester.getSize(find.byType(BottomSheet)).width / 2,
+          sheetTop.dy + 24,
+        ),
+        const Offset(0, 300),
+        1000,
+      );
       await tester.pumpAndSettle();
-      expect(accepted, true);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(accepted, false);
       expect((await repository.getSavingsGoals()).single.currentAmount, 250);
       expect((await repository.getSavingsLogs(goal.id)).length, 1);
+      await tester.tap(find.text('Record expense'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Release & continue'));
+      await tester.pumpAndSettle();
+      expect(accepted, true);
+      expect((await repository.getSavingsGoals()).single.currentAmount, 213);
+      final logs = await repository.getSavingsLogs(goal.id);
+      expect(logs.length, 2);
+      expect(logs.last.amount, -37);
+      expect(logs.last.note, 'Automatically released for spending');
     },
   );
+
+  testWidgets('automatic release spans goals and leaves other accounts alone', (
+    tester,
+  ) async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
+    final prefs = await SharedPreferences.getInstance();
+    final multiRepository = InMemorySavingsAdapter(
+      initial: [
+        goal.copyWith(currentAmount: 100),
+        SavingsGoal(
+          id: 'second',
+          name: 'Trip',
+          startDate: DateTime(2026, 2),
+          linkedAccountId: 'mari',
+          currentAmount: 150,
+        ),
+        SavingsGoal(
+          id: 'other',
+          name: 'Other account',
+          startDate: DateTime(2026),
+          linkedAccountId: 'other-account',
+          currentAmount: 500,
+        ),
+      ],
+    );
+    bool? accepted;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          savingsRepositoryProvider.overrideWithValue(multiRepository),
+          dashboardStatsProvider.overrideWithValue(stats(263)),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () async {
+                  accepted = await confirmSavingsSpending(
+                    context: context,
+                    ref: ref,
+                    accountId: 'mari',
+                    amount: 150.01,
+                  );
+                },
+                child: const Text('Record expense'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Record expense'));
+    await tester.pumpAndSettle();
+    expect(find.text('End of Year'), findsOneWidget);
+    expect(find.text('Trip'), findsOneWidget);
+    expect(find.text('Other account'), findsNothing);
+    await tester.tap(find.text('Release & continue'));
+    await tester.pumpAndSettle();
+    expect(accepted, true);
+    final goals = await multiRepository.getSavingsGoals();
+    expect(goals.first.currentAmount, 0);
+    expect(goals[1].currentAmount, closeTo(112.99, 0.000001));
+    expect(goals[2].currentAmount, 500);
+    expect((await multiRepository.getSavingsLogs(goal.id)).single.amount, -100);
+    expect(
+      (await multiRepository.getSavingsLogs('second')).single.amount,
+      -37.01,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'release asks for confirmation and saves a negative activity amount',

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 /// The type scale and spacing used by the Goals screens.
 /// Keep compact supporting text and let headings and amounts carry emphasis.
 abstract final class KoinTypography {
+  /// Bundled as one family so inherited styles select the real requested weight.
+  static const fontFamily = 'Outfit';
+
   static const screenTitle = 24.0;
   static const formTitle = 28.0;
   static const sectionTitle = 18.0;
@@ -17,10 +20,10 @@ abstract final class KoinTypography {
   static const small = 12.0;
   static const overline = 11.0;
 
-  static const headingWeight = FontWeight.w800;
-  static const titleWeight = FontWeight.w700;
-  static const labelWeight = FontWeight.w600;
-  static const supportingWeight = FontWeight.w500;
+  static const headingWeight = FontWeight.w700;
+  static const titleWeight = FontWeight.w600;
+  static const labelWeight = FontWeight.w500;
+  static const supportingWeight = FontWeight.w400;
   static const headingTracking = -0.5;
   static const amountTracking = -1.0;
   static const itemTracking = -0.2;

@@ -450,6 +450,93 @@ void main() {
       expect(entries.single.plannedPaymentId, isNull);
     },
   );
+  testWidgets(
+    'Next shows a content-sized savings sheet before expense details',
+    (tester) async {
+      await providers
+          .read(savingsRepositoryProvider)
+          .insertSavingsGoal(
+            SavingsGoal(
+              id: 'reserved',
+              name: 'End of Year',
+              currentAmount: 4900,
+              startDate: DateTime(2026),
+              linkedAccountId: 'cash',
+            ),
+          );
+      await launch(tester, dark: true, height: 440);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Expense');
+      await pickAccount(tester, 'Select account', 'Cash');
+      await amount(tester, '125');
+      final expenseHeight =
+          (windowCalls.last.arguments as Map)['height'] as int;
+      expect(find.text('Use savings for this?'), findsOneWidget);
+      final sheetHeight = (windowCalls.last.arguments as Map)['height'] as int;
+      expect(sheetHeight, greaterThanOrEqualTo(expenseHeight));
+      // Simulate Android applying the requested window size.
+      tester.view.physicalSize = Size(360, sheetHeight.toDouble());
+      await tester.pumpAndSettle();
+      final sheetScrollable = find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byType(Scrollable),
+      );
+      expect(
+        tester.state<ScrollableState>(sheetScrollable).position.maxScrollExtent,
+        0,
+      );
+      expect(find.text('Expense amount'), findsOneWidget);
+      expect(find.text('Expense details'), findsNothing);
+      final underlyingOpacity = find.ancestor(
+        of: find.byKey(const ValueKey('quick-entry-drag-area')),
+        matching: find.byType(Opacity),
+      );
+      expect(tester.widget<Opacity>(underlyingOpacity).opacity, 1);
+      final barrier = tester.widget<ModalBarrier>(
+        find.byType(ModalBarrier).last,
+      );
+      expect(barrier.color, isNull);
+      final sheet = find.byType(BottomSheet);
+      final top = tester.getTopLeft(sheet);
+      final gesture = await tester.startGesture(
+        Offset(top.dx + tester.getSize(sheet).width / 2, top.dy + 24),
+      );
+      await gesture.moveBy(const Offset(0, 30));
+      await tester.pump();
+      expect(tester.widget<Opacity>(underlyingOpacity).opacity, 1);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(tester.widget<Opacity>(underlyingOpacity).opacity, 1);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Opacity>(underlyingOpacity).opacity, 1);
+      expect(await providers.read(transactionProvider.future), isEmpty);
+      expect(
+        (await providers.read(savingsRepositoryProvider).getSavingsGoals())
+            .single
+            .currentAmount,
+        4900,
+      );
+      await tap(tester, 'Next');
+      expect(find.text('Use savings for this?'), findsOneWidget);
+      await tap(tester, 'Release & continue');
+      expect(find.text('Expense details'), findsOneWidget);
+      expect(
+        (await providers.read(savingsRepositoryProvider).getSavingsGoals())
+            .single
+            .currentAmount,
+        4875,
+      );
+      expect(await providers.read(transactionProvider.future), isEmpty);
+      await tap(tester, 'Select category');
+      await tap(tester, 'Food');
+      await tap(tester, 'Save transaction');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(await providers.read(transactionProvider.future), hasLength(1));
+    },
+  );
+
   testWidgets('swiping the handle closes without saving; short drags return', (
     tester,
   ) async {
@@ -578,7 +665,7 @@ void main() {
     expect(tester.getTopLeft(handle).dy, closeTo(0, 1));
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
   });
-  testWidgets('transfer previews net amount and records the fee atomically', (
+  testWidgets('transfer receives full amount and records the fee atomically', (
     tester,
   ) async {
     await launch(tester);
@@ -590,6 +677,7 @@ void main() {
     await pickAccount(tester, 'Select receiving account', 'Bank');
     await tester.enterText(find.byType(TextField).last, '20');
     expect(find.text('Amount received'), findsOneWidget);
+    expect(find.text('Total deducted'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
     await tap(tester, 'Save transaction');
     final entries = await providers.read(transactionProvider.future);
@@ -597,13 +685,32 @@ void main() {
     final transfer = entries.firstWhere(
       (t) => t.type == TransactionType.transfer,
     );
-    expect(transfer.amount, 480);
+    expect(transfer.amount, 500);
     expect(transfer.accountId, 'cash');
     expect(transfer.toAccountId, 'bank');
     expect(
       entries.firstWhere((t) => t.type == TransactionType.expense).amount,
       20,
     );
+  });
+  testWidgets('transfer balance check includes the sending account fee', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '500');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await tester.enterText(find.byType(TextField).last, '20');
+    final repository = providers.read(accountRepositoryProvider);
+    final cash = (await repository.getAccounts()).firstWhere(
+      (a) => a.id == 'cash',
+    );
+    await repository.updateAccount(cash.copyWith(initialBalance: 500));
+    await tap(tester, 'Save transaction');
+    expect(find.text('Insufficient balance in Cash'), findsOneWidget);
+    expect(await providers.read(transactionProvider.future), isEmpty);
   });
   testWidgets('empty income list and invalid amounts cannot record anything', (
     tester,

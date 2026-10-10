@@ -52,6 +52,7 @@ abstract class Ledger {
     required double amount,
     required String accountId,
     required String categoryId,
+    String? transactionId,
     DateTime? date,
   });
 
@@ -61,6 +62,7 @@ abstract class Ledger {
     required Debt debt,
     required DebtRepayment repayment,
     required String? categoryId,
+    String? transactionId,
   });
 
   /// Atomically records a transfer transaction between accounts, optionally creating a linked fee transaction.
@@ -179,6 +181,7 @@ class SqliteLedgerAdapter implements Ledger {
     required double amount,
     required String accountId,
     required String categoryId,
+    String? transactionId,
     DateTime? date,
   }) async {
     final db = await _dbHelper.database;
@@ -193,7 +196,7 @@ class SqliteLedgerAdapter implements Ledger {
       );
 
       final transaction = AppTransaction(
-        id: const Uuid().v4(),
+        id: transactionId ?? const Uuid().v4(),
         note: payment.title,
         amount: amount,
         type: payment.type,
@@ -213,6 +216,7 @@ class SqliteLedgerAdapter implements Ledger {
     required Debt debt,
     required DebtRepayment repayment,
     required String? categoryId,
+    String? transactionId,
   }) async {
     final db = await _dbHelper.database;
     return await db.transaction((txn) async {
@@ -236,7 +240,7 @@ class SqliteLedgerAdapter implements Ledger {
             : debt.type == DebtType.iOwe;
 
         final transaction = AppTransaction(
-          id: const Uuid().v4(),
+          id: transactionId ?? const Uuid().v4(),
           amount: repayment.amount,
           date: repayment.date,
           type: isExpense ? TransactionType.expense : TransactionType.income,
@@ -357,10 +361,11 @@ class InMemoryLedgerAdapter implements Ledger {
     required double amount,
     required String accountId,
     required String categoryId,
+    String? transactionId,
     DateTime? date,
   }) async {
     final tx = AppTransaction(
-      id: const Uuid().v4(),
+      id: transactionId ?? const Uuid().v4(),
       note: payment.title,
       amount: amount,
       type: payment.type,
@@ -378,13 +383,14 @@ class InMemoryLedgerAdapter implements Ledger {
     required Debt debt,
     required DebtRepayment repayment,
     required String? categoryId,
+    String? transactionId,
   }) async {
     if (repayment.accountId != null && repayment.accountId!.isNotEmpty) {
       final isExpense = repayment.isIncrease
           ? debt.type == DebtType.owedToMe
           : debt.type == DebtType.iOwe;
       final tx = AppTransaction(
-        id: const Uuid().v4(),
+        id: transactionId ?? const Uuid().v4(),
         amount: repayment.amount,
         date: repayment.date,
         type: isExpense ? TransactionType.expense : TransactionType.income,

@@ -27,6 +27,8 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     with TickerProviderStateMixin {
   final _noteController = TextEditingController();
+  late final String _transactionId =
+      widget.editingTransaction?.id ?? const Uuid().v4();
   final _amountController = TextEditingController();
   final _feeController = TextEditingController();
   final _noteFocusNode = FocusNode();
@@ -256,7 +258,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
-    if (amount <= 0) {
+    if (!amount.isFinite || amount <= 0) {
       HapticService.error();
       _showErrorSnackbar(
         'Enter a valid amount',
@@ -267,6 +269,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     AppTransaction newTransaction;
     AppTransaction? feeTransaction;
+    final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
+    final feeAmount = isTransfer
+        ? (_isTransferFeePercentage ? amount * (enteredFee / 100) : enteredFee)
+        : 0.0;
+    final debitAmount = amount + feeAmount;
 
     final debitAccount = _accountById(
       ref.read(accountProvider).value ?? [],
@@ -276,7 +283,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         debitAccount != null &&
         !debitAccount.isCredit) {
       final balance = _availableBalance(debitAccount);
-      if (amount > balance) {
+      if (debitAmount > balance) {
         HapticService.error();
         _showErrorSnackbar(
           'Insufficient balance',
@@ -293,7 +300,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           context: context,
           ref: ref,
           accountId: _selectedAccountId!,
-          amount: amount,
+          amount: debitAmount,
+          transactionId: _transactionId,
           previousDebit:
               widget.editingTransaction?.accountId == _selectedAccountId &&
                   widget.editingTransaction?.type != TransactionType.income
@@ -309,10 +317,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       final selectedAccount = accounts
           .where((a) => a.id == _selectedAccountId)
           .firstOrNull;
-      final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
-      final feeAmount = _isTransferFeePercentage
-          ? (amount * (enteredFee / 100))
-          : enteredFee;
 
       if (selectedAccount != null && !selectedAccount.isCredit) {
         final currentBalance =
@@ -357,11 +361,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               subtitle: 'You cannot transfer money to the same account',
             );
             return;
-          case TransferDraftValidationError.feeExceedsAmount:
+          case TransferDraftValidationError.invalidFee:
             _showErrorSnackbar(
               'Invalid fee amount',
-              subtitle:
-                  'The transfer fee cannot be greater than or equal to the total amount',
+              subtitle: 'The transfer fee must be a valid non-negative amount',
             );
             return;
           case TransferDraftValidationError.invalidAmount:
@@ -380,14 +383,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       }
 
       final built = draft.buildTransactions(
-        existingId: widget.editingTransaction?.id,
+        existingId: _transactionId,
         sourceAccount: selectedAccount,
       );
       newTransaction = built.transferTransaction;
       feeTransaction = built.feeTransaction;
     } else {
       newTransaction = AppTransaction(
-        id: widget.editingTransaction?.id ?? const Uuid().v4(),
+        id: _transactionId,
         note: _noteController.text,
         amount: amount,
         date: _selectedDate,

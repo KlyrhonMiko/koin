@@ -4,6 +4,7 @@ class SavingsLog {
   final double amount;
   final DateTime date;
   final String? note;
+  final String? transactionId;
 
   SavingsLog({
     required this.id,
@@ -11,6 +12,7 @@ class SavingsLog {
     required this.amount,
     required this.date,
     this.note,
+    this.transactionId,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class SavingsLog {
       'amount': amount,
       'date': date.toIso8601String(),
       'note': note,
+      'transactionId': transactionId,
     };
   }
 
@@ -30,6 +33,7 @@ class SavingsLog {
       amount: (map['amount'] as num).toDouble(),
       date: DateTime.parse(map['date']),
       note: map['note'],
+      transactionId: map['transactionId'],
     );
   }
 }

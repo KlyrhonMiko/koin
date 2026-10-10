@@ -191,7 +191,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                   icon: Icons.delete_forever_rounded,
                                   confirmTitle: 'Delete Transaction?',
                                   confirmDescription:
-                                      'This transaction will be permanently removed. This action cannot be undone.',
+                                      'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
                                   onDelete: () {
                                     ref
                                         .read(transactionProvider.notifier)

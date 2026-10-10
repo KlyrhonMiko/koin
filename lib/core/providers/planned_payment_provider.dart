@@ -44,6 +44,7 @@ class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
     required double amount,
     required String accountId,
     required String categoryId,
+    String? transactionId,
     DateTime? date,
   }) async {
     final ledger = ref.read(ledgerProvider);
@@ -52,6 +53,7 @@ class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
       amount: amount,
       accountId: accountId,
       categoryId: categoryId,
+      transactionId: transactionId,
       date: date,
     );
     await loadPlannedPayments();
@@ -70,4 +72,3 @@ final upcomingTimelineProvider = Provider<UpcomingTimeline>((ref) {
   final debts = ref.watch(debtsProvider).value ?? [];
   return UpcomingTimeline.calculate(payments: payments, debts: debts);
 });
-

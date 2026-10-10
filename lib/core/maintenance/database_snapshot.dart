@@ -64,12 +64,14 @@ class DatabaseSnapshot {
         throw const FormatException('Damaged backup');
       }
       final version = await db.getVersion();
-      if (version < 1 || version > 36) {
+      if (version < 1 || version > 37) {
         throw const FormatException('Unsupported backup version');
       }
       final requiredColumns = {
-        if (version >= 36)
-          'savings_goals': ['id', 'includeInDashboardBalance'],
+        if (version >= 37) 'savings_logs': ['id', 'transactionId'],
+        if (version >= 37)
+          'savings_spending_links': ['transactionId', 'spendableAmount'],
+        if (version >= 36) 'savings_goals': ['id', 'includeInDashboardBalance'],
         'transactions': ['id', 'title', 'amount', 'date', 'type', 'categoryId'],
         'categories': ['id', 'name', 'iconCodePoint', 'colorHex', 'type'],
         if (version >= 2)

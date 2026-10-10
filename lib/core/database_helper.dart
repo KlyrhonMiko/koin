@@ -4,6 +4,8 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/forecasting/forecast_history.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:math' as math;
+import 'package:uuid/uuid.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
 
 class DatabaseHelper {
@@ -24,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 36,
+      version: 37,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -317,6 +319,47 @@ CREATE TABLE debt_items (
         );
       }
     }
+    if (oldVersion < 37) {
+      final columns = await db.rawQuery('PRAGMA table_info(savings_logs)');
+      if (!columns.any((column) => column['name'] == 'transactionId')) {
+        await db.execute(
+          'ALTER TABLE savings_logs ADD COLUMN transactionId TEXT',
+        );
+      }
+      await _createSavingsSpendingLinks(db);
+    }
+  }
+
+  Future<void> _createSavingsSpendingLinks(Database db) async {
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS savings_spending_links ('
+      'transactionId TEXT PRIMARY KEY, spendableAmount REAL)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS savings_log_transaction '
+      'ON savings_logs(transactionId)',
+    );
+    await db.execute('''
+CREATE TRIGGER IF NOT EXISTS savings_spending_recorded
+AFTER INSERT ON transactions
+BEGIN
+  UPDATE savings_spending_links SET spendableAmount = NEW.amount +
+    COALESCE((SELECT SUM(amount) FROM savings_logs WHERE transactionId = NEW.id), 0)
+  WHERE transactionId = NEW.id AND spendableAmount IS NULL;
+END
+''');
+    await db.execute('''
+CREATE TRIGGER IF NOT EXISTS savings_spending_deleted
+AFTER DELETE ON transactions
+BEGIN
+  UPDATE savings_goals SET currentAmount = currentAmount -
+    COALESCE((SELECT SUM(amount) FROM savings_logs
+      WHERE transactionId = OLD.id AND goalId = savings_goals.id), 0)
+  WHERE id IN (SELECT goalId FROM savings_logs WHERE transactionId = OLD.id);
+  DELETE FROM savings_logs WHERE transactionId = OLD.id;
+  DELETE FROM savings_spending_links WHERE transactionId = OLD.id;
+END
+''');
   }
 
   Future<void> _createCategorizationFeedbackTable(Database db) async {
@@ -476,6 +519,7 @@ CREATE TABLE savings_logs (
   amount $realType,
   date $textType,
   note TEXT,
+  transactionId TEXT,
   FOREIGN KEY (goalId) REFERENCES savings_goals (id) ON DELETE CASCADE
 )
 ''');
@@ -556,6 +600,7 @@ CREATE TABLE transactions (
 ''');
 
     await _createSavingsTables(db);
+    await _createSavingsSpendingLinks(db);
     await _createPlannedPaymentsTable(db);
     await _createDebtsTables(db);
     await _createCategorizationTables(db);
@@ -807,55 +852,171 @@ CREATE TABLE transactions (
 
   Future<int> updateTransaction(AppTransaction transaction) async {
     final db = await instance.database;
-    return await db.transaction((txn) async {
-      final rows = await txn.query(
-        'transactions',
-        where: 'id = ?',
-        whereArgs: [transaction.id],
-      );
-      if (rows.isEmpty) return 0;
+    return db.transaction((txn) => _updateTransaction(txn, transaction));
+  }
 
-      final previous = AppTransaction.fromMap(rows.first);
-      // Editing financial fields must not detach the originating domain record.
-      final updated = transaction.copyWith(
-        plannedPaymentId: previous.plannedPaymentId,
-        debtRepaymentId: previous.debtRepaymentId,
-      );
-      if (updated.debtRepaymentId != null) {
-        final repayments = await txn.query(
-          'debt_repayments',
-          where: 'id = ?',
-          whereArgs: [updated.debtRepaymentId],
-        );
-        if (repayments.isNotEmpty) {
-          final repayment = DebtRepayment.fromMap(repayments.first);
-          await txn.update(
-            'debt_repayments',
-            {
-              'amount': updated.amount,
-              'date': updated.date.toIso8601String(),
-              'note': updated.note,
-              'accountId': updated.accountId,
-            },
-            where: 'id = ?',
-            whereArgs: [repayment.id],
-          );
-          final balanceColumn = repayment.isIncrease
-              ? 'amount'
-              : 'currentAmount';
-          await txn.execute(
-            'UPDATE debts SET $balanceColumn = $balanceColumn + ? WHERE id = ?',
-            [updated.amount - repayment.amount, repayment.debtId],
-          );
-        }
-      }
-      return await txn.update(
-        'transactions',
-        updated.toMap(),
+  Future<int> _updateTransaction(
+    DatabaseExecutor txn,
+    AppTransaction transaction,
+  ) async {
+    final rows = await txn.query(
+      'transactions',
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
+    if (rows.isEmpty) return 0;
+
+    final previous = AppTransaction.fromMap(rows.first);
+    // Editing financial fields must not detach the originating domain record.
+    final updated = transaction.copyWith(
+      plannedPaymentId: previous.plannedPaymentId,
+      debtRepaymentId: previous.debtRepaymentId,
+    );
+    await _syncSavingsRelease(txn, previous, updated);
+    if (updated.debtRepaymentId != null) {
+      final repayments = await txn.query(
+        'debt_repayments',
         where: 'id = ?',
-        whereArgs: [updated.id],
+        whereArgs: [updated.debtRepaymentId],
       );
-    });
+      if (repayments.isNotEmpty) {
+        final repayment = DebtRepayment.fromMap(repayments.first);
+        await txn.update(
+          'debt_repayments',
+          {
+            'amount': updated.amount,
+            'date': updated.date.toIso8601String(),
+            'note': updated.note,
+            'accountId': updated.accountId,
+          },
+          where: 'id = ?',
+          whereArgs: [repayment.id],
+        );
+        final balanceColumn = repayment.isIncrease ? 'amount' : 'currentAmount';
+        await txn.execute(
+          'UPDATE debts SET $balanceColumn = $balanceColumn + ? WHERE id = ?',
+          [updated.amount - repayment.amount, repayment.debtId],
+        );
+      }
+    }
+    return await txn.update(
+      'transactions',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [updated.id],
+    );
+  }
+
+  Future<void> _syncSavingsRelease(
+    DatabaseExecutor txn,
+    AppTransaction previous,
+    AppTransaction updated,
+  ) async {
+    final links = await txn.query(
+      'savings_spending_links',
+      where: 'transactionId = ?',
+      whereArgs: [previous.id],
+    );
+    if (links.isEmpty) return;
+    final logs = (await txn.query(
+      'savings_logs',
+      where: 'transactionId = ?',
+      whereArgs: [previous.id],
+    )).map(SavingsLog.fromMap).toList();
+    for (final log in logs) {
+      await txn.rawUpdate(
+        'UPDATE savings_goals SET currentAmount = currentAmount - ? WHERE id = ?',
+        [log.amount, log.goalId],
+      );
+    }
+    await txn.delete(
+      'savings_logs',
+      where: 'transactionId = ?',
+      whereArgs: [previous.id],
+    );
+    var spendable =
+        (links.single['spendableAmount'] as num?)?.toDouble() ??
+        previous.amount + logs.fold<double>(0, (sum, l) => sum + l.amount);
+    final goals = (await txn.query(
+      'savings_goals',
+    )).map(SavingsGoal.fromMap).toList();
+    if (previous.accountId != updated.accountId) {
+      final accounts = (await txn.query(
+        'accounts',
+      )).map(Account.fromMap).toList();
+      final transactions = (await txn.query(
+        'transactions',
+      )).map(AppTransaction.fromMap).where((t) => t.id != previous.id).toList();
+      final account = accounts
+          .where((a) => a.id == updated.accountId)
+          .firstOrNull;
+      if (account == null) throw StateError('Account balance unavailable');
+      final balance = transactions.fold<double>(account.initialBalance, (
+        sum,
+        tx,
+      ) {
+        if (tx.accountId == updated.accountId) {
+          sum += tx.type == TransactionType.income ? tx.amount : -tx.amount;
+        }
+        if (tx.type == TransactionType.transfer &&
+            tx.toAccountId == updated.accountId) {
+          sum += tx.amount;
+        }
+        return sum;
+      });
+      spendable =
+          balance -
+          goals
+              .where((g) => g.linkedAccountId == updated.accountId)
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
+    }
+    await txn.update(
+      'savings_spending_links',
+      {'spendableAmount': spendable},
+      where: 'transactionId = ?',
+      whereArgs: [updated.id],
+    );
+    final accounts = await txn.query(
+      'accounts',
+      where: 'id = ?',
+      whereArgs: [updated.accountId],
+    );
+    final credit =
+        accounts.isNotEmpty && Account.fromMap(accounts.single).isCredit;
+    var remaining = updated.type == TransactionType.income || credit
+        ? 0
+        : math.max(0, ((updated.amount - spendable) * 100).round());
+    final eligible =
+        goals
+            .where(
+              (g) =>
+                  g.linkedAccountId == updated.accountId && g.currentAmount > 0,
+            )
+            .toList()
+          ..sort((a, b) {
+            final date = a.startDate.compareTo(b.startDate);
+            return date == 0 ? a.id.compareTo(b.id) : date;
+          });
+    for (final goal in eligible) {
+      final cents = math.min(remaining, (goal.currentAmount * 100).round());
+      if (cents <= 0) continue;
+      final old = logs.where((l) => l.goalId == goal.id).firstOrNull;
+      final log = SavingsLog(
+        id: old?.id ?? const Uuid().v4(),
+        goalId: goal.id,
+        amount: -cents / 100,
+        date: updated.date,
+        note: old?.note ?? 'Automatically released for spending',
+        transactionId: updated.id,
+      );
+      await txn.insert('savings_logs', log.toMap());
+      await txn.rawUpdate(
+        'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
+        [log.amount, goal.id],
+      );
+      remaining -= cents;
+    }
+    if (remaining > 0) throw StateError('Insufficient savings for this edit');
   }
 
   // Savings Goals commands
@@ -900,8 +1061,53 @@ CREATE TABLE transactions (
     return log;
   }
 
+  Future<void> insertSavingsLogs(
+    List<SavingsLog> logs, {
+    double? spendingAmount,
+  }) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      for (final log in logs) {
+        await txn.insert('savings_logs', log.toMap());
+        final updated = await txn.rawUpdate(
+          'UPDATE savings_goals SET currentAmount = currentAmount + ? '
+          'WHERE id = ? AND ROUND((currentAmount + ?) * 100) >= 0',
+          [log.amount, log.goalId, log.amount],
+        );
+        if (updated != 1) {
+          throw StateError('Savings balance changed');
+        }
+      }
+      for (final id
+          in logs.map((l) => l.transactionId).whereType<String>().toSet()) {
+        final total = await txn.rawQuery(
+          'SELECT SUM(amount) AS amount FROM savings_logs WHERE transactionId = ?',
+          [id],
+        );
+        await txn.insert('savings_spending_links', {
+          'transactionId': id,
+          'spendableAmount': spendingAmount == null
+              ? null
+              : spendingAmount + (total.single['amount'] as num).toDouble(),
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+    });
+  }
+
   Future<void> deleteSavingsLog(SavingsLog log) async {
     final db = await instance.database;
+    final rows = await db.query(
+      'savings_logs',
+      where: 'id = ?',
+      whereArgs: [log.id],
+    );
+    if (rows.isEmpty) return;
+    final current = SavingsLog.fromMap(rows.single);
+    if (current.transactionId != null) {
+      throw StateError(
+        'Automatic releases are read only. Delete the linked transaction instead.',
+      );
+    }
     await db.transaction((txn) async {
       await txn.delete('savings_logs', where: 'id = ?', whereArgs: [log.id]);
       await txn.execute(
@@ -914,16 +1120,77 @@ CREATE TABLE transactions (
   Future<void> updateSavingsLog(SavingsLog oldLog, SavingsLog newLog) async {
     final db = await instance.database;
     await db.transaction((txn) async {
+      final rows = await txn.query(
+        'savings_logs',
+        where: 'id = ?',
+        whereArgs: [oldLog.id],
+      );
+      if (rows.isEmpty) throw StateError('Savings entry no longer exists');
+      final current = SavingsLog.fromMap(rows.single);
+      if (current.transactionId != null) {
+        throw StateError(
+          'Automatic releases are read only. Edit the linked transaction instead.',
+        );
+      }
+      final difference = newLog.amount - current.amount;
+      if (!newLog.amount.isFinite || newLog.goalId != current.goalId) {
+        throw StateError('Invalid savings edit');
+      }
+      final goals = await txn.query(
+        'savings_goals',
+        where: 'id = ?',
+        whereArgs: [current.goalId],
+      );
+      if (goals.isEmpty ||
+          (((goals.single['currentAmount'] as num).toDouble() + difference) *
+                      100)
+                  .round() <
+              0) {
+        throw StateError('Cannot release more than the saved amount');
+      }
       await txn.update(
         'savings_logs',
-        newLog.toMap(),
+        {...newLog.toMap(), 'transactionId': current.transactionId},
         where: 'id = ?',
         whereArgs: [newLog.id],
       );
-      final difference = newLog.amount - oldLog.amount;
       await txn.execute(
         'UPDATE savings_goals SET currentAmount = currentAmount + ? WHERE id = ?',
         [difference, newLog.goalId],
+      );
+    });
+  }
+
+  Future<void> rollbackSavingsRelease(String transactionId) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final transactions = await txn.query(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [transactionId],
+      );
+      if (transactions.isNotEmpty) return;
+      final logs = await txn.query(
+        'savings_logs',
+        where: 'transactionId = ?',
+        whereArgs: [transactionId],
+      );
+      for (final row in logs) {
+        final log = SavingsLog.fromMap(row);
+        await txn.rawUpdate(
+          'UPDATE savings_goals SET currentAmount = currentAmount - ? WHERE id = ?',
+          [log.amount, log.goalId],
+        );
+      }
+      await txn.delete(
+        'savings_logs',
+        where: 'transactionId = ?',
+        whereArgs: [transactionId],
+      );
+      await txn.delete(
+        'savings_spending_links',
+        where: 'transactionId = ?',
+        whereArgs: [transactionId],
       );
     });
   }

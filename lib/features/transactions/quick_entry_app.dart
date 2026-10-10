@@ -146,6 +146,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   DateTime _date = DateTime.now();
   bool _feePercentage = false;
   bool _saving = false;
+  final String _draftTransactionId = const Uuid().v4();
+  bool _showingSavingsSheet = false;
+  double? _savingsSheetHeight;
   bool _saved = false;
   String? _error;
   late final AnimationController _sheetOffset;
@@ -219,11 +222,16 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     if (box is! RenderBox || !box.hasSize) return;
     final header = _headerKey.currentContext?.findRenderObject();
     if (header is! RenderBox || !header.hasSize) return;
-    final height =
+    var height =
         (box.size.height +
                 header.size.height +
                 MediaQuery.paddingOf(context).bottom)
             .ceil();
+    if (_showingSavingsSheet && _savingsSheetHeight != null) {
+      // Leave the expense header visible behind a sheet that fits its contents.
+      final requiredHeight = (_savingsSheetHeight! + header.size.height).ceil();
+      if (requiredHeight > height) height = requiredHeight;
+    }
     final color =
         (_step == _Step.amount
                 ? AppTheme.backgroundColor(context)
@@ -293,12 +301,17 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     _suggester.cancel();
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _closing = true);
+    if (!_saved) {
+      await ref
+          .read(savingsGoalsProvider.notifier)
+          .rollbackDraftRelease(_draftTransactionId);
+    }
     _sheetOffset.stop();
     await _windowMotion.reverse();
     if (mounted) await _windowCall(method);
   }
 
-  void _back() {
+  Future<void> _back() async {
     if (_saving || _closing) return;
     switch (_step) {
       case _Step.action:
@@ -308,6 +321,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       case _Step.income:
         _go(_Step.action);
       case _Step.amount:
+        await ref
+            .read(savingsGoalsProvider.notifier)
+            .rollbackDraftRelease(_draftTransactionId);
+        if (!mounted) return;
         _go(_income == null ? _Step.type : _Step.income);
       case _Step.details:
         _go(_Step.amount);
@@ -395,7 +412,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     _go(_Step.amount);
   }
 
-  void _nextAmount() {
+  Future<void> _nextAmount() async {
     if (_saving || _saved) return;
     if (!_amount.isFinite || _amount <= 0) {
       _showError('Enter an amount greater than zero');
@@ -418,11 +435,52 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       return;
     }
     if (_income != null) {
-      _save();
-    } else {
-      _go(_Step.details);
+      await _save();
+      return;
     }
+    if (_type == TransactionType.expense) {
+      setState(() => _saving = true);
+      try {
+        await ref
+            .read(savingsGoalsProvider.notifier)
+            .rollbackDraftRelease(_draftTransactionId);
+        if (!await _confirmSavings(account, _amount, balance)) return;
+      } catch (_) {
+        if (mounted) _showError('Could not check savings. Try again.');
+        return;
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+    }
+    if (mounted) _go(_Step.details);
   }
+
+  Future<bool> _confirmSavings(
+    Account account,
+    double debit,
+    double? balance,
+  ) => confirmSavingsSpending(
+    context: context,
+    ref: ref,
+    accountId: account.id,
+    amount: debit,
+    transactionId: _draftTransactionId,
+    balance: balance,
+    barrierColor: Colors.transparent,
+    onSheetVisibilityChanged: (visible) {
+      if (!mounted) return;
+      setState(() {
+        _showingSavingsSheet = visible;
+        if (!visible) _savingsSheetHeight = null;
+      });
+      _resize();
+    },
+    onSheetHeightChanged: (height) {
+      if (!mounted) return;
+      _savingsSheetHeight = height;
+      _resize();
+    },
+  );
 
   String? _validateDetails() {
     if (!_amount.isFinite || _amount <= 0) {
@@ -439,8 +497,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       if (fee == null ||
           !fee.isFinite ||
           fee < 0 ||
-          (_feePercentage ? _amount * fee / 100 : fee) >= _amount) {
-        return 'Enter a valid fee smaller than the amount';
+          !_transferDraft.calculateTotalDebit().isFinite) {
+        return 'Enter a valid non-negative fee';
       }
     } else {
       final categories = ref.read(categoriesProvider).value ?? [];
@@ -480,30 +538,45 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       final accounts = await ref.read(accountRepositoryProvider).getAccounts();
       final account = accounts.where((a) => a.id == _accountId).firstOrNull;
       if (account == null) throw StateError('Account no longer exists');
+      final debitAmount = _transfer
+          ? _transferDraft.calculateTotalDebit(account)
+          : _amount;
       if (_type != TransactionType.income && !account.isCredit) {
         final balances = DashboardStats.calculate(
           accounts: accounts,
           transactions: transactions,
         ).accountBalances;
-        if ((balances[account.id] ?? account.initialBalance) < _amount) {
+        if ((balances[account.id] ?? account.initialBalance) < debitAmount) {
           if (mounted) {
             _showError('Insufficient balance in ${account.name}');
           }
           return;
         }
       }
-      if (_type != TransactionType.income &&
+      final currentBalance = DashboardStats.calculate(
+        accounts: accounts,
+        transactions: transactions,
+      ).accountBalances[account.id];
+      if (_type == TransactionType.expense && !account.isCredit) {
+        final goals = await ref
+            .read(savingsRepositoryProvider)
+            .getSavingsGoals();
+        final reserved = goals
+            .where((g) => g.linkedAccountId == account.id)
+            .fold<double>(0, (sum, g) => sum + g.currentAmount);
+        if ((debitAmount * 100).round() >
+            (((currentBalance ?? account.initialBalance) - reserved) * 100)
+                .round()) {
+          if (mounted) {
+            _go(_Step.amount);
+            _showError('Review this amount to release the savings needed.');
+          }
+          return;
+        }
+      }
+      if (_transfer &&
           mounted &&
-          !await confirmSavingsSpending(
-            context: context,
-            ref: ref,
-            accountId: account.id,
-            amount: _amount,
-            balance: DashboardStats.calculate(
-              accounts: accounts,
-              transactions: transactions,
-            ).accountBalances[account.id],
-          )) {
+          !await _confirmSavings(account, debitAmount, currentBalance)) {
         return;
       }
       if (_income != null) {
@@ -526,7 +599,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               date: _date,
             );
       } else if (_transfer) {
-        final built = _transferDraft.buildTransactions(sourceAccount: account);
+        final built = _transferDraft.buildTransactions(
+          sourceAccount: account,
+          existingId: _draftTransactionId,
+        );
         await ref
             .read(transactionProvider.notifier)
             .addTransfer(
@@ -538,7 +614,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             .read(transactionProvider.notifier)
             .addTransaction(
               AppTransaction(
-                id: const Uuid().v4(),
+                id: _draftTransactionId,
                 note: _note.text.trim(),
                 amount: _amount,
                 date: _date,
@@ -1444,7 +1520,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         resolvedFee != null &&
         resolvedFee.isFinite &&
         resolvedFee >= 0 &&
-        resolvedFee < _amount;
+        (_amount + resolvedFee).isFinite;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1525,10 +1601,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             value: _feePercentage,
             onChanged: (value) => setState(() => _feePercentage = value),
           ),
+          _line('Amount received', format.format(_amount)),
           _line(
-            'Amount received',
+            'Total deducted',
             validFee
-                ? format.format(_amount - resolvedFee)
+                ? format.format(_amount + resolvedFee)
                 : 'Enter a valid fee',
           ),
           const SizedBox(height: 12),

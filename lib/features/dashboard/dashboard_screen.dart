@@ -417,6 +417,7 @@ class DashboardScreen extends ConsumerWidget {
     Currency currency,
   ) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
+    final displayedBalances = ref.watch(dashboardAccountBalancesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +455,7 @@ class DashboardScreen extends ConsumerWidget {
                     return _buildAddAccountCard(context, ref);
                   }
                   final account = stats.accounts[index];
-                  final balance = stats.accountBalances[account.id] ?? 0;
+                  final balance = displayedBalances[account.id] ?? 0;
                   return PressableScale(
                     onTap: () {
                       HapticService.light();

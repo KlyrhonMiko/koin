@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 
@@ -353,7 +352,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   Widget _buildSectionLabel(BuildContext context, String label) {
     return Text(
       label,
-      style: GoogleFonts.outfit(
+      style: TextStyle(
+        fontFamily: KoinTypography.fontFamily,
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: AppTheme.textLightColor(context),
