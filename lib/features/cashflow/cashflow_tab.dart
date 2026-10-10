@@ -123,91 +123,28 @@ class CashflowScheduleTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Align(
-            alignment: const Alignment(0, -0.25),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(36),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        AppTheme.boxShadow(
-                          context,
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.1),
-                          blurRadius: 40,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _isIncome
-                          ? Icons.account_balance_wallet_rounded
-                          : Icons.event_repeat_rounded,
-                      size: 56,
-                      color: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _isIncome ? 'No recurring incomes' : 'No subscriptions',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.sectionTitle,
-                      fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: KoinTypography.headingTracking,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isIncome
-                        ? 'Add regular income streams like salary\nor freelance retainers'
-                        : 'Add recurring payments to track\nyour future obligations',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: KoinTypography.compact,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-                  KoinPrimaryButton(
-                    label: _isIncome
-                        ? 'Add Your First Recurring Income'
-                        : 'Add Your First Subscription',
-                    icon: Icons.add_rounded,
-                    onPressed: () {
-                      HapticService.medium();
-                      Navigator.push(
-                        context,
-                        SlideUpRoute(
-                          page: AddEditCashflowScreen(initialType: type),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildEmptyState(BuildContext context) => KoinEmptyState.sliver(
+    icon: _isIncome
+        ? Icons.account_balance_wallet_rounded
+        : Icons.event_repeat_rounded,
+    title: _isIncome ? 'No recurring incomes' : 'No subscriptions',
+    subtitle: _isIncome
+        ? 'Add regular income streams like salary or freelance retainers'
+        : 'Add recurring payments to track your future obligations',
+    action: KoinPrimaryButton(
+      label: _isIncome
+          ? 'Add Recurring Income'
+          : 'Add Subscription',
+      icon: Icons.add_rounded,
+      onPressed: () {
+        HapticService.medium();
+        Navigator.push(
+          context,
+          SlideUpRoute(page: AddEditCashflowScreen(initialType: type)),
+        );
+      },
+    ),
+  );
 
   Widget _buildCard(
     BuildContext context,

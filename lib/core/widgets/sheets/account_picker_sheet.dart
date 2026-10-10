@@ -4,6 +4,7 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
+import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/theme.dart';
 import '../cards/account_item.dart';
 import 'select_sheet.dart';
@@ -22,13 +23,14 @@ Future<String?> showAccountPickerSheet({
   bool allowNone = false,
   String noneLabel = 'No Account (Balance only)',
   String noneValue = '',
+  bool useSpendableBalance = false,
+  Map<String, double>? balancesOverride,
 }) async {
   final rawAccounts =
       accountsOverride ?? (ref.read(accountProvider).value ?? []);
   final accounts = excludeAccountId == null
       ? rawAccounts
       : rawAccounts.where((a) => a.id != excludeAccountId).toList();
-  final stats = ref.read(dashboardStatsProvider);
   final currency = ref.read(settingsProvider).currency;
   final totalCount = allowNone ? accounts.length + 1 : accounts.length;
 
@@ -61,11 +63,36 @@ Future<String?> showAccountPickerSheet({
             (a) => a.id == accounts[accIndex].id,
             orElse: () => accounts[accIndex],
           );
-          final balance = stats.accountBalances[acc.id] ?? 0.0;
+          final balance =
+              balancesOverride?[acc.id] ??
+              refConsumer
+                  .watch(dashboardStatsProvider)
+                  .accountBalances[acc.id] ??
+              acc.initialBalance;
+          final goals = refConsumer.watch(savingsGoalsProvider).value ?? [];
+          final savings = goals
+              .where(
+                (g) =>
+                    g.linkedAccountId == acc.id &&
+                    g.currentAmount > 0 &&
+                    (useSpendableBalance || !g.includeInDashboardBalance),
+              )
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
+          final displayBalance = acc.isCredit
+              ? balance
+              : balance - savings.clamp(0, balance.clamp(0, double.infinity));
 
           return AccountItem(
             account: acc,
-            balance: balance,
+            balance: displayBalance,
+            savingsAmount: goals
+                .where(
+                  (g) =>
+                      g.linkedAccountId == acc.id &&
+                      g.includeInDashboardBalance &&
+                      g.currentAmount > 0,
+                )
+                .fold<double>(0, (sum, g) => sum + g.currentAmount),
             currencySymbol: currency.symbol,
             isSelected: acc.id == selectedAccountId,
             onTap: () => Navigator.pop(sheetContext, acc.id),

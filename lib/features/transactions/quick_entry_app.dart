@@ -492,6 +492,20 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           return;
         }
       }
+      if (_type != TransactionType.income &&
+          mounted &&
+          !await confirmSavingsSpending(
+            context: context,
+            ref: ref,
+            accountId: account.id,
+            amount: _amount,
+            balance: DashboardStats.calculate(
+              accounts: accounts,
+              transactions: transactions,
+            ).accountBalances[account.id],
+          )) {
+        return;
+      }
       if (_income != null) {
         final schedules = await ref
             .read(plannedPaymentRepositoryProvider)
@@ -1048,16 +1062,40 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         : ref.watch(dashboardStatsProvider).accountBalances[account.id] ??
               account.initialBalance;
     final format = NumberFormat('#,##0.##');
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
+    final reserved =
+        account == null || account.isCredit || _type == TransactionType.income
+        ? 0.0
+        : goals
+              .where((g) => g.linkedAccountId == account.id)
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
+    final displayBalance = balance == null
+        ? null
+        : (balance - reserved).clamp(0, double.infinity);
+    final visibleSavings = account == null
+        ? 0.0
+        : goals
+              .where(
+                (g) =>
+                    g.linkedAccountId == account.id &&
+                    g.includeInDashboardBalance &&
+                    g.currentAmount > 0,
+              )
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
     return Padding(
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SelectionTile(
-            label: _transfer ? 'From account' : 'Account',
+            label: reserved > 0
+                ? (visibleSavings > 0
+                      ? 'Spendable · ${currency.symbol}${format.format(visibleSavings)} in savings'
+                      : 'Spendable')
+                : (_transfer ? 'From account' : 'Account'),
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${currency.symbol}${format.format(balance)}',
+                : '${account.name} • ${currency.symbol}${format.format(displayBalance)}',
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
@@ -1154,7 +1192,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         ),
         data: (all) {
           final choices = all.where((c) => c.type == _type).toList();
-          if (choices.isEmpty) return const Text('No categories available');
+          if (choices.isEmpty) {
+            return const KoinEmptyState(
+              icon: Icons.category_outlined,
+              title: 'No categories available',
+              subtitle: 'Create a category to use it here',
+            );
+          }
           return Column(
             children: [
               for (final category in choices)
@@ -1186,6 +1230,23 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }) {
     final balances = ref.watch(dashboardStatsProvider).accountBalances;
     final currency = ref.watch(settingsProvider).currency;
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
+    double displayBalance(Account account) {
+      final balance = balances[account.id] ?? account.initialBalance;
+      final savings = account.isCredit
+          ? 0.0
+          : goals
+                .where(
+                  (g) =>
+                      g.linkedAccountId == account.id &&
+                      g.currentAmount > 0 &&
+                      ((!destination && _type != TransactionType.income) ||
+                          !g.includeInDashboardBalance),
+                )
+                .fold<double>(0, (sum, g) => sum + g.currentAmount);
+      return balance - savings.clamp(0, balance.clamp(0, double.infinity));
+    }
+
     return accounts.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, _) => TextButton(
@@ -1197,7 +1258,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             ? (destination ? _accountId : _destinationId)
             : null;
         final choices = all.where((a) => a.id != excluded).toList();
-        if (choices.isEmpty) return const Text('No accounts available');
+        if (choices.isEmpty) {
+          return const KoinEmptyState(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'No accounts available',
+            subtitle: 'Add an account in Portfolio to use it here',
+          );
+        }
         return Column(
           children: [
             for (final account in choices)
@@ -1206,7 +1273,15 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 child: AccountItem(
                   account: account,
                   animateBalance: false,
-                  balance: balances[account.id] ?? account.initialBalance,
+                  balance: displayBalance(account),
+                  savingsAmount: goals
+                      .where(
+                        (g) =>
+                            g.linkedAccountId == account.id &&
+                            g.includeInDashboardBalance &&
+                            g.currentAmount > 0,
+                      )
+                      .fold<double>(0, (sum, g) => sum + g.currentAmount),
                   currencySymbol: currency.symbol,
                   isSelected:
                       account.id == (destination ? _destinationId : _accountId),
@@ -1305,8 +1380,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               .where((p) => p.type == TransactionType.income)
               .toList();
           if (incomes.isEmpty) {
-            return const Text(
-              'No saved recurring income yet. Set up an income in Portfolio → Incomes first.',
+            return const KoinEmptyState(
+              icon: Icons.payments_outlined,
+              title: 'No saved recurring income yet',
+              subtitle: 'Set up an income in Portfolio → Incomes first',
             );
           }
           return Column(

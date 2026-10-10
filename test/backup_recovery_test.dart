@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
+import 'package:koin/core/models/savings/savings_goal.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
 import 'package:koin/core/maintenance/external_backup.dart';
 import 'package:koin/core/maintenance/maintenance_manager.dart';
@@ -221,6 +222,50 @@ void main() {
     tearDown(() async {
       await helper.close();
     });
+
+    test(
+      'version 35 migration preserves goals and backs up dashboard preferences',
+      () async {
+        var db = await helper.database;
+        await helper.insertSavingsGoal(
+          SavingsGoal(
+            id: 'saved',
+            name: 'Saved',
+            startDate: DateTime(2026),
+            currentAmount: 250,
+            isStash: true,
+          ),
+        );
+        await db.execute(
+          'ALTER TABLE savings_goals DROP COLUMN includeInDashboardBalance',
+        );
+        await db.setVersion(35);
+        await helper.close();
+        db = await helper.database;
+        expect(await db.getVersion(), 36);
+        final migrated = (await helper.getSavingsGoals()).single;
+        expect(migrated.currentAmount, 250);
+        expect(migrated.includeInDashboardBalance, true);
+        await helper.updateSavingsGoal(
+          migrated.copyWith(includeInDashboardBalance: false),
+        );
+        final snapshot = '${root.path}/dashboard_option.db';
+        await DatabaseSnapshot.create(db, snapshot);
+        await DatabaseSnapshot.validate(snapshot);
+        final copy = await openDatabase(
+          snapshot,
+          readOnly: true,
+          singleInstance: false,
+        );
+        expect(
+          (await copy.query(
+            'savings_goals',
+          )).single['includeInDashboardBalance'],
+          0,
+        );
+        await copy.close();
+      },
+    );
 
     test(
       'snapshot includes WAL data and legacy fallback preserves history triggers',

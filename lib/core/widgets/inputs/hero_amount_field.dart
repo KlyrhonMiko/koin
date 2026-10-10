@@ -13,6 +13,8 @@ class HeroAmountField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final String hintText;
   final bool autoFocus;
+  final Key? fieldKey;
+  final FormFieldValidator<String>? validator;
 
   const HeroAmountField({
     super.key,
@@ -22,6 +24,8 @@ class HeroAmountField extends StatelessWidget {
     this.onChanged,
     this.hintText = '0',
     this.autoFocus = false,
+    this.fieldKey,
+    this.validator,
   });
 
   @override
@@ -48,42 +52,48 @@ class HeroAmountField extends StatelessWidget {
                     color: primaryColor.withValues(alpha: 0.5),
                   ),
                 ),
-                IntrinsicWidth(
-                  child: TextFormField(
-                    controller: controller,
-                    autofocus: autoFocus,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: KoinTypography.inputAmount,
-                      fontWeight: KoinTypography.headingWeight,
-                      color: !isNotEmpty
-                          ? primaryColor.withValues(alpha: 0.35)
-                          : primaryColor,
-                      letterSpacing: -2,
-                      height: KoinTypography.amountHeight,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: hintText,
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      fillColor: Colors.transparent,
-                      filled: true,
-                      contentPadding: EdgeInsets.zero,
-                      hintStyle: TextStyle(
-                        color: AppTheme.hasEditorAppearance(context)
-                            ? AppTheme.textLightColor(context)
-                            : primaryColor.withValues(alpha: 0.35),
+                Flexible(
+                  child: IntrinsicWidth(
+                    child: TextFormField(
+                      key: fieldKey,
+                      controller: controller,
+                      validator: validator,
+                      textInputAction: TextInputAction.done,
+                      autofocus: autoFocus,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: KoinTypography.inputAmount,
+                        fontWeight: KoinTypography.headingWeight,
+                        color: !isNotEmpty
+                            ? primaryColor.withValues(alpha: 0.35)
+                            : primaryColor,
+                        letterSpacing: -2,
+                        height: KoinTypography.amountHeight,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        errorMaxLines: 3,
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        fillColor: Colors.transparent,
+                        filled: true,
+                        contentPadding: EdgeInsets.zero,
+                        hintStyle: TextStyle(
+                          color: AppTheme.hasEditorAppearance(context)
+                              ? AppTheme.textLightColor(context)
+                              : primaryColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      onChanged: (text) {
+                        onChanged?.call(text);
+                      },
                     ),
-                    onChanged: (text) {
-                      onChanged?.call(text);
-                    },
                   ),
                 ),
               ],

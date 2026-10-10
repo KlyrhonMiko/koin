@@ -54,6 +54,9 @@ void main() {
         final providers = ProviderContainer(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            savingsRepositoryProvider.overrideWithValue(
+              InMemorySavingsAdapter(),
+            ),
             debtRepositoryProvider.overrideWithValue(repository),
             ledgerProvider.overrideWithValue(
               FakeHistoryLedger(repository, failDeletion),
@@ -80,9 +83,14 @@ void main() {
         await tester.pumpAndSettle();
         final payment = find.byWidgetPredicate(
           (widget) =>
-              widget is SwipeToDeleteTile && widget.key == const Key('payment'),
+              widget is SwipeToDeleteTile &&
+              widget.key == const Key('dismiss_repayment_payment'),
         );
-        await tester.ensureVisible(payment);
+        await tester.scrollUntilVisible(
+          payment,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.pumpAndSettle();
         expect(find.text('Credit Activity'), findsOneWidget);
         await tester.drag(payment, const Offset(-600, 0));
@@ -98,6 +106,11 @@ void main() {
           expect(find.text('No payments yet'), findsOneWidget);
           expect(payment, findsNothing);
           expect(find.text('0'), findsWidgets);
+          final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
+          final content = tester.getRect(
+            find.byKey(const ValueKey('activity_empty_content')),
+          );
+          expect(content.center.dy, closeTo(emptyArea.center.dy, 1));
         }
         expect(tester.takeException(), isNull);
         expect(tester.binding.transientCallbackCount, 0);

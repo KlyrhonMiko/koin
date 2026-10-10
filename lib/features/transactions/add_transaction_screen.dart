@@ -52,6 +52,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Color _currentColor = const Color(0xFFFF6B6B);
 
   bool _initializedColors = false;
+  bool _savingTransaction = false;
 
   @override
   void initState() {
@@ -222,7 +223,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
-  void _saveTransaction() {
+  void _saveTransaction() async {
+    if (_savingTransaction) return;
+    _savingTransaction = true;
+    try {
+      await _saveTransactionImpl();
+    } catch (_) {
+      if (mounted) {
+        _showErrorSnackbar(
+          'Could not save transaction',
+          subtitle: 'Please try again',
+        );
+      }
+    } finally {
+      _savingTransaction = false;
+    }
+  }
+
+  Future<void> _saveTransactionImpl() async {
     final isTransfer = _selectedType == TransactionType.transfer;
 
     if (_amountController.text.isEmpty ||
@@ -268,6 +286,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         return;
       }
     }
+
+    if (_selectedType != TransactionType.income &&
+        mounted &&
+        !await confirmSavingsSpending(
+          context: context,
+          ref: ref,
+          accountId: _selectedAccountId!,
+          amount: amount,
+          previousDebit:
+              widget.editingTransaction?.accountId == _selectedAccountId &&
+                  widget.editingTransaction?.type != TransactionType.income
+              ? widget.editingTransaction!.amount
+              : 0,
+        )) {
+      return;
+    }
+    if (!mounted) return;
 
     if (isTransfer) {
       final accounts = ref.read(accountProvider).value ?? [];
@@ -365,7 +400,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     // Saved history trains the model through database change tracking.
     // Sending separate feedback here would count the transaction twice.
     if (widget.editingTransaction != null) {
-      ref
+      await ref
           .read(transactionProvider.notifier)
           .updateTransaction(
             newTransaction.copyWith(
@@ -374,22 +409,26 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
           );
       if (feeTransaction != null) {
-        ref.read(transactionProvider.notifier).addTransaction(feeTransaction);
+        await ref
+            .read(transactionProvider.notifier)
+            .addTransaction(feeTransaction);
       }
     } else {
       if (isTransfer) {
-        ref
+        await ref
             .read(transactionProvider.notifier)
             .addTransfer(
               transferTransaction: newTransaction,
               feeTransaction: feeTransaction,
             );
       } else {
-        ref.read(transactionProvider.notifier).addTransaction(newTransaction);
+        await ref
+            .read(transactionProvider.notifier)
+            .addTransaction(newTransaction);
       }
     }
     HapticService.success();
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   void _showErrorSnackbar(String message, {String? subtitle}) {
@@ -1444,6 +1483,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             context,
             all,
             title: 'Destination',
+            destination: true,
             subtitle: 'Choose where the money arrives',
             selectedId: _selectedToAccountId,
             excludeAccountId: _selectedAccountId,
@@ -1483,6 +1523,28 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     ref.watch(dashboardStatsProvider);
     final account = _accountById(accounts.value ?? [], _selectedAccountId);
     final balance = account == null ? null : _availableBalance(account);
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
+    final reserved =
+        account == null ||
+            account.isCredit ||
+            _selectedType == TransactionType.income
+        ? 0.0
+        : goals
+              .where((g) => g.linkedAccountId == account.id)
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
+    final displayBalance = balance == null
+        ? null
+        : (balance - reserved).clamp(0, double.infinity);
+    final visibleSavings = account == null
+        ? 0.0
+        : goals
+              .where(
+                (g) =>
+                    g.linkedAccountId == account.id &&
+                    g.includeInDashboardBalance &&
+                    g.currentAmount > 0,
+              )
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
     final label = _selectedType == TransactionType.transfer
         ? 'From account'
         : 'Account';
@@ -1498,10 +1560,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           SelectionTile(
             asCard: false,
             fallbackIcon: Icons.account_balance_wallet_outlined,
-            label: label,
+            label: reserved > 0
+                ? (visibleSavings > 0
+                      ? 'Spendable · ${currency.symbol}${NumberFormat('#,##0.##').format(visibleSavings)} in savings'
+                      : 'Spendable')
+                : label,
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(balance)}',
+                : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(displayBalance)}',
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
@@ -1580,6 +1646,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     required String? selectedId,
     required void Function(String?) onSelected,
     String? excludeAccountId,
+    bool destination = false,
   }) async {
     final id = await showAccountPickerSheet(
       context: context,
@@ -1590,6 +1657,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       accountsOverride: accounts,
       excludeAccountId: excludeAccountId,
       emptyMessage: 'No other accounts available',
+      useSpendableBalance:
+          !destination && _selectedType != TransactionType.income,
+      balancesOverride: !destination
+          ? {
+              for (final account in accounts)
+                account.id: _availableBalance(account),
+            }
+          : null,
     );
     if (id != null && mounted) {
       onSelected(id);

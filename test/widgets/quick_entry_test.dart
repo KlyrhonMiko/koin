@@ -33,6 +33,7 @@ void main() {
       overrides: [
         categorySuggesterProvider.overrideWithValue(suggester),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        savingsRepositoryProvider.overrideWithValue(InMemorySavingsAdapter()),
         ledgerProvider.overrideWithValue(InMemoryLedgerAdapter()),
         accountRepositoryProvider.overrideWithValue(
           InMemoryAccountAdapter(
@@ -298,6 +299,108 @@ void main() {
       },
     );
   }
+  testWidgets('account selector separates spendable funds from savings', (
+    tester,
+  ) async {
+    final accounts = await providers.read(accountProvider.future);
+    await providers
+        .read(accountProvider.notifier)
+        .updateAccount(
+          accounts
+              .firstWhere((a) => a.id == 'cash')
+              .copyWith(initialBalance: 263),
+        );
+    await providers.read(savingsGoalsProvider.future);
+    await providers
+        .read(savingsGoalsProvider.notifier)
+        .addGoal(
+          SavingsGoal(
+            id: 'reserved',
+            name: 'End of Year',
+            startDate: DateTime(2026),
+            linkedAccountId: 'cash',
+            currentAmount: 200,
+            isStash: true,
+          ),
+        );
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await tap(tester, 'Select account');
+    final cashCard = find.byWidgetPredicate(
+      (widget) => widget is AccountItem && widget.account.id == 'cash',
+    );
+    expect(tester.widget<AccountItem>(cashCard).balance, 63);
+    final symbol = providers.read(settingsProvider).currency.symbol;
+    expect(find.text('${symbol}200 in savings'), findsOneWidget);
+    await tap(tester, 'Cash');
+    final label = find.text('Spendable · ${symbol}200 in savings');
+    expect(label, findsOneWidget);
+    expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+    expect(find.text('Cash • ${symbol}263'), findsNothing);
+    final compactHeight = tester
+        .getSize(find.ancestor(of: label, matching: find.byType(SelectionTile)))
+        .height;
+    final goal = (await providers.read(savingsGoalsProvider.future)).single;
+    await providers
+        .read(savingsGoalsProvider.notifier)
+        .updateGoal(goal.copyWith(includeInDashboardBalance: false));
+    await tester.pumpAndSettle();
+    expect(find.text('Spendable'), findsOneWidget);
+    expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+    expect(label, findsNothing);
+    await providers
+        .read(savingsGoalsProvider.notifier)
+        .updateGoal(goal.copyWith(currentAmount: 0));
+    await tester.pumpAndSettle();
+    final normalHeight = tester
+        .getSize(
+          find.ancestor(
+            of: find.text('Account'),
+            matching: find.byType(SelectionTile),
+          ),
+        )
+        .height;
+    expect(compactHeight, closeTo(normalHeight, 1));
+    await providers.read(savingsGoalsProvider.notifier).updateGoal(goal);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providers,
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => showAccountPickerSheet(
+                  context: context,
+                  ref: ref,
+                  selectedAccountId: 'cash',
+                  useSpendableBalance: true,
+                ),
+                child: const Text('Open picker'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tap(tester, 'Open picker');
+    expect(tester.widget<AccountItem>(cashCard).balance, 63);
+    expect(find.text('${symbol}200 in savings'), findsOneWidget);
+    await providers
+        .read(savingsGoalsProvider.notifier)
+        .updateGoal(goal.copyWith(includeInDashboardBalance: false));
+    await tester.pumpAndSettle();
+    expect(find.text('${symbol}200 in savings'), findsNothing);
+    expect(tester.widget<AccountItem>(cashCard).balance, 63);
+    await providers
+        .read(savingsGoalsProvider.notifier)
+        .updateGoal(goal.copyWith(currentAmount: 100));
+    await tester.pumpAndSettle();
+    expect(tester.widget<AccountItem>(cashCard).balance, 163);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'custom expense starts with amount and saves directly from details',
     (tester) async {

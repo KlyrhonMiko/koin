@@ -94,68 +94,24 @@ class UpcomingScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyUpcoming(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: KoinSpacing.screenInset,
-        ),
-        child: PressableScale(
-          onTap: () {
-            HapticService.medium();
-            Navigator.push(
-              context,
-              SlideUpRoute(
-                page: const AddEditCashflowScreen(
-                  initialType: TransactionType.expense,
-                ),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.event_repeat_rounded,
-                  size: 32,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.3),
-                ),
-                const Gap(12),
-                Text(
-                  'No upcoming payments',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontWeight: KoinTypography.labelWeight,
-                    fontSize: KoinTypography.compact,
-                  ),
-                ),
-                const Gap(4),
-                Text(
-                  'Tap to add your first subscription',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                    fontSize: KoinTypography.small,
-                  ),
-                ),
-              ],
+  Widget _buildEmptyUpcoming(BuildContext context) => KoinEmptyState(
+    fullScreen: true,
+    icon: Icons.event_repeat_rounded,
+    title: 'No upcoming payments',
+    subtitle: 'Add your first subscription to see it here',
+    action: TextButton(
+      onPressed: () {
+        HapticService.medium();
+        Navigator.push(
+          context,
+          SlideUpRoute(
+            page: const AddEditCashflowScreen(
+              initialType: TransactionType.expense,
             ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      },
+      child: const Text('Add subscription'),
+    ),
+  );
 }

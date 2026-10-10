@@ -312,7 +312,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     return KoinEmptyState.sliver(
-      alignment: const Alignment(0, -0.3),
       icon: Icons.account_balance_wallet_outlined,
       title: 'No categories yet',
       subtitle: 'Create categories first to set budgets',

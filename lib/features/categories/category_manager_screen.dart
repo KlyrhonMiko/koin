@@ -203,106 +203,24 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
 
   Widget _buildEmptyState(BuildContext context, TransactionType type) {
     final isExpense = type == TransactionType.expense;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              shape: BoxShape.circle,
-              boxShadow: [
-                AppTheme.boxShadow(
-                  context,
-                  color:
-                      (isExpense
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.incomeColor(context))
-                          .withValues(alpha: 0.08),
-                  blurRadius: 40,
-                  spreadRadius: 8,
-                ),
-              ],
-            ),
-            child: Icon(
-              isExpense ? Icons.category_outlined : Icons.add_chart_rounded,
-              size: 52,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-            ),
-          ),
-          const Gap(KoinSpacing.sectionGap),
-          Text(
-            isExpense ? 'No expense categories' : 'No income categories',
-            style: TextStyle(
-              color: AppTheme.textColor(context),
-              fontSize: KoinTypography.sectionTitle,
-              letterSpacing: KoinTypography.headingTracking,
-              fontWeight: KoinTypography.headingWeight,
-            ),
-          ),
-          const Gap(8),
-          Text(
-            'Create your first ${isExpense ? 'expense' : 'income'} category',
-            style: TextStyle(
-              color: AppTheme.textLightColor(context),
-              fontSize: KoinTypography.compact,
-            ),
-          ),
-          const Gap(KoinSpacing.sectionGap),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: isExpense
-                  ? AppTheme.dangerGradient
-                  : AppTheme.successGradient,
-              boxShadow: [
-                AppTheme.boxShadow(
-                  context,
-                  color:
-                      (isExpense
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.incomeColor(context))
-                          .withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                HapticService.medium();
-                Navigator.push(
-                  context,
-                  SlideUpRoute(
-                    page: CategoryDetailScreen(
-                      category: null,
-                      initialType: type,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text(
-                'Create ${isExpense ? 'Expense' : 'Income'}',
-                style: const TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return KoinEmptyState(
+      fullScreen: true,
+      icon: isExpense ? Icons.category_outlined : Icons.add_chart_rounded,
+      title: isExpense ? 'No expense categories' : 'No income categories',
+      subtitle:
+          'Create your first ${isExpense ? 'expense' : 'income'} category',
+      action: KoinPrimaryButton(
+        label: 'Create ${isExpense ? 'Expense' : 'Income'}',
+        icon: Icons.add_rounded,
+        onPressed: () {
+          HapticService.medium();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: CategoryDetailScreen(initialType: type)),
+          );
+        },
       ),
-    ).animate().fade(duration: 400.ms).scale(begin: const Offset(0.95, 0.95));
+    );
   }
 }
 

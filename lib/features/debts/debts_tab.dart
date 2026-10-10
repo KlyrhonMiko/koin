@@ -59,7 +59,7 @@ class DebtsTab extends ConsumerWidget {
                   },
                   icon: const Icon(Icons.add_rounded, color: Colors.white),
                   label: const Text(
-                    'Add Your First Account',
+                    'Add Account',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: KoinTypography.titleWeight,

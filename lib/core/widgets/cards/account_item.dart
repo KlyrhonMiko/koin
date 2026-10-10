@@ -12,6 +12,7 @@ import 'package:koin/core/widgets/primitives/pressable_scale.dart';
 class AccountItem extends StatelessWidget {
   final Account account;
   final double balance;
+  final double savingsAmount;
   final String currencySymbol;
   final VoidCallback onTap;
   final VoidCallback? onPrivateToggle;
@@ -25,6 +26,7 @@ class AccountItem extends StatelessWidget {
     super.key,
     required this.account,
     required this.balance,
+    this.savingsAmount = 0,
     required this.currencySymbol,
     required this.onTap,
     this.onPrivateToggle,
@@ -189,7 +191,7 @@ class AccountItem extends StatelessWidget {
                     ),
                     const Gap(16),
 
-                    // ── Name + Balance (two lines) ──
+                    // ── Name + Balance ──
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,6 +253,21 @@ class AccountItem extends StatelessWidget {
                                     letterSpacing: KoinTypography.itemTracking,
                                   ),
                                 ),
+                          if (savingsAmount > 0 && !isPrivate) ...[
+                            const Gap(2),
+                            Text(
+                              '$currencySymbol${NumberFormat('#,##0.##').format(savingsAmount)} in savings',
+                              style: TextStyle(
+                                fontSize: KoinTypography.small,
+                                height: 1.1,
+                                color: colored
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : AppTheme.textLightColor(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),

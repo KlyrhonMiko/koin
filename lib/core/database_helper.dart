@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 35,
+      version: 36,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -307,6 +307,16 @@ CREATE TABLE debt_items (
         // Column might already exist
       }
     }
+    if (oldVersion < 36) {
+      final columns = await db.rawQuery('PRAGMA table_info(savings_goals)');
+      if (!columns.any(
+        (column) => column['name'] == 'includeInDashboardBalance',
+      )) {
+        await db.execute(
+          'ALTER TABLE savings_goals ADD COLUMN includeInDashboardBalance INTEGER NOT NULL DEFAULT 1',
+        );
+      }
+    }
   }
 
   Future<void> _createCategorizationFeedbackTable(Database db) async {
@@ -454,7 +464,8 @@ CREATE TABLE savings_goals (
   endDate $textType,
   notes TEXT,
   linkedAccountId TEXT,
-  isStash INTEGER DEFAULT 0
+  isStash INTEGER DEFAULT 0,
+  includeInDashboardBalance INTEGER NOT NULL DEFAULT 1
 )
 ''');
 

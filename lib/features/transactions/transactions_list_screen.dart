@@ -38,118 +38,23 @@ class TransactionsListScreen extends ConsumerWidget {
             child: transactionsAsync.when(
               data: (transactions) {
                 if (transactions.isEmpty) {
-                  return CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Align(
-                          alignment: const Alignment(
-                            0,
-                            -0.3,
-                          ), // Shifted up further from -0.2 to -0.3
-                          child: Column(
-                            mainAxisSize:
-                                MainAxisSize.min, // Keep column compact
-                            children:
-                                [
-                                      Container(
-                                        padding: const EdgeInsets.all(36),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.surfaceColor(context),
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            AppTheme.boxShadow(
-                                              context,
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.1),
-                                              blurRadius: 40,
-                                              spreadRadius: 10,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          Icons.receipt_long_rounded,
-                                          size: 56,
-                                          color: AppTheme.primaryColor(
-                                            context,
-                                          ).withValues(alpha: 0.6),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-                                      Text(
-                                        filter.isEmpty
-                                            ? 'No recent activity'
-                                            : 'No results found',
-                                        style: TextStyle(
-                                          color: AppTheme.textColor(context),
-                                          fontSize: KoinTypography.sectionTitle,
-                                          fontWeight:
-                                              KoinTypography.headingWeight,
-                                          letterSpacing:
-                                              KoinTypography.headingTracking,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        filter.isEmpty
-                                            ? 'Transactions will appear here once added'
-                                            : 'Try adjusting your search or filters',
-                                        style: TextStyle(
-                                          color: AppTheme.textLightColor(
-                                            context,
-                                          ).withValues(alpha: 0.6),
-                                          fontSize: KoinTypography.compact,
-                                        ),
-                                      ),
-                                      if (!filter.isEmpty) ...[
-                                        const SizedBox(height: 32),
-                                        PressableScale(
-                                          onTap: () {
-                                            HapticService.medium();
-                                            filterNotifier.clearFilters();
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal:
-                                                  KoinSpacing.screenInset,
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                            ),
-                                            child: Text(
-                                              'Clear all filters',
-                                              style: TextStyle(
-                                                color: AppTheme.primaryColor(
-                                                  context,
-                                                ),
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ]
-                                    .animate(interval: 40.ms)
-                                    .fade(
-                                      duration: 250.ms,
-                                      curve: Curves.easeOutCubic,
-                                    )
-                                    .scale(
-                                      begin: const Offset(0.95, 0.95),
-                                      duration: 250.ms,
-                                      curve: Curves.easeOutCubic,
-                                    ),
+                  return KoinEmptyState.sliver(
+                    icon: Icons.receipt_long_rounded,
+                    title: filter.isEmpty
+                        ? 'No recent activity'
+                        : 'No results found',
+                    subtitle: filter.isEmpty
+                        ? 'Transactions will appear here once added'
+                        : 'Try adjusting your search or filters',
+                    action: filter.isEmpty
+                        ? null
+                        : TextButton(
+                            onPressed: () {
+                              HapticService.medium();
+                              filterNotifier.clearFilters();
+                            },
+                            child: const Text('Clear all filters'),
                           ),
-                        ),
-                      ),
-                    ],
                   );
                 }
 

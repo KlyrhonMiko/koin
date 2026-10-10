@@ -7,6 +7,7 @@ import 'package:koin/core/core.dart';
 /// Modal bottom sheet for logging or editing a [SavingsLog] against a [SavingsGoal].
 class SavingsLogSheet extends ConsumerStatefulWidget {
   final SavingsGoal goal;
+  final bool release;
   final SavingsLog? log;
   final Account? linkedAccount;
   final double? linkedBalance;
@@ -15,6 +16,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
   const SavingsLogSheet({
     super.key,
     required this.goal,
+    this.release = false,
     this.log,
     this.linkedAccount,
     this.linkedBalance,
@@ -24,6 +26,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
   static Future<void> show({
     required BuildContext context,
     required SavingsGoal goal,
+    bool release = false,
     SavingsLog? log,
     Account? linkedAccount,
     double? linkedBalance,
@@ -36,6 +39,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => SavingsLogSheet(
         goal: goal,
+        release: release,
         log: log,
         linkedAccount: linkedAccount,
         linkedBalance: linkedBalance,
@@ -51,32 +55,96 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
 class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
   late String _currentExpression;
   late String _evaluatedResult;
+  bool _saving = false;
+  String? _saveError;
+
+  bool get _isRelease => widget.release || (widget.log?.amount ?? 0) < 0;
+
+  double? _availableBalance() {
+    if (_isRelease) {
+      final current =
+          ref
+              .read(savingsGoalsProvider)
+              .value
+              ?.where((g) => g.id == widget.goal.id)
+              .firstOrNull ??
+          widget.goal;
+      return current.currentAmount - (widget.log?.amount ?? 0);
+    }
+    final accountId = widget.goal.linkedAccountId;
+    if (accountId == null) return null;
+    final available = ref.read(savingsAvailableBalanceProvider(accountId));
+    return available == null ? null : available + (widget.log?.amount ?? 0);
+  }
 
   @override
   void initState() {
     super.initState();
     _currentExpression = widget.log != null
-        ? widget.log!.amount.toString().replaceFirst(RegExp(r'\.0$'), '')
+        ? widget.log!.amount.abs().toString().replaceFirst(RegExp(r'\.0$'), '')
         : '';
-    _evaluatedResult = widget.log != null ? widget.log!.amount.toString() : '0';
+    _evaluatedResult = widget.log != null
+        ? widget.log!.amount.abs().toString()
+        : '0';
   }
 
   void _submit() async {
+    if (_saving) return;
     final amount = double.tryParse(_evaluatedResult);
-    if (amount != null && amount > 0) {
-      if (widget.log == null &&
-          widget.linkedAccount != null &&
-          widget.linkedBalance != null &&
-          amount > widget.linkedBalance!) {
-        HapticService.error();
-        return;
-      }
-      await widget.onSave(amount);
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    } else {
+    final available = _availableBalance();
+    String? error;
+    if (amount == null || !amount.isFinite || amount <= 0) {
+      error = 'Enter a valid savings amount';
+    } else if (_isRelease &&
+        (amount * 100).round() > ((available ?? 0) * 100).round()) {
+      error = 'You cannot release more than the saved amount';
+    } else if (!_isRelease &&
+        widget.goal.linkedAccountId != null &&
+        (widget.log == null || amount > widget.log!.amount) &&
+        (available == null ||
+            (amount * 100).round() > (available * 100).round())) {
+      error = available == null
+          ? 'Account balance is unavailable. Try again'
+          : 'Insufficient available balance in the linked account';
+    }
+    if (error != null) {
+      setState(() => _saveError = error);
       HapticService.error();
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      if (_isRelease) {
+        final money = NumberFormat.currency(
+          symbol: ref.read(settingsProvider).currency.symbol,
+        );
+        final confirmed = await ConfirmationSheet.show(
+          context: context,
+          title: 'Release savings?',
+          description:
+              '${money.format(amount)} will be available to spend. ${money.format((available ?? 0) - amount!)} remains in ${widget.goal.name}.',
+          confirmLabel: 'Release savings',
+          confirmColor: AppTheme.primaryColor(context),
+          icon: Icons.south_west_rounded,
+        );
+        if (confirmed != true || !mounted) return;
+      }
+      await widget.onSave(_isRelease ? -amount! : amount!);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _saveError = e is SavingsBalanceException
+              ? e.message
+              : 'Could not save savings. Try again',
+        );
+        HapticService.error();
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -87,11 +155,20 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         _currentExpression.isNotEmpty && _currentExpression != '0';
     final primaryColor = AppTheme.primaryColor(context);
     final parsedAmount = double.tryParse(_evaluatedResult) ?? 0;
+    final accountId = widget.goal.linkedAccountId;
+    final available = accountId == null
+        ? null
+        : ref.watch(savingsAvailableBalanceProvider(accountId));
+    final editableBalance = _isRelease
+        ? _availableBalance()
+        : available == null
+        ? null
+        : available + (widget.log?.amount ?? 0);
     final isExceeded =
-        widget.log == null &&
-        widget.linkedAccount != null &&
-        widget.linkedBalance != null &&
-        parsedAmount > widget.linkedBalance!;
+        (_isRelease || accountId != null) &&
+        editableBalance != null &&
+        parsedAmount > (widget.log?.amount ?? 0) &&
+        (parsedAmount * 100).round() > (editableBalance * 100).round();
 
     return Container(
       decoration: BoxDecoration(
@@ -113,7 +190,9 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
           const KoinBottomSheetHandle(),
           const Gap(24),
           Text(
-            widget.log != null ? 'Edit Savings' : 'Add Savings',
+            _isRelease
+                ? (widget.log != null ? 'Edit Release' : 'Release Savings')
+                : (widget.log != null ? 'Edit Savings' : 'Add Savings'),
             style: const TextStyle(
               fontSize: KoinTypography.sectionTitle,
               fontWeight: KoinTypography.headingWeight,
@@ -182,23 +261,30 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                       ),
                     ),
                   ),
-                if (widget.linkedAccount != null &&
-                    widget.linkedBalance != null &&
-                    widget.log == null)
+                if (_isRelease || accountId != null || _saveError != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      isExceeded
-                          ? 'Insufficient balance in ${widget.linkedAccount!.name}'
-                          : 'Available from ${widget.linkedAccount!.name}: ${NumberFormat.currency(symbol: settings.currency.symbol).format(widget.linkedBalance)}',
-                      style: TextStyle(
-                        fontSize: KoinTypography.small,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: isExceeded
-                            ? AppTheme.expenseColor(context)
-                            : AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.5),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        _saveError ??
+                            (_isRelease
+                                ? 'Available to release: ${NumberFormat.currency(symbol: settings.currency.symbol).format(editableBalance ?? 0)}'
+                                : isExceeded
+                                ? 'Insufficient available balance in ${widget.linkedAccount?.name ?? 'the linked account'}'
+                                : editableBalance == null
+                                ? 'Account balance is unavailable'
+                                : 'Available for savings: ${NumberFormat.currency(symbol: settings.currency.symbol).format(editableBalance.clamp(0, double.infinity))}'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: KoinTypography.small,
+                          fontWeight: KoinTypography.labelWeight,
+                          color: isExceeded || _saveError != null
+                              ? AppTheme.expenseColor(context)
+                              : AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),
@@ -219,9 +305,11 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
 
           NumPad(
             compact: true,
+            doneLabel: _isRelease ? 'Release' : 'Save',
             initialValue: _currentExpression,
             onValueChanged: (expression, result) {
               setState(() {
+                _saveError = null;
                 _currentExpression = expression;
                 _evaluatedResult = result;
               });

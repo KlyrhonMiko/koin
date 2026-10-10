@@ -86,7 +86,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Align(
-                      alignment: const Alignment(0, -0.3),
+                      alignment: Alignment.center,
                       child: _buildEmptyStateContent(
                         context,
                         'No expenses found',
@@ -916,83 +916,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     String title,
     String subtitle,
     IconData icon,
-  ) {
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Align(
-            alignment: const Alignment(0, -0.3),
-            child: _buildEmptyStateContent(context, title, subtitle, icon),
-          ),
-        ),
-      ],
-    );
-  }
+  ) => KoinEmptyState.sliver(icon: icon, title: title, subtitle: subtitle);
 
   Widget _buildEmptyStateContent(
     BuildContext context,
     String title,
     String subtitle,
     IconData icon,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-              padding: const EdgeInsets.all(36),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  AppTheme.boxShadow(
-                    context,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.1),
-                    blurRadius: 40,
-                    spreadRadius: 10,
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                size: 56,
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.6),
-              ),
-            )
-            .animate()
-            .scale(delay: 200.ms, curve: Curves.easeOutBack, duration: 600.ms)
-            .fadeIn(),
-        const SizedBox(height: 24),
-        Text(
-              title,
-              style: TextStyle(
-                color: AppTheme.textColor(context),
-                fontSize: KoinTypography.sectionTitle,
-                fontWeight: KoinTypography.headingWeight,
-                letterSpacing: KoinTypography.headingTracking,
-              ),
-            )
-            .animate()
-            .slideY(begin: 0.2, delay: 300.ms, duration: 400.ms)
-            .fadeIn(),
-        const SizedBox(height: 8),
-        Text(
-              subtitle,
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontSize: KoinTypography.compact,
-              ),
-              textAlign: TextAlign.center,
-            )
-            .animate()
-            .slideY(begin: 0.2, delay: 400.ms, duration: 400.ms)
-            .fadeIn(),
-      ],
-    );
-  }
+  ) => KoinEmptyState(
+    fullScreen: true,
+    icon: icon,
+    title: title,
+    subtitle: subtitle,
+  );
 
   Widget _buildFlipTransition(Widget child, Animation<double> animation) {
     return AnimatedBuilder(

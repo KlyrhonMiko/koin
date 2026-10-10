@@ -5,6 +5,7 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 import '../primitives/koin_bottom_sheet_handle.dart';
+import '../primitives/koin_empty_state.dart';
 
 class SelectSheetItem extends StatelessWidget {
   const SelectSheetItem({
@@ -277,29 +278,22 @@ Future<T?> showSelectSheet<T>({
                     ),
                   ),
                   if (emptyMessage != null && itemCount == 0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 24,
+                    Expanded(
+                      child: KoinEmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: emptyMessage,
+                        subtitle: 'There are no options to choose from yet',
                       ),
-                      child: Text(
-                        emptyMessage,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: KoinTypography.body,
-                          fontWeight: KoinTypography.supportingWeight,
-                          color: AppTheme.textLightColor(sheetContext),
-                        ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(22, 12, 22, 32),
+                        itemCount: itemCount,
+                        separatorBuilder: (context, index) => const Gap(10),
+                        itemBuilder: itemBuilder,
                       ),
                     ),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(22, 12, 22, 32),
-                      itemCount: itemCount,
-                      separatorBuilder: (context, index) => const Gap(10),
-                      itemBuilder: itemBuilder,
-                    ),
-                  ),
                 ],
               ),
             ),

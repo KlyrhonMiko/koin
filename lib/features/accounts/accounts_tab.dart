@@ -23,6 +23,7 @@ class AccountsTab extends ConsumerWidget {
     final stats = ref.watch(dashboardStatsProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
 
     return accountsAsync.when(
       data: (accounts) {
@@ -48,10 +49,29 @@ class AccountsTab extends ConsumerWidget {
           itemBuilder: (context, index) {
             final account = accounts[index];
             final balance = stats.accountBalances[account.id] ?? 0;
+            final excludedSavings = goals
+                .where(
+                  (g) =>
+                      g.linkedAccountId == account.id &&
+                      !g.includeInDashboardBalance &&
+                      g.currentAmount > 0,
+                )
+                .fold<double>(0, (sum, g) => sum + g.currentAmount);
+            final displayBalance =
+                balance -
+                excludedSavings.clamp(0, balance.clamp(0, double.infinity));
 
             Widget accountItem = AccountItem(
               account: account,
-              balance: balance,
+              balance: displayBalance,
+              savingsAmount: goals
+                  .where(
+                    (g) =>
+                        g.linkedAccountId == account.id &&
+                        g.includeInDashboardBalance &&
+                        g.currentAmount > 0,
+                  )
+                  .fold<double>(0, (sum, g) => sum + g.currentAmount),
               currencySymbol: currency.symbol,
               animationSessionKey: animationSessionKey,
               onTap: () {
@@ -180,80 +200,16 @@ class AccountsTab extends ConsumerWidget {
     return button;
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Align(
-            alignment: const Alignment(0, -0.25),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(36),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        AppTheme.boxShadow(
-                          context,
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.1),
-                          blurRadius: 40,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 56,
-                      color: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No accounts yet',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.sectionTitle,
-                      fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: KoinTypography.headingTracking,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add your first account to start\ntracking your money',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: KoinTypography.compact,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  KoinPrimaryButton(
-                    label: 'Add Your First Account',
-                    onPressed: () {
-                      HapticService.medium();
-                      Navigator.push(
-                        context,
-                        SlideUpRoute(page: const AccountFormScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildEmptyState(BuildContext context) => KoinEmptyState.sliver(
+    icon: Icons.account_balance_wallet_rounded,
+    title: 'No accounts yet',
+    subtitle: 'Add your first account to start tracking your money',
+    action: KoinPrimaryButton(
+      label: 'Add Account',
+      onPressed: () {
+        HapticService.medium();
+        Navigator.push(context, SlideUpRoute(page: const AccountFormScreen()));
+      },
+    ),
+  );
 }

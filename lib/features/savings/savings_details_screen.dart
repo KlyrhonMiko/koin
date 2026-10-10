@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/coach/coach_screen.dart';
 import 'package:koin/features/savings/coach/coach_engine.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
@@ -21,6 +22,7 @@ class SavingsDetailsScreen extends ConsumerStatefulWidget {
 
 class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   Future<void> _saveLog({
+    required SavingsGoal goal,
     SavingsLog? existingLog,
     required double amount,
   }) async {
@@ -30,6 +32,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         goalId: existingLog.goalId,
         amount: amount,
         date: existingLog.date,
+        note: existingLog.note,
       );
       await ref
           .read(savingsGoalsProvider.notifier)
@@ -38,14 +41,15 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     } else {
       final log = SavingsLog(
         id: const Uuid().v4(),
-        goalId: widget.goal.id,
+        goalId: goal.id,
         amount: amount,
         date: DateTime.now(),
+        note: amount < 0 ? 'Released for spending' : null,
       );
 
-      final wasCompleted = widget.goal.isCompleted;
+      final wasCompleted = goal.isCompleted;
       await ref.read(savingsGoalsProvider.notifier).addLog(log);
-      final isNowCompleted = widget.goal.willComplete(amount);
+      final isNowCompleted = goal.willComplete(amount);
 
       if (!wasCompleted && isNowCompleted) {
         HapticService.success();
@@ -60,17 +64,21 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   }
 
   void _showAddLogSheet({
+    required SavingsGoal goal,
     SavingsLog? log,
+    bool release = false,
     Account? linkedAccount,
     double? linkedBalance,
   }) {
     SavingsLogSheet.show(
       context: context,
-      goal: widget.goal,
+      goal: goal,
       log: log,
+      release: release,
       linkedAccount: linkedAccount,
       linkedBalance: linkedBalance,
-      onSave: (amount) => _saveLog(existingLog: log, amount: amount),
+      onSave: (amount) =>
+          _saveLog(goal: goal, existingLog: log, amount: amount),
     );
   }
 
@@ -120,35 +128,6 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: AppTheme.primaryGradient(context),
-          boxShadow: [
-            AppTheme.boxShadow(context,
-              color: AppTheme.primaryColor(context).withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            HapticService.medium();
-            _showAddLogSheet(
-              linkedAccount: linkedAccount,
-              linkedBalance: linkedBalance,
-            );
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          icon: const Icon(Icons.add_rounded, color: Colors.white),
-          label: const Text(
-            'Add Savings',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -212,49 +191,70 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Color(0xFFFF6B6B),
+                  Semantics(
+                    label: 'Savings coach',
+                    child: TextButton.icon(
+                      onPressed: () => _openCoach(goal),
+                      icon: const Icon(
+                        Icons.tips_and_updates_rounded,
+                        size: 18,
+                      ),
+                      label: const Text('Coach'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.textLightColor(context),
+                        minimumSize: const Size(48, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
                     ),
-                    onPressed: () async {
-                      HapticService.medium();
-                      final confirmed = await ConfirmationSheet.show(
-                        context: context,
-                        title: 'Delete Goal?',
-                        description:
-                            'Are you sure you want to delete this savings goal? This action cannot be undone.',
-                        confirmLabel: 'Delete',
-                        confirmColor: AppTheme.expenseColor(context),
-                        icon: Icons.delete_forever_rounded,
-                        isDanger: true,
-                      );
-                      if (confirmed == true && mounted) {
-                        await ref
-                            .read(savingsGoalsProvider.notifier)
-                            .deleteGoal(goal.id);
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      }
-                    },
                   ),
                 ],
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildGaugeHeader(context, goal, currencyFormat),
-                    const Gap(16),
-                    _buildSavingsNeededSection(context, goal, currencyFormat),
-                    const Gap(24),
-                    _buildCoachInsightButton(context, goal, currencyFormat),
-                    const Gap(32),
-                    _buildActivitySection(
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildGaugeHeader(context, goal, currencyFormat),
+                          const Gap(24),
+                          _buildQuickActions(
+                            context,
+                            goal,
+                            linkedAccount,
+                            linkedBalance,
+                          ),
+                          if (linkedBalance != null &&
+                              goal.currentAmount > linkedBalance)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                'Reserved savings exceed the account balance. Release savings to match your spending.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppTheme.expenseColor(context),
+                                  fontSize: KoinTypography.caption,
+                                ),
+                              ),
+                            ),
+                          if (goal.dailyNeeded != null) ...[
+                            const Gap(16),
+                            _buildSavingsNeededSection(
+                              context,
+                              goal,
+                              currencyFormat,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: _buildActivitySection(
                       context,
                       goal,
                       logsAsync,
@@ -262,8 +262,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       linkedAccount,
                       linkedBalance,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -272,144 +272,297 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
+  Future<void> _deleteGoal(SavingsGoal goal) async {
+    HapticService.medium();
+    final confirmed = await ConfirmationSheet.show(
+      context: context,
+      title: 'Delete Goal?',
+      description:
+          'Are you sure you want to delete this savings goal? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmColor: AppTheme.expenseColor(context),
+      icon: Icons.delete_forever_rounded,
+      isDanger: true,
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(savingsGoalsProvider.notifier).deleteGoal(goal.id);
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Widget _buildQuickActions(
+    BuildContext context,
+    SavingsGoal goal,
+    Account? linkedAccount,
+    double? linkedBalance,
+  ) {
+    final actions = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildActionItem(
+            context,
+            icon: Icons.add_rounded,
+            label: 'Save',
+            tooltip: 'Add Savings',
+            color: AppTheme.primaryColor(context),
+            onTap: () => _showAddLogSheet(
+              goal: goal,
+              linkedAccount: linkedAccount,
+              linkedBalance: linkedBalance,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _buildActionItem(
+            context,
+            icon: Icons.south_west_rounded,
+            label: 'Release',
+            tooltip: 'Release savings',
+            enabled: goal.currentAmount > 0,
+            color: AppTheme.primaryColor(context),
+            onTap: () => _showAddLogSheet(
+              goal: goal,
+              release: true,
+              linkedAccount: linkedAccount,
+              linkedBalance: linkedBalance,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _buildActionItem(
+            context,
+            icon: Icons.edit_rounded,
+            label: 'Edit',
+            tooltip: 'Edit goal',
+            color: AppTheme.textLightColor(context),
+            onTap: () {
+              HapticService.light();
+              Navigator.push(
+                context,
+                SlideUpRoute(page: AddSavingsGoalScreen(goal: goal)),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: _buildActionItem(
+            context,
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete',
+            tooltip: 'Delete goal',
+            color: AppTheme.expenseColor(context),
+            onTap: () => _deleteGoal(goal),
+          ),
+        ),
+      ],
+    );
+    if (MediaQuery.disableAnimationsOf(context)) return actions;
+    return actions
+        .animate()
+        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          duration: 250.ms,
+          curve: Curves.easeOutCubic,
+        );
+  }
+
+  Widget _buildActionItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    String? tooltip,
+    bool enabled = true,
+  }) => Semantics(
+    button: true,
+    enabled: enabled,
+    child: Tooltip(
+      message: tooltip ?? label,
+      child: IgnorePointer(
+        ignoring: !enabled,
+        child: PressableScale(
+          enableHaptic: false,
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    AppTheme.boxShadow(
+                      context,
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: enabled ? color : color.withValues(alpha: 0.3),
+                  size: 22,
+                ),
+              ),
+              const Gap(8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: KoinTypography.small,
+                  fontWeight: KoinTypography.labelWeight,
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: enabled ? 1 : 0.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
   Widget _buildGaugeHeader(
     BuildContext context,
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
     return KoinSummaryCard(
-      shapeStyle: SummaryShapeStyle.savings,
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          shapeStyle: SummaryShapeStyle.savings,
+          padding: const EdgeInsets.all(24),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Saved',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saved',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const Gap(6),
+                        AnimatedCounter(
+                          value: goal.currentAmount,
+                          formatter: (v) => currencyFormat.format(v),
+                          duration: const Duration(milliseconds: 1400),
+                          curve: Curves.easeOutCubic,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.0,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Gap(6),
-                  AnimatedCounter(
-                    value: goal.currentAmount,
-                    formatter: (v) => currencyFormat.format(v),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeOutCubic,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.0,
-                      height: 1.1,
+                  if (goal.hasTarget) const Gap(12),
+                  if (goal.hasTarget)
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                      child: Center(
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: goal.progress),
+                          duration: const Duration(milliseconds: 1400),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, val, child) {
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: CircularProgressIndicator(
+                                    value: 1.0,
+                                    strokeWidth: 4,
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: CircularProgressIndicator(
+                                    value: val,
+                                    strokeWidth: 4,
+                                    strokeCap: StrokeCap.round,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  '${(val * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ).animate().scale(
+                      begin: const Offset(0.85, 0.85),
+                      end: const Offset(1.0, 1.0),
+                      duration: 600.ms,
+                      curve: Curves.elasticOut,
                     ),
-                  ),
                 ],
               ),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.1),
+              if (goal.hasTarget) ...[
+                const Gap(20),
+                Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
-                child: Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(
-                      begin: 0,
-                      end: (goal.isStash && !goal.hasTarget)
-                          ? 1.0
-                          : goal.progress,
+                const Gap(16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatItem(
+                      context,
+                      label: 'Target',
+                      value: goal.targetAmount ?? 0.0,
+                      formatter: currencyFormat.format,
+                      alignment: CrossAxisAlignment.start,
                     ),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, val, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: CircularProgressIndicator(
-                              value: 1.0,
-                              strokeWidth: 4,
-                              color: Colors.white.withValues(
-                                alpha: 0.1,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: CircularProgressIndicator(
-                              value: val,
-                              strokeWidth: 4,
-                              strokeCap: StrokeCap.round,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            '${(val * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ).animate().scale(
-                begin: const Offset(0.85, 0.85),
-                end: const Offset(1.0, 1.0),
-                duration: 600.ms,
-                curve: Curves.elasticOut,
-              ),
-            ],
-          ),
-          const Gap(24),
-          if (!goal.isStash || goal.hasTarget) ...[
-            Container(
-              height: 1,
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
-            const Gap(16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatItem(
-                  context,
-                  label: 'Target',
-                  value: goal.targetAmount ?? 0.0,
-                  formatter: currencyFormat.format,
-                  alignment: CrossAxisAlignment.start,
-                ),
-                _buildStatItem(
-                  context,
-                  label: goal.remainingDays != null
-                      ? 'Left (${goal.remainingDays}d)'
-                      : 'Left',
-                  value: goal.remainingAmount ?? 0.0,
-                  formatter: currencyFormat.format,
-                  alignment: CrossAxisAlignment.end,
+                    _buildStatItem(
+                      context,
+                      label: goal.remainingDays != null
+                          ? 'Left (${goal.remainingDays}d)'
+                          : 'Left',
+                      value: goal.remainingAmount ?? 0.0,
+                      formatter: currencyFormat.format,
+                      alignment: CrossAxisAlignment.end,
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ],
-      ),
-    )
+            ],
+          ),
+        )
         .animate()
         .fade(duration: 400.ms)
         .slideY(begin: 0.04, curve: Curves.easeOutCubic);
@@ -449,124 +602,52 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildCoachInsightButton(
-    BuildContext context,
-    SavingsGoal goal,
-    NumberFormat currencyFormat,
-  ) {
-    return PressableScale(
-      onTap: () async {
-        HapticService.light();
-        final CoachSimulationResult? result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SavingsCoachScreen(goal: goal),
-            fullscreenDialog: true,
-          ),
-        );
-        if (result != null && mounted) {
-          if (result.newDeadline != goal.endDate ||
-              (result.targetAmountOverride != null &&
-                  result.targetAmountOverride != goal.targetAmount)) {
-            final updatedGoal = SavingsGoal(
-              id: goal.id,
-              name: goal.name,
-              targetAmount: result.targetAmountOverride ?? goal.targetAmount,
-              currentAmount: goal.currentAmount,
-              startDate: goal.startDate,
-              endDate: result.newDeadline,
-              notes: goal.notes,
-              linkedAccountId: goal.linkedAccountId,
-              isStash: goal.isStash,
-            );
-            await ref
-                .read(savingsGoalsProvider.notifier)
-                .updateGoal(updatedGoal);
-
-            if (!context.mounted) return;
-            final scaffoldMessenger = ScaffoldMessenger.of(context);
-            final themeColor = AppTheme.primaryColor(context);
-
-            final msg = result.targetAmountOverride != null && goal.isStash
-                ? 'Stash plan updated!'
-                : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
-
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text(msg),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: themeColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-          }
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor(context).withValues(alpha: 0.1),
-              AppTheme.primaryColor(context).withValues(alpha: 0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppTheme.primaryColor(context).withValues(alpha: 0.15),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.tips_and_updates_rounded,
-                size: 20,
-                color: AppTheme.primaryColor(context),
-              ),
-            ),
-            const Gap(16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Savings Coach Insight',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryColor(context),
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    'Run scenarios to hit your goal on time.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textColor(context).withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.primaryColor(context).withValues(alpha: 0.5),
-            ),
-          ],
-        ),
+  Future<void> _openCoach(SavingsGoal goal) async {
+    HapticService.light();
+    final CoachSimulationResult? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SavingsCoachScreen(goal: goal),
+        fullscreenDialog: true,
       ),
     );
+    if (result != null && mounted) {
+      if (result.newDeadline != goal.endDate ||
+          (result.targetAmountOverride != null &&
+              result.targetAmountOverride != goal.targetAmount)) {
+        final updatedGoal = SavingsGoal(
+          id: goal.id,
+          name: goal.name,
+          targetAmount: result.targetAmountOverride ?? goal.targetAmount,
+          currentAmount: goal.currentAmount,
+          startDate: goal.startDate,
+          endDate: result.newDeadline,
+          notes: goal.notes,
+          linkedAccountId: goal.linkedAccountId,
+          isStash: goal.isStash,
+        );
+        await ref.read(savingsGoalsProvider.notifier).updateGoal(updatedGoal);
+
+        if (!mounted) return;
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        final themeColor = AppTheme.primaryColor(context);
+
+        final msg = result.targetAmountOverride != null && goal.isStash
+            ? 'Stash plan updated!'
+            : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
+
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: themeColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildSavingsNeededSection(
@@ -601,7 +682,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
             ),
             boxShadow: [
-              AppTheme.boxShadow(context,
+              AppTheme.boxShadow(
+                context,
                 color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
@@ -700,102 +782,58 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     NumberFormat currencyFormat,
     Account? linkedAccount,
     double? linkedBalance,
-  ) {
-    return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textColor(context),
-                letterSpacing: -0.4,
+  ) => SliverMainAxisGroup(
+    slivers: [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Text(
+            'Recent Activity',
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textColor(context),
+              letterSpacing: -0.4,
+            ),
+          ),
+        ),
+      ),
+      logsAsync.when(
+        data: (logs) {
+          if (logs.isEmpty) {
+            return const SliverFillRemaining(
+              hasScrollBody: false,
+              child: KoinActivityEmptyState(
+                title: 'No activity yet',
+                subtitle: 'Tap "Save" to record your first deposit',
+              ),
+            );
+          }
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: _buildActivityTimeline(
+                context,
+                goal,
+                logs,
+                currencyFormat,
+                linkedAccount,
+                linkedBalance,
               ),
             ),
-            const Gap(14),
-            logsAsync.when(
-              data: (logs) {
-                if (logs.isEmpty) {
-                  return _buildEmptyActivity(context);
-                }
-                return _buildActivityTimeline(
-                  context,
-                  logs,
-                  currencyFormat,
-                  linkedAccount,
-                  linkedBalance,
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Text('Error: $err'),
-            ),
-          ],
-        )
-        .animate()
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
-  }
-
-  Widget _buildEmptyActivity(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(36),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          AppTheme.boxShadow(context,
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+          );
+        },
+        loading: () => const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (err, stack) => SliverToBoxAdapter(child: Text('Error: $err')),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceLightColor(context),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.receipt_long_rounded,
-              size: 28,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-            ),
-          ),
-          const Gap(16),
-          Text(
-            'No activity yet',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textColor(context),
-              fontSize: 15,
-            ),
-          ),
-          const Gap(4),
-          Text(
-            'Tap "Add Savings" to record\nyour first deposit',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+    ],
+  );
   Widget _buildActivityTimeline(
     BuildContext context,
+    SavingsGoal goal,
     List<SavingsLog> logs,
     NumberFormat currencyFormat,
     Account? linkedAccount,
@@ -808,151 +846,159 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         final isLast = index == logs.length - 1;
 
         return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Timeline connector
-                  SizedBox(
-                    width: 24,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.only(top: 20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(context),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              AppTheme.boxShadow(context,
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.25),
-                                blurRadius: 4,
-                              ),
-                            ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Timeline connector
+              SizedBox(
+                width: 24,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.only(top: 20),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor(context),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          AppTheme.boxShadow(
+                            context,
+                            color: AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.25),
+                            blurRadius: 4,
                           ),
+                        ],
+                      ),
+                    ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 1,
+                          color: AppTheme.dividerColor(context),
                         ),
-                        if (!isLast)
-                          Expanded(
-                            child: Container(
-                              width: 1,
-                              color: AppTheme.dividerColor(context),
+                      ),
+                  ],
+                ),
+              ),
+              const Gap(10),
+              // Log card
+              Expanded(
+                child: SwipeToDeleteTile(
+                  key: Key(log.id),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  borderRadius: BorderRadius.circular(16),
+                  backgroundColor: AppTheme.expenseColor(
+                    context,
+                  ).withValues(alpha: 0.15),
+                  iconColor: AppTheme.expenseColor(context),
+                  icon: Icons.delete_outline_rounded,
+                  confirmTitle: 'Delete Entry?',
+                  confirmDescription:
+                      'Are you sure you want to delete this savings entry?',
+                  confirmLabel: 'Delete',
+                  onDelete: () {
+                    ref.read(savingsGoalsProvider.notifier).deleteLog(log);
+                  },
+                  child: PressableScale(
+                    onTap: () {
+                      HapticService.light();
+                      _showAddLogSheet(
+                        goal: goal,
+                        log: log,
+                        linkedAccount: linkedAccount,
+                        linkedBalance: linkedBalance,
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(context),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          AppTheme.boxShadow(
+                            context,
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.incomeColor(
+                                context,
+                              ).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              log.amount < 0
+                                  ? Icons.arrow_downward_rounded
+                                  : Icons.arrow_upward_rounded,
+                              color: log.amount < 0
+                                  ? AppTheme.textLightColor(context)
+                                  : AppTheme.incomeColor(context),
+                              size: 16,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  const Gap(10),
-                  // Log card
-                  Expanded(
-                    child: SwipeToDeleteTile(
-                      key: Key(log.id),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      borderRadius: BorderRadius.circular(16),
-                      backgroundColor: AppTheme.expenseColor(
-                        context,
-                      ).withValues(alpha: 0.15),
-                      iconColor: AppTheme.expenseColor(context),
-                      icon: Icons.delete_outline_rounded,
-                      confirmTitle: 'Delete Entry?',
-                      confirmDescription:
-                          'Are you sure you want to delete this savings entry?',
-                      confirmLabel: 'Delete',
-                      onDelete: () {
-                        ref.read(savingsGoalsProvider.notifier).deleteLog(log);
-                      },
-                      child: PressableScale(
-                        onTap: () {
-                          HapticService.light();
-                          _showAddLogSheet(
-                            log: log,
-                            linkedAccount: linkedAccount,
-                            linkedBalance: linkedBalance,
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                          const Gap(14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${log.amount < 0 ? '-' : '+'} ${currencyFormat.format(log.amount.abs())}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: log.amount < 0
+                                        ? AppTheme.textLightColor(context)
+                                        : AppTheme.incomeColor(context),
+                                  ),
+                                ),
+                                const Gap(2),
+                                Text(
+                                  log.amount < 0
+                                      ? 'Released • ${_formatRelativeTime(log.date)}'
+                                      : _formatRelativeTime(log.date),
+                                  style: TextStyle(
+                                    color: AppTheme.textLightColor(
+                                      context,
+                                    ).withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              AppTheme.boxShadow(context,
-                                color: Colors.black.withValues(alpha: 0.02),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                          Text(
+                            DateFormat.MMMd().format(log.date),
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(
+                                context,
+                              ).withValues(alpha: 0.4),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.incomeColor(
-                                    context,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.arrow_upward_rounded,
-                                  color: AppTheme.incomeColor(context),
-                                  size: 16,
-                                ),
-                              ),
-                              const Gap(14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '+ ${currencyFormat.format(log.amount)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                        color: AppTheme.incomeColor(context),
-                                      ),
-                                    ),
-                                    const Gap(2),
-                                    Text(
-                                      _formatRelativeTime(log.date),
-                                      style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.5),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                DateFormat.MMMd().format(log.date),
-                                style: TextStyle(
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.4),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            )
-            .animate()
-            .fade(delay: (index * 60).ms, duration: 350.ms)
-            .slideX(begin: 0.04);
+            ],
+          ),
+        ).animate().fade(delay: (index * 60).ms, duration: 350.ms).slideX(begin: 0.04);
       }).toList(),
     );
   }

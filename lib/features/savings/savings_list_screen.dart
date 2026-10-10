@@ -133,16 +133,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text.rich(
-                      TextSpan(
-                        text: 'Total Saved',
-                        children: [
-                          TextSpan(
-                            text: ' · ${summary.activeGoalsCount} active',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                      ),
+                    Text(
+                      'Total Saved',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
@@ -370,7 +362,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '$progressPercent%',
+                    goal.hasTarget ? '$progressPercent%' : 'Stash',
                     style: TextStyle(
                       color: isCompleted
                           ? successGreen
@@ -382,25 +374,27 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 ),
               ],
             ),
-            const Gap(8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: goal.progress),
-                duration: Duration(milliseconds: 800 + (index * 100)),
-                curve: Curves.easeOutCubic,
-                builder: (context, animatedProgress, _) {
-                  return LinearProgressIndicator(
-                    value: animatedProgress,
-                    backgroundColor: AppTheme.surfaceLightColor(context),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isCompleted ? successGreen : accentColor,
-                    ),
-                    minHeight: 4,
-                  );
-                },
+            if (goal.hasTarget) ...[
+              const Gap(8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: goal.progress),
+                  duration: Duration(milliseconds: 800 + (index * 100)),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, animatedProgress, _) {
+                    return LinearProgressIndicator(
+                      value: animatedProgress,
+                      backgroundColor: AppTheme.surfaceLightColor(context),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isCompleted ? successGreen : accentColor,
+                      ),
+                      minHeight: 4,
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -417,9 +411,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
   Widget _buildEmptyState(BuildContext context) {
     Widget state = KoinEmptyState.sliver(
-      alignment: const Alignment(0, -0.2),
       icon: Icons.savings_outlined,
-      iconSize: 40,
       title: 'No dreams yet',
       subtitle:
           'Start your financial journey by\nsetting your first savings goal.',

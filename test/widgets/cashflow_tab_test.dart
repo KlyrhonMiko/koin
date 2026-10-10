@@ -117,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No subscriptions'), findsOneWidget);
-      expect(find.text('Add Your First Subscription'), findsOneWidget);
+      expect(find.text('Add Subscription'), findsOneWidget);
     });
   });
 }

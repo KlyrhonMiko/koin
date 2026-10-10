@@ -185,6 +185,7 @@ class DashboardScreen extends ConsumerWidget {
     SettingsState settings,
   ) {
     final currency = settings.currency;
+    final excludedSavings = ref.watch(dashboardExcludedSavingsProvider);
     final netChange = stats.totalIncome - stats.totalExpense;
     final monthlyAmount = NumberFormat.compactCurrency(
       symbol: currency.symbol,
@@ -208,7 +209,7 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total Balance',
+                excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: KoinTypography.caption,
@@ -264,7 +265,7 @@ class DashboardScreen extends ConsumerWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: AnimatedCounter(
-                    value: stats.currentBalance,
+                    value: stats.currentBalance - excludedSavings,
                     lastValueToken: 'dashboard_total_balance',
                     formatter: (v) => NumberFormat.currency(
                       symbol: currency.symbol,
@@ -783,39 +784,10 @@ class DashboardScreen extends ConsumerWidget {
     List<AppTransaction> transactions,
   ) {
     if (stats.totalIncome == 0 && stats.totalExpense == 0) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.pie_chart_outline,
-              size: 44,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-            ),
-            const Gap(12),
-            Text(
-              'No data for chart yet',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontWeight: KoinTypography.supportingWeight,
-                fontSize: KoinTypography.compact,
-              ),
-            ),
-          ],
-        ),
+      return const KoinEmptyState(
+        icon: Icons.pie_chart_outline,
+        title: 'No data for chart yet',
+        subtitle: 'Add transactions to see your spending trend',
       );
     }
 
@@ -873,52 +845,10 @@ class DashboardScreen extends ConsumerWidget {
     return transactionsAsync.when(
       data: (transactions) {
         if (transactions.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppTheme.dividerColor(context)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.receipt_long_outlined,
-                    size: 36,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                  ),
-                ),
-                const Gap(14),
-                Text(
-                  'No recent transactions',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontWeight: KoinTypography.labelWeight,
-                    fontSize: KoinTypography.body,
-                  ),
-                ),
-                const Gap(4),
-                Text(
-                  'Tap + to add your first transaction',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
-                    fontSize: KoinTypography.caption,
-                  ),
-                ),
-              ],
-            ),
+          return const KoinEmptyState(
+            icon: Icons.receipt_long_rounded,
+            title: 'No recent transactions',
+            subtitle: 'Tap + to add your first transaction',
           );
         }
 
@@ -1099,56 +1029,24 @@ class DashboardScreen extends ConsumerWidget {
     return content;
   }
 
-  Widget _buildEmptyUpcoming(BuildContext context, WidgetRef ref) {
-    return PressableScale(
-      onTap: () {
-        HapticService.medium();
-        Navigator.push(
-          context,
-          SlideUpRoute(
-            page: const AddEditCashflowScreen(
-              initialType: TransactionType.expense,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.event_repeat_rounded,
-              size: 32,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.3),
-            ),
-            const Gap(12),
-            Text(
-              'No upcoming payments',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontWeight: KoinTypography.labelWeight,
-                fontSize: KoinTypography.compact,
+  Widget _buildEmptyUpcoming(BuildContext context, WidgetRef ref) =>
+      KoinEmptyState(
+        icon: Icons.event_repeat_rounded,
+        title: 'No upcoming payments',
+        subtitle: 'Add your first subscription to see it here',
+        action: TextButton(
+          onPressed: () {
+            HapticService.medium();
+            Navigator.push(
+              context,
+              SlideUpRoute(
+                page: const AddEditCashflowScreen(
+                  initialType: TransactionType.expense,
+                ),
               ),
-            ),
-            const Gap(4),
-            Text(
-              'Tap to add your first subscription',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                fontSize: KoinTypography.small,
-              ),
-            ),
-          ],
+            );
+          },
+          child: const Text('Add subscription'),
         ),
-      ),
-    );
-  }
+      );
 }

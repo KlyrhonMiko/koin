@@ -10,6 +10,7 @@ import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'account_picker_sheet.dart';
 import 'category_picker_sheet.dart';
+import 'savings_spending_confirmation.dart';
 import '../inputs/selection_tile.dart';
 import '../inputs/numpad.dart';
 import 'package:koin/core/theme.dart';
@@ -55,6 +56,16 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
     if (result == null || !context.mounted) return false;
 
     final isExpense = payment.type == TransactionType.expense;
+    if (isExpense &&
+        !await confirmSavingsSpending(
+          context: context,
+          ref: ref,
+          accountId: result.accountId,
+          amount: result.amount,
+        )) {
+      return false;
+    }
+    if (!context.mounted) return false;
 
     await ref
         .read(plannedPaymentProvider.notifier)

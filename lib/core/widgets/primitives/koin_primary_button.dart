@@ -95,12 +95,15 @@ class KoinPrimaryButton extends StatelessWidget {
                     Icon(icon, color: Colors.white, size: 20),
                     const Gap(8),
                   ],
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.itemTitle,
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: KoinTypography.titleWeight,
+                        fontSize: KoinTypography.itemTitle,
+                      ),
                     ),
                   ),
                 ],

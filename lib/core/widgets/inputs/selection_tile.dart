@@ -68,6 +68,8 @@ class SelectionTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: asCard
                             ? KoinTypography.small

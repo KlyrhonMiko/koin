@@ -481,6 +481,17 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       }
     }
 
+    if (!widget.isIncrease &&
+        _selectedAccountId != null &&
+        !await confirmSavingsSpending(
+          context: context,
+          ref: ref,
+          accountId: _selectedAccountId!,
+          amount: amt,
+        )) {
+      return;
+    }
+    if (!mounted) return;
     if (_selectedAccountId != null) {
       ref
           .read(sharedPreferencesProvider)

@@ -130,45 +130,50 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 ),
                 // ── Body ──
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      KoinSpacing.screenInset,
-                      8,
-                      KoinSpacing.screenInset,
-                      100,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── Main Card ──
-                        _buildMainCard(
-                          context,
-                          debt: debt,
-                          color: color,
-                          currencyFormat: currencyFormat,
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          KoinSpacing.screenInset,
+                          8,
+                          KoinSpacing.screenInset,
+                          32,
                         ),
-                        const Gap(24),
-                        // ── Quick Actions ──
-                        _buildQuickActions(context, debt, color),
-                        const Gap(32),
-
-                        _buildItemsSection(
-                          context,
-                          debt,
-                          currencyFormat,
-                          color,
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildMainCard(
+                                context,
+                                debt: debt,
+                                color: color,
+                                currencyFormat: currencyFormat,
+                              ),
+                              const Gap(24),
+                              _buildQuickActions(context, debt, color),
+                              const Gap(32),
+                              _buildItemsSection(
+                                context,
+                                debt,
+                                currencyFormat,
+                                color,
+                              ),
+                            ],
+                          ),
                         ),
-                        const Gap(32),
-
-                        // ── Payment History ──
-                        _buildPaymentHistorySection(
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: KoinSpacing.screenInset,
+                        ),
+                        sliver: _buildPaymentHistorySection(
                           context,
                           repaymentsAsync: repaymentsAsync,
                           currencyFormat: currencyFormat,
                           color: color,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -478,7 +483,6 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         const Gap(16),
         // Item tiles
         ...items.asMap().entries.map((entry) {
-
           final item = entry.value;
           return Padding(
             key: ValueKey('purchase_${item.id}'),
@@ -590,88 +594,25 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required NumberFormat currencyFormat,
     required Color color,
   }) {
-    return repaymentsAsync.when(
-      data: (history) {
-        final repayments = history
-            .where((entry) => !_pendingRepaymentDeletions.contains(entry.id))
-            .toList();
-        Widget? emptyState;
-        if (repayments.isEmpty) {
-          emptyState = Center(
-            child:
-                Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor(context),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              AppTheme.boxShadow(
-                                context,
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.06),
-                                blurRadius: 30,
-                                spreadRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.receipt_long_rounded,
-                            size: 36,
-                            color: AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.35),
-                          ),
-                        ),
-                        const Gap(16),
-                        Text(
-                          'No payments yet',
-                          style: TextStyle(
-                            color: AppTheme.textColor(context),
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.titleWeight,
-                          ),
-                        ),
-                        const Gap(6),
-                        Text(
-                          'Tap "Log Payment" to record a repayment',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.6),
-                            fontSize: KoinTypography.caption,
-                          ),
-                        ),
-                      ],
-                    )
-                    .animate()
-                    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                    .scale(
-                      begin: const Offset(0.95, 0.95),
-                      duration: 250.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section header
-            Row(
+    final repayments = (repaymentsAsync.value ?? <DebtRepayment>[])
+        .where((entry) => !_pendingRepaymentDeletions.contains(entry.id))
+        .toList();
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
               children: [
-                Text(
-                  'Credit Activity',
-                  style: TextStyle(
-                    color: AppTheme.textColor(context),
-                    fontSize: KoinTypography.sectionTitle,
-                    fontWeight: KoinTypography.headingWeight,
-                    letterSpacing: KoinTypography.headingTracking,
+                Flexible(
+                  child: Text(
+                    'Credit Activity',
+                    style: TextStyle(
+                      color: AppTheme.textColor(context),
+                      fontSize: KoinTypography.sectionTitle,
+                      fontWeight: KoinTypography.headingWeight,
+                      letterSpacing: KoinTypography.headingTracking,
+                    ),
                   ),
                 ),
                 const Gap(10),
@@ -695,34 +636,48 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 ),
               ],
             ),
-            const Gap(16),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child:
-                  emptyState ??
-                  Column(
-                    key: const ValueKey('repayments_column'),
-                    children: repayments.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final r = entry.value;
-                      final isLast = index == repayments.length - 1;
-                      return _buildRepaymentTile(
-                        context,
-                        repayment: r,
-                        currencyFormat: currencyFormat,
-                        color: color,
-                        tileIndex: index,
-                        paymentNumber: repayments.length - index,
-                        isLast: isLast,
-                      );
-                    }).toList(),
-                  ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: \$e')),
+          ),
+        ),
+        repaymentsAsync.when(
+          data: (_) {
+            if (repayments.isEmpty) {
+              return const SliverFillRemaining(
+                hasScrollBody: false,
+                child: KoinActivityEmptyState(
+                  title: 'No payments yet',
+                  subtitle: 'Tap "Payment" to record a repayment',
+                ),
+              );
+            }
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  key: const ValueKey('repayments_column'),
+                  children: repayments.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final repayment = entry.value;
+                    return _buildRepaymentTile(
+                      context,
+                      repayment: repayment,
+                      currencyFormat: currencyFormat,
+                      color: color,
+                      tileIndex: index,
+                      paymentNumber: repayments.length - index,
+                      isLast: index == repayments.length - 1,
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => SliverToBoxAdapter(child: Text('Error: $e')),
+        ),
+      ],
     );
   }
 

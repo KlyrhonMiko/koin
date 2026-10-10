@@ -10,6 +10,7 @@ class SavingsGoal {
   final String? notes;
   final String? linkedAccountId;
   final bool isStash;
+  final bool includeInDashboardBalance;
 
   SavingsGoal({
     required this.id,
@@ -21,6 +22,7 @@ class SavingsGoal {
     this.notes,
     this.linkedAccountId,
     this.isStash = false,
+    this.includeInDashboardBalance = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -36,6 +38,7 @@ class SavingsGoal {
       'notes': notes,
       'linkedAccountId': linkedAccountId,
       'isStash': isStash ? 1 : 0,
+      'includeInDashboardBalance': includeInDashboardBalance ? 1 : 0,
     };
   }
 
@@ -56,6 +59,7 @@ class SavingsGoal {
       notes: map['notes'],
       linkedAccountId: map['linkedAccountId'],
       isStash: isStash,
+      includeInDashboardBalance: map['includeInDashboardBalance'] != 0,
     );
   }
 
@@ -69,6 +73,7 @@ class SavingsGoal {
     String? notes,
     String? linkedAccountId,
     bool? isStash,
+    bool? includeInDashboardBalance,
   }) {
     return SavingsGoal(
       id: id ?? this.id,
@@ -85,6 +90,8 @@ class SavingsGoal {
       notes: notes ?? this.notes,
       linkedAccountId: linkedAccountId ?? this.linkedAccountId,
       isStash: isStash ?? this.isStash,
+      includeInDashboardBalance:
+          includeInDashboardBalance ?? this.includeInDashboardBalance,
     );
   }
 

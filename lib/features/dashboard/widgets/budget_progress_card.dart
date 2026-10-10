@@ -31,57 +31,13 @@ class BudgetProgressCard extends StatelessWidget {
     });
 
     if (budgets.isEmpty) {
-      return PressableScale(
-        onTap: () {
-          HapticService.light();
-          onManage();
-        },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              AppTheme.boxShadow(
-                context,
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'No budgets yet',
-                style: TextStyle(
-                  color: AppTheme.textColor(context),
-                  fontSize: KoinTypography.body,
-                  fontWeight: KoinTypography.titleWeight,
-                ),
-              ),
-              const Gap(4),
-              Text(
-                'Set a monthly limit to track your spending.',
-                style: TextStyle(
-                  color: AppTheme.textLightColor(context),
-                  fontSize: KoinTypography.small,
-                ),
-              ),
-              const Gap(10),
-              TextButton(
-                onPressed: onManage,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Set budgets'),
-              ),
-            ],
-          ),
+      return KoinEmptyState(
+        icon: Icons.account_balance_wallet_outlined,
+        title: 'No budgets yet',
+        subtitle: 'Set a monthly limit to track your spending',
+        action: TextButton(
+          onPressed: onManage,
+          child: const Text('Set budgets'),
         ),
       );
     }

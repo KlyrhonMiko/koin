@@ -1,4 +1,5 @@
 export 'animated_counter.dart';
+export 'koin_activity_empty_state.dart';
 export 'koin_back_button.dart';
 export 'koin_bottom_sheet_handle.dart';
 export 'koin_empty_state.dart';
