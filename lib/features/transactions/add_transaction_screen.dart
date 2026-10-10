@@ -667,6 +667,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         ),
                       ),
                       ConstrainedBox(
+                        key: const ValueKey('transaction-fields-section'),
                         constraints: BoxConstraints(
                           maxHeight: (constraints.maxHeight - 260).clamp(
                             0.0,
@@ -880,82 +881,75 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
             child: _buildTypeSelector(context, typeColor),
           ),
-          const Gap(8),
+          const Gap(24),
           // ── Hero amount with voice button ──
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) => Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Semantics(
-                          button: true,
-                          label: 'Edit amount',
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _selectNumericInput(fee: false),
-                            child: _buildHeroAmount(
-                              context,
-                              currency,
-                              typeColor,
-                            ),
-                          ),
+                child: SizedBox(
+                  width: constraints.maxWidth,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: 'Edit amount',
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _selectNumericInput(fee: false),
+                          child: _buildHeroAmount(context, currency, typeColor),
                         ),
-                        Positioned(
-                          right: 16,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: AnimatedBuilder(
-                              animation: _pulseAnimation,
-                              builder: (context, child) {
-                                return PressableScale(
-                                  onTap: _showVoiceInputSheet,
-                                  child: Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          typeColor,
-                                          typeColor.withValues(alpha: 0.8),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(14),
-                                      boxShadow: [
-                                        AppTheme.boxShadow(
-                                          context,
-                                          color: typeColor.withValues(
-                                            alpha:
-                                                0.15 +
-                                                0.2 * _pulseAnimation.value,
-                                          ),
-                                          blurRadius:
-                                              12 + 6 * _pulseAnimation.value,
-                                          spreadRadius: 1,
-                                          offset: const Offset(0, 2),
-                                        ),
+                      ),
+                      Positioned(
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return PressableScale(
+                                onTap: _showVoiceInputSheet,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        typeColor,
+                                        typeColor.withValues(alpha: 0.8),
                                       ],
                                     ),
-                                    child: const Icon(
-                                      Icons.mic_rounded,
-                                      size: 22,
-                                      color: Colors.white,
-                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [
+                                      AppTheme.boxShadow(
+                                        context,
+                                        color: typeColor.withValues(
+                                          alpha:
+                                              0.15 +
+                                              0.2 * _pulseAnimation.value,
+                                        ),
+                                        blurRadius:
+                                            12 + 6 * _pulseAnimation.value,
+                                        spreadRadius: 1,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                            ),
+                                  child: const Icon(
+                                    Icons.mic_rounded,
+                                    size: 22,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -989,82 +983,136 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   ) {
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
+    final fontSize = MediaQuery.sizeOf(context).height < 800
+        ? KoinTypography.inputAmount
+        : KoinTypography.inputAmount + 16;
+    final transferSummary = _selectedType == TransactionType.transfer
+        ? _transferSummaryText()
+        : null;
+    final hasSummary = transferSummary != null;
+    final exceedsBalance = _exceedsAvailableBalance();
+    final currencySymbol = Text(
+      '${currency.symbol} ',
+      style: TextStyle(
+        fontSize: KoinTypography.screenTitle,
+        fontWeight: KoinTypography.labelWeight,
+        color: typeColor.withValues(alpha: 0.4),
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: KoinSpacing.screenInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: [
           // Currency label
-          Text(
-            currency.code,
-            style: TextStyle(
-              fontSize: KoinTypography.small,
-              fontWeight: KoinTypography.titleWeight,
-              color: typeColor.withValues(alpha: 0.5),
-              letterSpacing: 1.5,
+          Positioned(
+            bottom: fontSize * KoinTypography.amountHeight + 4,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                currency.code,
+                style: TextStyle(
+                  fontSize: KoinTypography.small,
+                  fontWeight: KoinTypography.titleWeight,
+                  color: typeColor.withValues(alpha: 0.5),
+                  letterSpacing: 1.5,
+                ),
+              ),
             ),
           ),
-          const Gap(4),
           // Main amount
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '${currency.symbol} ',
-                style: TextStyle(
-                  fontSize: KoinTypography.screenTitle,
-                  fontWeight: KoinTypography.labelWeight,
-                  color: typeColor.withValues(alpha: 0.4),
-                ),
-              ),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                transitionBuilder: (child, anim) =>
-                    FadeTransition(opacity: anim, child: child),
-                child: Text(
-                  _currentExpression.isEmpty ? '0' : _currentExpression,
-                  key: ValueKey(_currentExpression),
-                  style: TextStyle(
-                    fontSize: KoinTypography.inputAmount + 16,
-                    fontWeight: KoinTypography.headingWeight,
-                    color: hasAmount
-                        ? typeColor
-                        : typeColor.withValues(alpha: 0.35),
-                    letterSpacing: -2,
-                    height: KoinTypography.amountHeight,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Gap(8),
-          // Reserve the same space whether or not a message is visible.
           SizedBox(
-            height: 32,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_selectedType == TransactionType.transfer)
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: _buildTransferSummary(context),
-                  ),
-                if (_exceedsAvailableBalance())
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
+            height: fontSize * KoinTypography.amountHeight,
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  currencySymbol,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    transitionBuilder: (child, anim) =>
+                        FadeTransition(opacity: anim, child: child),
                     child: Text(
-                      'Amount exceeds available balance',
+                      _currentExpression.isEmpty ? '0' : _currentExpression,
+                      key: ValueKey(_currentExpression),
                       style: TextStyle(
-                        color: AppTheme.errorColor(context),
-                        fontSize: KoinTypography.caption,
-                        height: 1.2,
+                        fontSize: fontSize,
+                        fontWeight: KoinTypography.headingWeight,
+                        color: hasAmount
+                            ? typeColor
+                            : typeColor.withValues(alpha: 0.35),
+                        letterSpacing: -2,
+                        height: KoinTypography.amountHeight,
                       ),
                     ),
                   ),
-              ],
+                  // Balance the leading symbol so the digits sit on the centerline.
+                  ExcludeSemantics(
+                    child: Opacity(opacity: 0, child: currencySymbol),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Supporting messages do not size or move the number.
+          Positioned(
+            top: fontSize * KoinTypography.amountHeight + 4,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 32,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  if (!hasSummary && !exceedsBalance)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Container(
+                        key: const ValueKey('amount-stripe'),
+                        width: hasAmount ? 60 : 40,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: typeColor.withValues(
+                            alpha: hasAmount ? 0.35 : 0.2,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  if (hasSummary && !exceedsBalance)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        transferSummary,
+                        style: TextStyle(
+                          fontSize: KoinTypography.small,
+                          color: AppTheme.textLightColor(context),
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  if (exceedsBalance)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Amount exceeds available balance',
+                        style: TextStyle(
+                          color: AppTheme.errorColor(context),
+                          fontSize: KoinTypography.caption,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1075,7 +1123,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Form Section
   // ═══════════════════════════════════════════════════════
-  Widget _buildTransferSummary(BuildContext context) {
+  String? _transferSummaryText() {
     final amount = double.tryParse(_amountController.text) ?? 0;
     final fee = double.tryParse(_feeController.text) ?? 0;
     final draft = TransferDraft(
@@ -1092,19 +1140,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         !fee.isFinite ||
         fee < 0 ||
         !total.isFinite) {
-      return const SizedBox.shrink();
+      return null;
     }
     final symbol = ref.watch(settingsProvider).currency.symbol;
     final format = NumberFormat('#,##0.##');
-    return Text(
-      'Deducted $symbol${format.format(total)} · '
-      'Receives $symbol${format.format(draft.calculateNetAmount())}',
-      style: TextStyle(
-        fontSize: KoinTypography.small,
-        color: AppTheme.textLightColor(context),
-        height: 1.2,
-      ),
-    );
+    return 'Deducted $symbol${format.format(total)} · '
+        'Receives $symbol${format.format(draft.calculateNetAmount())}';
   }
 
   bool _exceedsAvailableBalance() {
@@ -1135,6 +1176,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         // ── Note field ──
         if (_selectedType != TransactionType.transfer) ...[
           Container(
+            constraints: const BoxConstraints(minHeight: 56),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
@@ -1212,6 +1254,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         // ── Transfer Fee field (Transfer only) ──
         if (_selectedType == TransactionType.transfer) ...[
           Container(
+            constraints: const BoxConstraints(minHeight: 56),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
@@ -1457,6 +1500,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       : Builder(
                           builder: (context) {
                             Widget child = SelectionTile(
+                              minHeight: 72,
                               asCard: false,
                               fallbackIcon: Icons.category_rounded,
                               label: 'Category',
@@ -1579,6 +1623,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ? null
             : balances[account.id] ?? account.initialBalance;
         return SelectionTile(
+          minHeight: 72,
           asCard: false,
           fallbackIcon: Icons.account_balance_wallet_rounded,
           label: 'To',
@@ -1668,6 +1713,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SelectionTile(
+            minHeight: 72,
             asCard: false,
             fallbackIcon: Icons.account_balance_wallet_outlined,
             label: reserved > 0

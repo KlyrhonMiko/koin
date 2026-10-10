@@ -183,6 +183,46 @@ void main() {
     },
   );
 
+  testWidgets('amount keeps its size across all transaction modes', (
+    tester,
+  ) async {
+    final providers = container();
+    addTearDown(providers.dispose);
+    await pumpScreen(
+      tester,
+      providers,
+      const AddTransactionScreen(),
+      width: 393,
+      height: 873,
+      dark: true,
+    );
+    await tester.pumpAndSettle();
+    final zero = find.byKey(const ValueKey(''));
+    final initialSize = tester.getSize(zero);
+    final fields = find.byKey(const ValueKey('transaction-fields-section'));
+    final fieldsRect = tester.getRect(fields);
+    for (final mode in ['Transfer', 'Income', 'Expense']) {
+      await tester.tap(find.text(mode));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(fields), fieldsRect);
+      expect(find.byKey(const ValueKey('amount-stripe')), findsOneWidget);
+      expect(tester.getSize(zero), initialSize);
+      expect(tester.getCenter(zero).dx, closeTo(393 / 2, 0.1));
+      final currency = find.text(
+        providers.read(settingsProvider).currency.code,
+      );
+      final gap =
+          tester.getTopLeft(zero).dy - tester.getBottomLeft(currency).dy;
+      expect(gap, closeTo(4, 0.5));
+      expect(
+        tester.getTopLeft(currency).dy -
+            tester.getBottomLeft(find.byType(TransactionTypeSelector)).dy,
+        greaterThanOrEqualTo(20),
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('transfer fee uses the keypad without opening the keyboard', (
     tester,
   ) async {
@@ -258,6 +298,14 @@ void main() {
       await tester.pumpAndSettle();
     }
     final amountRect = tester.getRect(find.text('50'));
+    expect(amountRect.center.dx, closeTo(180, 0.1));
+    final editAmountRect = tester.getRect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'Edit amount',
+      ),
+    );
+    expect(amountRect.center.dy, closeTo(editAmountRect.center.dy, 0.1));
     final feeRect = tester.getRect(find.byType(TextField));
     await tester.tap(find.byType(EditableText));
     await tester.pumpAndSettle();
@@ -269,6 +317,7 @@ void main() {
       find.text('Deducted ${symbol}60 · Receives ${symbol}50'),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('amount-stripe')), findsNothing);
     final summary = find.text('Deducted ${symbol}60 · Receives ${symbol}50');
     expect(tester.getTopLeft(summary).dy, greaterThan(amountRect.bottom));
     expect(tester.getBottomLeft(summary).dy, lessThan(feeRect.top));
@@ -298,11 +347,21 @@ void main() {
     }
     expect(
       find.text('Deducted ${symbol}80 · Receives ${symbol}50'),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    final warning = find.text('Amount exceeds available balance');
+    expect(warning, findsOneWidget);
+    expect(find.textContaining('Deducted'), findsNothing);
+    expect(tester.getBottomLeft(warning).dy, lessThan(feeRect.top));
     expect(tester.getRect(find.text('50')), amountRect);
     expect(tester.takeException(), isNull);
+    await tester.tap(find.text('C'));
+    await tester.pumpAndSettle();
+    expect(warning, findsNothing);
+    expect(
+      find.text('Deducted ${symbol}50 · Receives ${symbol}50'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Expense'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Deducted'), findsNothing);
@@ -327,12 +386,21 @@ void main() {
       await tester.pumpAndSettle();
     }
     final amountRect = tester.getRect(find.text('80'));
+    expect(amountRect.center.dx, closeTo(180, 0.1));
+    final editAmountRect = tester.getRect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'Edit amount',
+      ),
+    );
+    expect(amountRect.center.dy, closeTo(editAmountRect.center.dy, 0.1));
     await tester.tap(find.text('Select account'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cash'));
     await tester.pumpAndSettle();
     final warning = find.text('Amount exceeds available balance');
     expect(warning, findsOneWidget);
+    expect(find.byKey(const ValueKey('amount-stripe')), findsNothing);
     expect(tester.getRect(find.text('80')), amountRect);
     expect(tester.getTopLeft(warning).dy, greaterThan(amountRect.bottom));
     expect(

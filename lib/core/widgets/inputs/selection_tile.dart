@@ -17,6 +17,7 @@ class SelectionTile extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? trailing;
   final bool asCard;
+  final double minHeight;
 
   const SelectionTile({
     super.key,
@@ -30,6 +31,7 @@ class SelectionTile extends StatelessWidget {
     required this.onTap,
     this.trailing,
     this.asCard = true,
+    this.minHeight = 0,
   });
 
   bool get hasSelection =>
@@ -39,79 +41,84 @@ class SelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          HapticService.light();
-          final hadFocus =
-              FocusManager.instance.primaryFocus?.hasFocus ?? false;
-          FocusManager.instance.primaryFocus?.unfocus();
-          if (hadFocus) {
-            await Future.delayed(const Duration(milliseconds: 150));
-          }
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(asCard ? 16 : 18),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: asCard ? 14 : 12,
-          ),
-          child: Row(
-            children: [
-              _buildLeadingIcon(context),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: asCard
-                            ? KoinTypography.small
-                            : KoinTypography.overline,
-                        fontWeight: KoinTypography.supportingWeight,
-                        color: AppTheme.fieldHintColor(
-                          context,
-                          lightOpacity: asCard ? 0.7 : 0.65,
+    Widget content = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minHeight),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            HapticService.light();
+            final hadFocus =
+                FocusManager.instance.primaryFocus?.hasFocus ?? false;
+            FocusManager.instance.primaryFocus?.unfocus();
+            if (hadFocus) {
+              await Future.delayed(const Duration(milliseconds: 150));
+            }
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(asCard ? 16 : 18),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: asCard ? 14 : 12,
+            ),
+            child: Row(
+              children: [
+                _buildLeadingIcon(context),
+                const Gap(14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: asCard
+                              ? KoinTypography.small
+                              : KoinTypography.overline,
+                          fontWeight: KoinTypography.supportingWeight,
+                          color: AppTheme.fieldHintColor(
+                            context,
+                            lightOpacity: asCard ? 0.7 : 0.65,
+                          ),
+                          letterSpacing: asCard ? null : 0.3,
                         ),
-                        letterSpacing: asCard ? null : 0.3,
                       ),
-                    ),
-                    const Gap(2),
-                    Text(
-                      selectedName ?? placeholder,
-                      style: TextStyle(
-                        fontSize: asCard
-                            ? KoinTypography.itemTitle
-                            : KoinTypography.body,
-                        fontWeight: hasSelection
-                            ? KoinTypography.titleWeight
-                            : KoinTypography.supportingWeight,
-                        color: hasSelection
-                            ? AppTheme.textColor(context)
-                            : AppTheme.fieldHintColor(
-                                context,
-                                lightOpacity: 0.5,
-                              ),
+                      const Gap(2),
+                      Text(
+                        selectedName ?? placeholder,
+                        style: TextStyle(
+                          fontSize: asCard
+                              ? KoinTypography.itemTitle
+                              : KoinTypography.body,
+                          fontWeight: hasSelection
+                              ? KoinTypography.titleWeight
+                              : KoinTypography.supportingWeight,
+                          color: hasSelection
+                              ? AppTheme.textColor(context)
+                              : AppTheme.fieldHintColor(
+                                  context,
+                                  lightOpacity: 0.5,
+                                ),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              ?trailing,
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
-                size: asCard ? 20 : 22,
-              ),
-            ],
+                ?trailing,
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.textLightColor(
+                    context,
+                  ).withValues(alpha: 0.4),
+                  size: asCard ? 20 : 22,
+                ),
+              ],
+            ),
           ),
         ),
       ),
