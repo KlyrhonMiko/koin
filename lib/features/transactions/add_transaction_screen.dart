@@ -31,6 +31,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       widget.editingTransaction?.id ?? const Uuid().v4();
   final _amountController = TextEditingController();
   final _feeController = TextEditingController();
+  final _feeFocusNode = FocusNode();
   final _noteFocusNode = FocusNode();
 
   late final DebouncedSuggesterCoordinator _suggesterCoordinator;
@@ -41,6 +42,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   String? _selectedToAccountId;
   bool _isTransferFeePercentage = false;
   String _currentExpression = '';
+  String _feeExpression = '';
+  bool _editingFee = false;
   int _autoCatKey = 0;
   bool _manualCategory = false;
   bool _categorySuggested = false;
@@ -117,6 +120,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _noteController.removeListener(_onNoteChanged);
     _amountController.removeListener(_onAmountChanged);
     _noteFocusNode.dispose();
+    _feeFocusNode.dispose();
     _noteController.dispose();
     _amountController.dispose();
     _feeController.dispose();
@@ -142,6 +146,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   void _updateTransferFee(Account? account) {
     if (account == null) {
       _feeController.text = '';
+      _feeExpression = '';
       return;
     }
 
@@ -161,6 +166,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     } else {
       _feeController.text = '';
     }
+    _feeExpression = _feeController.text;
+  }
+
+  void _selectNumericInput({required bool fee}) {
+    _noteFocusNode.unfocus();
+    if (fee) {
+      _feeFocusNode.requestFocus();
+    } else {
+      _feeFocusNode.unfocus();
+    }
+    setState(() => _editingFee = fee);
   }
 
   void _runAutoCategorization() {
@@ -564,6 +580,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     HapticService.selection();
     setState(() {
       _selectedType = newType;
+      if (newType != TransactionType.transfer) {
+        _editingFee = false;
+        _feeFocusNode.unfocus();
+      }
       if (_selectedCategoryId != null) {
         final cat = _categoryById(categories, _selectedCategoryId);
         if (cat != null &&
@@ -689,17 +709,28 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           bottom: mediaQuery.viewPadding.bottom,
                         ),
                       ),
-                      child: NumPad(
-                        key: const ValueKey('numpad'),
-                        compact: true,
-                        initialValue: _currentExpression,
-                        onValueChanged: (expression, result) {
-                          setState(() {
-                            _currentExpression = expression;
-                            _amountController.text = result;
-                          });
-                        },
-                        onDone: () => _saveTransaction(),
+                      child: TextFieldTapRegion(
+                        child: NumPad(
+                          key: ValueKey(_editingFee ? 'fee-numpad' : 'numpad'),
+                          compact: true,
+                          initialValue: _editingFee
+                              ? _feeExpression
+                              : _currentExpression,
+                          onValueChanged: (expression, result) {
+                            setState(() {
+                              if (_editingFee) {
+                                _feeExpression = expression;
+                                _feeController.text = expression.isEmpty
+                                    ? ''
+                                    : result;
+                              } else {
+                                _currentExpression = expression;
+                                _amountController.text = result;
+                              }
+                            });
+                          },
+                          onDone: () => _saveTransaction(),
+                        ),
                       ),
                     ),
                   ),
@@ -861,7 +892,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        _buildHeroAmount(context, currency, typeColor),
+                        Semantics(
+                          button: true,
+                          label: 'Edit amount',
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _selectNumericInput(fee: false),
+                            child: _buildHeroAmount(
+                              context,
+                              currency,
+                              typeColor,
+                            ),
+                          ),
+                        ),
                         Positioned(
                           right: 16,
                           top: 0,
@@ -998,23 +1041,31 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ],
           ),
           const Gap(8),
-          // Animated underline accent
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Container(
-                width: hasAmount ? 60 : 40,
-                height: 3,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: typeColor.withValues(
-                    alpha: hasAmount
-                        ? 0.35
-                        : (0.15 + 0.2 * _pulseAnimation.value),
+          // Reserve the same space whether or not a message is visible.
+          SizedBox(
+            height: 32,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_selectedType == TransactionType.transfer)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildTransferSummary(context),
                   ),
-                ),
-              );
-            },
+                if (_exceedsAvailableBalance())
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Amount exceeds available balance',
+                      style: TextStyle(
+                        color: AppTheme.errorColor(context),
+                        fontSize: KoinTypography.caption,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1024,6 +1075,55 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Form Section
   // ═══════════════════════════════════════════════════════
+  Widget _buildTransferSummary(BuildContext context) {
+    final amount = double.tryParse(_amountController.text) ?? 0;
+    final fee = double.tryParse(_feeController.text) ?? 0;
+    final draft = TransferDraft(
+      sourceAccountId: _selectedAccountId ?? '',
+      destinationAccountId: _selectedToAccountId ?? '',
+      rawAmount: amount,
+      enteredFee: fee,
+      isFeePercentage: _isTransferFeePercentage,
+      date: _selectedDate,
+    );
+    final total = draft.calculateTotalDebit();
+    if (!amount.isFinite ||
+        amount <= 0 ||
+        !fee.isFinite ||
+        fee < 0 ||
+        !total.isFinite) {
+      return const SizedBox.shrink();
+    }
+    final symbol = ref.watch(settingsProvider).currency.symbol;
+    final format = NumberFormat('#,##0.##');
+    return Text(
+      'Deducted $symbol${format.format(total)} · '
+      'Receives $symbol${format.format(draft.calculateNetAmount())}',
+      style: TextStyle(
+        fontSize: KoinTypography.small,
+        color: AppTheme.textLightColor(context),
+        height: 1.2,
+      ),
+    );
+  }
+
+  bool _exceedsAvailableBalance() {
+    final accounts = ref.watch(accountProvider).value ?? [];
+    ref.watch(dashboardStatsProvider);
+    final account = _accountById(accounts, _selectedAccountId);
+    if (account == null ||
+        account.isCredit ||
+        _selectedType == TransactionType.income) {
+      return false;
+    }
+    final amount = double.tryParse(_amountController.text) ?? 0;
+    final fee = double.tryParse(_feeController.text) ?? 0;
+    final debit = _selectedType == TransactionType.transfer
+        ? amount + (_isTransferFeePercentage ? amount * (fee / 100) : fee)
+        : amount;
+    return debit > _availableBalance(account);
+  }
+
   Widget _buildFormSection(
     BuildContext context,
     List<TransactionCategory> categories,
@@ -1116,7 +1216,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               color: AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
+                color: _editingFee
+                    ? typeColor
+                    : AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
               ),
               boxShadow: [
                 AppTheme.boxShadow(
@@ -1150,9 +1252,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   Expanded(
                     child: TextField(
                       controller: _feeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      focusNode: _feeFocusNode,
+                      readOnly: true,
+                      showCursor: true,
+                      enableInteractiveSelection: false,
+                      keyboardType: TextInputType.none,
+                      onTapAlwaysCalled: true,
+                      onTap: () => _selectNumericInput(fee: true),
+                      onTapOutside: (_) => _selectNumericInput(fee: false),
                       style: TextStyle(
                         fontWeight: KoinTypography.labelWeight,
                         fontSize: KoinTypography.body,
@@ -1590,20 +1697,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               }),
             ),
           ),
-          if (account != null &&
-              !account.isCredit &&
-              _selectedType != TransactionType.income &&
-              (double.tryParse(_amountController.text) ?? 0) > (balance ?? 0))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(64, 0, 16, 12),
-              child: Text(
-                'Amount exceeds available balance',
-                style: TextStyle(
-                  color: AppTheme.errorColor(context),
-                  fontSize: KoinTypography.caption,
-                ),
-              ),
-            ),
         ],
       ),
     );

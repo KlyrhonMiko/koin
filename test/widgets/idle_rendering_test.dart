@@ -183,6 +183,165 @@ void main() {
     },
   );
 
+  testWidgets('transfer fee uses the keypad without opening the keyboard', (
+    tester,
+  ) async {
+    final providers = container();
+    addTearDown(providers.dispose);
+    await pumpScreen(
+      tester,
+      providers,
+      const AddTransactionScreen(initialType: TransactionType.transfer),
+      width: 360,
+      height: 900,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('7'));
+    await tester.pumpAndSettle();
+
+    final fee = find.byType(TextField);
+    final keypadRect = tester.getRect(find.byType(NumPad));
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    expect(tester.testTextInput.isVisible, isFalse);
+    expect(tester.getRect(find.byType(NumPad)), keypadRect);
+    for (final key in ['0', '.', '5']) {
+      await tester.tap(find.text(key).last);
+      await tester.pumpAndSettle();
+    }
+    expect(tester.widget<TextField>(fee).controller!.text, '0.5');
+    expect(find.text('7').first, findsOneWidget);
+
+    await tester.tap(find.text('%'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(fee).controller!.text, '0.5');
+    expect(tester.testTextInput.isVisible, isFalse);
+
+    // A tap on empty header space also returns input to the large amount.
+    await tester.tapAt(const Offset(4, 200));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '7');
+    await tester.tap(find.text('8'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '8');
+    expect(tester.widget<TextField>(fee).controller!.text, '0.5');
+
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '0.5');
+    await tester.tap(find.text('C'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(fee).controller!.text, isEmpty);
+    await tester.tap(find.text('Expense'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '8');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('transfer summary updates for fixed and percentage fees', (
+    tester,
+  ) async {
+    final providers = container();
+    addTearDown(providers.dispose);
+    await pumpScreen(
+      tester,
+      providers,
+      const AddTransactionScreen(initialType: TransactionType.transfer),
+      width: 360,
+      height: 900,
+    );
+    await tester.pumpAndSettle();
+    final symbol = providers.read(settingsProvider).currency.symbol;
+    expect(find.textContaining('Deducted'), findsNothing);
+    for (final key in ['5', '0']) {
+      await tester.tap(find.text(key).last);
+      await tester.pumpAndSettle();
+    }
+    final amountRect = tester.getRect(find.text('50'));
+    final feeRect = tester.getRect(find.byType(TextField));
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    for (final key in ['1', '0']) {
+      await tester.tap(find.text(key).last);
+      await tester.pumpAndSettle();
+    }
+    expect(
+      find.text('Deducted ${symbol}60 · Receives ${symbol}50'),
+      findsOneWidget,
+    );
+    final summary = find.text('Deducted ${symbol}60 · Receives ${symbol}50');
+    expect(tester.getTopLeft(summary).dy, greaterThan(amountRect.bottom));
+    expect(tester.getBottomLeft(summary).dy, lessThan(feeRect.top));
+    expect(tester.getRect(find.text('50')), amountRect);
+    expect(tester.getRect(find.byType(TextField)), feeRect);
+    await tester.tap(find.text('%'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Deducted ${symbol}55 · Receives ${symbol}50'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('C'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Deducted ${symbol}50 · Receives ${symbol}50'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Select account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    for (final key in ['3', '0']) {
+      await tester.tap(find.text(key).last);
+      await tester.pumpAndSettle();
+    }
+    expect(
+      find.text('Deducted ${symbol}80 · Receives ${symbol}50'),
+      findsOneWidget,
+    );
+    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    expect(tester.getRect(find.text('50')), amountRect);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Expense'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Deducted'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('balance warning stays below the amount without shrinking it', (
+    tester,
+  ) async {
+    final providers = container();
+    addTearDown(providers.dispose);
+    await pumpScreen(
+      tester,
+      providers,
+      const AddTransactionScreen(),
+      width: 360,
+      height: 760,
+    );
+    await tester.pumpAndSettle();
+    for (final key in ['8', '0']) {
+      await tester.tap(find.text(key).last);
+      await tester.pumpAndSettle();
+    }
+    final amountRect = tester.getRect(find.text('80'));
+    await tester.tap(find.text('Select account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cash'));
+    await tester.pumpAndSettle();
+    final warning = find.text('Amount exceeds available balance');
+    expect(warning, findsOneWidget);
+    expect(tester.getRect(find.text('80')), amountRect);
+    expect(tester.getTopLeft(warning).dy, greaterThan(amountRect.bottom));
+    expect(
+      tester.getBottomLeft(warning).dy,
+      lessThan(tester.getTopLeft(find.byType(TextField)).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('note keyboard hands back to keypad without a layout bounce', (
     tester,
   ) async {
