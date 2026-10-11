@@ -8,6 +8,7 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/primitives/animated_counter.dart';
 import 'package:koin/core/widgets/cards/card_background_shapes.dart';
 import 'package:koin/core/widgets/primitives/pressable_scale.dart';
+import 'portfolio_card_style.dart';
 
 class AccountItem extends StatelessWidget {
   final Account account;
@@ -47,7 +48,7 @@ class AccountItem extends StatelessWidget {
     if (_hasColoredBackground) {
       final baseColor = account.cardColor ?? account.color;
       return BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PortfolioCardStyle.radius),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -82,28 +83,13 @@ class AccountItem extends StatelessWidget {
       );
     }
 
-    final surfaceColor = AppTheme.surfaceColor(context);
-    return BoxDecoration(
-      color: surfaceColor,
-      borderRadius: BorderRadius.circular(24),
+    return PortfolioCardStyle.decoration(context).copyWith(
       border: Border.all(
         color: isSelected
             ? AppTheme.primaryColor(context)
-            : (isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : AppTheme.dividerColor(context).withValues(alpha: 0.6)),
-        width: isSelected ? 2.5 : 1.2,
+            : AppTheme.dividerColor(context).withValues(alpha: 0.6),
+        width: isSelected ? 2.5 : 1,
       ),
-      boxShadow: [
-        AppTheme.boxShadow(
-          context,
-          color: isDark
-              ? Colors.black.withValues(alpha: 0.3)
-              : Colors.black.withValues(alpha: 0.03),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
-        ),
-      ],
     );
   }
 
@@ -147,16 +133,13 @@ class AccountItem extends StatelessWidget {
               const SizedBox.shrink()
             else
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: KoinSpacing.screenInset,
-                  vertical: 16,
-                ),
+                padding: PortfolioCardStyle.padding,
                 child: Row(
                   children: [
                     // ── Account Icon / Logo ──
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: PortfolioCardStyle.iconSize,
+                      height: PortfolioCardStyle.iconSize,
                       decoration: BoxDecoration(
                         color: account.logoAsset == null
                             ? (colored
@@ -198,18 +181,14 @@ class AccountItem extends StatelessWidget {
                         children: [
                           Text(
                             account.name,
-                            style: TextStyle(
-                              color: colored
-                                  ? Colors.white.withValues(alpha: 0.85)
-                                  : AppTheme.textLightColor(context),
-                              fontWeight: KoinTypography.labelWeight,
-                              fontSize: KoinTypography.caption,
-                              letterSpacing: -0.1,
+                            style: PortfolioCardStyle.label(
+                              context,
+                              colored: colored,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const Gap(2),
+                          const Gap(KoinSpacing.labelGap),
                           isPrivate
                               ? Text(
                                   '••••••',
@@ -227,12 +206,9 @@ class AccountItem extends StatelessWidget {
                                   NumberFormat.currency(
                                     symbol: currencySymbol,
                                   ).format(balance),
-                                  style: TextStyle(
-                                    color: colored
-                                        ? Colors.white
-                                        : AppTheme.textColor(context),
-                                    fontWeight: KoinTypography.titleWeight,
-                                    fontSize: KoinTypography.itemAmount,
+                                  style: PortfolioCardStyle.amount(
+                                    context,
+                                    colored: colored,
                                   ),
                                 )
                               : AnimatedCounter(
@@ -244,13 +220,9 @@ class AccountItem extends StatelessWidget {
                                     symbol: currencySymbol,
                                   ).format(v),
                                   duration: const Duration(milliseconds: 600),
-                                  style: TextStyle(
-                                    color: colored
-                                        ? Colors.white
-                                        : AppTheme.textColor(context),
-                                    fontWeight: KoinTypography.titleWeight,
-                                    fontSize: KoinTypography.itemAmount,
-                                    letterSpacing: KoinTypography.itemTracking,
+                                  style: PortfolioCardStyle.amount(
+                                    context,
+                                    colored: colored,
                                   ),
                                 ),
                           if (savingsAmount > 0 && !isPrivate) ...[

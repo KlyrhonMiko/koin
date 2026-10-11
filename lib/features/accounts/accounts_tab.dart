@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gap/gap.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/accounts/account_form_screen.dart';
 
@@ -148,42 +147,17 @@ class AccountsTab extends ConsumerWidget {
   }
 
   Widget _buildAddAccountButton(BuildContext context, WidgetRef ref) {
-    final button = PressableScale(
-      onTap: () {
-        HapticService.medium();
-        Navigator.push(context, SlideUpRoute(page: const AccountFormScreen()));
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 24),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: AppTheme.textLightColor(context),
-              size: 20,
-            ),
-            const Gap(10),
-            Text(
-              'Add New Account',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontWeight: KoinTypography.labelWeight,
-                fontSize: KoinTypography.compact,
-              ),
-            ),
-          ],
-        ),
+    final button = Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: KoinAddButton(
+        label: 'Add new account',
+        onPressed: () {
+          HapticService.medium();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: const AccountFormScreen()),
+          );
+        },
       ),
     );
 

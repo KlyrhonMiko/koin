@@ -92,7 +92,7 @@ void main() {
     expect(tester.widget<SwitchListTile>(toggle).value, true);
     await tester.tap(toggle);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Update Stash'));
+    await tester.tap(find.text('Update Savings'));
     await tester.pumpAndSettle();
     final saved = (await repository.getSavingsGoals()).single;
     expect(saved.includeInDashboardBalance, false);
@@ -102,6 +102,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(toggle).value, false);
   });
+
+  testWidgets(
+    'legacy emergency savings edits preserve the pot and allow either type',
+    (tester) async {
+      final legacy = SavingsGoal.fromMap(
+        SavingsGoal(
+          id: 'legacy',
+          name: 'Rainy days',
+          currentAmount: 250,
+          startDate: DateTime(2026),
+          isStash: true,
+          linkedAccountId: 'mari',
+          includeInDashboardBalance: false,
+          notes: 'My reserve',
+          savingsPlan: SavingsPlan(
+            amount: 25,
+            frequency: SavingsFrequency.weekly,
+            startDate: DateTime(2026),
+          ),
+        ).toMap()..['isEmergencyFund'] = 1,
+      );
+      final account = Account(
+        id: 'mari',
+        name: 'MariBank',
+        iconCodePoint: Icons.wallet.codePoint,
+        colorHex: '#00C9A0',
+      );
+      final repository = await openForm(
+        tester,
+        goal: legacy,
+        accounts: [account],
+      );
+      expect(find.text('Edit savings'), findsOneWidget);
+      expect(find.text('Emergency'), findsNothing);
+      expect(find.text('Stash'), findsNothing);
+      expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('goal_name')))
+            .controller!
+            .text,
+        'Rainy days',
+      );
+      await tester.tap(find.text('Update Savings'));
+      await tester.pumpAndSettle();
+      final saved = (await repository.getSavingsGoals()).single;
+      expect(saved.id, legacy.id);
+      expect(saved.name, legacy.name);
+      expect(saved.currentAmount, 250);
+      expect(saved.linkedAccountId, 'mari');
+      expect(saved.includeInDashboardBalance, false);
+      expect(saved.notes, 'My reserve');
+      expect(saved.savingsPlan!.amount, 25);
+      expect(saved.isStash, true);
+      expect(saved.isEmergencyFund, false);
+      final convertedRepository = await openForm(
+        tester,
+        goal: saved,
+        accounts: [account],
+      );
+      await tester.ensureVisible(find.text('Goal'));
+      await tester.tap(find.text('Goal'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('goal_amount')));
+      await tester.enterText(find.byKey(const Key('goal_amount')), '1000');
+      await tester.tap(find.text('Update Goal'));
+      await tester.pumpAndSettle();
+      final converted = (await convertedRepository.getSavingsGoals()).single;
+      expect(converted.isStash, false);
+      expect(converted.targetAmount, 1000);
+      expect(converted.currentAmount, 250);
+      expect(converted.savingsPlan!.amount, 25);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Goal validates required fields and saves the form values', (
     tester,
@@ -141,11 +215,11 @@ void main() {
   ) async {
     final savings = await openForm(tester, dark: false);
     await tester.enterText(find.byKey(const Key('goal_name')), 'Spare change');
-    await tester.tap(find.text('Stash'));
+    await tester.tap(find.text('Savings'));
     await tester.pumpAndSettle();
     expect(find.text('Target date'), findsNothing);
     expect(find.text('Target amount (optional)'), findsOneWidget);
-    await tester.tap(find.text('Create Stash'));
+    await tester.tap(find.text('Create Savings'));
     await tester.pumpAndSettle();
     final saved = (await savings.getSavingsGoals()).single;
     expect(saved.isStash, isTrue);
@@ -163,7 +237,7 @@ void main() {
     expect(find.text('Target date'), findsOneWidget);
     expect(find.textContaining('a day over'), findsOneWidget);
 
-    await tester.tap(find.text('Stash'));
+    await tester.tap(find.text('Savings'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
     // Removed fields are still painted during their exit transition.
@@ -175,7 +249,7 @@ void main() {
 
     await tester.tap(find.text('Goal'));
     await tester.pump(const Duration(milliseconds: 60));
-    await tester.tap(find.text('Stash'));
+    await tester.tap(find.text('Savings'));
     await tester.pump(const Duration(milliseconds: 60));
     await tester.tap(find.text('Goal'));
     await tester.pumpAndSettle();
@@ -196,7 +270,7 @@ void main() {
     tester,
   ) async {
     await openForm(tester, disableAnimations: true);
-    await tester.tap(find.text('Stash'));
+    await tester.tap(find.text('Savings'));
     await tester.pump();
     expect(find.text('Target date'), findsNothing);
     await tester.tap(find.text('Goal'));

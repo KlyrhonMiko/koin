@@ -26,13 +26,22 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 37,
+      version: 39,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 39) {
+      final columns = await db.rawQuery('PRAGMA table_info(debts)');
+      if (columns.isNotEmpty &&
+          !columns.any((column) => column['name'] == 'isPurchaseAccount')) {
+        await db.execute(
+          'ALTER TABLE debts ADD COLUMN isPurchaseAccount INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+    }
     if (oldVersion < 2) {
       try {
         await db.execute(
@@ -319,6 +328,22 @@ CREATE TABLE debt_items (
         );
       }
     }
+    if (oldVersion < 38) {
+      final columns = await db.rawQuery('PRAGMA table_info(savings_goals)');
+      final additions = {
+        'isEmergencyFund': 'INTEGER NOT NULL DEFAULT 0',
+        'contributionAmount': 'REAL',
+        'contributionFrequency': 'TEXT',
+        'contributionStartDate': 'TEXT',
+      };
+      for (final entry in additions.entries) {
+        if (!columns.any((column) => column['name'] == entry.key)) {
+          await db.execute(
+            'ALTER TABLE savings_goals ADD COLUMN ${entry.key} ${entry.value}',
+          );
+        }
+      }
+    }
     if (oldVersion < 37) {
       final columns = await db.rawQuery('PRAGMA table_info(savings_logs)');
       if (!columns.any((column) => column['name'] == 'transactionId')) {
@@ -459,6 +484,7 @@ CREATE TABLE debts (
   dueDate TEXT,
   totalInstallments INTEGER DEFAULT 0,
   frequency TEXT DEFAULT "monthly",
+  isPurchaseAccount INTEGER NOT NULL DEFAULT 0,
   accountId TEXT,
   categoryId TEXT,
   sortOrder INTEGER DEFAULT 0
@@ -508,7 +534,11 @@ CREATE TABLE savings_goals (
   notes TEXT,
   linkedAccountId TEXT,
   isStash INTEGER DEFAULT 0,
-  includeInDashboardBalance INTEGER NOT NULL DEFAULT 1
+  includeInDashboardBalance INTEGER NOT NULL DEFAULT 1,
+  isEmergencyFund INTEGER NOT NULL DEFAULT 0,
+  contributionAmount REAL,
+  contributionFrequency TEXT,
+  contributionStartDate TEXT
 )
 ''');
 

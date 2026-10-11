@@ -6,9 +6,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
-import 'package:koin/features/savings/coach/coach_screen.dart';
-import 'package:koin/features/savings/coach/coach_engine.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
+import 'widgets/savings_routine_card.dart';
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -194,22 +193,6 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       ],
                     ),
                   ),
-                  Semantics(
-                    label: 'Savings coach',
-                    child: TextButton.icon(
-                      onPressed: () => _openCoach(goal),
-                      icon: const Icon(
-                        Icons.tips_and_updates_rounded,
-                        size: 18,
-                      ),
-                      label: const Text('Coach'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.textLightColor(context),
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -243,14 +226,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                 ),
                               ),
                             ),
-                          if (goal.dailyNeeded != null) ...[
-                            const Gap(16),
-                            _buildSavingsNeededSection(
-                              context,
-                              goal,
-                              currencyFormat,
-                            ),
-                          ],
+                          SavingsRoutineCard(goal: goal),
                         ],
                       ),
                     ),
@@ -460,17 +436,21 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           ),
                         ),
                         const Gap(6),
-                        AnimatedCounter(
-                          value: goal.currentAmount,
-                          formatter: (v) => currencyFormat.format(v),
-                          duration: const Duration(milliseconds: 1400),
-                          curve: Curves.easeOutCubic,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.0,
-                            height: 1.1,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedCounter(
+                            value: goal.currentAmount,
+                            formatter: (v) => currencyFormat.format(v),
+                            duration: const Duration(milliseconds: 1400),
+                            curve: Curves.easeOutCubic,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1.0,
+                              height: 1.1,
+                            ),
                           ),
                         ),
                       ],
@@ -541,8 +521,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   color: Colors.white.withValues(alpha: 0.15),
                 ),
                 const Gap(16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 24,
+                  runSpacing: 16,
                   children: [
                     _buildStatItem(
                       context,
@@ -558,7 +539,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           : 'Left',
                       value: goal.remainingAmount ?? 0.0,
                       formatter: currencyFormat.format,
-                      alignment: CrossAxisAlignment.end,
+                      alignment: CrossAxisAlignment.start,
                     ),
                   ],
                 ),
@@ -603,179 +584,6 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         ),
       ],
     );
-  }
-
-  Future<void> _openCoach(SavingsGoal goal) async {
-    HapticService.light();
-    final CoachSimulationResult? result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SavingsCoachScreen(goal: goal),
-        fullscreenDialog: true,
-      ),
-    );
-    if (result != null && mounted) {
-      if (result.newDeadline != goal.endDate ||
-          (result.targetAmountOverride != null &&
-              result.targetAmountOverride != goal.targetAmount)) {
-        final updatedGoal = SavingsGoal(
-          id: goal.id,
-          name: goal.name,
-          targetAmount: result.targetAmountOverride ?? goal.targetAmount,
-          currentAmount: goal.currentAmount,
-          startDate: goal.startDate,
-          endDate: result.newDeadline,
-          notes: goal.notes,
-          linkedAccountId: goal.linkedAccountId,
-          isStash: goal.isStash,
-        );
-        await ref.read(savingsGoalsProvider.notifier).updateGoal(updatedGoal);
-
-        if (!mounted) return;
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
-        final themeColor = AppTheme.primaryColor(context);
-
-        final msg = result.targetAmountOverride != null && goal.isStash
-            ? 'Stash plan updated!'
-            : 'Deadline updated to ${DateFormat.yMMMd().format(result.newDeadline)}';
-
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: themeColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildSavingsNeededSection(
-    BuildContext context,
-    SavingsGoal goal,
-    NumberFormat currencyFormat,
-  ) {
-    if (goal.dailyNeeded == null) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-              'Savings Needed',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textColor(context),
-                letterSpacing: -0.3,
-              ),
-            )
-            .animate()
-            .fade(duration: 300.ms, curve: Curves.easeOutCubic)
-            .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
-        const Gap(12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
-            ),
-            boxShadow: [
-              AppTheme.boxShadow(
-                context,
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildPlainMetric(
-                  context,
-                  label: 'Daily',
-                  value: goal.dailyNeeded!,
-                  formatter: currencyFormat.format,
-                  delayMs: 100,
-                ),
-              ),
-              Expanded(
-                child: _buildPlainMetric(
-                  context,
-                  label: 'Weekly',
-                  value: goal.weeklyNeeded!,
-                  formatter: currencyFormat.format,
-                  delayMs: 160,
-                ),
-              ),
-              Expanded(
-                child: _buildPlainMetric(
-                  context,
-                  label: 'Monthly',
-                  value: goal.monthlyNeeded!,
-                  formatter: currencyFormat.format,
-                  delayMs: 220,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlainMetric(
-    BuildContext context, {
-    required String label,
-    required double value,
-    required String Function(double) formatter,
-    required int delayMs,
-  }) {
-    return Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-                letterSpacing: 0.2,
-              ),
-            ),
-            const Gap(2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.center,
-              child: AnimatedCounter(
-                value: value,
-                formatter: formatter,
-                duration: const Duration(milliseconds: 1400),
-                curve: Curves.easeOutCubic,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textColor(context),
-                  letterSpacing: -0.4,
-                ),
-              ),
-            ),
-          ],
-        )
-        .animate()
-        .fade(delay: delayMs.ms, duration: 400.ms, curve: Curves.easeOutCubic)
-        .slideY(
-          begin: 0.15,
-          delay: delayMs.ms,
-          duration: 400.ms,
-          curve: Curves.easeOutCubic,
-        );
   }
 
   Widget _buildActivitySection(

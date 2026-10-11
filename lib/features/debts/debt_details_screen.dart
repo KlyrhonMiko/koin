@@ -151,13 +151,16 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                               ),
                               const Gap(24),
                               _buildQuickActions(context, debt, color),
-                              const Gap(32),
-                              _buildItemsSection(
-                                context,
-                                debt,
-                                currencyFormat,
-                                color,
-                              ),
+                              if (debt.isPurchaseAccount ||
+                                  debt.items.isNotEmpty) ...[
+                                const Gap(32),
+                                _buildItemsSection(
+                                  context,
+                                  debt,
+                                  currencyFormat,
+                                  color,
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -234,7 +237,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 
               const Gap(4),
               Text(
-                debt.totalInstallments > 0
+                debt.isMonthlyPurchaseAccount && !debt.isSettled
+                    ? '${currencyFormat.format(debt.upcomingPaymentAmount)} next bill · ${DateFormat.MMMd().format(debt.nextDueDate)}'
+                    : debt.totalInstallments > 0
                     ? '${currencyFormat.format(debt.amount)} total · ${debt.totalInstallments} ${debt.frequency.name} payments'
                     : '${currencyFormat.format(debt.amount)} total',
                 style: TextStyle(
@@ -422,11 +427,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           installments.add(
             _ItemInstallment(item.id, nextDate, installmentAmount),
           );
-          nextDate = _advanceDate(
-            nextDate,
-            debt.frequency,
-            item.firstPaymentDate,
-          );
+          nextDate = debt.isMonthlyPurchaseAccount
+              ? debt.monthlyBillDate(nextDate.year, nextDate.month + 1)
+              : _advanceDate(nextDate, debt.frequency, item.firstPaymentDate);
         }
       } else {
         installments.add(
@@ -509,7 +512,12 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     debtType: debt.type,
                     primaryColor: color,
                     categories: categories,
-                    defaultDate: DateTime.now(),
+                    defaultDate: debt.isMonthlyPurchaseAccount
+                        ? debt.nextPurchaseBillDate
+                        : DateTime.now(),
+                    monthlyBillingDay: debt.isMonthlyPurchaseAccount
+                        ? debt.startDate.day
+                        : null,
                     existingItem: item,
                     suggester: ref.read(categorySuggesterProvider),
                   );
@@ -535,55 +543,68 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             ),
           );
         }),
-        const Gap(6),
-        PressableScale(
-          onTap: () async {
-            HapticService.light();
-            final categories = ref.read(categoriesProvider).value ?? [];
-            final newItem = await showAddPurchaseSheet(
-              context: context,
-              debtType: debt.type,
-              primaryColor: color,
-              categories: categories,
-              defaultDate: DateTime.now(),
-              suggester: ref.read(categorySuggesterProvider),
-            );
+        if (debt.isPurchaseAccount) ...[
+          const Gap(6),
+          PressableScale(
+            onTap: () async {
+              HapticService.light();
+              final categories = ref.read(categoriesProvider).value ?? [];
+              final newItem = await showAddPurchaseSheet(
+                context: context,
+                debtType: debt.type,
+                primaryColor: color,
+                categories: categories,
+                defaultDate: debt.isMonthlyPurchaseAccount
+                    ? debt.nextPurchaseBillDate
+                    : DateTime.now(),
+                monthlyBillingDay: debt.isMonthlyPurchaseAccount
+                    ? debt.startDate.day
+                    : null,
+                suggester: ref.read(categorySuggesterProvider),
+              );
 
-            if (newItem != null) {
-              final newDebtItem = newItem.copyWith(debtId: debt.id);
-              await ref
-                  .read(debtsProvider.notifier)
-                  .saveDebtItem(debt, newDebtItem);
+              if (newItem != null) {
+                final newDebtItem = newItem.copyWith(debtId: debt.id);
+                await ref
+                    .read(debtsProvider.notifier)
+                    .saveDebtItem(debt, newDebtItem);
 
-              if (context.mounted) {
-                KoinSnackBar.success(context, 'Purchase Added');
+                if (context.mounted) {
+                  KoinSnackBar.success(context, 'Purchase Added');
+                }
               }
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add_circle_outline_rounded, color: color, size: 20),
-                const Gap(8),
-                Text(
-                  'Add Purchase / Sub-Plan',
-                  style: TextStyle(
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_circle_outline_rounded,
                     color: color,
-                    fontWeight: KoinTypography.titleWeight,
-                    fontSize: KoinTypography.body,
+                    size: 20,
                   ),
-                ),
-              ],
+                  const Gap(8),
+                  Flexible(
+                    child: Text(
+                      'Add Purchase',
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: KoinTypography.titleWeight,
+                        fontSize: KoinTypography.body,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

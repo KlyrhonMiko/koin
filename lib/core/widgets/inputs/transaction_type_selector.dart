@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
+import 'package:koin/core/widgets/primitives/koin_segmented_control.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
 
@@ -24,11 +24,6 @@ class TransactionTypeSelector extends StatelessWidget {
         TransactionType.income,
         TransactionType.transfer,
       ];
-
-  int get _typeIndex {
-    final idx = _effectiveTypes.indexOf(selectedType);
-    return idx != -1 ? idx : 0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,87 +52,14 @@ class TransactionTypeSelector extends StatelessWidget {
         .where((t) => _effectiveTypes.contains(t.$2))
         .toList();
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context).withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
-        ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / types.length;
-          return Stack(
-            children: [
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                left: _typeIndex * tabWidth,
-                top: 0,
-                bottom: 0,
-                width: tabWidth,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: activeColor,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      AppTheme.boxShadow(
-                        context,
-                        color: activeColor.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Row(
-                children: types.map((t) {
-                  final isSelected = selectedType == t.$2;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onChanged(t.$2),
-                      behavior: HitTestBehavior.opaque,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              t.$4,
-                              size: 15,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textLightColor(context),
-                            ),
-                            const Gap(5),
-                            Flexible(
-                              child: Text(
-                                t.$1,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textLightColor(context),
-                                  fontWeight: KoinTypography.titleWeight,
-                                  fontSize: KoinTypography.caption,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          );
-        },
-      ),
+    final selectedIndex = types.indexWhere((type) => type.$2 == selectedType);
+    return KoinChoiceControl(
+      segments: [
+        for (final type in types)
+          KoinSegmentItem(label: type.$1, icon: type.$4),
+      ],
+      selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+      onChanged: (index) => onChanged(types[index].$2),
     );
   }
 }

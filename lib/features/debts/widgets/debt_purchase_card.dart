@@ -28,7 +28,7 @@ class DebtPurchaseCard extends StatelessWidget {
     final iconColor = category?.color ?? color;
     final bool isFullyPaid = paidAmount >= item.amount;
     final bool isPartiallyPaid = paidAmount > 0.01 && paidAmount < item.amount;
-    
+
     return Opacity(
       opacity: isFullyPaid ? 0.6 : 1.0,
       child: Container(
@@ -37,7 +37,7 @@ class DebtPurchaseCard extends StatelessWidget {
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isFullyPaid 
+            color: isFullyPaid
                 ? AppTheme.incomeColor(context).withValues(alpha: 0.5)
                 : AppTheme.dividerColor(context).withValues(alpha: 0.3),
             width: isFullyPaid ? 1.5 : 1.0,
@@ -80,7 +80,9 @@ class DebtPurchaseCard extends StatelessWidget {
                           color: AppTheme.textColor(context),
                           fontWeight: KoinTypography.titleWeight,
                           fontSize: KoinTypography.body,
-                          decoration: isFullyPaid ? TextDecoration.lineThrough : null,
+                          decoration: isFullyPaid
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -100,37 +102,49 @@ class DebtPurchaseCard extends StatelessWidget {
                   ),
                 ),
                 const Gap(12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      currencyFormat.format(item.amount),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: KoinTypography.headingWeight,
-                        fontSize: KoinTypography.itemTitle,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                    if (isFullyPaid) ...[
-                      const Gap(4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.incomeColor(context).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
                         child: Text(
-                          'Paid',
+                          currencyFormat.format(item.amount),
                           style: TextStyle(
-                            color: AppTheme.incomeColor(context),
-                            fontSize: KoinTypography.overline,
+                            color: color,
                             fontWeight: KoinTypography.headingWeight,
+                            fontSize: KoinTypography.itemTitle,
+                          ),
+                          textAlign: TextAlign.right,
+                          maxLines: 1,
+                        ),
+                      ),
+                      if (isFullyPaid) ...[
+                        const Gap(4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.incomeColor(
+                              context,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Paid',
+                            style: TextStyle(
+                              color: AppTheme.incomeColor(context),
+                              fontSize: KoinTypography.overline,
+                              fontWeight: KoinTypography.headingWeight,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -189,7 +203,7 @@ class DebtPurchaseSectionHeader extends StatelessWidget {
     children: [
       Flexible(
         child: Text(
-          'Sub-Plans / Purchases',
+          'Purchases',
           style: TextStyle(
             color: AppTheme.textColor(context),
             fontSize: KoinTypography.sectionTitle,

@@ -12,7 +12,7 @@ class SelectSheetItem extends StatelessWidget {
     super.key,
     required this.name,
     required this.accentColor,
-    required this.iconCodePoint,
+    this.iconCodePoint,
     required this.selected,
     required this.onTap,
     this.balance,
@@ -23,7 +23,7 @@ class SelectSheetItem extends StatelessWidget {
 
   final String name;
   final Color accentColor;
-  final int iconCodePoint;
+  final int? iconCodePoint;
   final bool selected;
   final VoidCallback onTap;
   final double? balance;
@@ -45,6 +45,7 @@ class SelectSheetItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
+          constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -77,30 +78,31 @@ class SelectSheetItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ── Icon ──
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accentColor.withValues(alpha: 0.15),
-                      accentColor.withValues(alpha: 0.06),
-                    ],
+              if (iconCodePoint != null) ...[
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accentColor.withValues(alpha: 0.15),
+                        accentColor.withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Center(
-                  child: Icon(
-                    IconUtils.getIcon(iconCodePoint),
-                    color: accentColor,
-                    size: 22,
+                  child: Center(
+                    child: Icon(
+                      IconUtils.getIcon(iconCodePoint!),
+                      color: accentColor,
+                      size: 22,
+                    ),
                   ),
                 ),
-              ),
-              const Gap(14),
+                const Gap(14),
+              ],
 
               // ── Name + Balance ──
               Expanded(
@@ -208,7 +210,7 @@ class SelectSheetItem extends StatelessWidget {
 Future<T?> showSelectSheet<T>({
   required BuildContext context,
   required String title,
-  required String subtitle,
+  String subtitle = '',
   required int itemCount,
   required Widget Function(BuildContext context, int index) itemBuilder,
   String? emptyMessage,
@@ -264,16 +266,18 @@ Future<T?> showSelectSheet<T>({
                             color: AppTheme.textColor(sheetContext),
                           ),
                         ),
-                        const Gap(4),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: KoinTypography.compact,
-                            fontWeight: KoinTypography.supportingWeight,
-                            height: 1.35,
-                            color: AppTheme.textLightColor(sheetContext),
+                        if (subtitle.isNotEmpty) ...[
+                          const Gap(4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.supportingWeight,
+                              height: 1.35,
+                              color: AppTheme.textLightColor(sheetContext),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

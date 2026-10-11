@@ -201,88 +201,18 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
               padding: const EdgeInsets.symmetric(
                 horizontal: KoinSpacing.screenInset,
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLightColor(context),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticService.selection();
-                          if (_isPercentMode) {
-                            setState(() {
-                              _isPercentMode = false;
-                              _currentExpression = '';
-                              _currentResult = '';
-                              _validationError = null;
-                            });
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: !_isPercentMode
-                                ? AppTheme.primaryColor(context)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Fixed Amount',
-                            style: TextStyle(
-                              fontWeight: KoinTypography.titleWeight,
-                              fontSize: KoinTypography.caption,
-                              color: !_isPercentMode
-                                  ? Colors.white
-                                  : AppTheme.textLightColor(context),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticService.selection();
-                          if (!_isPercentMode) {
-                            setState(() {
-                              _isPercentMode = true;
-                              _currentExpression = '';
-                              _currentResult = '';
-                              _validationError = null;
-                            });
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _isPercentMode
-                                ? AppTheme.primaryColor(context)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '% of Income',
-                            style: TextStyle(
-                              fontWeight: KoinTypography.titleWeight,
-                              fontSize: KoinTypography.caption,
-                              color: _isPercentMode
-                                  ? Colors.white
-                                  : AppTheme.textLightColor(context),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: KoinChoiceControl(
+                segments: const [
+                  KoinSegmentItem(label: 'Fixed Amount'),
+                  KoinSegmentItem(label: '% of Income'),
+                ],
+                selectedIndex: _isPercentMode ? 1 : 0,
+                onChanged: (index) => setState(() {
+                  _isPercentMode = index == 1;
+                  _currentExpression = '';
+                  _currentResult = '';
+                  _validationError = null;
+                }),
               ),
             ),
             const Gap(20),

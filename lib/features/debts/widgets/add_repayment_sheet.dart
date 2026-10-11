@@ -49,7 +49,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   @override
   void initState() {
     super.initState();
-    if (!widget.isIncrease && widget.debt.totalInstallments > 0) {
+    if (!widget.isIncrease &&
+        (widget.debt.totalInstallments > 0 || widget.debt.items.isNotEmpty)) {
       final payment = widget.debt.upcomingPaymentAmount;
       var paymentStr = payment.toStringAsFixed(2);
       if (paymentStr.endsWith('.00')) {

@@ -35,15 +35,16 @@ class UpcomingEntry {
 
   bool get isDebt => kind == UpcomingEntryKind.debtInstallment;
   bool get isPayment => kind == UpcomingEntryKind.plannedPayment;
-  bool get isFlexible =>
-      plannedPayment?.frequency == PaymentFrequency.flexible;
+  bool get isFlexible => plannedPayment?.frequency == PaymentFrequency.flexible;
 
   int daysUntilDue([DateTime? now]) {
     if (isFlexible) return 0;
     final ref = now ?? DateTime.now();
-    return DateTime(dueDate.year, dueDate.month, dueDate.day)
-        .difference(DateTime(ref.year, ref.month, ref.day))
-        .inDays;
+    return DateTime(
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+    ).difference(DateTime(ref.year, ref.month, ref.day)).inDays;
   }
 
   bool isOverdue([DateTime? now]) => !isFlexible && daysUntilDue(now) < 0;
@@ -96,12 +97,14 @@ class UpcomingTimeline {
     }
 
     for (final d in debts) {
-      if (d.totalInstallments > 0 && !d.isSettled) {
+      if ((d.totalInstallments > 0 || d.items.isNotEmpty) && !d.isSettled) {
         all.add(
           UpcomingEntry(
             id: d.id,
             title: d.personName,
-            subtitle: d.description ?? 'Installment',
+            subtitle:
+                d.description ??
+                (d.isMonthlyPurchaseAccount ? 'BNPL bill' : 'Installment'),
             amount: d.upcomingPaymentAmount,
             dueDate: d.nextDueDate,
             isExpense: d.type == DebtType.iOwe,
@@ -129,11 +132,9 @@ class UpcomingTimeline {
   List<UpcomingEntry> get overdueEntries =>
       entries.where((e) => e.isOverdue()).toList();
 
-  double get totalExpenseDue => entries
-      .where((e) => e.isExpense)
-      .fold(0.0, (sum, e) => sum + e.amount);
+  double get totalExpenseDue =>
+      entries.where((e) => e.isExpense).fold(0.0, (sum, e) => sum + e.amount);
 
-  double get totalIncomeDue => entries
-      .where((e) => !e.isExpense)
-      .fold(0.0, (sum, e) => sum + e.amount);
+  double get totalIncomeDue =>
+      entries.where((e) => !e.isExpense).fold(0.0, (sum, e) => sum + e.amount);
 }

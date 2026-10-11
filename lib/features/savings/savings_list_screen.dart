@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/savings_details_screen.dart';
+import 'widgets/savings_projection_view.dart';
 
 class SavingsTab extends ConsumerStatefulWidget {
   final bool showEntranceAnimations;
@@ -28,7 +29,9 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return goalsAsync.when(
-      data: (goals) {
+      data: (loadedGoals) {
+        final goals = [...loadedGoals]
+          ..sort((a, b) => _group(a).compareTo(_group(b)));
         if (goals.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,27 +67,65 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                     return Padding(
                       key: ValueKey(goal.id),
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: SwipeToDeleteTile(
-                        key: Key('dismiss_goal_${goal.id}'),
-                        borderRadius: BorderRadius.circular(20),
-                        fillRoundedCorners: true,
-                        backgroundColor: AppTheme.errorColor(context),
-                        icon: Icons.delete_rounded,
-                        confirmTitle: 'Delete Goal?',
-                        confirmDescription:
-                            'Are you sure you want to delete "${goal.name}"? This action cannot be undone.',
-                        onDelete: () {
-                          HapticService.heavy();
-                          ref
-                              .read(savingsGoalsProvider.notifier)
-                              .deleteGoal(goal.id);
-                        },
-                        child: _buildListGoalCard(
-                          context,
-                          goal,
-                          index,
-                          currencyFormat,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (index == 0 ||
+                              _group(goals[index - 1]) != _group(goal))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      goal.isStash
+                                          ? 'Your savings'
+                                          : 'Your goals',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
+                                    ),
+                                  ),
+                                  if (goal.isStash)
+                                    TextButton(
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        SlideUpRoute(
+                                          page: const AddSavingsGoalScreen(
+                                            initialSavings: true,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Text('Add savings'),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          SwipeToDeleteTile(
+                            key: Key('dismiss_goal_${goal.id}'),
+                            borderRadius: BorderRadius.circular(
+                              PortfolioCardStyle.radius,
+                            ),
+                            fillRoundedCorners: true,
+                            backgroundColor: AppTheme.errorColor(context),
+                            icon: Icons.delete_rounded,
+                            confirmTitle: 'Delete Goal?',
+                            confirmDescription:
+                                'Are you sure you want to delete "${goal.name}"? This action cannot be undone.',
+                            onDelete: () {
+                              HapticService.heavy();
+                              ref
+                                  .read(savingsGoalsProvider.notifier)
+                                  .deleteGoal(goal.id);
+                            },
+                            child: _buildListGoalCard(
+                              context,
+                              goal,
+                              index,
+                              currencyFormat,
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }, childCount: goals.length),
@@ -98,7 +139,25 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                     KoinSpacing.screenInset,
                     124,
                   ),
-                  child: _buildAddGoalButton(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!goals.any((goal) => goal.isStash))
+                        TextButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            SlideUpRoute(
+                              page: const AddSavingsGoalScreen(
+                                initialSavings: true,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.savings_outlined),
+                          label: const Text('Add savings'),
+                        ),
+                      _buildAddGoalButton(context),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -121,8 +180,13 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final overallProgress = summary.overallProgress;
 
     Widget card = KoinSummaryCard(
-      shapeStyle: SummaryShapeStyle.savings,
+      shapeStyle: SummaryShapeStyle.defaultStyle,
+      padding: const EdgeInsets.symmetric(
+        horizontal: KoinSpacing.summaryInset,
+        vertical: 20,
+      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -133,99 +197,101 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Total Saved',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const Gap(6),
-                    AnimatedCounter(
-                      value: totalSaved,
-                      formatter: (v) => currencyFormat.format(v),
-                      duration: const Duration(milliseconds: 1400),
-                      curve: Curves.easeOutCubic,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.0,
-                        height: 1.1,
+                    Text('Total Saved', style: PortfolioCardStyle.summaryLabel),
+                    const Gap(12),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedCounter(
+                        value: totalSaved,
+                        formatter: (v) => currencyFormat.format(v),
+                        duration: const Duration(milliseconds: 1400),
+                        curve: Curves.easeOutCubic,
+                        style: PortfolioCardStyle.summaryAmount,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Gap(12),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                child: Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: overallProgress),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, val, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: CircularProgressIndicator(
-                              value: 1.0,
-                              strokeWidth: 4,
-                              color: Colors.white.withValues(alpha: 0.1),
+              if (totalTarget > 0) ...[
+                const Gap(12),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                  child: Center(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: overallProgress),
+                      duration: const Duration(milliseconds: 1400),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) {
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 56,
+                              height: 56,
+                              child: CircularProgressIndicator(
+                                value: 1.0,
+                                strokeWidth: 4,
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: CircularProgressIndicator(
-                              value: val,
-                              strokeWidth: 4,
-                              strokeCap: StrokeCap.round,
-                              color: Colors.white,
+                            SizedBox(
+                              width: 56,
+                              height: 56,
+                              child: CircularProgressIndicator(
+                                value: val,
+                                strokeWidth: 4,
+                                strokeCap: StrokeCap.round,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${(val * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
+                            Text(
+                              '${(val * 100).toInt()}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
-          const Gap(24),
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
-          const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMiniStat('Target', totalTarget, currencyFormat),
-              _buildMiniStat(
-                'Remaining',
-                totalTarget - totalSaved,
-                currencyFormat,
-                alignment: CrossAxisAlignment.end,
-              ),
-            ],
-          ),
+          if (totalTarget > 0) ...[
+            const Gap(24),
+            Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
+            const Gap(16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _buildMiniStat(
+                    'Goal targets',
+                    totalTarget,
+                    currencyFormat,
+                  ),
+                ),
+                Expanded(
+                  child: _buildMiniStat(
+                    'Goals remaining',
+                    summary.goalRemaining,
+                    currencyFormat,
+                    alignment: CrossAxisAlignment.end,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -255,23 +321,27 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.75),
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
         ),
         const Gap(6),
-        AnimatedCounter(
-          value: amount,
-          formatter: (v) => fmt.format(v),
-          duration: const Duration(milliseconds: 1400),
-          curve: Curves.easeOutCubic,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: AnimatedCounter(
+            value: amount,
+            formatter: (v) => fmt.format(v),
+            duration: const Duration(milliseconds: 1400),
+            curve: Curves.easeOutCubic,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
       ],
@@ -287,16 +357,9 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final progressPercent = (goal.progress * 100).toInt();
     final isCompleted = goal.isCompleted;
 
-    final accentColors = [
-      AppTheme.primaryColor(context),
-      const Color(0xFF6366F1),
-      const Color(0xFF3B82F6),
-      const Color(0xFFEC4899),
-      const Color(0xFFF59E0B),
-      const Color(0xFF8B5CF6),
-    ];
-    final accentColor = accentColors[index % accentColors.length];
-    final successGreen = const Color(0xFF10B981);
+    final accentColor = AppTheme.primaryColor(context);
+    final successGreen = AppTheme.incomeContentColor(context);
+    final iconColor = isCompleted ? successGreen : accentColor;
 
     Widget card = PressableScale(
       onTap: () {
@@ -307,49 +370,51 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        padding: PortfolioCardStyle.padding,
+        decoration: PortfolioCardStyle.decoration(context),
         child: Column(
           children: [
             Row(
               children: [
+                Container(
+                  width: PortfolioCardStyle.iconSize,
+                  height: PortfolioCardStyle.iconSize,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(
+                      PortfolioCardStyle.iconRadius,
+                    ),
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check_rounded
+                        : goal.isStash
+                        ? Icons.savings_outlined
+                        : Icons.flag_outlined,
+                    color: iconColor,
+                    size: 24,
+                  ),
+                ),
+                const Gap(16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         goal.name,
-                        style: TextStyle(
-                          color: AppTheme.textColor(context),
-                          fontSize: KoinTypography.body,
-                          fontWeight: KoinTypography.titleWeight,
-                        ),
+                        style: PortfolioCardStyle.label(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const Gap(4),
                       Text(
                         currencyFormat.format(goal.currentAmount),
-                        style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                          fontSize: KoinTypography.small,
-                          fontWeight: KoinTypography.supportingWeight,
-                        ),
+                        style: PortfolioCardStyle.amount(context),
                       ),
                     ],
                   ),
                 ),
+                const Gap(12),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -362,7 +427,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    goal.hasTarget ? '$progressPercent%' : 'Stash',
+                    goal.hasTarget ? '$progressPercent%' : 'Savings',
                     style: TextStyle(
                       color: isCompleted
                           ? successGreen
@@ -374,7 +439,16 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 ),
               ],
             ),
-            if (goal.hasTarget) ...[
+            if (goal.savingsPlan != null &&
+                ref.watch(savingsLogsProvider(goal.id)).asData != null) ...[
+              const Gap(12),
+              SavingsProjectionView(
+                goal: goal,
+                logs: ref.watch(savingsLogsProvider(goal.id)).requireValue,
+                format: currencyFormat,
+                compact: true,
+              ),
+            ] else if (goal.hasTarget) ...[
               const Gap(8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
@@ -409,50 +483,69 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     return card;
   }
 
+  int _group(SavingsGoal goal) => goal.isStash ? 0 : 1;
+
   Widget _buildEmptyState(BuildContext context) {
     Widget state = KoinEmptyState.sliver(
       icon: Icons.savings_outlined,
-      title: 'No dreams yet',
+      title: 'Start saving for what matters',
       subtitle:
-          'Start your financial journey by\nsetting your first savings goal.',
-      action: PressableScale(
-        onTap: () {
-          Navigator.push(
-            context,
-            SlideUpRoute(page: const AddSavingsGoalScreen()),
-          );
-        },
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: AppTheme.primaryColor(context),
-            boxShadow: [
-              AppTheme.boxShadow(
+          'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
+      action: Column(
+        children: [
+          PressableScale(
+            onTap: () {
+              Navigator.push(
                 context,
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                SlideUpRoute(page: const AddSavingsGoalScreen()),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(PortfolioCardStyle.radius),
+                color: AppTheme.primaryColor(context),
+                boxShadow: [
+                  AppTheme.boxShadow(
+                    context,
+                    color: AppTheme.primaryColor(
+                      context,
+                    ).withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
-              Gap(8),
-              Text(
-                'Create First Goal',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                  Gap(8),
+                  Text(
+                    'Create First Goal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          const Gap(12),
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              SlideUpRoute(
+                page: const AddSavingsGoalScreen(initialSavings: true),
+              ),
+            ),
+            icon: const Icon(Icons.savings_outlined),
+            label: const Text('Create savings'),
+          ),
+        ],
       ),
     );
 
@@ -466,44 +559,14 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
   }
 
   Widget _buildAddGoalButton(BuildContext context) {
-    Widget btn = PressableScale(
-      onTap: () {
+    Widget btn = KoinAddButton(
+      label: 'Add new goal',
+      onPressed: () {
         Navigator.push(
           context,
           SlideUpRoute(page: const AddSavingsGoalScreen()),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.8),
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: AppTheme.textLightColor(context),
-              size: 20,
-            ),
-            const Gap(10),
-            Text(
-              'Add New Goal',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontWeight: KoinTypography.labelWeight,
-                fontSize: KoinTypography.compact,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
 
     if (widget.showEntranceAnimations) {

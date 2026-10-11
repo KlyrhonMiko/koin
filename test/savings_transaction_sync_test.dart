@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/maintenance/database_snapshot.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -258,6 +259,55 @@ void main() {
     expect(await saved('goal'), 500);
   });
   test(
+    'version 37 upgrade preserves savings and persists emergency routines in backups',
+    () async {
+      for (final column in [
+        'isEmergencyFund',
+        'contributionAmount',
+        'contributionFrequency',
+        'contributionStartDate',
+      ]) {
+        await db.execute('ALTER TABLE savings_goals DROP COLUMN $column');
+      }
+      await db.setVersion(37);
+      await helper.close();
+      db = await helper.database;
+      expect(await db.getVersion(), 39);
+      final legacy = (await helper.getSavingsGoals()).firstWhere(
+        (g) => g.id == 'goal',
+      );
+      expect(legacy.currentAmount, 500);
+      expect(legacy.savingsPlan, isNull);
+      expect(legacy.isEmergencyFund, false);
+      expect((await helper.getSavingsLogs('goal')).length, 1);
+      final plan = SavingsPlan(
+        amount: 250,
+        frequency: SavingsFrequency.monthly,
+        startDate: DateTime(2026, 1, 31),
+      );
+      await helper.updateSavingsGoal(
+        legacy.copyWith(
+          isEmergencyFund: true,
+          savingsPlan: plan,
+          includeInDashboardBalance: false,
+        ),
+      );
+      await helper.close();
+      db = await helper.database;
+      final restored = (await helper.getSavingsGoals()).firstWhere(
+        (g) => g.id == 'goal',
+      );
+      expect(restored.currentAmount, 500);
+      expect(restored.targetAmount, isNull);
+      expect(restored.endDate, isNull);
+      expect(restored.includeInDashboardBalance, false);
+      expect(restored.savingsPlan!.amount, 250);
+      expect(restored.savingsPlan!.occurrence(1), DateTime(2026, 2, 28));
+      await DatabaseSnapshot.create(db, '${directory.path}/routine-backup.db');
+    },
+  );
+
+  test(
     'version 36 migration preserves existing unlinked savings history',
     () async {
       await record();
@@ -269,7 +319,7 @@ void main() {
       await db.setVersion(36);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 37);
+      expect(await db.getVersion(), 39);
       expect(await saved('goal'), 63);
       expect((await helper.getSavingsLogs('goal')).length, 2);
       expect(

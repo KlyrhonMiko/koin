@@ -434,6 +434,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _showError('Insufficient balance in ${account.name}');
       return;
     }
+    if (_transfer &&
+        !(ref.read(accountProvider).value ?? []).any(
+          (a) => a.id == _destinationId && a.id != _accountId,
+        )) {
+      _showError('Choose a receiving account');
+      return;
+    }
     if (_income != null) {
       await _save();
       return;
@@ -911,7 +918,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Text(
-                                      _saving ? 'Saving…' : 'Save transaction',
+                                      _saving
+                                          ? 'Saving…'
+                                          : (_transfer
+                                                ? 'Save transfer'
+                                                : 'Save transaction'),
                                     ),
                                   ),
                                 ),
@@ -1097,7 +1108,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           ),
         ),
         const SizedBox(height: 24),
-        if (_income == null) ...[
+        if (_transfer) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _transferAccounts(accounts, currency),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (_income == null && !_transfer) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _accountDetails(accounts, currency),
@@ -1111,7 +1129,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         NumPad(
           compact: true,
           initialValue: _expression,
-          doneLabel: _saving ? 'Saving…' : 'Next',
+          doneLabel: _saving ? 'Saving…' : (_transfer ? 'Review' : 'Next'),
           onValueChanged: (expression, result) {
             setState(() {
               _expression = expression;
@@ -1300,28 +1318,31 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         },
       );
 
+  double _displayAccountBalance(Account account, {required bool destination}) {
+    final balance =
+        ref.watch(dashboardStatsProvider).accountBalances[account.id] ??
+        account.initialBalance;
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
+    final savings = account.isCredit
+        ? 0.0
+        : goals
+              .where(
+                (g) =>
+                    g.linkedAccountId == account.id &&
+                    g.currentAmount > 0 &&
+                    ((!destination && _type != TransactionType.income) ||
+                        !g.includeInDashboardBalance),
+              )
+              .fold<double>(0, (sum, g) => sum + g.currentAmount);
+    return balance - savings.clamp(0, balance.clamp(0, double.infinity));
+  }
+
   Widget _accountChoices(
     AsyncValue<List<Account>> accounts, {
     required bool destination,
   }) {
-    final balances = ref.watch(dashboardStatsProvider).accountBalances;
     final currency = ref.watch(settingsProvider).currency;
     final goals = ref.watch(savingsGoalsProvider).value ?? [];
-    double displayBalance(Account account) {
-      final balance = balances[account.id] ?? account.initialBalance;
-      final savings = account.isCredit
-          ? 0.0
-          : goals
-                .where(
-                  (g) =>
-                      g.linkedAccountId == account.id &&
-                      g.currentAmount > 0 &&
-                      ((!destination && _type != TransactionType.income) ||
-                          !g.includeInDashboardBalance),
-                )
-                .fold<double>(0, (sum, g) => sum + g.currentAmount);
-      return balance - savings.clamp(0, balance.clamp(0, double.infinity));
-    }
 
     return accounts.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -1349,7 +1370,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 child: AccountItem(
                   account: account,
                   animateBalance: false,
-                  balance: displayBalance(account),
+                  balance: _displayAccountBalance(
+                    account,
+                    destination: destination,
+                  ),
                   savingsAmount: goals
                       .where(
                         (g) =>
@@ -1482,6 +1506,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     AsyncValue<List<Account>> accounts,
     AsyncValue<List<TransactionCategory>> categories,
   ) {
+    if (_transfer) return _transferDetails(accounts);
     if (accounts.hasError || categories.hasError) {
       return Column(
         children: [
@@ -1499,9 +1524,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     if (accounts.isLoading || categories.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    final destination = accounts.value!
-        .where((a) => a.id == _destinationId)
-        .firstOrNull;
     final category = categories.value!
         .where((c) => c.id == _categoryId)
         .firstOrNull;
@@ -1510,17 +1532,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         .firstOrNull;
     final currency = ref.watch(settingsProvider).currency;
     final format = NumberFormat.currency(symbol: currency.symbol);
-    final enteredFee = double.tryParse(_fee.text.isEmpty ? '0' : _fee.text);
-    final resolvedFee = enteredFee == null
-        ? null
-        : _feePercentage
-        ? _amount * enteredFee / 100
-        : enteredFee;
-    final validFee =
-        resolvedFee != null &&
-        resolvedFee.isFinite &&
-        resolvedFee >= 0 &&
-        (_amount + resolvedFee).isFinite;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1575,41 +1586,175 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             ),
           const SizedBox(height: 12),
         ],
-        if (_transfer) ...[
-          SelectionTile(
-            label: 'To account',
-            selectedName: destination?.name,
-            selectedColor: destination?.color,
-            selectedIconCodePoint: destination?.iconCodePoint,
-            selectedLogoAsset: destination?.logoAsset,
-            fallbackIcon: Icons.account_balance_wallet_outlined,
-            placeholder: 'Select receiving account',
-            onTap: () => _openAccountPicker(destination: true),
+      ],
+    );
+  }
+
+  Widget _transferAccounts(
+    AsyncValue<List<Account>> accounts,
+    Currency currency,
+  ) {
+    final all = accounts.value ?? [];
+    final source = all.where((a) => a.id == _accountId).firstOrNull;
+    final destination = all.where((a) => a.id == _destinationId).firstOrNull;
+    final balance = source == null
+        ? null
+        : ref.watch(dashboardStatsProvider).accountBalances[source.id] ??
+              source.initialBalance;
+    final goals = ref.watch(savingsGoalsProvider).value ?? [];
+    final sourceHasSavings =
+        source != null &&
+        !source.isCredit &&
+        goals.any((g) => g.linkedAccountId == source.id && g.currentAmount > 0);
+    final format = NumberFormat('#,##0.##');
+    Widget accountRow(Account? account, bool receiving) => SelectionTile(
+      asCard: false,
+      label: receiving
+          ? 'To account'
+          : (sourceHasSavings ? 'From · Spendable' : 'From account'),
+      selectedName: account == null
+          ? null
+          : '${account.name} • ${currency.symbol}${format.format(_displayAccountBalance(account, destination: receiving))}',
+      selectedColor: account?.color,
+      selectedIconCodePoint: account?.iconCodePoint,
+      selectedLogoAsset: account?.logoAsset,
+      fallbackIcon: receiving
+          ? Icons.south_west_rounded
+          : Icons.north_east_rounded,
+      placeholder: receiving ? 'Select receiving account' : 'Select account',
+      onTap: () => _openAccountPicker(destination: receiving),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceLightColor(context),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _fee,
-            onChanged: (_) => setState(() {}),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Transfer fee (optional)',
-            ),
+          child: Column(
+            children: [
+              accountRow(source, false),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(
+                  height: 1,
+                  color: AppTheme.dividerColor(context),
+                ),
+              ),
+              accountRow(destination, true),
+            ],
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Fee is a percentage'),
-            value: _feePercentage,
-            onChanged: (value) => setState(() => _feePercentage = value),
+        ),
+        if (balance != null && !source!.isCredit && _amount > balance) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Amount exceeds available balance',
+            style: TextStyle(color: AppTheme.errorColor(context)),
           ),
-          _line('Amount received', format.format(_amount)),
-          _line(
-            'Total deducted',
-            validFee
-                ? format.format(_amount + resolvedFee)
-                : 'Enter a valid fee',
-          ),
-          const SizedBox(height: 12),
         ],
+      ],
+    );
+  }
+
+  Widget _transferDetails(AsyncValue<List<Account>> accounts) {
+    if (accounts.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (accounts.hasError) {
+      return TextButton(
+        onPressed: () => ref.invalidate(accountProvider),
+        child: const Text('Could not load accounts. Try again'),
+      );
+    }
+    final currency = ref.watch(settingsProvider).currency;
+    final format = NumberFormat.currency(symbol: currency.symbol);
+    final enteredFee = double.tryParse(_fee.text.isEmpty ? '0' : _fee.text);
+    final fee = enteredFee == null
+        ? null
+        : (_feePercentage ? _amount * enteredFee / 100 : enteredFee);
+    final validFee =
+        fee != null && fee.isFinite && fee >= 0 && (_amount + fee).isFinite;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Transfer amount',
+                    style: TextStyle(color: AppTheme.textLightColor(context)),
+                  ),
+                  Text(
+                    format.format(_amount),
+                    style: const TextStyle(
+                      fontSize: KoinTypography.formTitle,
+                      fontWeight: KoinTypography.headingWeight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => _go(_Step.amount),
+              child: const Text('Edit'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _transferAccounts(accounts, currency),
+        const SizedBox(height: 20),
+        TextField(
+          key: const ValueKey('quick-transfer-fee'),
+          controller: _fee,
+          onChanged: (_) => setState(() => _error = null),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'Transfer fee (optional)',
+            hintText: '0',
+            prefixText: _feePercentage ? null : '${currency.symbol} ',
+            suffixText: _feePercentage ? '%' : null,
+            errorText: validFee ? null : 'Enter a valid non-negative fee',
+          ),
+        ),
+        const SizedBox(height: 8),
+        KoinChoiceControl(
+          segments: [
+            KoinSegmentItem(label: 'Fixed (${currency.code})'),
+            const KoinSegmentItem(label: 'Percentage (%)'),
+          ],
+          selectedIndex: _feePercentage ? 1 : 0,
+          onChanged: (index) => setState(() {
+            _feePercentage = index == 1;
+            _error = null;
+          }),
+        ),
+        const SizedBox(height: 16),
+        _line('Amount received', format.format(_amount)),
+        _line('Transfer fee', validFee ? format.format(fee) : '—'),
+        Divider(height: 16, color: AppTheme.dividerColor(context)),
+        _line(
+          'Total deducted',
+          validFee ? format.format(_amount + fee) : 'Enter a valid fee',
+        ),
+        Text(
+          'The fee is added to the amount deducted from the sending account.',
+          style: TextStyle(
+            fontSize: KoinTypography.caption,
+            color: AppTheme.textLightColor(context),
+          ),
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          controller: _note,
+          decoration: const InputDecoration(
+            labelText: 'Note (optional)',
+            hintText: 'What was this transfer for?',
+          ),
+        ),
       ],
     );
   }
@@ -1619,8 +1764,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 100, child: Text(label)),
-        Expanded(
+        Expanded(child: Text(label)),
+        const SizedBox(width: 16),
+        Flexible(
           child: Text(
             value,
             style: const TextStyle(fontWeight: KoinTypography.labelWeight),

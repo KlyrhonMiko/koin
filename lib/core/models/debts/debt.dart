@@ -19,6 +19,7 @@ class Debt {
   final double currentAmount; // Derived from repayments and initial amount
   final int sortOrder; // Added for custom reordering
   final List<DebtItem> items;
+  final bool isPurchaseAccount;
 
   Debt({
     required this.id,
@@ -35,6 +36,7 @@ class Debt {
     this.currentAmount = 0.0,
     this.sortOrder = 0,
     this.items = const [],
+    this.isPurchaseAccount = false,
   });
 
   Debt copyWith({
@@ -52,6 +54,7 @@ class Debt {
     double? currentAmount,
     int? sortOrder,
     List<DebtItem>? items,
+    bool? isPurchaseAccount,
   }) {
     return Debt(
       id: id ?? this.id,
@@ -68,6 +71,7 @@ class Debt {
       currentAmount: currentAmount ?? this.currentAmount,
       sortOrder: sortOrder ?? this.sortOrder,
       items: items ?? this.items,
+      isPurchaseAccount: isPurchaseAccount ?? this.isPurchaseAccount,
     );
   }
 
@@ -86,6 +90,7 @@ class Debt {
       'categoryId': categoryId,
       'currentAmount': currentAmount,
       'sortOrder': sortOrder,
+      'isPurchaseAccount': isPurchaseAccount ? 1 : 0,
     };
   }
 
@@ -108,6 +113,7 @@ class Debt {
           ? (map['currentAmount'] as num).toDouble()
           : 0.0,
       sortOrder: map['sortOrder'] ?? 0,
+      isPurchaseAccount: map['isPurchaseAccount'] == 1,
     );
   }
 
@@ -120,6 +126,24 @@ class Debt {
 
   double get totalItemizedAmount =>
       items.fold(0.0, (sum, item) => sum + item.amount);
+
+  bool get isMonthlyPurchaseAccount =>
+      isPurchaseAccount && frequency == InstallmentFrequency.monthly;
+
+  /// Keep the provider's due day even when a short month clamps it.
+  DateTime monthlyBillDate(int year, int month) => DateTime(
+    year,
+    month,
+    startDate.day.clamp(1, DateTime(year, month + 1, 0).day),
+  );
+
+  DateTime get nextPurchaseBillDate {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var next = monthlyBillDate(now.year, now.month);
+    if (next.isBefore(today)) next = monthlyBillDate(now.year, now.month + 1);
+    return next;
+  }
 
   double get perInstallmentAmount =>
       totalInstallments > 0 ? amount / totalInstallments : amount;
@@ -173,7 +197,9 @@ class Debt {
         for (int i = 0; i < item.totalInstallments; i++) {
           final dateKey = DateTime(nextDate.year, nextDate.month, nextDate.day);
           groups[dateKey] = (groups[dateKey] ?? 0.0) + installmentAmount;
-          nextDate = _advanceDate(nextDate, frequency, item.firstPaymentDate);
+          nextDate = isMonthlyPurchaseAccount
+              ? monthlyBillDate(nextDate.year, nextDate.month + 1)
+              : _advanceDate(nextDate, frequency, item.firstPaymentDate);
         }
       } else {
         final dateKey = DateTime(
@@ -251,7 +277,8 @@ class Debt {
   /// Resolves the effective next due date, preferring explicitly assigned [dueDate]
   /// or installment-derived [nextDueDate] when installments are configured.
   DateTime? get resolvedDueDate =>
-      dueDate ?? (totalInstallments > 0 ? nextDueDate : null);
+      dueDate ??
+      (totalInstallments > 0 || items.isNotEmpty ? nextDueDate : null);
 
   /// Number of days until the debt obligation is due relative to [now].
   int? daysUntilDue([DateTime? now]) {

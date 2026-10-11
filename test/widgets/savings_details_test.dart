@@ -1,3 +1,4 @@
+import 'package:koin/features/savings/widgets/savings_routine_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -177,7 +178,7 @@ void main() {
       isStash: true,
     );
     final repository = await showSavings(tester, stash);
-    expect(find.text('Stash'), findsNothing);
+    expect(find.text('Savings'), findsNothing);
     expect(find.text('100%'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
@@ -190,7 +191,8 @@ void main() {
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('Save'), findsOneWidget);
     expect(find.text('Release'), findsOneWidget);
-    expect(find.text('Coach'), findsOneWidget);
+    expect(find.text('Coach'), findsNothing);
+    expect(find.byType(SavingsRoutineCard), findsOneWidget);
     expect(find.byType(PopupMenuButton<String>), findsNothing);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
@@ -203,7 +205,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await showSavings(tester, stash, list: true);
-    expect(find.text('Stash'), findsOneWidget);
+    expect(find.text('Savings'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(tester.takeException(), isNull);
   });

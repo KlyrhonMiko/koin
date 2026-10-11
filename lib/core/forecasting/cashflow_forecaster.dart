@@ -146,12 +146,17 @@ class CashflowForecaster {
       for (final item in debt.items) {
         final count = math.max(1, item.totalInstallments);
         for (var i = 0; i < count; i++) {
-          final due = _occurrence(
-            _day(item.firstPaymentDate),
-            i,
-            days: days,
-            months: months,
-          );
+          final due = debt.isMonthlyPurchaseAccount
+              ? debt.monthlyBillDate(
+                  item.firstPaymentDate.year,
+                  item.firstPaymentDate.month + i,
+                )
+              : _occurrence(
+                  _day(item.firstPaymentDate),
+                  i,
+                  days: days,
+                  months: months,
+                );
           if (!due.isBefore(end)) break;
           events.add((date: due, amount: item.amount / count));
         }

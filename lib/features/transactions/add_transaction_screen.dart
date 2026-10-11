@@ -668,7 +668,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ),
                       ConstrainedBox(
                         key: const ValueKey('transaction-fields-section'),
+                        // Reserve the same viewport for every mode so the
+                        // amount stays in place when transfer fields are added.
                         constraints: BoxConstraints(
+                          minHeight: (constraints.maxHeight - 260).clamp(
+                            0.0,
+                            constraints.maxHeight * 0.55,
+                          ),
                           maxHeight: (constraints.maxHeight - 260).clamp(
                             0.0,
                             constraints.maxHeight * 0.55,
@@ -989,7 +995,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final transferSummary = _selectedType == TransactionType.transfer
         ? _transferSummaryText()
         : null;
-    final hasSummary = transferSummary != null;
+    final savingsUsage = _savingsUsageText(currency);
+    final hasSummary = transferSummary != null || savingsUsage != null;
     final exceedsBalance = _exceedsAvailableBalance();
     final currencySymbol = Text(
       '${currency.symbol} ',
@@ -1087,7 +1094,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         ),
                       ),
                     ),
-                  if (hasSummary && !exceedsBalance)
+                  if (transferSummary != null && !exceedsBalance)
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -1097,6 +1104,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           color: AppTheme.textLightColor(context),
                           height: 1.2,
                         ),
+                      ),
+                    ),
+                  if (savingsUsage != null && !exceedsBalance)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.savings_outlined,
+                            size: 16,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                          const Gap(8),
+                          Text(
+                            savingsUsage,
+                            style: TextStyle(
+                              fontSize: KoinTypography.small,
+                              fontWeight: KoinTypography.labelWeight,
+                              color: AppTheme.textLightColor(context),
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   if (exceedsBalance)
@@ -1146,6 +1177,36 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final format = NumberFormat('#,##0.##');
     return 'Deducted $symbol${format.format(total)} · '
         'Receives $symbol${format.format(draft.calculateNetAmount())}';
+  }
+
+  String? _savingsUsageText(Currency currency) {
+    if (_selectedType != TransactionType.expense) return null;
+    final accounts = ref.watch(accountProvider).value ?? [];
+    ref.watch(dashboardStatsProvider);
+    final goals = ref.watch(savingsGoalsProvider).value;
+    final account = _accountById(accounts, _selectedAccountId);
+    final amount = double.tryParse(_amountController.text) ?? 0;
+    if (account == null ||
+        account.isCredit ||
+        goals == null ||
+        !amount.isFinite ||
+        amount <= 0) {
+      return null;
+    }
+    final balance = _availableBalance(account);
+    if (!balance.isFinite || amount > balance) return null;
+    // Match the savings release confirmation's cent-based calculation.
+    final reservedCents = goals
+        .where((g) => g.linkedAccountId == account.id && g.currentAmount > 0)
+        .fold<int>(0, (sum, g) => sum + (g.currentAmount * 100).round());
+    final availableCents = (balance * 100).round() - reservedCents;
+    final neededCents = ((amount * 100).round() - availableCents).clamp(
+      0,
+      reservedCents,
+    );
+    if (neededCents == 0) return null;
+    final money = NumberFormat.currency(symbol: currency.symbol);
+    return 'Uses ${money.format(neededCents / 100)} from savings';
   }
 
   bool _exceedsAvailableBalance() {
@@ -1328,121 +1389,25 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 15,
                         ),
-                        suffixIcon: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.fieldBorderColor(
-                                context,
-                                lightOpacity: 0.08,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.all(3),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    if (_isTransferFeePercentage) {
-                                      setState(
-                                        () => _isTransferFeePercentage = false,
-                                      );
-                                      HapticService.light();
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: !_isTransferFeePercentage
-                                          ? AppTheme.surfaceColor(context)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow: !_isTransferFeePercentage
-                                          ? [
-                                              AppTheme.boxShadow(
-                                                context,
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.05,
-                                                ),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      'Fixed',
-                                      style: TextStyle(
-                                        fontSize: KoinTypography.small,
-                                        fontWeight: !_isTransferFeePercentage
-                                            ? KoinTypography.titleWeight
-                                            : KoinTypography.supportingWeight,
-                                        color: !_isTransferFeePercentage
-                                            ? AppTheme.primaryColor(context)
-                                            : AppTheme.textLightColor(context),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (!_isTransferFeePercentage) {
-                                      setState(
-                                        () => _isTransferFeePercentage = true,
-                                      );
-                                      HapticService.light();
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _isTransferFeePercentage
-                                          ? AppTheme.surfaceColor(context)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow: _isTransferFeePercentage
-                                          ? [
-                                              AppTheme.boxShadow(
-                                                context,
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.05,
-                                                ),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      '%',
-                                      style: TextStyle(
-                                        fontSize: KoinTypography.small,
-                                        fontWeight: _isTransferFeePercentage
-                                            ? KoinTypography.titleWeight
-                                            : KoinTypography.supportingWeight,
-                                        color: _isTransferFeePercentage
-                                            ? AppTheme.primaryColor(context)
-                                            : AppTheme.textLightColor(context),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+          const Gap(8),
+          // Fee controls belong to the fee input's tap region so switching
+          // units keeps the keypad editing the fee instead of the amount.
+          TextFieldTapRegion(
+            child: KoinChoiceControl(
+              segments: const [
+                KoinSegmentItem(label: 'Fixed'),
+                KoinSegmentItem(label: 'Percentage (%)'),
+              ],
+              selectedIndex: _isTransferFeePercentage ? 1 : 0,
+              onChanged: (index) =>
+                  setState(() => _isTransferFeePercentage = index == 1),
             ),
           ),
           const Gap(12),

@@ -29,6 +29,7 @@ void main() {
     final goal = SavingsGoal(
       id: 'goal',
       name: 'End of Year',
+      targetAmount: 1000,
       startDate: DateTime(2026),
       linkedAccountId: account.id,
       currentAmount: 200,

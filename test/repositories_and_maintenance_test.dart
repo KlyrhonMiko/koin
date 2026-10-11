@@ -819,8 +819,8 @@ void main() {
 
       expect(summary.totalSaved, 2000.0); // 400 + 600 + 1000
       expect(summary.totalTarget, 2000.0); // 1000 (g1) + 1000 (g3)
-      expect(summary.overallProgress, 1.0);
-      expect(summary.overallPercent, 100);
+      expect(summary.overallProgress, 0.7);
+      expect(summary.overallPercent, 70);
       expect(summary.totalGoalsCount, 3);
       expect(summary.activeGoalsCount, 1); // g1 active, g2 is stash, g3 is completed
       expect(summary.stashesCount, 1);

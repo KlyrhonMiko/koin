@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'savings_plan.dart';
 
 class SavingsGoal {
   final String id;
@@ -12,18 +13,27 @@ class SavingsGoal {
   final bool isStash;
   final bool includeInDashboardBalance;
 
+  /// Legacy storage field. Emergency records now use the Savings type.
+  final bool isEmergencyFund;
+  final SavingsPlan? savingsPlan;
+
   SavingsGoal({
     required this.id,
     required this.name,
-    this.targetAmount,
+    double? targetAmount,
     this.currentAmount = 0.0,
     required this.startDate,
-    this.endDate,
+    DateTime? endDate,
     this.notes,
     this.linkedAccountId,
-    this.isStash = false,
+    bool isStash = false,
     this.includeInDashboardBalance = true,
-  });
+    bool isEmergencyFund = false,
+    this.savingsPlan,
+  }) : isEmergencyFund = false,
+       targetAmount = isEmergencyFund ? null : targetAmount,
+       endDate = isEmergencyFund ? null : endDate,
+       isStash = isEmergencyFund || isStash;
 
   Map<String, dynamic> toMap() {
     return {
@@ -39,6 +49,10 @@ class SavingsGoal {
       'linkedAccountId': linkedAccountId,
       'isStash': isStash ? 1 : 0,
       'includeInDashboardBalance': includeInDashboardBalance ? 1 : 0,
+      'isEmergencyFund': isEmergencyFund ? 1 : 0,
+      'contributionAmount': savingsPlan?.amount,
+      'contributionFrequency': savingsPlan?.frequency.name,
+      'contributionStartDate': savingsPlan?.startDate.toIso8601String(),
     };
   }
 
@@ -53,13 +67,15 @@ class SavingsGoal {
       targetAmount: (isStash && parsedTarget == 0.0) ? null : parsedTarget,
       currentAmount: (map['currentAmount'] as num).toDouble(),
       startDate: DateTime.parse(map['startDate']),
-      endDate: (isStash && parsedEndDateStr.startsWith('2099'))
+      endDate: parsedEndDateStr == DateTime(2099, 12, 31).toIso8601String()
           ? null
           : DateTime.parse(parsedEndDateStr),
       notes: map['notes'],
       linkedAccountId: map['linkedAccountId'],
       isStash: isStash,
       includeInDashboardBalance: map['includeInDashboardBalance'] != 0,
+      isEmergencyFund: map['isEmergencyFund'] == 1,
+      savingsPlan: SavingsPlan.fromMap(map),
     );
   }
 
@@ -74,6 +90,9 @@ class SavingsGoal {
     String? linkedAccountId,
     bool? isStash,
     bool? includeInDashboardBalance,
+    bool? isEmergencyFund,
+    SavingsPlan? savingsPlan,
+    bool clearSavingsPlan = false,
   }) {
     return SavingsGoal(
       id: id ?? this.id,
@@ -92,6 +111,8 @@ class SavingsGoal {
       isStash: isStash ?? this.isStash,
       includeInDashboardBalance:
           includeInDashboardBalance ?? this.includeInDashboardBalance,
+      isEmergencyFund: isEmergencyFund ?? this.isEmergencyFund,
+      savingsPlan: clearSavingsPlan ? null : (savingsPlan ?? this.savingsPlan),
     );
   }
 
@@ -99,7 +120,7 @@ class SavingsGoal {
   int? get totalDays => endDate?.difference(startDate).inDays;
   int? get remainingDays => endDate?.difference(DateTime.now()).inDays;
   double? get remainingAmount =>
-      targetAmount != null ? targetAmount! - currentAmount : null;
+      targetAmount != null ? max(0.0, targetAmount! - currentAmount) : null;
 
   double? get dailyNeeded {
     if (remainingDays == null || remainingAmount == null) return null;

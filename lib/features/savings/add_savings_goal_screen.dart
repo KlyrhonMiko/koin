@@ -3,12 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'widgets/savings_plan_editor.dart';
 import 'package:koin/core/core.dart';
 
 class AddSavingsGoalScreen extends ConsumerStatefulWidget {
   final SavingsGoal? goal;
+  final bool initialSavings;
 
-  const AddSavingsGoalScreen({super.key, this.goal});
+  const AddSavingsGoalScreen({
+    super.key,
+    this.goal,
+    this.initialSavings = false,
+  });
 
   @override
   ConsumerState<AddSavingsGoalScreen> createState() =>
@@ -24,6 +30,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   late DateTime _endDate;
   String? _selectedAccountId;
   late bool _isStash;
+  late bool _hasDeadline;
+  SavingsPlan? _plan;
+  bool _saving = false;
+  String? _saveError;
   late bool _includeInDashboardBalance;
 
   @override
@@ -38,7 +48,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     _endDate =
         widget.goal?.endDate ?? DateTime.now().add(const Duration(days: 30));
     _selectedAccountId = widget.goal?.linkedAccountId;
-    _isStash = widget.goal?.isStash ?? false;
+    _isStash = widget.goal?.isStash ?? widget.initialSavings;
+    _hasDeadline = widget.goal == null || widget.goal!.endDate != null;
+    _plan = widget.goal?.savingsPlan;
     _includeInDashboardBalance = widget.goal?.includeInDashboardBalance ?? true;
   }
 
@@ -74,7 +86,8 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_saving) return;
     if (!_formKey.currentState!.validate()) return;
     final targetAmount = double.tryParse(_amountController.text);
 
@@ -86,21 +99,40 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
           : (targetAmount ?? 0.0),
       currentAmount: widget.goal?.currentAmount ?? 0.0,
       startDate: _startDate,
-      endDate: _isStash ? null : _endDate,
+      endDate: _isStash || !_hasDeadline ? null : _endDate,
       notes: _notesController.text.trim(),
       linkedAccountId: _selectedAccountId,
       isStash: _isStash,
+      savingsPlan: _plan,
       includeInDashboardBalance: _includeInDashboardBalance,
     );
 
-    if (widget.goal == null) {
-      ref.read(savingsGoalsProvider.notifier).addGoal(goal);
-    } else {
-      ref.read(savingsGoalsProvider.notifier).updateGoal(goal);
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      if (widget.goal == null) {
+        await ref.read(savingsGoalsProvider.notifier).addGoal(goal);
+      } else {
+        await ref
+            .read(savingsGoalsProvider.notifier)
+            .updateGoal(goal, preserveBalance: true);
+      }
+      if (!mounted) return;
+      HapticService.success();
+      Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _saveError = error is SavingsBalanceException
+              ? error.message
+              : 'Could not save. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    HapticService.success();
-    Navigator.pop(context);
   }
 
   int get _totalDays => _endDate.difference(_startDate).inDays;
@@ -130,18 +162,15 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final primaryColor = AppTheme.primaryColor(context);
     final currency = ref.watch(settingsProvider).currency;
     final accounts = ref.watch(accountProvider).asData?.value ?? [];
-    final goals = ref.watch(computedSavingsGoalsProvider).asData?.value ?? [];
-    final linkedAccountIds = goals
-        .where((g) => g.id != widget.goal?.id && g.linkedAccountId != null)
-        .map((g) => g.linkedAccountId!)
-        .toSet();
-    final availableAccounts = accounts
-        .where((a) => !linkedAccountIds.contains(a.id))
-        .toList();
+    final availableAccounts = accounts;
     final linkedAccount = _accountById(accounts, _selectedAccountId);
     final amount = double.tryParse(_amountController.text);
     final showEstimate =
-        !_isStash && amount != null && amount > 0 && _totalDays > 0;
+        !_isStash &&
+        _hasDeadline &&
+        amount != null &&
+        amount > 0 &&
+        _totalDays > 0;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -153,7 +182,11 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
           padding: EdgeInsets.only(left: 12),
           child: KoinBackButton(),
         ),
-        title: Text(isEditing ? 'Edit goal' : 'New goal'),
+        title: Text(
+          isEditing
+              ? (_isStash ? 'Edit savings' : 'Edit goal')
+              : (_isStash ? 'New savings' : 'New goal'),
+        ),
         centerTitle: false,
       ),
       body: Column(
@@ -161,7 +194,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
           Expanded(
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
@@ -170,7 +203,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Gap(12),
                         TextFormField(
                           key: const Key('goal_name'),
                           controller: _nameController,
@@ -184,7 +216,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             letterSpacing: -0.5,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Name your goal',
+                            hintText: _isStash
+                                ? 'Name your savings'
+                                : 'Name your goal',
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -203,7 +237,9 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           ),
                           validator: (value) =>
                               value == null || value.trim().isEmpty
-                              ? 'Enter a name for your goal'
+                              ? (_isStash
+                                    ? 'Enter a name for your savings'
+                                    : 'Enter a name for your goal')
                               : null,
                         ),
                         const Gap(16),
@@ -237,57 +273,29 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           },
                         ),
                         const Gap(12),
-                        _fieldLabel(context, 'Saving plan'),
+                        _fieldLabel(context, 'Savings type'),
                         const Gap(8),
-                        SegmentedButton<bool>(
+                        KoinChoiceControl(
+                          key: const ValueKey('savings_type_selector'),
                           segments: const [
-                            ButtonSegment(
-                              value: false,
-                              icon: Icon(Icons.flag_rounded),
-                              label: Text('Goal'),
+                            KoinSegmentItem(
+                              label: 'Goal',
+                              icon: Icons.flag_rounded,
                             ),
-                            ButtonSegment(
-                              value: true,
-                              icon: Icon(Icons.savings_rounded),
-                              label: Text('Stash'),
+                            KoinSegmentItem(
+                              label: 'Savings',
+                              icon: Icons.savings_rounded,
                             ),
                           ],
-                          selected: {_isStash},
-                          showSelectedIcon: false,
-                          expandedInsets: EdgeInsets.zero,
-                          style: ButtonStyle(
-                            minimumSize: const WidgetStatePropertyAll(
-                              Size(0, 48),
-                            ),
-                            shape: WidgetStatePropertyAll(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            backgroundColor: WidgetStateProperty.resolveWith(
-                              (states) => states.contains(WidgetState.selected)
-                                  ? primaryColor.withValues(alpha: 0.14)
-                                  : AppTheme.surfaceColor(context),
-                            ),
-                            foregroundColor: WidgetStatePropertyAll(
-                              AppTheme.textColor(context),
-                            ),
-                            side: WidgetStatePropertyAll(
-                              BorderSide(
-                                color: AppTheme.fieldBorderColor(context),
-                              ),
-                            ),
-                          ),
-                          onSelectionChanged: (selection) {
-                            HapticService.light();
-                            setState(() => _isStash = selection.single);
-                          },
+                          selectedIndex: _isStash ? 1 : 0,
+                          onChanged: (index) =>
+                              setState(() => _isStash = index == 1),
                         ),
                         const Gap(8),
                         Text(
                           _isStash
                               ? 'Save at your own pace. Amount is optional; no deadline.'
-                              : 'Choose an amount and a date to work toward.',
+                              : 'Target amount with an optional deadline.',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppTheme.textLightColor(context),
@@ -298,6 +306,15 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           context,
                           _isStash ? 'Start date' : 'Timeline',
                         ),
+                        if (!_isStash)
+                          SwitchListTile.adaptive(
+                            key: const ValueKey('has_deadline'),
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Set a deadline'),
+                            value: _hasDeadline,
+                            onChanged: (value) =>
+                                setState(() => _hasDeadline = value),
+                          ),
                         const Gap(8),
                         _revealFields(
                           context,
@@ -309,7 +326,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                                 date: _startDate,
                                 onTap: () => _selectDate(context, true),
                               );
-                              if (isStash) return start;
+                              if (isStash || !_hasDeadline) return start;
                               final end = DateSelectorTile(
                                 label: 'Target date',
                                 date: _endDate,
@@ -375,6 +392,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                                   key: ValueKey('no_estimate'),
                                 ),
                         ),
+                        if (_saveError != null)
+                          Text(
+                            _saveError!,
+                            style: TextStyle(
+                              color: AppTheme.errorColor(context),
+                            ),
+                          ),
                         const Gap(28),
                         Divider(
                           color: AppTheme.dividerColor(context),
@@ -382,6 +406,50 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                         ),
                         const Gap(24),
                         _fieldLabel(context, 'Optional details'),
+                        const Gap(12),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.tips_and_updates_outlined),
+                          title: const Text('Savings Helper'),
+                          subtitle: Text(
+                            _plan == null
+                                ? 'See how much you could save and when'
+                                : '${_plan!.frequency.label} · ${NumberFormat.simpleCurrency(name: currency.code).format(_plan!.amount)}',
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () async {
+                            final result = await SavingsPlanEditor.open(
+                              context,
+                              initial: _plan,
+                              goal: SavingsGoal(
+                                id: widget.goal?.id ?? 'new-savings',
+                                name: _nameController.text.trim(),
+                                targetAmount: double.tryParse(
+                                  _amountController.text,
+                                ),
+                                currentAmount: widget.goal?.currentAmount ?? 0,
+                                startDate: _startDate,
+                                endDate: _isStash || !_hasDeadline
+                                    ? null
+                                    : _endDate,
+                                isStash: _isStash,
+                                savingsPlan: _plan,
+                              ),
+                            );
+                            if (result != null && mounted) {
+                              setState(() {
+                                _plan = result.plan;
+                                if (result.deadline != null) {
+                                  _endDate = result.deadline!;
+                                }
+                                if (result.targetAmount != null) {
+                                  _amountController.text = result.targetAmount!
+                                      .toStringAsFixed(2);
+                                }
+                              });
+                            }
+                          },
+                        ),
                         const Gap(12),
                         KoinGroupedCard(
                           autoDivide: false,
@@ -492,10 +560,12 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: KoinPrimaryButton(
-                  label: isEditing
-                      ? (_isStash ? 'Update Stash' : 'Update Goal')
-                      : (_isStash ? 'Create Stash' : 'Create Goal'),
-                  onPressed: _save,
+                  label: _saving
+                      ? 'Saving…'
+                      : isEditing
+                      ? (_isStash ? 'Update Savings' : 'Update Goal')
+                      : (_isStash ? 'Create Savings' : 'Create Goal'),
+                  onPressed: _saving ? null : _save,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),

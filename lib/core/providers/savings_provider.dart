@@ -18,15 +18,64 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
     });
   }
 
-  Future<void> addGoal(SavingsGoal goal) async {
-    await _repository.insertSavingsGoal(goal);
-    await loadGoals();
+  Future<void> _validateGoal(SavingsGoal goal, List<SavingsGoal> goals) async {
+    if (!goal.currentAmount.isFinite ||
+        goal.currentAmount < 0 ||
+        (!goal.isStash && (!goal.hasTarget || !goal.targetAmount!.isFinite))) {
+      throw const SavingsBalanceException('Enter a valid savings amount');
+    }
+    final plan = goal.savingsPlan;
+    if (plan != null && (!plan.amount.isFinite || plan.amount < 0.01)) {
+      throw const SavingsBalanceException('Enter a valid contribution amount');
+    }
+    final old = goals.where((g) => g.id == goal.id).firstOrNull;
+    if (goal.linkedAccountId == null ||
+        goal.currentAmount == 0 ||
+        (old?.linkedAccountId == goal.linkedAccountId &&
+            goal.currentAmount <= old!.currentAmount)) {
+      return;
+    }
+    final balance = ref
+        .read(dashboardStatsProvider)
+        .accountBalances[goal.linkedAccountId];
+    final reserved = goals
+        .where(
+          (g) => g.id != goal.id && g.linkedAccountId == goal.linkedAccountId,
+        )
+        .fold<double>(0, (sum, g) => sum + g.currentAmount);
+    if (balance == null ||
+        (goal.currentAmount * 100).round() >
+            ((balance - reserved) * 100).round()) {
+      throw const SavingsBalanceException(
+        'Insufficient available balance in the linked account',
+      );
+    }
   }
 
-  Future<void> updateGoal(SavingsGoal goal) async {
-    await _repository.updateSavingsGoal(goal);
+  Future<void> addGoal(SavingsGoal goal) => _writeLog(() async {
+    final goals = await _repository.getSavingsGoals();
+    await _validateGoal(goal, goals);
+    await _repository.insertSavingsGoal(goal);
     await loadGoals();
-  }
+  });
+
+  Future<void> updateGoal(SavingsGoal goal, {bool preserveBalance = false}) =>
+      _writeLog(() async {
+        final goals = await _repository.getSavingsGoals();
+        final current = goals.where((g) => g.id == goal.id).firstOrNull;
+        if (current == null) {
+          throw const SavingsBalanceException(
+            'This savings goal is no longer available',
+          );
+        }
+        // Editors must not overwrite deposits made since they opened.
+        final updated = preserveBalance
+            ? goal.copyWith(currentAmount: current.currentAmount)
+            : goal;
+        await _validateGoal(updated, goals);
+        await _repository.updateSavingsGoal(updated);
+        await loadGoals();
+      });
 
   Future<void> deleteGoal(String id) async {
     await _repository.deleteSavingsGoal(id);

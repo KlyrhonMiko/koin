@@ -8,6 +8,7 @@ import 'package:koin/core/core.dart';
 class SavingsLogSheet extends ConsumerStatefulWidget {
   final SavingsGoal goal;
   final bool release;
+  final double? initialAmount;
   final SavingsLog? log;
   final Account? linkedAccount;
   final double? linkedBalance;
@@ -17,6 +18,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
     super.key,
     required this.goal,
     this.release = false,
+    this.initialAmount,
     this.log,
     this.linkedAccount,
     this.linkedBalance,
@@ -27,6 +29,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
     required BuildContext context,
     required SavingsGoal goal,
     bool release = false,
+    double? initialAmount,
     SavingsLog? log,
     Account? linkedAccount,
     double? linkedBalance,
@@ -40,6 +43,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
       builder: (context) => SavingsLogSheet(
         goal: goal,
         release: release,
+        initialAmount: initialAmount,
         log: log,
         linkedAccount: linkedAccount,
         linkedBalance: linkedBalance,
@@ -82,10 +86,10 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     super.initState();
     _currentExpression = widget.log != null
         ? widget.log!.amount.abs().toString().replaceFirst(RegExp(r'\.0$'), '')
-        : '';
+        : widget.initialAmount?.toStringAsFixed(2) ?? '';
     _evaluatedResult = widget.log != null
         ? widget.log!.amount.abs().toString()
-        : '0';
+        : widget.initialAmount?.toStringAsFixed(2) ?? '0';
   }
 
   void _submit() async {

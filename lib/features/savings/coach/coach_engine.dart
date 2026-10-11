@@ -46,8 +46,9 @@ class CoachEngine {
 
   static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
-  DateTime get targetDeadline =>
-      goal.endDate != null ? _dateOnly(goal.endDate!) : today.add(const Duration(days: 30));
+  DateTime get targetDeadline => goal.endDate != null
+      ? _dateOnly(goal.endDate!)
+      : today.add(const Duration(days: 30));
 
   double get remainingAmount =>
       max(0.0, (goal.targetAmount ?? 0.0) - goal.currentAmount);
@@ -59,7 +60,16 @@ class CoachEngine {
     final newDeadline = targetDeadline.add(
       Duration(days: deadlineShiftWeeks * 7),
     );
-    final pace = max(0.0, goal.currentWeeklyPace(today) + extraSavedPerWeek);
+    final plan = goal.savingsPlan;
+    final weeklyPace = plan == null
+        ? goal.currentWeeklyPace(today)
+        : plan.amount /
+              switch (plan.frequency) {
+                SavingsFrequency.weekly => 1.0,
+                SavingsFrequency.fortnightly => 2.0,
+                SavingsFrequency.monthly => 52 / 12,
+              };
+    final pace = max(0.0, weeklyPace + extraSavedPerWeek);
 
     DateTime? projectedFinish;
     int? daysLate;
@@ -94,7 +104,10 @@ class CoachEngine {
 
     // Classify status
     CoachStatus status;
-    final goalTotalDays = max(1, newDeadline.difference(_dateOnly(goal.startDate)).inDays);
+    final goalTotalDays = max(
+      1,
+      newDeadline.difference(_dateOnly(goal.startDate)).inDays,
+    );
 
     if (remainingAmount <= 0) {
       status = CoachStatus.completed;

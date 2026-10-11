@@ -19,15 +19,25 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
   StashSimMode _mode = StashSimMode.balance;
 
   late double _weeklySaved;
+  late double _sliderMax;
   late DateTime _targetDate;
   late double _targetAmount;
 
   @override
   void initState() {
     super.initState();
-    _weeklySaved = 50.0; // Default weekly stash amount
+    _weeklySaved = widget.goal.savingsPlan == null
+        ? 50.0
+        : widget.goal.savingsPlan!.amount /
+              switch (widget.goal.savingsPlan!.frequency) {
+                SavingsFrequency.weekly => 1.0,
+                SavingsFrequency.fortnightly => 2.0,
+                SavingsFrequency.monthly => 52 / 12,
+              }; // Default weekly stash amount
+    _sliderMax = _weeklySaved > 1000 ? _weeklySaved * 1.5 : 1000;
     _targetDate = DateTime.now().add(const Duration(days: 365));
-    _targetAmount = widget.goal.currentAmount + 1000.0;
+    _targetAmount =
+        widget.goal.targetAmount ?? widget.goal.currentAmount + 1000.0;
     if (_targetAmount <= widget.goal.currentAmount) {
       _targetAmount = widget.goal.currentAmount + 100.0;
     }
@@ -61,7 +71,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Stash Simulator', style: TextStyle(fontSize: 16)),
+        title: const Text('Choose an amount', style: TextStyle(fontSize: 16)),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -235,7 +245,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
 
               // 4. Slider
               Text(
-                "Stash per week",
+                "Save per week",
                 style: TextStyle(
                   fontSize: KoinTypography.caption,
                   fontWeight: KoinTypography.titleWeight,
@@ -268,7 +278,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                 child: Slider(
                   value: _weeklySaved,
                   min: 0,
-                  max: 1000,
+                  max: _sliderMax,
                   divisions: 100,
                   onChanged: (val) {
                     setState(() => _weeklySaved = val);
@@ -279,34 +289,38 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
 
               const Gap(48),
 
-              // 5. Use this plan
+              // 5. Use this amount
               ElevatedButton(
-                onPressed: () {
-                  HapticService.success();
-                  // Return the simulated deadline depending on mode
-                  final dt = _mode == StashSimMode.balance
-                      ? _targetDate
-                      : (_projectedDate ?? _targetDate);
-                  final amt = _mode == StashSimMode.balance
-                      ? _projectedBalance
-                      : _targetAmount;
+                onPressed: _weeklySaved <= 0
+                    ? null
+                    : () {
+                        HapticService.success();
+                        // Return the simulated deadline depending on mode
+                        final dt = _mode == StashSimMode.balance
+                            ? _targetDate
+                            : (_projectedDate ?? _targetDate);
+                        final amt = _mode == StashSimMode.balance
+                            ? _projectedBalance
+                            : _targetAmount;
 
-                  // Reusing CoachSimulationResult structure to pass back new params
-                  Navigator.pop(
-                    context,
-                    CoachSimulationResult(
-                      status: CoachStatus.onTrack,
-                      newDeadline: dt,
-                      weeklyPace: _weeklySaved,
-                      projectedFinish: dt,
-                      daysLate: 0,
-                      weeklyAmountRequired: _weeklySaved,
-                      extraSavedPerWeek: 0,
-                      deadlineShiftWeeks: 0,
-                      targetAmountOverride: amt,
-                    ),
-                  );
-                },
+                        // Reusing CoachSimulationResult structure to pass back new params
+                        Navigator.pop(
+                          context,
+                          CoachSimulationResult(
+                            status: CoachStatus.onTrack,
+                            newDeadline: dt,
+                            weeklyPace: _weeklySaved,
+                            projectedFinish: dt,
+                            daysLate: 0,
+                            weeklyAmountRequired: _weeklySaved,
+                            extraSavedPerWeek: 0,
+                            deadlineShiftWeeks: 0,
+                            targetAmountOverride: _mode == StashSimMode.time
+                                ? amt
+                                : null,
+                          ),
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor(context),
                   foregroundColor: Colors.white,
@@ -316,8 +330,8 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  "Use this plan",
+                child: Text(
+                  "Use this amount",
                   style: TextStyle(
                     fontSize: KoinTypography.itemTitle,
                     fontWeight: KoinTypography.titleWeight,

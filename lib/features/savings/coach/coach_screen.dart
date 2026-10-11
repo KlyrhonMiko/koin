@@ -67,17 +67,15 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
     }
   }
 
-  bool get _hasChanges => _extraPerWeek > 0 || _deadlineShiftWeeks != 0;
-
   @override
   Widget build(BuildContext context) {
-    if (widget.goal.isStash) {
+    if (widget.goal.isStash || widget.goal.endDate == null) {
       return StashCoachView(goal: widget.goal);
     }
 
     if (widget.goal.targetAmount == null || widget.goal.endDate == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Savings Coach")),
+        appBar: AppBar(title: const Text("Choose an amount")),
         body: const Center(child: Text("This goal cannot be analyzed.")),
       );
     }
@@ -137,7 +135,7 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Savings Coach', style: TextStyle(fontSize: 16)),
+        title: const Text('Choose an amount', style: TextStyle(fontSize: 16)),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -341,59 +339,58 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               ),
               const Gap(48),
 
-              // 7. Reset and Use this plan
-              if (_hasChanges)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () {
-                          HapticService.medium();
-                          setState(() {
-                            _extraPerWeek = 0;
-                            _deadlineShiftWeeks = 0;
-                          });
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text(
-                          "Reset",
-                          style: TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.labelWeight,
-                          ),
+              // 7. Reset and Use this amount
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        HapticService.medium();
+                        setState(() {
+                          _extraPerWeek = 0;
+                          _deadlineShiftWeeks = 0;
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text(
+                        "Reset",
+                        style: TextStyle(
+                          fontSize: KoinTypography.itemTitle,
+                          fontWeight: KoinTypography.labelWeight,
                         ),
                       ),
                     ),
-                    const Gap(16),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticService.success();
-                          Navigator.pop(context, sim);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor(context),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
+                  ),
+                  const Gap(16),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        HapticService.success();
+                        Navigator.pop(context, sim);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor(context),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Text(
-                          "Use this plan",
-                          style: TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.titleWeight,
-                          ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Use this amount",
+                        style: TextStyle(
+                          fontSize: KoinTypography.itemTitle,
+                          fontWeight: KoinTypography.titleWeight,
                         ),
                       ),
                     ),
-                  ],
-                ).animate().fade().slideY(begin: 0.2),
+                  ),
+                ],
+              ).animate().fade().slideY(begin: 0.2),
 
               const Gap(40),
             ],

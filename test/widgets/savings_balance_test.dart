@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
+import 'package:koin/features/transactions/add_transaction_screen.dart';
 
 void main() {
   final goal = SavingsGoal(
@@ -39,6 +40,108 @@ void main() {
     await container.read(savingsGoalsProvider.future);
   });
   tearDown(() => container.dispose());
+
+  testWidgets('expense amount previews savings usage and tracks edits', (
+    tester,
+  ) async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
+    final prefs = await SharedPreferences.getInstance();
+    final savings = InMemorySavingsAdapter(
+      initial: [goal.copyWith(currentAmount: 200)],
+    );
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          savingsRepositoryProvider.overrideWithValue(savings),
+          // The original 200 debit is restored while editing: 63 + 200.
+          dashboardStatsProvider.overrideWithValue(stats(63)),
+          accountRepositoryProvider.overrideWithValue(
+            InMemoryAccountAdapter(
+              initial: [
+                Account(
+                  id: 'mari',
+                  name: 'MariBank',
+                  iconCodePoint: Icons.account_balance.codePoint,
+                  colorHex: '#00C9A0',
+                ),
+              ],
+            ),
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            InMemoryCategoryAdapter(),
+          ),
+          categorySuggesterProvider.overrideWithValue(
+            TestStubSuggesterAdapter(),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.getTheme(Colors.teal, true),
+          home: AddTransactionScreen(
+            editingTransaction: AppTransaction(
+              id: 'expense',
+              note: '',
+              amount: 200,
+              date: DateTime(2026, 10, 10),
+              type: TransactionType.expense,
+              categoryId: 'food',
+              accountId: 'mari',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Uses ₱137.00 from savings'), findsOneWidget);
+    expect(find.byIcon(Icons.savings_outlined), findsOneWidget);
+    final amountTop = tester
+        .getTopLeft(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.label == 'Edit amount',
+          ),
+        )
+        .dy;
+    expect(
+      tester.getTopLeft(find.text('Uses ₱137.00 from savings')).dy,
+      greaterThan(tester.getBottomLeft(find.text('200')).dy),
+    );
+    final pad = tester.widget<NumPad>(find.byType(NumPad));
+    pad.onValueChanged('63', '63');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('from savings'), findsNothing);
+    pad.onValueChanged('100.01', '100.01');
+    await tester.pumpAndSettle();
+    expect(find.text('Uses ₱37.01 from savings'), findsOneWidget);
+    expect(
+      tester
+          .getTopLeft(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Edit amount',
+            ),
+          )
+          .dy,
+      amountTop,
+    );
+    pad.onValueChanged('264', '264');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('from savings'), findsNothing);
+    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    pad.onValueChanged('200', '200');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Income'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('from savings'), findsNothing);
+    expect((await savings.getSavingsGoals()).single.currentAmount, 200);
+    expect(tester.takeException(), isNull);
+  });
 
   test('200 then 100 cannot allocate 300 from an account with 263', () async {
     final notifier = container.read(savingsGoalsProvider.notifier);

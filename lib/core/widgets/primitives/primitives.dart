@@ -10,3 +10,4 @@ export 'koin_section_header.dart';
 export 'koin_segmented_control.dart';
 export 'pressable_scale.dart';
 export 'swipe_to_delete_tile.dart';
+export 'koin_add_button.dart';

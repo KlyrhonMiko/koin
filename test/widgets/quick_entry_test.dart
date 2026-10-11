@@ -19,6 +19,23 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
+    if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
+      final font = FontLoader(KoinTypography.fontFamily);
+      for (final weight in [
+        'Regular',
+        'Medium',
+        'SemiBold',
+        'Bold',
+        'ExtraBold',
+        'Black',
+      ]) {
+        font.addFont(rootBundle.load('assets/fonts/outfit/Outfit-$weight.ttf'));
+      }
+      await font.load();
+      final icons = FontLoader('MaterialIcons')
+        ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+      await icons.load();
+    }
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
   });
@@ -149,7 +166,10 @@ void main() {
     for (final digit in digits.split('')) {
       await tap(tester, digit);
     }
-    await tap(tester, 'Next');
+    await tap(
+      tester,
+      find.text('Review').evaluate().isNotEmpty ? 'Review' : 'Next',
+    );
   }
 
   Future<void> pickAccount(
@@ -310,6 +330,7 @@ void main() {
               .firstWhere((a) => a.id == 'cash')
               .copyWith(initialBalance: 263),
         );
+    await providers.read(transactionProvider.future);
     await providers.read(savingsGoalsProvider.future);
     await providers
         .read(savingsGoalsProvider.notifier)
@@ -665,6 +686,184 @@ void main() {
     expect(tester.getTopLeft(handle).dy, closeTo(0, 1));
     expect(windowCalls.where((c) => c.method == 'close'), isEmpty);
   });
+
+  testWidgets(
+    'transfer account balances respect hidden savings and amount stays above fields',
+    (tester) async {
+      final accounts = await providers.read(accountProvider.future);
+      await providers
+          .read(accountProvider.notifier)
+          .updateAccount(
+            accounts
+                .firstWhere((a) => a.id == 'cash')
+                .copyWith(initialBalance: 563),
+          );
+      await providers
+          .read(accountProvider.notifier)
+          .updateAccount(
+            accounts
+                .firstWhere((a) => a.id == 'bank')
+                .copyWith(initialBalance: 400),
+          );
+      await providers.read(transactionProvider.future);
+      await providers.read(savingsGoalsProvider.future);
+      for (final goal in [
+        SavingsGoal(
+          id: 'hidden-source',
+          name: 'Hidden source',
+          isStash: true,
+          startDate: DateTime(2026),
+          linkedAccountId: 'cash',
+          currentAmount: 300,
+          includeInDashboardBalance: false,
+        ),
+        SavingsGoal(
+          id: 'visible-source',
+          name: 'Visible source',
+          isStash: true,
+          startDate: DateTime(2026),
+          linkedAccountId: 'cash',
+          currentAmount: 200,
+        ),
+        SavingsGoal(
+          id: 'hidden-destination',
+          name: 'Hidden destination',
+          isStash: true,
+          startDate: DateTime(2026),
+          linkedAccountId: 'bank',
+          currentAmount: 100,
+          includeInDashboardBalance: false,
+        ),
+        SavingsGoal(
+          id: 'visible-destination',
+          name: 'Visible destination',
+          isStash: true,
+          startDate: DateTime(2026),
+          linkedAccountId: 'bank',
+          currentAmount: 50,
+        ),
+      ]) {
+        await providers.read(savingsGoalsProvider.notifier).addGoal(goal);
+      }
+      await launch(tester);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Transfer');
+      await pickAccount(tester, 'Select account', 'Cash');
+      await pickAccount(tester, 'Select receiving account', 'Bank');
+      final symbol = providers.read(settingsProvider).currency.symbol;
+      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+      expect(find.text('Bank • ${symbol}300'), findsOneWidget);
+      expect(find.text('From · Spendable'), findsOneWidget);
+      expect(find.textContaining('Source balance:'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('0').first).dy,
+        lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
+      );
+      await amount(tester, '50');
+      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+      expect(find.text('Bank • ${symbol}300'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('${symbol}50.00').first).dy,
+        lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
+      );
+      final hidden = (await providers.read(
+        savingsGoalsProvider.future,
+      )).firstWhere((g) => g.id == 'hidden-destination');
+      await providers
+          .read(savingsGoalsProvider.notifier)
+          .updateGoal(hidden.copyWith(includeInDashboardBalance: true));
+      await tester.pumpAndSettle();
+      expect(find.text('Bank • ${symbol}400'), findsOneWidget);
+      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+      await tap(tester, 'Save transfer');
+      expect(
+        (await providers.read(transactionProvider.future)).single.amount,
+        50,
+      );
+      expect(
+        (await providers.read(
+          savingsGoalsProvider.future,
+        )).firstWhere((g) => g.id == 'hidden-source').currentAmount,
+        300,
+      );
+    },
+  );
+
+  testWidgets(
+    'transfer requires a destination before review and keeps the draft',
+    (tester) async {
+      await launch(tester);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Transfer');
+      expect(find.text('Select receiving account'), findsOneWidget);
+      await pickAccount(tester, 'Select account', 'Cash');
+      await amount(tester, '100');
+      expect(find.text('Choose a receiving account'), findsOneWidget);
+      expect(find.byType(NumPad), findsOneWidget);
+      await tap(tester, 'Select receiving account');
+      expect(find.text('Cash'), findsNothing);
+      await tap(tester, 'Bank');
+      await tap(tester, 'Review');
+      await tap(tester, 'Edit');
+      expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '100');
+      expect(find.textContaining('Cash •'), findsOneWidget);
+      expect(find.textContaining('Bank •'), findsOneWidget);
+      expect(await providers.read(transactionProvider.future), isEmpty);
+    },
+  );
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      'transfer review fits compact windows and records percentage fees, dark=$dark',
+      (tester) async {
+        await launch(tester, dark: dark, height: 780);
+        await tap(tester, 'Add transaction');
+        await tap(tester, 'Transfer');
+        await pickAccount(tester, 'Select account', 'Cash');
+        await pickAccount(tester, 'Select receiving account', 'Bank');
+        if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile('../../.dart_tool/transfer_amount_$dark.png'),
+          );
+        }
+        await amount(tester, '500');
+        await tap(tester, 'Percentage (%)');
+        await tester.enterText(
+          find.byKey(const ValueKey('quick-transfer-fee')),
+          '2',
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Cash •'), findsOneWidget);
+        expect(find.textContaining('Bank •'), findsOneWidget);
+        expect(find.textContaining('510.00'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          tester
+              .state<ScrollableState>(find.byType(Scrollable).first)
+              .position
+              .jumpTo(0);
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile('../../.dart_tool/transfer_review_$dark.png'),
+          );
+        }
+        await tap(tester, 'Save transfer');
+        final entries = await providers.read(transactionProvider.future);
+        expect(
+          entries.firstWhere((t) => t.type == TransactionType.expense).amount,
+          10,
+        );
+        expect(
+          entries.firstWhere((t) => t.type == TransactionType.transfer).amount,
+          500,
+        );
+      },
+    );
+  }
+
   testWidgets('transfer receives full amount and records the fee atomically', (
     tester,
   ) async {
@@ -673,13 +872,16 @@ void main() {
     await tap(tester, 'Transfer');
     expect(find.byType(NumPad), findsOneWidget);
     await pickAccount(tester, 'Select account', 'Cash');
-    await amount(tester, '500');
     await pickAccount(tester, 'Select receiving account', 'Bank');
-    await tester.enterText(find.byType(TextField).last, '20');
+    await amount(tester, '500');
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-transfer-fee')),
+      '20',
+    );
     expect(find.text('Amount received'), findsOneWidget);
     expect(find.text('Total deducted'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
-    await tap(tester, 'Save transaction');
+    await tap(tester, 'Save transfer');
     final entries = await providers.read(transactionProvider.future);
     expect(entries, hasLength(2));
     final transfer = entries.firstWhere(
@@ -700,15 +902,18 @@ void main() {
     await tap(tester, 'Add transaction');
     await tap(tester, 'Transfer');
     await pickAccount(tester, 'Select account', 'Cash');
-    await amount(tester, '500');
     await pickAccount(tester, 'Select receiving account', 'Bank');
-    await tester.enterText(find.byType(TextField).last, '20');
+    await amount(tester, '500');
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-transfer-fee')),
+      '20',
+    );
     final repository = providers.read(accountRepositoryProvider);
     final cash = (await repository.getAccounts()).firstWhere(
       (a) => a.id == 'cash',
     );
     await repository.updateAccount(cash.copyWith(initialBalance: 500));
-    await tap(tester, 'Save transaction');
+    await tap(tester, 'Save transfer');
     expect(find.text('Insufficient balance in Cash'), findsOneWidget);
     expect(await providers.read(transactionProvider.future), isEmpty);
   });

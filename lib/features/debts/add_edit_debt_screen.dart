@@ -3,11 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/widgets/add_purchase_sheet.dart';
 import 'package:koin/features/debts/widgets/debt_purchase_card.dart';
+import 'package:koin/features/debts/widgets/bnpl_schedule_selectors.dart';
 import 'package:uuid/uuid.dart';
+
+enum _DebtFormMode {
+  owedToMe('I am owed'),
+  iOwe('I owe'),
+  bnpl('BNPL');
+
+  final String label;
+  const _DebtFormMode(this.label);
+}
 
 class AddEditDebtScreen extends ConsumerStatefulWidget {
   final Debt? debt;
@@ -17,8 +26,7 @@ class AddEditDebtScreen extends ConsumerStatefulWidget {
   ConsumerState<AddEditDebtScreen> createState() => _AddEditDebtScreenState();
 }
 
-class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
-    with SingleTickerProviderStateMixin {
+class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
@@ -31,11 +39,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   String? _selectedCategoryId;
   InstallmentFrequency _selectedFrequency = InstallmentFrequency.monthly;
   bool _frequencyUserSet = false;
-  late TabController _tabController;
   List<DebtItem> _items = [];
   Timer? _debounceTimer;
   bool _manualCategory = false;
-  int _autoCatKey = 0;
+  bool _bnpl = false;
 
   @override
   void initState() {
@@ -55,24 +62,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       _selectedAccountId = d.accountId;
       _selectedCategoryId = d.categoryId;
       _items = List.from(d.items);
+      _bnpl = d.isMonthlyPurchaseAccount;
     } else {
       _selectedType = DebtType.owedToMe;
     }
-
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: _selectedType == DebtType.owedToMe ? 0 : 1,
-    );
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() {
-          _selectedType = _tabController.index == 0
-              ? DebtType.owedToMe
-              : DebtType.iOwe;
-        });
-      }
-    });
   }
 
   @override
@@ -82,7 +75,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     _amountController.dispose();
     _notesController.dispose();
     _installmentsController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -130,7 +122,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                   suggestion.originAccountId!.isNotEmpty)) {
             HapticService.light();
             setState(() {
-              if (_selectedCategoryId != matchedCat.id) _autoCatKey++;
               _selectedCategoryId = matchedCat.id;
               if (_selectedAccountId == null &&
                   suggestion.originAccountId != null &&
@@ -146,11 +137,14 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
 
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_bnpl && _items.isEmpty) {
+      KoinSnackBar.error(context, 'Add at least one purchase');
+      return;
+    }
 
     final name = _nameController.text.trim();
-    final amount = double.parse(
-      _amountController.text.trim().replaceAll(',', ''),
-    );
+    final amount =
+        double.tryParse(_amountController.text.trim().replaceAll(',', '')) ?? 0;
     final notes = _notesController.text.trim();
     final isEdit = widget.debt != null;
     final id = isEdit ? widget.debt!.id : const Uuid().v4();
@@ -173,12 +167,15 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
       type: _selectedType,
       startDate: _startDate,
       description: notes.isEmpty ? null : notes,
-      totalInstallments: installments,
-      frequency: _selectedFrequency,
+      totalInstallments: _bnpl ? 0 : installments,
+      frequency: _bnpl ? InstallmentFrequency.monthly : _selectedFrequency,
+      dueDate: _bnpl ? null : widget.debt?.dueDate,
+      sortOrder: widget.debt?.sortOrder ?? 0,
       currentAmount: currentAmount,
       accountId: _selectedAccountId,
       categoryId: _selectedCategoryId,
       items: _items,
+      isPurchaseAccount: _bnpl,
     );
 
     // Ensure debt items have debtId assigned
@@ -222,805 +219,508 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
   Widget _buildContent(BuildContext context) {
     final isEdit = widget.debt != null;
     final primaryColor = AppTheme.primaryColor(context);
-    final accountsState = ref.watch(accountProvider);
-    final categoriesState = ref.watch(categoriesProvider);
+    final accounts = ref.watch(accountProvider).value ?? [];
+    final categories = ref.watch(categoriesProvider).value ?? [];
+    final account = accounts
+        .where((a) => a.id == _selectedAccountId)
+        .firstOrNull;
+    final category = categories
+        .where((c) => c.id == _selectedCategoryId)
+        .firstOrNull;
+    final hasInstallments =
+        (int.tryParse(_installmentsController.text) ?? 0) > 0;
+    final currency = ref.watch(settingsProvider).currency;
+    final nameStyle = TextStyle(
+      fontSize: KoinTypography.formTitle,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0,
+      color: AppTheme.textColor(context),
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
+      appBar: AppBar(
+        leading: const KoinBackButton(),
+        title: Text(
+          _bnpl
+              ? (isEdit ? 'Edit BNPL' : 'New BNPL')
+              : (isEdit ? 'Edit debt / IOU' : 'New debt / IOU'),
+        ),
+        centerTitle: false,
+      ),
       body: Column(
         children: [
-          _buildHeader(context, primaryColor),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                KoinSpacing.screenInset,
-                24,
-                KoinSpacing.screenInset,
-                120,
-              ),
-              physics: const BouncingScrollPhysics(),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Type Selector
-                    const FormSectionTitle.subhead(title: 'Type'),
-                    const Gap(12),
-                    _buildPremiumTypeSwitcher(context, primaryColor)
-                        .animate()
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _nameController,
+                          textAlign: TextAlign.center,
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.next,
+                          style: nameStyle,
+                          decoration: InputDecoration(
+                            hintText: _bnpl
+                                ? 'BNPL provider'
+                                : 'Who is involved?',
+                            hintMaxLines: 2,
+                            hintStyle: nameStyle.copyWith(
+                              color: AppTheme.fieldHintColor(
+                                context,
+                                lightOpacity: 0.4,
+                              ),
+                            ),
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Enter a name'
+                              : null,
+                          onChanged: (_) => setState(() {}),
                         ),
-                    const Gap(32),
-
-                    // Installment Plan
-                    const FormSectionTitle.subhead(
-                      title: 'Installment Plan (Optional)',
-                    ),
-                    const Gap(12),
-                    _buildInstallmentsCard(context, primaryColor)
-                        .animate()
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
+                        const Gap(16),
+                        Text(
+                          _bnpl ? 'Outstanding balance' : 'Total amount',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppTheme.textLightColor(context),
+                              ),
                         ),
-                    const Gap(32),
-
-                    // Purchases / Sub-Items
-                    _buildPurchasesSection(
+                        if (_bnpl)
+                          _buildBnplAmount(
+                            context,
+                            currency.symbol,
+                            primaryColor,
+                          )
+                        else
+                          HeroAmountField(
+                            controller: _amountController,
+                            currencySymbol: currency.symbol,
+                            primaryColor: primaryColor,
+                            validator: (value) {
+                              final amount = double.tryParse(
+                                (value ?? '').replaceAll(',', ''),
+                              );
+                              return amount == null ||
+                                      !amount.isFinite ||
+                                      amount <= 0
+                                  ? 'Enter an amount greater than zero'
+                                  : null;
+                            },
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        _buildRecordTypeSelector(context, primaryColor),
+                        const Gap(24),
+                        _fieldLabel(
                           context,
-                          primaryColor,
-                          categoriesState.value ?? [],
-                        )
-                        .animate()
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
+                          _bnpl ? 'Billing schedule' : 'Timeline',
                         ),
-                    const Gap(32),
-
-                    // Date
-                    FormSectionTitle.subhead(
-                      title:
-                          int.tryParse(_installmentsController.text) != null &&
-                              int.parse(_installmentsController.text) > 0
-                          ? 'Start Payment Date'
-                          : 'Record Date',
-                    ),
-                    const Gap(12),
-                    DateSelectorTile(
-                          label:
-                              int.tryParse(_installmentsController.text) !=
-                                      null &&
-                                  int.parse(_installmentsController.text) > 0
-                              ? 'Start Payment Date'
-                              : 'Record Date',
-                          date: _startDate,
-                          icon: Icons.calendar_today_rounded,
-                          primaryColor: primaryColor,
-                          onDateSelected: (dt) {
-                            setState(() => _startDate = dt);
-                          },
-                        )
-                        .animate()
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
+                        const Gap(8),
+                        if (_bnpl)
+                          BillingDaySelector(
+                            day: _startDate.day,
+                            primaryColor: primaryColor,
+                            onDaySelected: _setBillingDay,
+                          )
+                        else
+                          DateSelectorTile(
+                            label: hasInstallments
+                                ? 'Start payment date'
+                                : 'Record date',
+                            date: _startDate,
+                            primaryColor: primaryColor,
+                            onDateSelected: (date) => setState(() {
+                              _startDate = date;
+                            }),
+                          ),
+                        const Gap(28),
+                        Divider(
+                          height: 1,
+                          color: AppTheme.dividerColor(context),
                         ),
-                    const Gap(32),
-
-                    // Details Section
-                    const FormSectionTitle.subhead(title: 'Details'),
-                    const Gap(12),
-                    Column(
+                        const Gap(24),
+                        if (!_bnpl) ...[
+                          _fieldLabel(context, 'Optional details'),
+                          const Gap(12),
+                        ],
+                        if (!_bnpl) ...[
+                          _fieldLabel(context, 'Installment plan'),
+                          const Gap(8),
+                          _buildInstallmentsCard(context, primaryColor),
+                          const Gap(24),
+                        ],
+                        if (_bnpl || _items.isNotEmpty) ...[
+                          _buildPurchasesSection(
+                            context,
+                            primaryColor,
+                            categories,
+                          ),
+                          const Gap(24),
+                        ],
+                        if (_bnpl) ...[
+                          _fieldLabel(context, 'Optional details'),
+                          const Gap(12),
+                        ],
+                        KoinGroupedCard(
+                          borderRadius: 16,
+                          borderColor: AppTheme.fieldBorderColor(context),
                           children: [
-                            // Account Picker (Optional)
                             SelectionTile(
+                              asCard: false,
                               fallbackIcon:
                                   Icons.account_balance_wallet_rounded,
-                              label: 'Link to Account (Optional)',
-                              selectedName: accountsState.when(
-                                data: (accounts) => accounts
-                                    .where((a) => a.id == _selectedAccountId)
-                                    .firstOrNull
-                                    ?.name,
-                                loading: () => null,
-                                error: (_, stackTrace) => null,
-                              ),
-                              selectedColor: accountsState.when(
-                                data: (accounts) => accounts
-                                    .where((a) => a.id == _selectedAccountId)
-                                    .firstOrNull
-                                    ?.color,
-                                loading: () => null,
-                                error: (_, stackTrace) => null,
-                              ),
-                              selectedIconCodePoint: accountsState.when(
-                                data: (accounts) => accounts
-                                    .where((a) => a.id == _selectedAccountId)
-                                    .firstOrNull
-                                    ?.iconCodePoint,
-                                loading: () => null,
-                                error: (_, stackTrace) => null,
-                              ),
-                              selectedLogoAsset: accountsState.when(
-                                data: (accounts) => accounts
-                                    .where((a) => a.id == _selectedAccountId)
-                                    .firstOrNull
-                                    ?.logoAsset,
-                                loading: () => null,
-                                error: (_, stackTrace) => null,
-                              ),
-                              placeholder: 'Select Account',
-                              onTap: () => accountsState.whenData(
-                                (accounts) =>
-                                    _openAccountPicker(context, accounts),
-                              ),
+                              label: 'Linked account',
+                              selectedName: account?.name,
+                              selectedColor: account?.color,
+                              selectedIconCodePoint: account?.iconCodePoint,
+                              selectedLogoAsset: account?.logoAsset,
+                              placeholder: 'Choose an account',
+                              onTap: () =>
+                                  _openAccountPicker(context, accounts),
                             ),
-                            const Gap(12),
-                            // Category Picker (Optional)
-                            Builder(
-                              builder: (context) {
-                                Widget child = SelectionTile(
-                                  fallbackIcon: Icons.category_rounded,
-                                  label: 'Link to Category (Optional)',
-                                  selectedName: categoriesState.when(
-                                    data: (cats) => cats
-                                        .where(
-                                          (c) => c.id == _selectedCategoryId,
-                                        )
-                                        .firstOrNull
-                                        ?.name,
-                                    loading: () => null,
-                                    error: (_, _) => null,
-                                  ),
-                                  selectedColor: categoriesState.when(
-                                    data: (cats) => cats
-                                        .where(
-                                          (c) => c.id == _selectedCategoryId,
-                                        )
-                                        .firstOrNull
-                                        ?.color,
-                                    loading: () => null,
-                                    error: (_, _) => null,
-                                  ),
-                                  selectedIconCodePoint: categoriesState.when(
-                                    data: (cats) => cats
-                                        .where(
-                                          (c) => c.id == _selectedCategoryId,
-                                        )
-                                        .firstOrNull
-                                        ?.iconCodePoint,
-                                    loading: () => null,
-                                    error: (_, _) => null,
-                                  ),
-                                  placeholder: 'Select Category',
-                                  onTap: () => categoriesState.whenData(
-                                    (cats) =>
-                                        _openCategoryPicker(context, cats),
-                                  ),
-                                );
-
-                                if (_autoCatKey > 0) {
-                                  child = child
-                                      .animate(key: ValueKey(_autoCatKey))
-                                      .shimmer(
-                                        duration: 400.ms,
-                                        color: AppTheme.primaryColor(
-                                          context,
-                                        ).withValues(alpha: 0.2),
-                                      )
-                                      .scale(
-                                        duration: 150.ms,
-                                        curve: Curves.easeOut,
-                                        begin: const Offset(1, 1),
-                                        end: const Offset(1.02, 1.02),
-                                      )
-                                      .then()
-                                      .scale(
-                                        duration: 250.ms,
-                                        curve: Curves.easeOutBack,
-                                        begin: const Offset(1.02, 1.02),
-                                        end: const Offset(1, 1),
-                                      );
-                                }
-                                return child;
-                              },
+                            SelectionTile(
+                              asCard: false,
+                              fallbackIcon: Icons.category_rounded,
+                              label: 'Linked category',
+                              selectedName: category?.name,
+                              selectedColor: category?.color,
+                              selectedIconCodePoint: category?.iconCodePoint,
+                              placeholder: 'Choose a category',
+                              onTap: () =>
+                                  _openCategoryPicker(context, categories),
                             ),
-                            const Gap(12),
-                            // Notes Input
-                            _buildNotesInput(context),
                           ],
-                        )
-                        .animate()
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
                         ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton:
-          Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: KoinSpacing.screenInset,
-                ),
-                child: PressableScale(
-                  onTap: _save,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          primaryColor,
-                          primaryColor.withValues(alpha: 0.85),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        AppTheme.boxShadow(
-                          context,
-                          color: primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
+                        const Gap(20),
+                        _fieldLabel(context, 'Notes'),
+                        const Gap(8),
+                        _buildNotesInput(context),
                       ],
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    child: Text(
-                      isEdit ? 'Update' : 'Create',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: KoinTypography.itemTitle,
-                        fontWeight: KoinTypography.titleWeight,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
                     ),
                   ),
                 ),
-              )
-              .animate()
-              .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-              .scale(
-                begin: const Offset(0.95, 0.95),
-                duration: 250.ms,
-                curve: Curves.easeOutCubic,
               ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, Color primaryColor) {
-    final topPadding = MediaQuery.paddingOf(context).top;
-    final settings = ref.read(settingsProvider);
-    final currency = settings.currency;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor(context),
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          Gap(topPadding + 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KoinSpacing.screenInset,
             ),
-            child: Row(children: [const KoinBackButton(), const Spacer()]),
           ),
-          const Gap(8),
-
-          // Debt Name Input
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KoinSpacing.screenInset,
-            ),
-            child: TextFormField(
-              controller: _nameController,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: KoinTypography.formTitle,
-                fontWeight: KoinTypography.headingWeight,
-                color: AppTheme.textColor(context),
-                letterSpacing: KoinTypography.headingTracking,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Who is involved?',
-                border: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                fillColor: Colors.transparent,
-                filled: true,
-                contentPadding: EdgeInsets.zero,
-                hintStyle: TextStyle(
-                  color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
+          SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Center(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: KoinPrimaryButton(
+                  label: isEdit ? 'Update' : 'Create',
+                  onPressed: _save,
                 ),
               ),
-              onChanged: (_) => setState(() {}),
             ),
           ),
-
-          const Gap(4),
-
-          HeroAmountField(
-            controller: _amountController,
-            currencySymbol: currency.symbol,
-            primaryColor: primaryColor,
-            onChanged: (_) => setState(() {}),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildPremiumTypeSwitcher(BuildContext context, Color primaryColor) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildSwitcherItem(
-            context,
-            'I am owed',
-            DebtType.owedToMe,
-            AppTheme.incomeColor(context),
-          ),
-          _buildSwitcherItem(
-            context,
-            'I owe',
-            DebtType.iOwe,
-            AppTheme.expenseColor(context),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _fieldLabel(BuildContext context, String label) => Text(
+    label,
+    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+      color: AppTheme.textColor(context),
+      fontWeight: FontWeight.w600,
+    ),
+  );
 
-  Widget _buildSwitcherItem(
+  _DebtFormMode get _recordType => _bnpl
+      ? _DebtFormMode.bnpl
+      : _selectedType == DebtType.owedToMe
+      ? _DebtFormMode.owedToMe
+      : _DebtFormMode.iOwe;
+
+  Widget _buildBnplAmount(
     BuildContext context,
-    String label,
-    DebtType type,
-    Color activeColor,
+    String currencySymbol,
+    Color primaryColor,
   ) {
-    final isSelected = _selectedType == type;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticService.light();
-          setState(() {
-            _selectedType = type;
-            _tabController.animateTo(type == DebtType.owedToMe ? 0 : 1);
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    AppTheme.boxShadow(
-                      context,
-                      color: activeColor.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected
-                  ? Colors.white
-                  : AppTheme.textLightColor(context),
-              fontWeight: isSelected
-                  ? KoinTypography.titleWeight
-                  : KoinTypography.labelWeight,
-              fontSize: KoinTypography.compact,
-            ),
+    final balance =
+        (_items.fold(0.0, (sum, item) => sum + item.amount) -
+                (widget.debt?.currentAmount ?? 0))
+            .clamp(0, double.infinity);
+    final format = NumberFormat.decimalPattern()
+      ..minimumFractionDigits = balance % 1 == 0 ? 0 : 2
+      ..maximumFractionDigits = 2;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 32),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$currencySymbol ',
+                style: TextStyle(
+                  fontSize: KoinTypography.screenTitle,
+                  fontWeight: KoinTypography.labelWeight,
+                  color: primaryColor.withValues(alpha: 0.5),
+                ),
+              ),
+              Text(
+                format.format(balance),
+                key: const Key('bnpl_balance'),
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: KoinTypography.inputAmount,
+                  fontWeight: KoinTypography.headingWeight,
+                  height: KoinTypography.amountHeight,
+                  color: primaryColor,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildRecordTypeSelector(BuildContext context, Color primaryColor) =>
+      SelectionTile(
+        label: 'Record type',
+        placeholder: 'Choose a type',
+        fallbackIcon: Icons.swap_horiz_rounded,
+        selectedName: _recordType.label,
+        selectedColor: primaryColor,
+        selectedIconCodePoint: switch (_recordType) {
+          _DebtFormMode.owedToMe => Icons.arrow_downward_rounded.codePoint,
+          _DebtFormMode.iOwe => Icons.arrow_upward_rounded.codePoint,
+          _DebtFormMode.bnpl => Icons.shopping_cart.codePoint,
+        },
+        onTap: () => _selectRecordType(context, primaryColor),
+      );
+
+  Future<void> _selectRecordType(
+    BuildContext context,
+    Color primaryColor,
+  ) async {
+    final selected = await showModalBottomSheet<_DebtFormMode>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surfaceColor(context),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Text(
+                  'Record type',
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                    fontSize: 22,
+                    fontWeight: KoinTypography.headingWeight,
+                  ),
+                ),
+              ),
+              for (final mode in _DebtFormMode.values)
+                Semantics(
+                  selected: mode == _recordType,
+                  inMutuallyExclusiveGroup: true,
+                  child: ListTile(
+                    minTileHeight: 64,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    title: Text(
+                      mode.label,
+                      style: Theme.of(sheetContext).textTheme.bodyLarge
+                          ?.copyWith(
+                            fontWeight: mode == _recordType
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                    ),
+                    trailing: Icon(
+                      mode == _recordType
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: mode == _recordType
+                          ? primaryColor
+                          : AppTheme.textLightColor(sheetContext),
+                      size: 24,
+                    ),
+                    onTap: () => Navigator.pop(sheetContext, mode),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted ||
+        !context.mounted ||
+        selected == null ||
+        selected == _recordType) {
+      return;
+    }
+    if (_bnpl && _items.isNotEmpty && selected != _DebtFormMode.bnpl) {
+      KoinSnackBar.error(
+        context,
+        selected == _DebtFormMode.owedToMe
+            ? 'Remove purchases before switching to an IOU'
+            : 'Remove purchases before switching to a single debt',
+      );
+      return;
+    }
+    HapticService.light();
+    setState(() {
+      _bnpl = selected == _DebtFormMode.bnpl;
+      _selectedType = selected == _DebtFormMode.owedToMe
+          ? DebtType.owedToMe
+          : DebtType.iOwe;
+      if (_bnpl) {
+        _selectedFrequency = InstallmentFrequency.monthly;
+        _items = _items
+            .map(
+              (item) => item.copyWith(
+                firstPaymentDate: DateTime(
+                  item.firstPaymentDate.year,
+                  item.firstPaymentDate.month,
+                  _startDate.day.clamp(
+                    1,
+                    DateTime(
+                      item.firstPaymentDate.year,
+                      item.firstPaymentDate.month + 1,
+                      0,
+                    ).day,
+                  ),
+                ),
+              ),
+            )
+            .toList();
+      }
+    });
   }
 
   Widget _buildInstallmentsCard(BuildContext context, Color primaryColor) {
-    final settings = ref.read(settingsProvider);
-    final currencyFormat = NumberFormat.simpleCurrency(
-      name: settings.currency.code,
+    final count = int.tryParse(_installmentsController.text) ?? 0;
+    final amount =
+        double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
+    final format = NumberFormat.simpleCurrency(
+      name: ref.watch(settingsProvider).currency.code,
     );
-
-    double? paymentAmount;
-    final amtStr = _amountController.text.replaceAll(',', '');
-    final amt = double.tryParse(amtStr) ?? 0.0;
-    final inst = int.tryParse(_installmentsController.text) ?? 0;
-    if (amt > 0 && inst > 0) {
-      paymentAmount = amt / inst;
-    }
-
-    final freqName =
-        _selectedFrequency.name[0].toUpperCase() +
-        _selectedFrequency.name.substring(1);
-
-    final String frequencySuffix = switch (_selectedFrequency) {
-      InstallmentFrequency.weekly => '/ week',
-      InstallmentFrequency.biweekly => '/ 2 weeks',
-      InstallmentFrequency.monthly => '/ month',
-      InstallmentFrequency.yearly => '/ year',
-    };
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.fieldBorderColor(
-                      context,
-                      lightOpacity: 0.6,
-                    ),
-                  ),
-                  boxShadow: [
-                    AppTheme.boxShadow(
-                      context,
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Count (Optional)',
-                      style: TextStyle(
-                        fontSize: KoinTypography.overline,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.6),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const Gap(6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.tag_rounded,
-                          size: 16,
-                          color: primaryColor.withValues(alpha: 0.8),
-                        ),
-                        const Gap(8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _installmentsController,
-                            keyboardType: TextInputType.number,
-                            style: TextStyle(
-                              fontSize: KoinTypography.itemTitle,
-                              fontWeight: KoinTypography.titleWeight,
-                              color: AppTheme.textColor(context),
-                            ),
-                            onTap: () => HapticService.light(),
-                            onChanged: (val) {
-                              final count = int.tryParse(val) ?? 0;
-                              setState(() {
-                                if (count > 0 && !_frequencyUserSet) {
-                                  _selectedFrequency =
-                                      InstallmentFrequency.monthly;
-                                }
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'None',
-                              hintStyle: TextStyle(
-                                color: AppTheme.fieldHintColor(
-                                  context,
-                                  lightOpacity: 0.3,
-                                ),
-                              ),
-                              isDense: true,
-                              filled: false,
-                              fillColor: Colors.transparent,
-                              contentPadding: EdgeInsets.zero,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        TextFormField(
+          controller: _installmentsController,
+          keyboardType: TextInputType.number,
+          style: Theme.of(context).textTheme.bodyLarge,
+          decoration: InputDecoration(
+            labelText: 'Installments',
+            hintText: 'None',
+            hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppTheme.fieldHintColor(context),
             ),
-            const Gap(12),
-            Expanded(
-              child: PressableScale(
-                onTap: () {
-                  if (inst <= 0) return;
-                  HapticService.light();
-                  _frequencyUserSet = true;
-                  _openFrequencyPicker(context, primaryColor);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppTheme.fieldBorderColor(
-                        context,
-                        lightOpacity: 0.6,
-                      ),
+          ),
+          onChanged: (value) => setState(() {
+            if ((int.tryParse(value) ?? 0) > 0 && !_frequencyUserSet) {
+              _selectedFrequency = InstallmentFrequency.monthly;
+            }
+          }),
+        ),
+        AnimatedSize(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: count <= 0
+              ? const SizedBox.shrink()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Gap(12),
+                    SelectionTile(
+                      fallbackIcon: Icons.event_repeat_rounded,
+                      label: 'Payment frequency',
+                      selectedName:
+                          _selectedFrequency.name[0].toUpperCase() +
+                          _selectedFrequency.name.substring(1),
+                      selectedColor: primaryColor,
+                      selectedIconCodePoint:
+                          Icons.event_repeat_rounded.codePoint,
+                      placeholder: 'Choose frequency',
+                      onTap: () {
+                        _frequencyUserSet = true;
+                        _openFrequencyPicker(context, primaryColor);
+                      },
                     ),
-                    boxShadow: [
-                      AppTheme.boxShadow(
-                        context,
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Frequency',
-                        style: TextStyle(
-                          fontSize: KoinTypography.overline,
-                          fontWeight: KoinTypography.labelWeight,
-                          color: AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.6),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const Gap(6),
+                    if (amount > 0) ...[
+                      const Gap(12),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
-                            Icons.event_repeat_rounded,
-                            size: 16,
-                            color: inst > 0
-                                ? primaryColor.withValues(alpha: 0.8)
-                                : AppTheme.fieldHintColor(
-                                    context,
-                                    lightOpacity: 0.3,
-                                  ),
+                            Icons.insights_rounded,
+                            size: 18,
+                            color: primaryColor,
                           ),
                           const Gap(8),
                           Expanded(
                             child: Text(
-                              inst > 0 ? freqName : 'None',
-                              style: TextStyle(
-                                fontSize: KoinTypography.itemTitle,
-                                fontWeight: KoinTypography.labelWeight,
-                                color: inst > 0
-                                    ? AppTheme.textColor(context)
-                                    : AppTheme.fieldHintColor(
-                                        context,
-                                        lightOpacity: 0.35,
-                                      ),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                              'Estimated payment: ${format.format(amount / count)} per installment.',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.textLightColor(context),
+                                  ),
                             ),
-                          ),
-                          Icon(
-                            Icons.unfold_more_rounded,
-                            size: 16,
-                            color: AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: inst > 0 ? 0.4 : 0.2),
                           ),
                         ],
                       ),
                     ],
-                  ),
+                  ],
                 ),
-              ),
-            ),
-          ],
         ),
-
-        if (paymentAmount != null) ...[
-          const Gap(12),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: primaryColor.withValues(alpha: 0.15)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.payments_rounded,
-                    size: 20,
-                    color: primaryColor,
-                  ),
-                ),
-                const Gap(16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Estimated Payment',
-                        style: TextStyle(
-                          fontSize: KoinTypography.small,
-                          fontWeight: KoinTypography.labelWeight,
-                          color: primaryColor.withValues(alpha: 0.8),
-                        ),
-                      ),
-                      const Gap(2),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            currencyFormat.format(paymentAmount),
-                            style: TextStyle(
-                              fontSize: KoinTypography.sectionTitle,
-                              fontWeight: KoinTypography.headingWeight,
-                              color: primaryColor,
-                              letterSpacing: KoinTypography.headingTracking,
-                            ),
-                          ),
-                          const Gap(4),
-                          Text(
-                            frequencySuffix,
-                            style: TextStyle(
-                              fontSize: KoinTypography.caption,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: primaryColor.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
 
-  Widget _buildNotesInput(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
-        ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceLightColor(context),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.sticky_note_2_rounded,
-                size: 17,
-                color: AppTheme.textLightColor(context),
-              ),
-            ),
-            const Gap(12),
-            Expanded(
-              child: TextField(
-                controller: _notesController,
-                onTap: () {
-                  HapticService.light();
-                },
-                onChanged: (_) {
-                  _debounceTimer?.cancel();
-                  _debounceTimer = Timer(
-                    const Duration(milliseconds: 350),
-                    _runAutoCategorization,
-                  );
-                },
-                style: TextStyle(
-                  fontWeight: KoinTypography.labelWeight,
-                  fontSize: KoinTypography.body,
-                  color: AppTheme.textColor(context),
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Notes (Optional)',
-                  hintStyle: TextStyle(
-                    color: AppTheme.fieldHintColor(context, lightOpacity: 0.45),
-                    fontWeight: FontWeight.w400,
-                    fontSize: KoinTypography.body,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildNotesInput(BuildContext context) => TextFormField(
+    controller: _notesController,
+    style: Theme.of(context).textTheme.bodyLarge,
+    minLines: 1,
+    maxLines: 4,
+    textCapitalization: TextCapitalization.sentences,
+    decoration: InputDecoration(
+      hintText: 'Notes (Optional)',
+      hintStyle: Theme.of(
+        context,
+      ).textTheme.bodyLarge?.copyWith(color: AppTheme.fieldHintColor(context)),
+    ),
+    onChanged: (_) {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(
+        const Duration(milliseconds: 350),
+        _runAutoCategorization,
+      );
+    },
+  );
 
   Future<void> _openCategoryPicker(
     BuildContext context,
@@ -1080,7 +780,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
         return SelectSheetItem(
           name: f.name[0].toUpperCase() + f.name.substring(1),
           accentColor: primaryColor,
-          iconCodePoint: Icons.event_repeat_rounded.codePoint,
           selected: f == _selectedFrequency,
           onTap: () => Navigator.pop(sheetContext, f),
         );
@@ -1099,12 +798,15 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DebtPurchaseSectionHeader(
-          count: _items.length,
-          color: _selectedType == DebtType.owedToMe
-              ? AppTheme.incomeColor(context)
-              : AppTheme.expenseColor(context),
-        ),
+        if (!_bnpl)
+          _fieldLabel(context, 'Existing purchases')
+        else
+          DebtPurchaseSectionHeader(
+            count: _items.length,
+            color: _selectedType == DebtType.owedToMe
+                ? AppTheme.incomeColor(context)
+                : AppTheme.expenseColor(context),
+          ),
         const Gap(16),
         ..._items.map(
           (item) => Padding(
@@ -1132,7 +834,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
                     debtType: _selectedType,
                     primaryColor: primaryColor,
                     categories: categories,
-                    defaultDate: _startDate,
+                    defaultDate: _purchaseBillDate,
+                    monthlyBillingDay: _bnpl ? _startDate.day : null,
                     existingItem: item,
                     suggester: ref.read(categorySuggesterProvider),
                   );
@@ -1160,53 +863,57 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
             ),
           ),
         ),
-        const Gap(6),
-
-        PressableScale(
-          onTap: () async {
-            HapticService.light();
-            final newItem = await showAddPurchaseSheet(
-              context: context,
-              debtType: _selectedType,
-              primaryColor: primaryColor,
-              categories: categories,
-              defaultDate: _startDate,
-              suggester: ref.read(categorySuggesterProvider),
-            );
-            if (newItem != null) {
-              setState(() {
-                _items.add(newItem);
-                _updateAmountFromItems();
-              });
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: primaryColor,
-                  size: 20,
-                ),
-                const Gap(8),
-                Text(
-                  'Add Purchase / Sub-Plan',
-                  style: TextStyle(
+        if (_bnpl) ...[
+          const Gap(6),
+          PressableScale(
+            onTap: () async {
+              HapticService.light();
+              final newItem = await showAddPurchaseSheet(
+                context: context,
+                debtType: _selectedType,
+                primaryColor: primaryColor,
+                categories: categories,
+                defaultDate: _purchaseBillDate,
+                monthlyBillingDay: _bnpl ? _startDate.day : null,
+                suggester: ref.read(categorySuggesterProvider),
+              );
+              if (newItem != null) {
+                setState(() {
+                  _items.add(newItem);
+                  _updateAmountFromItems();
+                });
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_circle_outline_rounded,
                     color: primaryColor,
-                    fontWeight: FontWeight.w700,
+                    size: 20,
                   ),
-                ),
-              ],
+                  const Gap(8),
+                  Flexible(
+                    child: Text(
+                      'Add Purchase',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -1219,4 +926,46 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen>
           .replaceAll(RegExp(r'\.00$'), '');
     }
   }
+
+  DateTime get _purchaseBillDate {
+    if (!_bnpl) return _startDate;
+    return Debt(
+      id: '',
+      personName: '',
+      amount: _items.fold(0.0, (sum, item) => sum + item.amount),
+      type: DebtType.iOwe,
+      startDate: _startDate,
+      items: _items,
+      currentAmount: widget.debt?.currentAmount ?? 0,
+      isPurchaseAccount: true,
+    ).nextPurchaseBillDate;
+  }
+
+  void _setBillingDay(int day) => setState(() {
+    final now = DateTime.now();
+    var anchor = DateTime(now.year, now.month);
+    // Store a real date with the chosen day, including 29-31 in short months.
+    while (DateTime(anchor.year, anchor.month + 1, 0).day < day) {
+      anchor = DateTime(anchor.year, anchor.month - 1);
+    }
+    _startDate = DateTime(anchor.year, anchor.month, day);
+    _items = _items
+        .map(
+          (item) => item.copyWith(
+            firstPaymentDate: DateTime(
+              item.firstPaymentDate.year,
+              item.firstPaymentDate.month,
+              day.clamp(
+                1,
+                DateTime(
+                  item.firstPaymentDate.year,
+                  item.firstPaymentDate.month + 1,
+                  0,
+                ).day,
+              ),
+            ),
+          ),
+        )
+        .toList();
+  });
 }
