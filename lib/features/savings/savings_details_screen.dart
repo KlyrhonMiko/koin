@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
@@ -98,6 +97,35 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (theme.brightness == Brightness.dark) return _buildScreen(context);
+    const foreground = Color(0xFF293330);
+    const secondary = Color(0xFF68746D);
+    return Theme(
+      data: theme.copyWith(
+        scaffoldBackgroundColor: const Color(0xFFF4F5F2),
+        dividerColor: const Color(0xFFD9E1DA),
+        colorScheme: theme.colorScheme.copyWith(
+          primary: const Color(0xFF00B993),
+          onPrimary: const Color(0xFF102A24),
+          surface: const Color(0xFFE6ECE7),
+          onSurface: foreground,
+          onSurfaceVariant: secondary,
+        ),
+        textTheme: theme.textTheme
+            .apply(bodyColor: foreground, displayColor: foreground)
+            .copyWith(
+              bodyMedium: theme.textTheme.bodyMedium?.copyWith(
+                color: secondary,
+              ),
+              bodySmall: theme.textTheme.bodySmall?.copyWith(color: secondary),
+            ),
+      ),
+      child: Builder(builder: _buildScreen),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final goalsAsync = ref.watch(computedSavingsGoalsProvider);
     final goal = goalsAsync.when(
       data: (goals) => goals.firstWhere(
@@ -136,7 +164,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               child: Row(
                 children: [
                   const KoinBackButton(),
-                  const Gap(16),
+                  const Gap(8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,53 +172,36 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         Text(
                           goal.name,
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            fontSize: KoinTypography.sectionTitle,
+                            fontWeight: KoinTypography.titleWeight,
+                            letterSpacing: KoinTypography.itemTracking,
                             color: AppTheme.textColor(context),
                           ),
-                          maxLines: 1,
+                          maxLines:
+                              MediaQuery.textScalerOf(context).scale(18) > 24
+                              ? 2
+                              : 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (linkedAccount != null) ...[
-                          const Gap(2),
-                          Row(
-                            children: [
-                              if (linkedAccount.logoAsset != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.asset(
-                                    linkedAccount.logoAsset!,
-                                    width: 14,
-                                    height: 14,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              else
-                                Icon(
-                                  IconUtils.getIcon(
-                                    linkedAccount.iconCodePoint,
-                                  ),
-                                  size: 14,
-                                  color: linkedAccount.color,
-                                ),
-                              const Gap(4),
-                              Text(
-                                linkedAccount.name,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ],
+                          const Gap(3),
+                          Text(
+                            linkedAccount.name,
+                            key: const ValueKey('savings_account_label'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: KoinTypography.small,
+                              fontWeight: KoinTypography.supportingWeight,
+                              color: AppTheme.textLightColor(context),
+                            ),
                           ),
                         ],
                       ],
                     ),
                   ),
+                  const Gap(8),
+                  _buildManagementActions(context, goal),
                 ],
               ),
             ),
@@ -221,7 +232,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildGaugeHeader(context, goal, currencyFormat),
-                          const Gap(24),
+                          const Gap(8),
                           _buildQuickActions(
                             context,
                             goal,
@@ -241,6 +252,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                 ),
                               ),
                             ),
+                          const Gap(28),
                           SavingsRoutineCard(goal: goal),
                         ],
                       ),
@@ -298,334 +310,187 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     Account? linkedAccount,
     double? linkedBalance,
   ) {
-    final actions = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: _buildActionItem(
-            context,
-            icon: Icons.add_rounded,
-            label: 'Save',
-            tooltip: 'Add Savings',
-            color: AppTheme.primaryColor(context),
-            onTap: () => _showAddLogSheet(
-              goal: goal,
-              linkedAccount: linkedAccount,
-              linkedBalance: linkedBalance,
-            ),
-          ),
-        ),
-        Expanded(
-          child: _buildActionItem(
-            context,
-            icon: Icons.south_west_rounded,
-            label: 'Release',
-            tooltip: 'Release savings',
-            enabled: goal.currentAmount > 0,
-            color: AppTheme.primaryColor(context),
-            onTap: () => _showAddLogSheet(
-              goal: goal,
-              release: true,
-              linkedAccount: linkedAccount,
-              linkedBalance: linkedBalance,
-            ),
-          ),
-        ),
-        Expanded(
-          child: _buildActionItem(
-            context,
-            icon: Icons.edit_rounded,
-            label: 'Edit',
-            tooltip: 'Edit goal',
-            color: AppTheme.textLightColor(context),
-            onTap: () {
-              HapticService.light();
-              Navigator.push(
-                context,
-                SlideUpRoute(page: AddSavingsGoalScreen(goal: goal)),
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: _buildActionItem(
-            context,
-            icon: Icons.delete_outline_rounded,
-            label: 'Delete',
-            tooltip: 'Delete goal',
-            color: AppTheme.expenseColor(context),
-            onTap: () => _deleteGoal(goal),
-          ),
-        ),
-      ],
-    );
-    if (MediaQuery.disableAnimationsOf(context)) return actions;
-    return actions
-        .koinAnimate(
-          context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
-  }
-
-  Widget _buildActionItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    String? tooltip,
-    bool enabled = true,
-  }) => Semantics(
-    button: true,
-    enabled: enabled,
-    child: Tooltip(
-      message: tooltip ?? label,
-      child: IgnorePointer(
-        ignoring: !enabled,
-        child: PressableScale(
-          enableHaptic: false,
-          onTap: onTap,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    AppTheme.boxShadow(
-                      context,
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: enabled ? color : color.withValues(alpha: 0.3),
-                  size: 22,
-                ),
-              ),
-              const Gap(8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: KoinTypography.small,
-                  fontWeight: KoinTypography.labelWeight,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: enabled ? 1 : 0.35),
-                ),
-              ),
-            ],
-          ),
-        ),
+    final style = FilledButton.styleFrom(
+      minimumSize: const Size(0, 52),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(
+        fontFamily: KoinTypography.fontFamily,
+        fontSize: KoinTypography.body,
+        fontWeight: KoinTypography.titleWeight,
       ),
-    ),
-  );
+    );
+    final save = Tooltip(
+      message: 'Add Savings',
+      child: FilledButton.icon(
+        style: style.copyWith(
+          backgroundColor: WidgetStatePropertyAll(
+            AppTheme.primaryColor(context),
+          ),
+          foregroundColor: const WidgetStatePropertyAll(Color(0xFF102A24)),
+        ),
+        onPressed: () => _showAddLogSheet(
+          goal: goal,
+          linkedAccount: linkedAccount,
+          linkedBalance: linkedBalance,
+        ),
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: const Text('Save'),
+      ),
+    );
+    final release = Tooltip(
+      message: 'Release savings',
+      child: FilledButton.tonalIcon(
+        style: style.copyWith(
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => AppTheme.surfaceColor(context),
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled)
+                ? AppTheme.textLightColor(context)
+                : AppTheme.textColor(context),
+          ),
+        ),
+        onPressed: goal.currentAmount > 0
+            ? () => _showAddLogSheet(
+                goal: goal,
+                release: true,
+                linkedAccount: linkedAccount,
+                linkedBalance: linkedBalance,
+              )
+            : null,
+        icon: const Icon(Icons.south_west_rounded, size: 20),
+        label: const Text('Release'),
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = MediaQuery.textScalerOf(context).scale(15) > 22;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [save, const Gap(10), release],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: save),
+            const Gap(12),
+            Expanded(child: release),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildGaugeHeader(
     BuildContext context,
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
-    return KoinSummaryCard(
-          shapeStyle: SummaryShapeStyle.savings,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Saved',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const Gap(6),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedCounter(
-                            value: goal.currentAmount,
-                            formatter: (v) => currencyFormat.format(v),
-                            duration: const Duration(milliseconds: 1400),
-                            curve: Curves.easeOutCubic,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1.0,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (goal.hasTarget) const Gap(12),
-                  if (goal.hasTarget)
-                    Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                          child: Center(
-                            child: TweenAnimationBuilder<double>(
-                              tween: Tween<double>(
-                                begin: 0,
-                                end: goal.progress,
-                              ),
-                              duration: KoinMotion.duration(
-                                context,
-                                const Duration(milliseconds: 1400),
-                              ),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, val, child) {
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 56,
-                                      height: 56,
-                                      child: CircularProgressIndicator(
-                                        value: 1.0,
-                                        strokeWidth: 4,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 56,
-                                      height: 56,
-                                      child: CircularProgressIndicator(
-                                        value: val,
-                                        strokeWidth: 4,
-                                        strokeCap: StrokeCap.round,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(val * 100).toInt()}%',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        )
-                        .koinAnimate(
-                          context,
-                          autoPlay: !MediaQuery.disableAnimationsOf(context),
-                          onInit: KoinMotion.onInit(context),
-                        )
-                        .scale(
-                          begin: const Offset(0.85, 0.85),
-                          end: const Offset(1.0, 1.0),
-                          duration: 600.ms,
-                          curve: Curves.elasticOut,
-                        ),
-                ],
+    return Padding(
+      key: const ValueKey('savings_balance'),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saved',
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: KoinTypography.body,
+            ),
+          ),
+          const Gap(8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: AnimatedCounter(
+              value: goal.currentAmount,
+              formatter: currencyFormat.format,
+              duration: const Duration(milliseconds: 400),
+              style: TextStyle(
+                color: AppTheme.textColor(context),
+                fontSize: 48,
+                fontWeight: Theme.of(context).brightness == Brightness.dark
+                    ? KoinTypography.headingWeight
+                    : KoinTypography.titleWeight,
+                letterSpacing: -1.5,
+                height: 1.1,
               ),
-              if (goal.hasTarget) ...[
-                const Gap(20),
-                Container(
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          if (goal.hasTarget) ...[
+            const Gap(20),
+            Wrap(
+              spacing: 16,
+              runSpacing: 6,
+              children: [
+                Text(
+                  'Target',
+                  style: TextStyle(color: AppTheme.textLightColor(context)),
                 ),
-                const Gap(16),
-                Wrap(
-                  spacing: 24,
-                  runSpacing: 16,
-                  children: [
-                    _buildStatItem(
-                      context,
-                      label: 'Target',
-                      value: goal.targetAmount ?? 0.0,
-                      formatter: currencyFormat.format,
-                      alignment: CrossAxisAlignment.start,
-                    ),
-                    _buildStatItem(
-                      context,
-                      label: goal.remainingDays != null
-                          ? 'Left (${goal.remainingDays}d)'
-                          : 'Left',
-                      value: goal.remainingAmount ?? 0.0,
-                      formatter: currencyFormat.format,
-                      alignment: CrossAxisAlignment.start,
-                    ),
-                  ],
+                Text(
+                  currencyFormat.format(goal.targetAmount),
+                  style: TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontWeight: KoinTypography.titleWeight,
+                  ),
+                ),
+                Text(
+                  '${(goal.progress * 100).toInt()}%',
+                  style: TextStyle(
+                    color: AppTheme.incomeContentColor(context),
+                    fontWeight: KoinTypography.titleWeight,
+                  ),
                 ),
               ],
-            ],
-          ),
-        )
-        .koinAnimate(
-          context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(duration: 400.ms)
-        .slideY(begin: 0.04, curve: Curves.easeOutCubic);
+            ),
+            const Gap(10),
+            LinearProgressIndicator(
+              value: goal.progress,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(2),
+              color: AppTheme.primaryColor(context),
+              backgroundColor: AppTheme.surfaceLightColor(context),
+            ),
+            const Gap(8),
+            Text(
+              '${currencyFormat.format(goal.remainingAmount)} left${goal.remainingDays == null ? '' : ' · ${goal.remainingDays} days remaining'}',
+              style: TextStyle(
+                color: AppTheme.textLightColor(context),
+                fontSize: KoinTypography.caption,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  Widget _buildStatItem(
-    BuildContext context, {
-    required String label,
-    required double value,
-    required String Function(double) formatter,
-    CrossAxisAlignment alignment = CrossAxisAlignment.center,
-  }) {
-    return Column(
-      crossAxisAlignment: alignment,
+  Widget _buildManagementActions(BuildContext context, SavingsGoal goal) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
+        IconButton(
+          tooltip: 'Edit goal',
+          icon: const Icon(Icons.edit_rounded, size: 24),
+          color: AppTheme.textLightColor(context),
+          onPressed: () {
+            HapticService.light();
+            Navigator.push(
+              context,
+              SlideUpRoute(page: AddSavingsGoalScreen(goal: goal)),
+            );
+          },
         ),
-        const Gap(6),
-        AnimatedCounter(
-          value: value,
-          formatter: formatter,
-          duration: const Duration(milliseconds: 1000),
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
+        IconButton(
+          tooltip: 'Delete goal',
+          icon: const Icon(Icons.delete_rounded, size: 24),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.expenseColor(context)
+              : const Color(0xFFB8434D),
+          onPressed: () => _deleteGoal(goal),
         ),
       ],
     );
@@ -647,7 +512,9 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
             'Recent Activity',
             style: TextStyle(
               fontSize: 19,
-              fontWeight: FontWeight.w800,
+              fontWeight: Theme.of(context).brightness == Brightness.dark
+                  ? FontWeight.w800
+                  : KoinTypography.titleWeight,
               color: AppTheme.textColor(context),
               letterSpacing: -0.4,
             ),
@@ -700,208 +567,134 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     double? linkedBalance,
   ) {
     return Column(
-      children: logs.asMap().entries.map((entry) {
-        final index = entry.key;
-        final log = entry.value;
-        final isLast = index == logs.length - 1;
-
-        return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Timeline connector
-                  SizedBox(
-                    width: 24,
-                    child: Stack(
-                      alignment: Alignment.topCenter,
-                      children: [
-                        if (index > 0)
-                          Positioned(
-                            top: 0,
-                            height: 24,
-                            child: Container(
-                              key: ValueKey('timeline-above-${log.id}'),
-                              width: 1,
-                              color: AppTheme.dividerColor(context),
-                            ),
-                          ),
-                        if (!isLast)
-                          Positioned(
-                            top: 24,
-                            bottom: 0,
-                            child: Container(
-                              key: ValueKey('timeline-below-${log.id}'),
-                              width: 1,
-                              color: AppTheme.dividerColor(context),
-                            ),
-                          ),
-                        Positioned(
-                          top: 20,
-                          child: Container(
-                            key: ValueKey('timeline-dot-${log.id}'),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor(context),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                AppTheme.boxShadow(
-                                  context,
-                                  color: AppTheme.primaryColor(
-                                    context,
-                                  ).withValues(alpha: 0.25),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Gap(10),
-                  // Log card
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                      child: log.transactionId != null
-                          ? _automaticReleaseTile(context, log, currencyFormat)
-                          : SwipeToDeleteTile(
-                              key: Key(log.id),
-                              margin: EdgeInsets.zero,
-                              borderRadius: BorderRadius.circular(16),
-                              backgroundColor: AppTheme.expenseColor(
-                                context,
-                              ).withValues(alpha: 0.15),
-                              iconColor: AppTheme.expenseColor(context),
-                              icon: Icons.delete_outline_rounded,
-                              confirmTitle: 'Delete Entry?',
-                              confirmDescription:
-                                  'Are you sure you want to delete this savings entry?',
-                              confirmLabel: 'Delete',
-                              onDelete: () async {
-                                await ref
-                                    .read(savingsGoalsProvider.notifier)
-                                    .deleteLog(log);
-                              },
-                              child: PressableScale(
-                                onTap: () {
-                                  HapticService.light();
-                                  _showAddLogSheet(
-                                    goal: goal,
-                                    log: log,
-                                    linkedAccount: linkedAccount,
-                                    linkedBalance: linkedBalance,
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.surfaceColor(context),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      AppTheme.boxShadow(
-                                        context,
-                                        color: Colors.black.withValues(
-                                          alpha: 0.02,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.incomeColor(
-                                            context,
-                                          ).withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          log.amount < 0
-                                              ? Icons.arrow_downward_rounded
-                                              : Icons.arrow_upward_rounded,
-                                          color: log.amount < 0
-                                              ? AppTheme.textLightColor(context)
-                                              : AppTheme.incomeColor(context),
-                                          size: 16,
-                                        ),
-                                      ),
-                                      const Gap(14),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '${log.amount < 0 ? '-' : '+'} ${currencyFormat.format(log.amount.abs())}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15,
-
-                                                color: log.amount < 0
-                                                    ? AppTheme.textLightColor(
-                                                        context,
-                                                      )
-                                                    : AppTheme.incomeColor(
-                                                        context,
-                                                      ),
-                                              ),
-                                            ),
-                                            const Gap(2),
-                                            Text(
-                                              log.amount < 0
-                                                  ? 'Released • ${_formatRelativeTime(log.date)}'
-                                                  : _formatRelativeTime(
-                                                      log.date,
-                                                    ),
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.5),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        DateFormat.MMMd().format(log.date),
-                                        style: TextStyle(
-                                          color: AppTheme.textLightColor(
-                                            context,
-                                          ).withValues(alpha: 0.4),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < logs.length; index++) ...[
+          if (index > 0)
+            Divider(
+              key: ValueKey('activity-divider-${logs[index].id}'),
+              height: 1,
+              color: AppTheme.dividerColor(context),
+            ),
+          if (logs[index].transactionId != null)
+            _automaticReleaseTile(context, logs[index], currencyFormat)
+          else
+            SwipeToDeleteTile(
+              key: Key(logs[index].id),
+              margin: EdgeInsets.zero,
+              borderRadius: BorderRadius.circular(8),
+              backgroundColor: AppTheme.expenseColor(
+                context,
+              ).withValues(alpha: 0.15),
+              iconColor: AppTheme.expenseColor(context),
+              icon: Icons.delete_outline_rounded,
+              confirmTitle: 'Delete Entry?',
+              confirmDescription:
+                  'Are you sure you want to delete this savings entry?',
+              confirmLabel: 'Delete',
+              onDelete: () async {
+                await ref
+                    .read(savingsGoalsProvider.notifier)
+                    .deleteLog(logs[index]);
+              },
+              child: PressableScale(
+                onTap: () {
+                  HapticService.light();
+                  _showAddLogSheet(
+                    goal: goal,
+                    log: logs[index],
+                    linkedAccount: linkedAccount,
+                    linkedBalance: linkedBalance,
+                  );
+                },
+                child: _activityEntryBody(context, logs[index], currencyFormat),
               ),
-            )
-            .koinAnimate(
-              context,
-              autoPlay: !MediaQuery.disableAnimationsOf(context),
-              onInit: KoinMotion.onInit(context),
-            )
-            .fade(delay: (index * 60).ms, duration: 350.ms)
-            .slideX(begin: 0.04);
-      }).toList(),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _activityEntryBody(
+    BuildContext context,
+    SavingsLog log,
+    NumberFormat money,
+  ) {
+    final released = log.amount < 0;
+    final secondary = AppTheme.textLightColor(context);
+    final amount = Text(
+      '${released ? '-' : '+'} ${money.format(log.amount.abs())}',
+      textAlign: TextAlign.end,
+      style: TextStyle(
+        color: released
+            ? AppTheme.textColor(context)
+            : AppTheme.incomeContentColor(context),
+        fontSize: KoinTypography.itemAmount,
+        fontWeight: KoinTypography.titleWeight,
+        letterSpacing: KoinTypography.itemTracking,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              released ? Icons.south_west_rounded : Icons.north_east_rounded,
+              size: 20,
+              color: released
+                  ? secondary
+                  : AppTheme.incomeContentColor(context),
+            ),
+          ),
+          const Gap(12),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final stacked =
+                    constraints.maxWidth < 260 ||
+                    MediaQuery.textScalerOf(context).scale(15) > 20;
+                final title = Text(
+                  released ? 'Released' : 'Saved',
+                  style: TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontSize: KoinTypography.body,
+                    fontWeight: KoinTypography.labelWeight,
+                  ),
+                );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (stacked) ...[
+                      title,
+                      const Gap(4),
+                      amount,
+                    ] else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: title),
+                          const Gap(12),
+                          Flexible(fit: FlexFit.tight, child: amount),
+                        ],
+                      ),
+                    const Gap(4),
+                    Text(
+                      '${DateFormat.MMMd().format(log.date)} · ${_formatRelativeTime(log.date)}',
+                      style: TextStyle(
+                        color: secondary,
+                        fontSize: KoinTypography.caption,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -912,74 +705,67 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   ) {
     final textColor = AppTheme.textLightColor(context);
     final showExplanation = _expandedReleaseExplanations.contains(log.id);
-    return Container(
+    return Column(
       key: Key(log.id),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _activityEntryBody(context, log, money),
+        Padding(
+          padding: const EdgeInsets.only(left: 32, bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  '- ${money.format(log.amount.abs())}',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() {
+                  if (showExplanation) {
+                    _expandedReleaseExplanations.remove(log.id);
+                  } else {
+                    _expandedReleaseExplanations.add(log.id);
+                  }
+                }),
+                onLongPress: () {},
+                child: Semantics(
+                  button: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: 12,
+                          color: textColor,
+                        ),
+                        const Gap(4),
+                        Flexible(
+                          child: Text(
+                            'Auto release · Read only',
+                            style: TextStyle(fontSize: 12, color: textColor),
+                          ),
+                        ),
+                        const Gap(4),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 14,
+                          color: textColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              Text(
-                DateFormat.MMMd().format(log.date),
-                style: TextStyle(fontSize: 12, color: textColor),
-              ),
+              if (showExplanation) ...[
+                const Gap(8),
+                Text(
+                  'Managed by its transaction. Edit or delete that transaction to update this release.',
+                  style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
+                ),
+              ],
             ],
           ),
-          const Gap(4),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() {
-              if (showExplanation) {
-                _expandedReleaseExplanations.remove(log.id);
-              } else {
-                _expandedReleaseExplanations.add(log.id);
-              }
-            }),
-            onLongPress: () {},
-            child: Semantics(
-              button: true,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock_outline_rounded, size: 12, color: textColor),
-                  const Gap(4),
-                  Flexible(
-                    child: Text(
-                      'Auto release · Read only',
-                      style: TextStyle(fontSize: 12, color: textColor),
-                    ),
-                  ),
-                  const Gap(4),
-                  Icon(Icons.info_outline_rounded, size: 14, color: textColor),
-                ],
-              ),
-            ),
-          ),
-          if (showExplanation) ...[
-            const Gap(8),
-            Text(
-              'Managed by its transaction. Edit or delete that transaction to update this release.',
-              style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

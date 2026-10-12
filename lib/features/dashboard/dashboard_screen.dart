@@ -204,7 +204,7 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       borderRadius: 28,
       shapeStyle: SummaryShapeStyle.dashboard,
       child: Column(
@@ -270,7 +270,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const Gap(16),
+          const Gap(8),
           SizedBox(
             width: double.infinity,
             child: settings.hideBalance
@@ -304,18 +304,12 @@ class DashboardScreen extends ConsumerWidget {
                   ),
           ),
           const Gap(16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                monthlySummary,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontWeight: KoinTypography.labelWeight,
-                  fontSize: KoinTypography.small,
-                ),
-              ),
+          Text(
+            monthlySummary,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: KoinTypography.labelWeight,
+              fontSize: KoinTypography.small,
             ),
           ),
         ],

@@ -81,32 +81,29 @@ void main() {
       ],
     );
     final indicator = find.text('Auto release · Read only');
-    void expectConnectedTimeline() {
-      final firstDot = tester.getRect(
+    void expectAlignedActivityRows() {
+      final automaticRow = tester.getRect(find.byKey(const Key('automatic')));
+      final manualRow = tester.getRect(find.byKey(const Key('manual')).first);
+      final separator = tester.getRect(
+        find.byKey(const ValueKey('activity-divider-manual')),
+      );
+      expect(automaticRow.left, 20);
+      expect(manualRow.left, automaticRow.left);
+      expect(manualRow.right, automaticRow.right);
+      expect(separator.left, automaticRow.left);
+      expect(separator.right, automaticRow.right);
+      expect(separator.top, closeTo(automaticRow.bottom, 0.01));
+      expect(manualRow.top, closeTo(separator.bottom, 0.01));
+      expect(
         find.byKey(const ValueKey('timeline-dot-automatic')),
+        findsNothing,
       );
-      final secondDot = tester.getRect(
-        find.byKey(const ValueKey('timeline-dot-manual')),
-      );
-      final below = tester.getRect(
-        find.byKey(const ValueKey('timeline-below-automatic')),
-      );
-      final above = tester.getRect(
-        find.byKey(const ValueKey('timeline-above-manual')),
-      );
-      expect(below.top, closeTo(firstDot.center.dy, 0.01));
-      expect(below.bottom, closeTo(above.top, 0.01));
-      expect(above.bottom, closeTo(secondDot.center.dy, 0.01));
-      expect(below.center.dx, closeTo(firstDot.center.dx, 0.01));
-      expect(above.center.dx, closeTo(secondDot.center.dx, 0.01));
-      final firstCard = tester.getRect(find.byKey(const Key('automatic')));
-      final secondCard = tester.getRect(find.byKey(const Key('manual')).first);
-      expect(secondCard.top - firstCard.bottom, closeTo(12, 0.01));
+      expect(find.byKey(const ValueKey('timeline-dot-manual')), findsNothing);
     }
 
     await tester.ensureVisible(indicator);
     await tester.pumpAndSettle();
-    expectConnectedTimeline();
+    expectAlignedActivityRows();
     expect(indicator, findsOneWidget);
     expect(
       find.text(
@@ -125,7 +122,7 @@ void main() {
     expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
     await tester.tap(indicator);
     await tester.pumpAndSettle();
-    expectConnectedTimeline();
+    expectAlignedActivityRows();
     expect(
       find.text(
         'Managed by its transaction. Edit or delete that transaction to update this release.',
@@ -168,47 +165,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Targetless stash has a compact card and no progress ring', (
-    tester,
-  ) async {
-    final stash = SavingsGoal(
-      id: 'stash',
-      name: 'Spare change',
-      startDate: DateTime(2026, 10, 10),
-      isStash: true,
-    );
-    final repository = await showSavings(tester, stash);
-    expect(find.text('Savings'), findsNothing);
-    expect(find.text('100%'), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
-    final emptyContent = tester.getRect(
-      find.byKey(const ValueKey('activity_empty_content')),
-    );
-    expect(emptyContent.center.dy, closeTo(emptyArea.center.dy, 1));
-    expect(find.text('Target'), findsNothing);
-    expect(tester.getSize(find.byType(KoinSummaryCard)).height, lessThan(130));
-    expect(find.byType(FloatingActionButton), findsNothing);
-    expect(find.text('Save'), findsOneWidget);
-    expect(find.text('Release'), findsOneWidget);
-    expect(find.text('Coach'), findsNothing);
-    expect(find.byType(SavingsRoutineCard), findsOneWidget);
-    expect(find.byType(PopupMenuButton<String>), findsNothing);
-    expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Delete'), findsOneWidget);
-    await tester.tap(find.byTooltip('Delete goal'));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete Goal?'), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-    expect((await repository.getSavingsGoals()).single.id, stash.id);
-    expect(tester.takeException(), isNull);
+  testWidgets(
+    'Targetless stash has an open balance layout and no progress ring',
+    (tester) async {
+      final stash = SavingsGoal(
+        id: 'stash',
+        name: 'Spare change',
+        startDate: DateTime(2026, 10, 10),
+        isStash: true,
+      );
+      final repository = await showSavings(tester, stash);
+      expect(find.text('Savings'), findsNothing);
+      expect(find.text('100%'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
+      final emptyContent = tester.getRect(
+        find.byKey(const ValueKey('activity_empty_content')),
+      );
+      expect(emptyContent.center.dy, closeTo(emptyArea.center.dy, 1));
+      expect(find.text('Target'), findsNothing);
+      expect(find.byType(KoinSummaryCard), findsNothing);
+      expect(find.byKey(const ValueKey('savings_balance')), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text('Release'), findsOneWidget);
+      expect(find.text('Coach'), findsNothing);
+      expect(find.byType(SavingsRoutineCard), findsOneWidget);
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
+      expect(find.byTooltip('Edit goal'), findsOneWidget);
+      expect(find.byTooltip('Delete goal'), findsOneWidget);
+      await tester.tap(find.byTooltip('Delete goal'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete Goal?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect((await repository.getSavingsGoals()).single.id, stash.id);
+      expect(tester.takeException(), isNull);
 
-    await showSavings(tester, stash, list: true);
-    expect(find.text('Savings'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+      await showSavings(tester, stash, list: true);
+      expect(find.text('Savings'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Stash with a target shows its actual progress', (tester) async {
     await showSavings(

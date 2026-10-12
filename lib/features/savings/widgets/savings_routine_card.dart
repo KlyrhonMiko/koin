@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
-import 'savings_log_sheet.dart';
 import 'savings_plan_editor.dart';
-import 'savings_projection_view.dart';
+import 'package:koin/core/models/savings/savings_projection.dart';
+import 'savings_projection_view.dart' show contributionPhrase;
 
 class SavingsRoutineCard extends ConsumerWidget {
   final SavingsGoal goal;
@@ -14,99 +13,183 @@ class SavingsRoutineCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = goal.savingsPlan;
-    final fmt = ref.watch(settingsProvider).currency.formatter;
+    final format = ref.watch(settingsProvider).currency.formatter;
     final logs = ref.watch(savingsLogsProvider(goal.id));
-    final progress = logs.asData == null || plan == null
+    final today = SavingsPlan.day(DateTime.now());
+    final secondary = TextStyle(
+      fontFamily: KoinTypography.fontFamily,
+      color: AppTheme.textLightColor(context),
+      fontSize: KoinTypography.caption,
+    );
+    final edit = TextButton(
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(64, 48),
+        alignment: Alignment.centerRight,
+        foregroundColor: AppTheme.incomeContentColor(context),
+        textStyle: secondary.copyWith(fontWeight: KoinTypography.titleWeight),
+      ),
+      onPressed: () => _edit(context, ref),
+      child: Text(plan == null ? 'Set up savings plan' : 'Edit plan'),
+    );
+    if (plan == null) {
+      return Align(alignment: Alignment.centerLeft, child: edit);
+    }
+    final progress = logs.asData == null
         ? null
-        : plan.progress(logs.requireValue, DateTime.now());
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        : plan.progress(logs.requireValue, today);
+    final deadline = goal.isStash ? null : goal.endDate;
+    final horizon =
+        deadline != null && !SavingsPlan.day(deadline).isBefore(today)
+        ? SavingsPlan.day(deadline)
+        : DateTime(today.year, today.month + 1, 0);
+    final projected = logs.asData == null
+        ? null
+        : SavingsProjection(
+            goal: goal,
+            today: today,
+            logs: logs.requireValue,
+          ).totalBy(horizon);
+    return Column(
+      key: const ValueKey('savings_plan_summary'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 1, color: AppTheme.dividerColor(context)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Savings plan',
+                    style: TextStyle(
+                      color: AppTheme.textColor(context),
+                      fontSize: KoinTypography.itemTitle,
+                      fontWeight: KoinTypography.titleWeight,
+                    ),
+                  ),
+                  if (!goal.isCompleted) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${format.format(plan.amount)} ${contributionPhrase(plan.frequency)}',
+                      style: secondary,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            edit,
+          ],
+        ),
+        const SizedBox(height: 20),
+        if (logs.isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: LinearProgressIndicator(),
+          )
+        else if (logs.hasError)
           Row(
             children: [
-              const Icon(Icons.tips_and_updates_outlined, size: 22),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Savings Helper',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  'Could not load your contributions.',
+                  style: secondary,
                 ),
               ),
               TextButton(
-                onPressed: () => _edit(context, ref),
-                child: Text(plan == null ? 'Set up' : 'Edit plan'),
+                onPressed: () => ref.invalidate(savingsLogsProvider(goal.id)),
+                child: const Text('Retry'),
               ),
             ],
+          )
+        else if (goal.isCompleted)
+          Text(
+            'Target reached',
+            key: const ValueKey('helper_projection_message'),
+            style: secondary,
+          )
+        else if (progress != null) ...[
+          _metric(
+            context,
+            label: 'Next contribution',
+            value: format.format(progress.amountDue),
+            detail:
+                '${progress.isDue ? 'Due' : 'Next:'} ${DateFormat.MMMd().format(progress.nextDate)}',
           ),
-          if (plan != null && logs.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: LinearProgressIndicator(),
-            )
-          else if (plan != null && logs.hasError)
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Could not load your contributions.'),
-                ),
-                TextButton(
-                  onPressed: () => ref.invalidate(savingsLogsProvider(goal.id)),
-                  child: const Text('Retry'),
-                ),
-              ],
-            )
-          else if (plan != null) ...[
-            SavingsProjectionView(
-              goal: goal,
-              logs: logs.requireValue,
-              format: fmt,
-              compact: true,
-            ),
-            if (progress != null && !goal.isCompleted) ...[
-              const SizedBox(height: 12),
-              Text(
-                '${progress.isDue ? "Next contribution: today" : "Next contribution: ${DateFormat.yMMMd().format(progress.nextDate)}"} · ${fmt.format(progress.amountDue)}',
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: progress.isDue
-                      ? () => SavingsLogSheet.show(
-                          context: context,
-                          goal: goal,
-                          initialAmount: goal.hasTarget
-                              ? progress.amountDue.clamp(
-                                  0,
-                                  goal.remainingAmount!,
-                                )
-                              : progress.amountDue,
-                          onSave: (amount) => ref
-                              .read(savingsGoalsProvider.notifier)
-                              .addLog(
-                                SavingsLog(
-                                  id: const Uuid().v4(),
-                                  goalId: goal.id,
-                                  amount: amount,
-                                  date: DateTime.now(),
-                                  note: 'Savings plan contribution',
-                                ),
-                              ),
-                        )
-                      : null,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Set aside'),
-                ),
-              ),
-            ],
-          ],
+          const SizedBox(height: 16),
+          _metric(
+            context,
+            label: 'Projected total',
+            value: format.format(projected),
+            detail: 'by ${DateFormat.yMMMd().format(horizon)}',
+            key: const ValueKey('helper_projection_message'),
+          ),
         ],
-      ),
+      ],
     );
   }
 
+  Widget _metric(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required String detail,
+    Key? key,
+  }) => LayoutBuilder(
+    key: key,
+    builder: (context, constraints) {
+      final labelText = Text(
+        label,
+        style: TextStyle(
+          color: AppTheme.textColor(context),
+          fontSize: KoinTypography.compact,
+          fontWeight: KoinTypography.supportingWeight,
+        ),
+      );
+      final amountText = Text(
+        value,
+        style: TextStyle(
+          color: AppTheme.textColor(context),
+          fontSize: KoinTypography.itemAmount,
+          fontWeight: KoinTypography.titleWeight,
+          letterSpacing: KoinTypography.itemTracking,
+        ),
+      );
+      final stacked =
+          constraints.maxWidth < 280 ||
+          MediaQuery.textScalerOf(context).scale(14) > 20;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (stacked) ...[
+            labelText,
+            const SizedBox(height: 4),
+            amountText,
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(child: labelText),
+                const SizedBox(width: 16),
+                amountText,
+              ],
+            ),
+          const SizedBox(height: 4),
+          Text(
+            detail,
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: KoinTypography.small,
+            ),
+          ),
+        ],
+      );
+    },
+  );
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final result = await SavingsPlanEditor.open(
       context,

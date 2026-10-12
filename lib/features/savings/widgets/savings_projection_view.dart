@@ -187,8 +187,24 @@ class _SavingsProjectionViewState extends State<SavingsProjectionView> {
           Text(
             message,
             key: const ValueKey('helper_projection_message'),
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: widget.compact
+                ? TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.labelWeight,
+                  )
+                : Theme.of(context).textTheme.bodyMedium,
           ),
+        if (widget.compact && !goal.isCompleted) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${widget.format.format(plan.amount)} ${contributionPhrase(plan.frequency)}',
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: KoinTypography.caption,
+            ),
+          ),
+        ],
         if (!widget.compact && !widget.editorPreview && !goal.isStash) ...[
           const SizedBox(height: 12),
           Text(
@@ -196,7 +212,7 @@ class _SavingsProjectionViewState extends State<SavingsProjectionView> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ],
-        if (!widget.editorPreview) ...[
+        if (!widget.compact && !widget.editorPreview) ...[
           const SizedBox(height: 12),
           SavingsProjectionBar(
             saved: goal.currentAmount,

@@ -185,7 +185,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('dashboard balance is left aligned and vertically centered', (
+  testWidgets('dashboard balance is left aligned with compact text spacing', (
     tester,
   ) async {
     final container = await providers();
@@ -195,15 +195,24 @@ void main() {
     final amount = find
         .descendant(of: card, matching: find.byType(AnimatedCounter))
         .first;
-    expect(tester.getCenter(amount).dy, closeTo(tester.getCenter(card).dy, 1));
+    final summary = find.descendant(of: card, matching: find.byType(Text)).last;
+    expect(
+      tester.getTopLeft(amount).dy -
+          tester.getBottomLeft(find.byTooltip('Hide summary balance')).dy,
+      closeTo(8, 1),
+    );
+    expect(
+      tester.getTopLeft(summary).dy - tester.getBottomLeft(amount).dy,
+      closeTo(16, 1),
+    );
     expect(
       tester.getTopLeft(amount).dx,
       closeTo(tester.getTopLeft(find.text('Total Balance')).dx, 1),
     );
     expect(
-      tester.getTopLeft(find.text('Total Balance')).dy -
+      tester.getTopLeft(find.byTooltip('Hide summary balance')).dy -
           tester.getTopLeft(card).dy,
-      lessThan(30),
+      closeTo(16, 1),
     );
     expect(tester.getSize(find.byTooltip('Hide summary balance')).height, 48);
     expect(tester.takeException(), isNull);

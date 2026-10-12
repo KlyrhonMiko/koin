@@ -448,13 +448,17 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             if (goal.savingsPlan != null &&
                 ref.watch(savingsLogsProvider(goal.id)).asData != null) ...[
               const Gap(12),
-              SavingsProjectionView(
-                goal: goal,
-                logs: ref.watch(savingsLogsProvider(goal.id)).requireValue,
-                format: currencyFormat,
-                compact: true,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SavingsProjectionView(
+                  goal: goal,
+                  logs: ref.watch(savingsLogsProvider(goal.id)).requireValue,
+                  format: currencyFormat,
+                  compact: true,
+                ),
               ),
-            ] else if (goal.hasTarget) ...[
+            ],
+            if (goal.hasTarget) ...[
               const Gap(8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
