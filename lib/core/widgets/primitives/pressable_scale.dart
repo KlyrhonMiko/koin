@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
 /// A reusable widget that scales down on press for tactile feedback.
@@ -16,6 +18,8 @@ class PressableScale extends StatefulWidget {
   /// If true, triggers [HapticService.light] on tap.
   final bool enableHaptic;
   final HapticLevel hapticLevel;
+  final String? semanticLabel;
+  final bool? selected;
 
   const PressableScale({
     super.key,
@@ -24,6 +28,8 @@ class PressableScale extends StatefulWidget {
     this.pressedScale = 0.96,
     this.enableHaptic = true,
     this.hapticLevel = HapticLevel.light,
+    this.semanticLabel,
+    this.selected,
   });
 
   @override
@@ -34,6 +40,7 @@ class _PressableScaleState extends State<PressableScale>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnim;
+  bool _focused = false;
 
   @override
   void initState() {
@@ -58,7 +65,7 @@ class _PressableScaleState extends State<PressableScale>
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails details) {
+  void _activate() {
     if (widget.enableHaptic) {
       switch (widget.hapticLevel) {
         case HapticLevel.light:
@@ -81,20 +88,53 @@ class _PressableScaleState extends State<PressableScale>
           break;
       }
     }
-    _controller.forward();
+    widget.onTap();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: _onTapDown,
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onTap();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return FocusableActionDetector(
+      onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
       },
-      onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(scale: _scaleAnim, child: widget.child),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            _activate();
+            return null;
+          },
+        ),
+      },
+      child: Semantics(
+        button: true,
+        label: widget.semanticLabel,
+        selected: widget.selected,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: _focused
+                ? Border.all(color: AppTheme.primaryColor(context))
+                : null,
+          ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) {
+              if (!reduceMotion) _controller.forward();
+            },
+            onTapUp: (_) {
+              _controller.reverse();
+            },
+            onTap: _activate,
+            onTapCancel: () => _controller.reverse(),
+            child: reduceMotion
+                ? widget.child
+                : ScaleTransition(scale: _scaleAnim, child: widget.child),
+          ),
+        ),
+      ),
     );
   }
 }

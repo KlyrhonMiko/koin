@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/core.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 /// Interactive modal sheet to log a payment or credit increase on a [Debt].
@@ -45,6 +44,14 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   String? _selectedAccountId;
   bool _accountInitialized = false;
   String _currentExpression = '';
+  bool _saving = false;
+  bool _saved = false;
+  final _transactionId = const Uuid().v4();
+  final _repaymentId = const Uuid().v4();
+  bool get _isExpense => TransactionRules.debtIsExpense(
+    widget.debt,
+    isIncrease: widget.isIncrease,
+  );
 
   @override
   void initState() {
@@ -226,7 +233,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                       if (!widget.isIncrease) ...[
                         const Gap(12),
                         Text(
-                          'Remaining Credit: ${NumberFormat.currency(symbol: settings.currency.symbol, customPattern: '\u00a4#,##0.##').format(widget.debt.remainingAmount)}',
+                          'Remaining Credit: ${settings.currency.formatter.format(widget.debt.remainingAmount)}',
                           style: TextStyle(
                             fontSize: KoinTypography.compact,
                             fontWeight: KoinTypography.supportingWeight,
@@ -248,7 +255,11 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                     ],
                   ),
                 )
-                .animate()
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fadeIn(duration: 300.ms)
                 .slideY(begin: 0.05, curve: Curves.easeOutCubic),
             const Gap(32),
@@ -353,7 +364,11 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                     ),
                   ),
                 )
-                .animate()
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                 .scale(
                   begin: const Offset(0.95, 0.95),
@@ -364,6 +379,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
             if (!_noteFocusNode.hasFocus) ...[
               const Gap(16),
               NumPad(
+                enabled: !_saving,
+                decimalDigits: settings.currency.decimalDigits,
                 compact: true,
                 initialValue: _currentExpression,
                 onValueChanged: (expression, result) {
@@ -387,7 +404,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: _submit,
+                            onPressed: _saving ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: color,
                               foregroundColor: Colors.white,
@@ -409,7 +426,11 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                             ),
                           ),
                         )
-                        .animate()
+                        .koinAnimate(
+                          context,
+                          autoPlay: !MediaQuery.disableAnimationsOf(context),
+                          onInit: KoinMotion.onInit(context),
+                        )
                         .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                         .scale(
                           begin: const Offset(0.95, 0.95),
@@ -425,11 +446,37 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   }
 
   Future<void> _submit() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final savings = ref.read(savingsGoalsProvider.notifier);
+    try {
+      await _submitImpl();
+    } catch (error) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          error is FinancialValidationException
+              ? error.message
+              : 'Could not record payment',
+          subtitle: 'Your draft is kept. Try again.',
+        );
+      }
+    } finally {
+      if (!_saved) await savings.rollbackDraftRelease(_transactionId);
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _submitImpl() async {
     HapticService.medium();
-    final amtStr = _amountController.text.replaceAll(',', '');
+    final amtStr = _amountController.text;
     if (amtStr.isEmpty) return;
-    final amt = double.tryParse(amtStr) ?? 0.0;
-    if (amt <= 0) return;
+    final amt =
+        ref.read(settingsProvider).currency.tryParseInput(amtStr) ?? 0.0;
+    if (!amt.isFinite || amt <= 0) {
+      KoinSnackBar.error(context, 'Enter an amount greater than zero');
+      return;
+    }
 
     if (!widget.isIncrease &&
         (amt * 100).round() > (widget.debt.remainingAmount * 100).round()) {
@@ -463,9 +510,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           )
         : null;
 
-    if (selectedAccount != null &&
-        !selectedAccount.isCredit &&
-        !widget.isIncrease) {
+    if (selectedAccount != null && !selectedAccount.isCredit && _isExpense) {
       final currentBalance =
           ref
               .read(dashboardStatsProvider)
@@ -482,8 +527,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       }
     }
 
-    final transactionId = const Uuid().v4();
-    if (!widget.isIncrease &&
+    final transactionId = _transactionId;
+    if (_isExpense &&
         _selectedAccountId != null &&
         !await confirmSavingsSpending(
           context: context,
@@ -502,7 +547,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     }
 
     final repayment = DebtRepayment(
-      id: const Uuid().v4(),
+      id: _repaymentId,
       debtId: widget.debt.id,
       amount: amt,
       date: DateTime.now(),
@@ -523,6 +568,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           transactionId: transactionId,
         );
 
+    _saved = true;
     if (!mounted) return;
 
     KoinSnackBar.success(

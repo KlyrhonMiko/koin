@@ -97,11 +97,20 @@ class CashflowForecaster {
     int index, {
     int? days,
     int? months,
+    int? anchorDay,
   }) {
     if (days != null) {
       return DateTime(anchor.year, anchor.month, anchor.day + days * index);
     }
-    return _addMonths(anchor, months! * index);
+    final month = DateTime(anchor.year, anchor.month + months! * index);
+    return DateTime(
+      month.year,
+      month.month,
+      math.min(
+        anchorDay ?? anchor.day,
+        DateTime(month.year, month.month + 1, 0).day,
+      ),
+    );
   }
 
   /// Counts outstanding scheduled occurrences, including unpaid arrears.
@@ -122,7 +131,13 @@ class CashflowForecaster {
     for (var i = 0; ; i++) {
       final due = days == null && months == null
           ? anchor
-          : _occurrence(anchor, i, days: days, months: months);
+          : _occurrence(
+              anchor,
+              i,
+              days: days,
+              months: months,
+              anchorDay: payment.recurrenceDay,
+            );
       if (!due.isBefore(end) || (last != null && due.isAfter(last))) break;
       if (!due.isBefore(start)) count++;
       // Flexible payments have one known date, no assumed recurrence.

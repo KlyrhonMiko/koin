@@ -132,7 +132,7 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
   Widget _previewTransition(BuildContext context, {required Widget child}) {
     if (MediaQuery.disableAnimationsOf(context)) return child;
     return AnimatedSize(
-      duration: const Duration(milliseconds: 250),
+      duration: KoinMotion.duration(context, const Duration(milliseconds: 250)),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       clipBehavior: Clip.none,
@@ -175,14 +175,15 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final format = NumberFormat.simpleCurrency(
-      name: ref.watch(settingsProvider).currency.code,
-    );
+    final format = ref.watch(settingsProvider).currency.formatter;
     final logsAsync = widget.goal == null
         ? null
         : ref.watch(savingsLogsProvider(widget.goal!.id));
     final logs = logsAsync?.asData?.value ?? <SavingsLog>[];
-    final amount = double.tryParse(_amount.text);
+    final amount = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_amount.text);
     final valid = amount != null && amount.isFinite && amount >= 0.01;
     final base =
         widget.goal ??
@@ -266,7 +267,10 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                         prefix: '${format.currencySymbol} ',
                       ),
                       validator: (text) {
-                        final value = double.tryParse(text ?? '');
+                        final value = ref
+                            .read(settingsProvider)
+                            .currency
+                            .tryParseInput(text ?? '');
                         return value == null || !value.isFinite || value < 0.01
                             ? 'Enter an amount of at least 0.01'
                             : null;

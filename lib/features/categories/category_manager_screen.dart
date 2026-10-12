@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/categories/category_detail_screen.dart';
 
@@ -88,7 +87,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
+                error: (_, _) => KoinErrorState(
+                  onRetry: () => ref.invalidate(categoriesProvider),
+                ),
               ),
             ),
           ],
@@ -108,57 +109,64 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
       child: Column(
         children: [
           Row(
-            children: [
-              const KoinBackButton(),
-              Expanded(
-                child: _showSearch
-                    ? _buildSearchField(context)
-                    : Center(
-                        child: Text(
-                          'Manage Categories',
-                          style: TextStyle(
-                            fontSize: KoinTypography.sectionTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.headingTracking,
-                            color: AppTheme.textColor(context),
+                children: [
+                  const KoinBackButton(),
+                  Expanded(
+                    child: _showSearch
+                        ? _buildSearchField(context)
+                        : Center(
+                            child: Text(
+                              'Manage Categories',
+                              style: TextStyle(
+                                fontSize: KoinTypography.sectionTitle,
+                                fontWeight: KoinTypography.headingWeight,
+                                letterSpacing: KoinTypography.headingTracking,
+                                color: AppTheme.textColor(context),
+                              ),
+                            ),
                           ),
+                  ),
+                  IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(
+                          context,
+                        ).withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: AppTheme.dividerColor(
+                            context,
+                          ).withValues(alpha: 0.5),
                         ),
                       ),
-              ),
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(
-                      context,
-                    ).withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(
-                      color: AppTheme.dividerColor(
-                        context,
-                      ).withValues(alpha: 0.5),
+                      child: Icon(
+                        _showSearch
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        size: 18,
+                        color: AppTheme.textColor(context),
+                      ),
                     ),
+                    onPressed: () {
+                      HapticService.light();
+                      setState(() {
+                        if (_showSearch) {
+                          _showSearch = false;
+                          _searchQuery = '';
+                        } else {
+                          _showSearch = true;
+                        }
+                      });
+                    },
                   ),
-                  child: Icon(
-                    _showSearch ? Icons.close_rounded : Icons.search_rounded,
-                    size: 18,
-                    color: AppTheme.textColor(context),
-                  ),
-                ),
-                onPressed: () {
-                  HapticService.light();
-                  setState(() {
-                    if (_showSearch) {
-                      _showSearch = false;
-                      _searchQuery = '';
-                    } else {
-                      _showSearch = true;
-                    }
-                  });
-                },
-              ),
-            ],
-          ).animate().fade(duration: 400.ms).slideY(begin: -0.2),
+                ],
+              )
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
+              .fade(duration: 400.ms)
+              .slideY(begin: -0.2),
           const SizedBox(height: 16),
           Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -168,7 +176,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   rightLabel: 'Income',
                 ),
               )
-              .animate()
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fade(delay: 100.ms)
               .scale(begin: const Offset(0.95, 0.95)),
         ],
@@ -265,7 +275,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
           ._buildEmptyState(context, widget.type);
     }
 
-    final fmt = NumberFormat.currency(symbol: widget.currency.symbol);
+    final fmt = widget.currency.formatter;
 
     return ReorderableListView.builder(
       padding: const EdgeInsets.fromLTRB(
@@ -300,9 +310,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ],
                 ),
               )
-              .animate(
+              .koinAnimate(context, onInit: KoinMotion.onInit(context),
                 key: ValueKey('header_${widget.type.name}'),
-                autoPlay: _showEntranceAnimations,
+                autoPlay:
+                    _showEntranceAnimations &&
+                    !MediaQuery.disableAnimationsOf(context),
                 target: _showEntranceAnimations ? null : 1,
               )
               .fade(duration: 300.ms),
@@ -364,9 +376,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ),
                 ),
               )
-              .animate(
+              .koinAnimate(context, onInit: KoinMotion.onInit(context),
                 key: ValueKey('footer_${widget.type.name}'),
-                autoPlay: _showEntranceAnimations,
+                autoPlay:
+                    _showEntranceAnimations &&
+                    !MediaQuery.disableAnimationsOf(context),
                 target: _showEntranceAnimations ? null : 1,
               )
               .fade(delay: 100.ms),
@@ -383,9 +397,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
               confirmDescription:
                   'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
               icon: Icons.delete_forever_rounded,
-              onDelete: () {
+              onDelete: () async {
                 HapticService.heavy();
-                ref
+                await ref
                     .read(categoriesProvider.notifier)
                     .deleteCategory(category.id);
               },
@@ -517,9 +531,11 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 ),
               ),
             )
-            .animate(
+            .koinAnimate(context, onInit: KoinMotion.onInit(context),
               key: ValueKey('${category.id}_entrance'),
-              autoPlay: _showEntranceAnimations,
+              autoPlay:
+                  _showEntranceAnimations &&
+                  !MediaQuery.disableAnimationsOf(context),
               target: _showEntranceAnimations ? null : 1,
             )
             .fade(delay: (index * 50).ms)

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:sqflite/sqflite.dart';
+import 'transaction_rules.dart';
 
 /// Represents the outcome of voiding/deleting a transaction,
 /// recording any cascading domain side effects that occurred.
@@ -43,6 +45,8 @@ abstract class Ledger {
 
   Future<void> updateTransaction(AppTransaction transaction);
 
+  Future<void> updateTransfer(AppTransaction transaction, AppTransaction? fee);
+
   Future<TransactionVoidResult> voidTransaction(String id);
 
   /// Atomically records a planned payment occurrence, advances the schedule to nextDate,
@@ -54,6 +58,7 @@ abstract class Ledger {
     required String categoryId,
     String? transactionId,
     DateTime? date,
+    bool protectSavings = false,
   });
 
   /// Atomically records a debt repayment/increase, mutates the debt balance,
@@ -90,12 +95,114 @@ class SqliteLedgerAdapter implements Ledger {
 
   @override
   Future<AppTransaction> recordTransaction(AppTransaction transaction) async {
-    return await _dbHelper.insertTransaction(transaction);
+    final db = await _dbHelper.database;
+    return db.transaction((txn) async {
+      final existing = await txn.query(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [transaction.id],
+      );
+      if (existing.isNotEmpty) return AppTransaction.fromMap(existing.single);
+      await _validateMoney(
+        txn,
+        transaction.accountId,
+        transaction.amount,
+        transaction.type != TransactionType.income,
+      );
+      await txn.insert('transactions', transaction.toMap());
+      return transaction;
+    });
   }
 
   @override
   Future<void> updateTransaction(AppTransaction transaction) async {
-    await _dbHelper.updateTransaction(transaction);
+    await _dbHelper.updateTransaction(
+      transaction,
+      validate: (txn) => _validateMoney(
+        txn,
+        transaction.accountId,
+        transaction.amount,
+        transaction.type != TransactionType.income,
+        excluding: transaction.id,
+      ),
+    );
+  }
+
+  @override
+  Future<void> updateTransfer(
+    AppTransaction transaction,
+    AppTransaction? fee,
+  ) async {
+    await _dbHelper.updateTransfer(
+      transaction,
+      fee,
+      validate: (txn) async {
+        await _validateMoney(
+          txn,
+          transaction.accountId,
+          transaction.amount + (fee?.amount ?? 0),
+          transaction.type != TransactionType.income,
+          excluding: transaction.id,
+        );
+        if (transaction.type == TransactionType.transfer) {
+          await _validateDestination(txn, transaction);
+        }
+      },
+    );
+  }
+
+  Future<void> _validateMoney(
+    DatabaseExecutor db,
+    String accountId,
+    double amount,
+    bool expense, {
+    String? excluding,
+    bool protectSavings = false,
+  }) async {
+    final accounts = (await db.query('accounts')).map(Account.fromMap).toList();
+    final transactions = (await db.query('transactions'))
+        .map(AppTransaction.fromMap)
+        .where(
+          (tx) =>
+              tx.id != excluding &&
+              (excluding == null || tx.transferId != excluding),
+        );
+    TransactionRules.account(
+      accountId: accountId,
+      value: amount,
+      isExpense: expense,
+      accounts: accounts,
+      transactions: transactions,
+    );
+    final account = accounts.firstWhere((a) => a.id == accountId);
+    if (protectSavings && expense && !account.isCredit) {
+      final goals = (await db.query('savings_goals')).map(SavingsGoal.fromMap);
+      final reserved = goals
+          .where((g) => g.linkedAccountId == accountId)
+          .fold<double>(0, (sum, g) => sum + g.currentAmount);
+      if (TransactionRules.balance(account, transactions) - reserved < amount) {
+        throw const FinancialValidationException(
+          'Open this payment to review the savings needed.',
+        );
+      }
+    }
+  }
+
+  Future<void> _validateDestination(
+    DatabaseExecutor db,
+    AppTransaction transaction,
+  ) async {
+    if (transaction.toAccountId == null ||
+        transaction.toAccountId == transaction.accountId ||
+        (await db.query(
+          'accounts',
+          where: 'id = ?',
+          whereArgs: [transaction.toAccountId],
+        )).isEmpty) {
+      throw const FinancialValidationException(
+        'Choose two different available accounts',
+      );
+    }
   }
 
   @override
@@ -165,6 +272,11 @@ class SqliteLedgerAdapter implements Ledger {
       }
 
       // 3. Delete the transaction record
+      await txn.delete(
+        'transactions',
+        where: 'transferId = ?',
+        whereArgs: [id],
+      );
       await txn.delete('transactions', where: 'id = ?', whereArgs: [id]);
 
       return TransactionVoidResult(
@@ -183,11 +295,58 @@ class SqliteLedgerAdapter implements Ledger {
     required String categoryId,
     String? transactionId,
     DateTime? date,
+    bool protectSavings = false,
   }) async {
     final db = await _dbHelper.database;
     return await db.transaction((txn) async {
-      final nextDate = payment.computeNextDate();
-      final updatedPayment = payment.copyWith(nextDate: nextDate);
+      final existing = transactionId == null
+          ? <Map<String, Object?>>[]
+          : await txn.query(
+              'transactions',
+              where: 'id = ?',
+              whereArgs: [transactionId],
+            );
+      if (existing.isNotEmpty) return AppTransaction.fromMap(existing.single);
+      final schedules = await txn.query(
+        'planned_payments',
+        where: 'id = ?',
+        whereArgs: [payment.id],
+      );
+      if (schedules.isEmpty) {
+        throw const FinancialValidationException(
+          'This schedule is no longer available',
+        );
+      }
+      final current = PlannedPayment.fromMap(schedules.single);
+      if (current.nextDate != payment.nextDate) {
+        throw const FinancialValidationException(
+          'This payment was already processed. Refresh and try again.',
+        );
+      }
+      if (!current.isEligible(date)) {
+        throw const FinancialValidationException(
+          'This schedule is not available on this date',
+        );
+      }
+      await _validateMoney(
+        txn,
+        accountId,
+        amount,
+        current.type == TransactionType.expense,
+        protectSavings: protectSavings,
+      );
+      final categories = await txn.query(
+        'categories',
+        where: 'id = ? AND type = ?',
+        whereArgs: [categoryId, current.type.name],
+      );
+      if (categories.isEmpty) {
+        throw const FinancialValidationException(
+          'Choose an available category',
+        );
+      }
+      final nextDate = current.computeNextDate();
+      final updatedPayment = current.copyWith(nextDate: nextDate);
       await txn.update(
         'planned_payments',
         updatedPayment.toMap(),
@@ -197,9 +356,9 @@ class SqliteLedgerAdapter implements Ledger {
 
       final transaction = AppTransaction(
         id: transactionId ?? const Uuid().v4(),
-        note: payment.title,
+        note: current.title,
         amount: amount,
-        type: payment.type,
+        type: current.type,
         date: date ?? DateTime.now(),
         categoryId: categoryId,
         accountId: accountId,
@@ -220,6 +379,57 @@ class SqliteLedgerAdapter implements Ledger {
   }) async {
     final db = await _dbHelper.database;
     return await db.transaction((txn) async {
+      TransactionRules.amount(repayment.amount);
+      final saved = await txn.query(
+        'debt_repayments',
+        where: 'id = ?',
+        whereArgs: [repayment.id],
+      );
+      if (saved.isNotEmpty) {
+        final transactions = await txn.query(
+          'transactions',
+          where: 'debtRepaymentId = ?',
+          whereArgs: [repayment.id],
+        );
+        return transactions.isEmpty
+            ? null
+            : AppTransaction.fromMap(transactions.single);
+      }
+      final debtRows = await txn.query(
+        'debts',
+        where: 'id = ?',
+        whereArgs: [debt.id],
+      );
+      if (debtRows.isEmpty) {
+        throw const FinancialValidationException(
+          'This debt is no longer available',
+        );
+      }
+      final currentDebt = Debt.fromMap(debtRows.single);
+      if (!repayment.isIncrease &&
+          (repayment.amount * 100).round() >
+              (currentDebt.remainingAmount * 100).round()) {
+        throw const FinancialValidationException(
+          'You cannot pay more than the remaining debt',
+        );
+      }
+      final expense = TransactionRules.debtIsExpense(
+        currentDebt,
+        isIncrease: repayment.isIncrease,
+      );
+      if (!repayment.isIncrease && repayment.accountId == null) {
+        throw const FinancialValidationException(
+          'Choose an account for this payment',
+        );
+      }
+      if (repayment.accountId != null) {
+        await _validateMoney(
+          txn,
+          repayment.accountId!,
+          repayment.amount,
+          expense,
+        );
+      }
       await txn.insert('debt_repayments', repayment.toMap());
 
       if (repayment.isIncrease) {
@@ -235,9 +445,7 @@ class SqliteLedgerAdapter implements Ledger {
       }
 
       if (repayment.accountId != null && repayment.accountId!.isNotEmpty) {
-        final isExpense = repayment.isIncrease
-            ? debt.type == DebtType.owedToMe
-            : debt.type == DebtType.iOwe;
+        final isExpense = expense;
 
         final transaction = AppTransaction(
           id: transactionId ?? const Uuid().v4(),
@@ -269,9 +477,19 @@ class SqliteLedgerAdapter implements Ledger {
   }) async {
     final db = await _dbHelper.database;
     return await db.transaction((txn) async {
+      await _validateMoney(
+        txn,
+        transferTransaction.accountId,
+        transferTransaction.amount + (feeTransaction?.amount ?? 0),
+        true,
+      );
+      await _validateDestination(txn, transferTransaction);
       await txn.insert('transactions', transferTransaction.toMap());
       if (feeTransaction != null) {
-        await txn.insert('transactions', feeTransaction.toMap());
+        await txn.insert(
+          'transactions',
+          feeTransaction.copyWith(transferId: transferTransaction.id).toMap(),
+        );
       }
       return TransferResult(
         transferTransaction: transferTransaction,
@@ -340,12 +558,24 @@ class InMemoryLedgerAdapter implements Ledger {
     _store[transaction.id] = transaction.copyWith(
       plannedPaymentId: previous.plannedPaymentId,
       debtRepaymentId: previous.debtRepaymentId,
+      transferId: previous.transferId,
     );
+  }
+
+  @override
+  Future<void> updateTransfer(
+    AppTransaction transaction,
+    AppTransaction? fee,
+  ) async {
+    await updateTransaction(transaction);
+    _store.removeWhere((_, tx) => tx.transferId == transaction.id);
+    if (fee != null) _store[fee.id] = fee.copyWith(transferId: transaction.id);
   }
 
   @override
   Future<TransactionVoidResult> voidTransaction(String id) async {
     final tx = _store.remove(id);
+    _store.removeWhere((_, tx) => tx.transferId == id);
     final result = TransactionVoidResult(
       transactionId: id,
       affectedPlannedPaymentId: tx?.plannedPaymentId,
@@ -363,6 +593,7 @@ class InMemoryLedgerAdapter implements Ledger {
     required String categoryId,
     String? transactionId,
     DateTime? date,
+    bool protectSavings = false,
   }) async {
     final tx = AppTransaction(
       id: transactionId ?? const Uuid().v4(),
@@ -416,7 +647,9 @@ class InMemoryLedgerAdapter implements Ledger {
   }) async {
     _store[transferTransaction.id] = transferTransaction;
     if (feeTransaction != null) {
-      _store[feeTransaction.id] = feeTransaction;
+      _store[feeTransaction.id] = feeTransaction.copyWith(
+        transferId: transferTransaction.id,
+      );
     }
     return TransferResult(
       transferTransaction: transferTransaction,

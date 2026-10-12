@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
@@ -150,7 +149,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                               ),
                               const Gap(64),
                             ]
-                            .animate(interval: 40.ms)
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                              interval: KoinMotion.duration(context, 40.ms),
+                            )
                             .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                             .scale(
                               begin: const Offset(0.95, 0.95),
@@ -169,7 +175,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               child: CircularProgressIndicator(),
             ),
           ),
-          error: (e, st) => Center(child: Text('Error: $e')),
+          error: (_, _) => KoinErrorState(
+            onRetry: () => ref.invalidate(transactionProvider),
+          ),
         ),
       ),
     );
@@ -223,11 +231,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         alignment: Alignment.centerLeft,
                         child: AnimatedCounter(
                           value: analysis.totalExpense,
-                          formatter: (val) => NumberFormat.currency(
-                            symbol: currency.symbol,
-                          ).format(val),
+                          formatter: (val) => currency.formatter.format(val),
                           duration: const Duration(milliseconds: 1000),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: KoinTypography.summaryAmount,
                             fontWeight: KoinTypography.headingWeight,
@@ -251,7 +257,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       const Gap(12),
                       _buildIntegratedForecast(context, currency),
                     ]
-                    .animate(interval: 40.ms)
+                    .koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
+                      interval: KoinMotion.duration(context, 40.ms),
+                    )
                     .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                     .scale(
                       begin: const Offset(0.95, 0.95),
@@ -306,11 +317,17 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         currency: currency,
         horizon: ForecastHorizon.fromIndex(_selectedFilterIndex),
       ),
-      loading: () => const Text(
+      loading: () => Text(
         'Estimating balance...',
         style: TextStyle(color: Colors.white, fontSize: KoinTypography.small),
       ),
-      error: (error, stack) => const SizedBox.shrink(),
+      error: (_, _) => TextButton(
+        onPressed: () => ref.invalidate(forecastProvider(_selectedFilterIndex)),
+        child: Text(
+          'Could not estimate balance. Retry',
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
     );
   }
 
@@ -324,52 +341,60 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final isCurrentPeriod = period.isCurrentPeriod(_baseDate);
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: () {
-            HapticService.selection();
-            setState(() {
-              _baseDate = period.previousPeriod(_baseDate);
-            });
-          },
-          child: const Icon(
-            Icons.chevron_left_rounded,
-            color: Colors.white,
-            size: 18,
-          ),
-        ),
-        const Gap(6),
-        Flexible(
-          child: Text(
-            _getPeriodLabel(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: KoinTypography.caption,
-              fontWeight: KoinTypography.titleWeight,
-              letterSpacing: 0.3,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                HapticService.selection();
+                setState(() {
+                  _baseDate = period.previousPeriod(_baseDate);
+                });
+              },
+              child: const Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
-          ),
-        ),
-        const Gap(6),
-        GestureDetector(
-          onTap: isCurrentPeriod
-              ? null
-              : () {
-                  HapticService.selection();
-                  setState(() {
-                    _baseDate = period.nextPeriod(_baseDate);
-                  });
-                },
-          child: Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: isCurrentPeriod ? 0.4 : 1.0),
-            size: 18,
-          ),
-        ),
-      ],
-    ).animate().fade(delay: 150.ms);
+            const Gap(6),
+            Flexible(
+              child: Text(
+                _getPeriodLabel(),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            const Gap(6),
+            GestureDetector(
+              onTap: isCurrentPeriod
+                  ? null
+                  : () {
+                      HapticService.selection();
+                      setState(() {
+                        _baseDate = period.nextPeriod(_baseDate);
+                      });
+                    },
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white.withValues(
+                  alpha: isCurrentPeriod ? 0.4 : 1.0,
+                ),
+                size: 18,
+              ),
+            ),
+          ],
+        )
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
+        .fade(delay: 150.ms);
   }
 
   Widget _buildGlassFilterControl(BuildContext context) {
@@ -468,13 +493,15 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              _showPieChart ? 'Spending by Category' : 'Spending Trend',
-              style: TextStyle(
-                fontSize: KoinTypography.sectionTitle,
-                fontWeight: KoinTypography.headingWeight,
-                color: AppTheme.textColor(context),
-                letterSpacing: KoinTypography.headingTracking,
+            Expanded(
+              child: Text(
+                _showPieChart ? 'Spending by Category' : 'Spending Trend',
+                style: TextStyle(
+                  fontSize: KoinTypography.sectionTitle,
+                  fontWeight: KoinTypography.headingWeight,
+                  color: AppTheme.textColor(context),
+                  letterSpacing: KoinTypography.headingTracking,
+                ),
               ),
             ),
             IconButton(
@@ -485,7 +512,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 });
               },
               icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 600),
+                duration: KoinMotion.duration(
+                  context,
+                  const Duration(milliseconds: 600),
+                ),
                 switchInCurve: Curves.easeOutBack,
                 switchOutCurve: Curves.easeInBack,
                 transitionBuilder: _buildFlipTransition,
@@ -508,7 +538,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         ),
         const Gap(16),
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 600),
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 600),
+          ),
           switchInCurve: Curves.easeOutBack,
           switchOutCurve: Curves.easeInBack,
           transitionBuilder: _buildFlipTransition,
@@ -571,7 +604,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       child: TweenAnimationBuilder<double>(
         key: ValueKey(_selectedFilterIndex), // Re-animate on filter change
         tween: Tween<double>(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 1000),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 1000),
+        ),
         curve: Curves.easeOutQuart,
         builder: (context, value, child) {
           return Row(
@@ -582,7 +618,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   alignment: Alignment.center,
                   children: [
                     PieChart(
-                      duration: const Duration(milliseconds: 250),
+                      duration: KoinMotion.duration(
+                        context,
+                        const Duration(milliseconds: 250),
+                      ),
                       curve: Curves.easeInOut,
                       PieChartData(
                         pieTouchData: PieTouchData(
@@ -619,7 +658,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             (c) => c.id == data.categoryId,
                             orElse: () => TransactionCategory(
                               id: 'unknown',
-                              name: 'Unknown',
+                              name: 'Uncategorized',
                               iconCodePoint: Icons.help_outline.codePoint,
                               colorHex: '#9E9E9E',
                               type: TransactionType.expense,
@@ -649,9 +688,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         ),
                         const Gap(2),
                         Text(
-                          NumberFormat.compactCurrency(
-                            symbol: currency.symbol,
-                          ).format(totalSpent * value),
+                          currency.compactFormatter.format(totalSpent * value),
                           style: TextStyle(
                             fontSize: KoinTypography.itemTitle,
                             fontWeight: KoinTypography.headingWeight,
@@ -680,7 +717,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       (c) => c.id == data.categoryId,
                       orElse: () => TransactionCategory(
                         id: 'unknown',
-                        name: 'Unknown',
+                        name: 'Uncategorized',
                         iconCodePoint: Icons.help_outline.codePoint,
                         colorHex: '#9E9E9E',
                         type: TransactionType.expense,
@@ -720,9 +757,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 ),
                                 const Gap(2),
                                 Text(
-                                  NumberFormat.compactCurrency(
-                                    symbol: currency.symbol,
-                                  ).format(data.amount),
+                                  currency.compactFormatter.format(data.amount),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -772,7 +807,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           (c) => c.id == item.categoryId,
           orElse: () => TransactionCategory(
             id: 'unknown',
-            name: 'Unknown',
+            name: 'Uncategorized',
             iconCodePoint: Icons.help_outline.codePoint,
             colorHex: '#9E9E9E',
             type: TransactionType.expense,
@@ -787,7 +822,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 .read(transactionFilterProvider.notifier)
                 .updateFilter(
                   TransactionFilter(
-                    categoryIds: {category.id},
+                    categoryIds: {item.categoryId},
                     dateRange: analysis.currentDateRange,
                   ),
                 );
@@ -863,9 +898,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           const Gap(12),
                           AnimatedCounter(
                             value: item.amount,
-                            formatter: (val) => NumberFormat.compactCurrency(
-                              symbol: currency.symbol,
-                            ).format(val),
+                            formatter: (val) =>
+                                currency.compactFormatter.format(val),
                             duration: const Duration(milliseconds: 1000),
                             style: TextStyle(
                               color: AppTheme.textLightColor(context),
@@ -886,18 +920,26 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           ),
                           child:
                               FractionallySizedBox(
-                                widthFactor: percent / 100,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(2),
-                                    color: category.color,
+                                    widthFactor: percent / 100,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(2),
+                                        color: category.color,
+                                      ),
+                                    ),
+                                  )
+                                  .koinAnimate(
+                                    context,
+                                    autoPlay: !MediaQuery.disableAnimationsOf(
+                                      context,
+                                    ),
+                                    onInit: KoinMotion.onInit(context),
+                                  )
+                                  .scaleX(
+                                    alignment: Alignment.centerLeft,
+                                    duration: 800.ms,
+                                    curve: Curves.easeOutCirc,
                                   ),
-                                ),
-                              ).animate().scaleX(
-                                alignment: Alignment.centerLeft,
-                                duration: 800.ms,
-                                curve: Curves.easeOutCirc,
-                              ),
                         ),
                       ),
                     ],

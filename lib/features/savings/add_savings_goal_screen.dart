@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'widgets/savings_plan_editor.dart';
 import 'package:koin/core/core.dart';
@@ -89,7 +88,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   Future<void> _save() async {
     if (_saving) return;
     if (!_formKey.currentState!.validate()) return;
-    final targetAmount = double.tryParse(_amountController.text);
+    final targetAmount = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_amountController.text);
 
     final goal = SavingsGoal(
       id: widget.goal?.id ?? const Uuid().v4(),
@@ -138,10 +140,13 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   int get _totalDays => _endDate.difference(_startDate).inDays;
 
   String _getDailyEstimate() {
-    final amount = double.tryParse(_amountController.text);
+    final amount = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_amountController.text);
     if (amount == null || amount <= 0 || _totalDays <= 0) return 'â€”';
     final settings = ref.read(settingsProvider);
-    final fmt = NumberFormat.simpleCurrency(name: settings.currency.code);
+    final fmt = settings.currency.formatter;
     return fmt.format(amount / _totalDays);
   }
 
@@ -164,7 +169,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final accounts = ref.watch(accountProvider).asData?.value ?? [];
     final availableAccounts = accounts;
     final linkedAccount = _accountById(accounts, _selectedAccountId);
-    final amount = double.tryParse(_amountController.text);
+    final amount = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_amountController.text);
     final showEstimate =
         !_isStash &&
         _hasDeadline &&
@@ -257,6 +265,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           fieldKey: const Key('goal_amount'),
                           controller: _amountController,
                           currencySymbol: currency.symbol,
+                          currency: currency,
                           primaryColor: primaryColor,
                           onChanged: (_) => setState(() {}),
                           validator: (value) {
@@ -264,7 +273,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                                 (value == null || value.trim().isEmpty)) {
                               return null;
                             }
-                            final target = double.tryParse(value ?? '');
+                            final target = ref
+                                .read(settingsProvider)
+                                .currency
+                                .tryParseInput(value ?? '');
                             return target == null ||
                                     !target.isFinite ||
                                     target <= 0
@@ -414,7 +426,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           subtitle: Text(
                             _plan == null
                                 ? 'See how much you could save and when'
-                                : '${_plan!.frequency.label} · ${NumberFormat.simpleCurrency(name: currency.code).format(_plan!.amount)}',
+                                : '${_plan!.frequency.label} · ${currency.formatter.format(_plan!.amount)}',
                           ),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () async {
@@ -424,9 +436,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                               goal: SavingsGoal(
                                 id: widget.goal?.id ?? 'new-savings',
                                 name: _nameController.text.trim(),
-                                targetAmount: double.tryParse(
-                                  _amountController.text,
-                                ),
+                                targetAmount: ref
+                                    .read(settingsProvider)
+                                    .currency
+                                    .tryParseInput(_amountController.text),
                                 currentAmount: widget.goal?.currentAmount ?? 0,
                                 startDate: _startDate,
                                 endDate: _isStash || !_hasDeadline

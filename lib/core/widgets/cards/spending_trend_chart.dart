@@ -1,3 +1,4 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -166,11 +167,17 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
       child: TweenAnimationBuilder<double>(
         key: ValueKey(widget.filterIndex),
         tween: Tween<double>(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 1000),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 1000),
+        ),
         curve: Curves.easeOutQuart,
         builder: (context, value, child) {
           return BarChart(
-            duration: const Duration(milliseconds: 250),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 250),
+            ),
             curve: Curves.easeInOut,
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
@@ -292,9 +299,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                       ),
                       children: [
                         TextSpan(
-                          text: NumberFormat.currency(
-                            symbol: widget.currency.symbol,
-                          ).format(originalY),
+                          text: widget.currency.formatter.format(originalY),
                           style: TextStyle(
                             color: AppTheme.textColor(context),
                             fontSize: KoinTypography.compact,

@@ -1,3 +1,4 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
@@ -96,7 +97,9 @@ class ConfirmationSheet extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 42, color: confirmColor),
               )
-              .animate()
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .scale(
                 begin: const Offset(0.5, 0.5),
                 duration: 400.ms,
@@ -116,7 +119,9 @@ class ConfirmationSheet extends StatelessWidget {
                   letterSpacing: KoinTypography.headingTracking,
                 ),
               )
-              .animate()
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fadeIn(delay: 100.ms, duration: 300.ms)
               .slideY(
                 begin: 0.15,
@@ -137,7 +142,9 @@ class ConfirmationSheet extends StatelessWidget {
                   ),
                 ),
               )
-              .animate()
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fadeIn(delay: 180.ms, duration: 300.ms)
               .slideY(
                 begin: 0.15,
@@ -213,7 +220,9 @@ class ConfirmationSheet extends StatelessWidget {
                   ),
                 ],
               )
-              .animate()
+              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fadeIn(delay: 260.ms, duration: 300.ms)
               .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
         ],

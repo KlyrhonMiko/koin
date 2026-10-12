@@ -8,6 +8,7 @@ import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/theme.dart';
 import '../cards/account_item.dart';
 import 'select_sheet.dart';
+import '../../utils/snackbar_utils.dart';
 
 /// Deep Account Picker Module: Encapsulates account fetching, balance resolution,
 /// currency formatting, and privacy toggling behind a single method call.
@@ -94,15 +95,26 @@ Future<String?> showAccountPickerSheet({
                 )
                 .fold<double>(0, (sum, g) => sum + g.currentAmount),
             currencySymbol: currency.symbol,
+            currency: currency,
             isSelected: acc.id == selectedAccountId,
             onTap: () => Navigator.pop(sheetContext, acc.id),
-            onPrivateToggle: () {
+            onPrivateToggle: () async {
               final updatedAccount = acc.copyWith(
                 excludeFromTotal: !acc.excludeFromTotal,
               );
-              refConsumer
-                  .read(accountProvider.notifier)
-                  .updateAccount(updatedAccount);
+              try {
+                await refConsumer
+                    .read(accountProvider.notifier)
+                    .updateAccount(updatedAccount);
+              } catch (_) {
+                if (sheetContext.mounted) {
+                  KoinSnackBar.error(
+                    sheetContext,
+                    'Could not update account inclusion',
+                    subtitle: 'Try again.',
+                  );
+                }
+              }
             },
           );
         },

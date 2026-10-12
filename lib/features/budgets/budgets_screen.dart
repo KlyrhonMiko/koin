@@ -190,7 +190,20 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                                   }
                                                 })
                                                 .toList()
-                                                .animate(interval: 40.ms)
+                                                .koinAnimate(
+                                                  context,
+                                                  autoPlay:
+                                                      !MediaQuery.disableAnimationsOf(
+                                                        context,
+                                                      ),
+                                                  onInit: KoinMotion.onInit(
+                                                    context,
+                                                  ),
+                                                  interval: KoinMotion.duration(
+                                                    context,
+                                                    40.ms,
+                                                  ),
+                                                )
                                                 .fade(
                                                   duration: 250.ms,
                                                   curve: Curves.easeOutCubic,
@@ -269,7 +282,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                     ),
                                     const Gap(64),
                                   ]
-                                  .animate(interval: 40.ms)
+                                  .koinAnimate(
+                                    context,
+                                    autoPlay: !MediaQuery.disableAnimationsOf(
+                                      context,
+                                    ),
+                                    onInit: KoinMotion.onInit(context),
+                                    interval: KoinMotion.duration(
+                                      context,
+                                      40.ms,
+                                    ),
+                                  )
                                   .fade(
                                     duration: 250.ms,
                                     curve: Curves.easeOutCubic,
@@ -287,7 +310,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(categoriesProvider)),
     );
   }
 
@@ -339,7 +363,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               );
             },
             icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text(
+            label: Text(
               'Create Category',
               style: TextStyle(
                 color: Colors.white,
@@ -367,75 +391,85 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final chevronColor = isDark ? AppTheme.textColor(context) : Colors.white;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            HapticService.selection();
-            setState(() {
-              _selectedMonth = DateTime(
-                _selectedMonth.year,
-                _selectedMonth.month - 1,
-              );
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            child: Icon(
-              Icons.chevron_left_rounded,
-              color: chevronColor,
-              size: 18,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                HapticService.selection();
+                setState(() {
+                  _selectedMonth = DateTime(
+                    _selectedMonth.year,
+                    _selectedMonth.month - 1,
+                  );
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: chevronColor,
+                  size: 18,
+                ),
+              ),
             ),
-          ),
-        ),
-        const Gap(6),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: isCurrentMonth
-              ? null
-              : () {
-                  HapticService.selection();
-                  setState(() {
-                    _selectedMonth = DateTime(now.year, now.month);
-                  });
-                },
-          child: Text(
-            monthLabel,
-            style: TextStyle(
-              color: textColor,
-              fontSize: KoinTypography.caption,
-              fontWeight: KoinTypography.titleWeight,
-              letterSpacing: 0.3,
+            const Gap(6),
+            Flexible(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: isCurrentMonth
+                    ? null
+                    : () {
+                        HapticService.selection();
+                        setState(() {
+                          _selectedMonth = DateTime(now.year, now.month);
+                        });
+                      },
+                child: Text(
+                  monthLabel,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        const Gap(6),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: isCurrentMonth
-              ? null
-              : () {
-                  HapticService.selection();
-                  setState(() {
-                    _selectedMonth = DateTime(
-                      _selectedMonth.year,
-                      _selectedMonth.month + 1,
-                    );
-                  });
-                },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            child: Icon(
-              Icons.chevron_right_rounded,
-              color: chevronColor.withValues(alpha: isCurrentMonth ? 0.4 : 1.0),
-              size: 18,
+            const Gap(6),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: isCurrentMonth
+                  ? null
+                  : () {
+                      HapticService.selection();
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                        );
+                      });
+                    },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: chevronColor.withValues(
+                    alpha: isCurrentMonth ? 0.4 : 1.0,
+                  ),
+                  size: 18,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
-    ).animate().fade(delay: 150.ms);
+          ],
+        )
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
+        .fade(delay: 150.ms);
   }
 
   Widget _buildSummaryCard(
@@ -448,7 +482,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   }) {
     final isOver = totalSpent > totalBudget;
     final remaining = totalBudget - totalSpent;
-    final fmt = NumberFormat.currency(symbol: currency.symbol);
+    final fmt = currency.formatter;
 
     return KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.budgets,
@@ -476,7 +510,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     AnimatedCounter(
                       value: totalBudget,
                       formatter: (v) => fmt.format(v),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: KoinTypography.summaryAmount,
                         fontWeight: KoinTypography.headingWeight,
@@ -504,7 +538,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 child: Center(
                   child: TweenAnimationBuilder<double>(
                     tween: Tween<double>(begin: 0, end: progress),
-                    duration: const Duration(milliseconds: 1400),
+                    duration: KoinMotion.duration(
+                      context,
+                      const Duration(milliseconds: 1400),
+                    ),
                     curve: Curves.easeOutCubic,
                     builder: (context, val, child) {
                       final targetPercent = double.tryParse(percent) ?? 0;
@@ -629,7 +666,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final progress = metrics.progress;
     final percent = metrics.percent.toStringAsFixed(0);
     final isOver = metrics.isOverBudget;
-    final fmt = NumberFormat.currency(symbol: currency.symbol);
+    final fmt = currency.formatter;
     final isPercent = category.isPercentBudget;
 
     return PressableScale(
@@ -705,7 +742,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         ),
                       ],
                       const Gap(4),
-                      Row(
+                      Wrap(
                         children: [
                           AnimatedCounter(
                             value: spent,
@@ -744,33 +781,39 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isOver
-                        ? Colors.red.withValues(alpha: 0.1)
-                        : AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: AnimatedCounter(
-                    value: double.tryParse(percent) ?? 0,
-                    formatter: (v) => '${v.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      color: isOver
-                          ? Colors.red
-                          : AppTheme.textLightColor(context),
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.caption,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isOver
+                            ? Colors.red.withValues(alpha: 0.1)
+                            : AppTheme.surfaceLightColor(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AnimatedCounter(
+                        value: double.tryParse(percent) ?? 0,
+                        formatter: (v) => '${v.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: isOver
+                              ? Colors.red
+                              : AppTheme.textLightColor(context),
+                          fontWeight: KoinTypography.titleWeight,
+                          fontSize: KoinTypography.caption,
+                        ),
+                      ),
+                    )
+                    .koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
+                    )
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.05, 1.05),
+                      duration: 800.ms,
+                      curve: Curves.easeInOut,
                     ),
-                  ),
-                ).animate().scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(1.05, 1.05),
-                  duration: 800.ms,
-                  curve: Curves.easeInOut,
-                ),
               ],
             ),
             const Gap(8),
@@ -780,7 +823,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 borderRadius: BorderRadius.circular(2),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: progress),
-                  duration: Duration(milliseconds: 700 + (index * 100)),
+                  duration: KoinMotion.duration(
+                    context,
+                    Duration(milliseconds: 700 + (index * 100)),
+                  ),
                   curve: Curves.easeOutCubic,
                   builder: (context, animatedProgress, _) {
                     return LinearProgressIndicator(
@@ -921,7 +967,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             ),
           ),
         )
-        .animate()
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
         .fade(delay: ((isBudgetedEmpty ? 200 : 350) + unbudgetedLength * 50).ms)
         .scale(begin: const Offset(0.92, 0.92));
   }

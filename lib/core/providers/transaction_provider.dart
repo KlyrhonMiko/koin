@@ -53,6 +53,16 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     }
   }
 
+  Future<void> updateTransfer(
+    AppTransaction transaction,
+    AppTransaction? fee,
+  ) async {
+    await _ledger.updateTransfer(transaction, fee);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
+    await loadTransactions(showLoading: false);
+  }
+
   Future<void> deleteTransaction(String id) async {
     final result = await _ledger.voidTransaction(id);
     ref.invalidate(savingsGoalsProvider);

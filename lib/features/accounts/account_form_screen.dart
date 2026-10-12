@@ -15,6 +15,7 @@ class AccountFormScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
+  bool _saving = false;
   late final TextEditingController nameController;
   late final TextEditingController balanceController;
   late final TextEditingController transferFeeController;
@@ -238,7 +239,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     super.dispose();
   }
 
-  Future<void> _deleteAccount() async {
+  final KoinAsyncActionGuard _deleteGuard = KoinAsyncActionGuard();
+
+  Future<void> _deleteAccount() => _deleteGuard.run(
+    context,
+    () => _deleteAccountImpl(),
+    errorTitle: 'Could not delete this item',
+  );
+
+  Future<void> _deleteAccountImpl() async {
     HapticService.medium();
     final confirmed = await ConfirmationSheet.show(
       context: context,
@@ -251,12 +260,66 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       isDanger: true,
     );
     if (confirmed == true && mounted) {
-      ref.read(accountProvider.notifier).deleteAccount(widget.account!.id);
-      Navigator.pop(context);
+      try {
+        await ref
+            .read(accountProvider.notifier)
+            .deleteAccount(widget.account!.id);
+        if (mounted) Navigator.pop(context);
+      } catch (_) {
+        if (mounted) {
+          KoinSnackBar.error(
+            context,
+            'Could not delete account',
+            subtitle: 'Your account is kept. Try again.',
+          );
+        }
+      }
     }
   }
 
   Future<void> _saveAccount() async {
+    if (_saving) return;
+    final balance = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(balanceController.text);
+    final fee = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(
+          transferFeeController.text.isEmpty ? '0' : transferFeeController.text,
+          precision: isTransferFeePercentage ? 2 : null,
+        );
+    if (nameController.text.trim().isEmpty ||
+        balance == null ||
+        !balance.isFinite ||
+        fee == null ||
+        !fee.isFinite ||
+        fee < 0) {
+      KoinSnackBar.error(
+        context,
+        'Check account details',
+        subtitle: 'Enter a name, a valid balance, and a non-negative fee.',
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await _saveAccountImpl();
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not save account',
+          subtitle: 'Your changes are kept. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveAccountImpl() async {
     if (nameController.text.isNotEmpty) {
       HapticService.success();
       final isEditing = widget.account != null;
@@ -264,7 +327,12 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           ? null
           : '#${selectedCardColor!.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
 
-      double newInitialBalance = double.tryParse(balanceController.text) ?? 0.0;
+      double newInitialBalance =
+          ref
+              .read(settingsProvider)
+              .currency
+              .tryParseInput(balanceController.text) ??
+          0.0;
       if (isEditing) {
         final dashboardStats = ref.read(dashboardStatsProvider);
         final currentBalance =
@@ -278,14 +346,22 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
       final updatedAccount = Account(
         id: isEditing ? widget.account!.id : const Uuid().v4(),
-        name: nameController.text,
+        name: nameController.text.trim(),
         initialBalance: newInitialBalance,
         iconCodePoint: selectedIcon,
         colorHex:
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
         excludeFromTotal: excludeFromTotal,
         isCredit: isCredit,
-        transferFeeAmount: double.tryParse(transferFeeController.text) ?? 0.0,
+        transferFeeAmount:
+            ref
+                .read(settingsProvider)
+                .currency
+                .tryParseInput(
+                  transferFeeController.text,
+                  precision: isTransferFeePercentage ? 2 : null,
+                ) ??
+            0.0,
         isTransferFeePercentage: isTransferFeePercentage,
         position: isEditing
             ? widget.account!.position
@@ -409,7 +485,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     final cursorColor = colored ? Colors.white : AppTheme.primaryColor(context);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: KoinMotion.duration(context, const Duration(milliseconds: 300)),
       curve: Curves.easeOutCubic,
       decoration: _previewCardDecoration(context),
       clipBehavior: Clip.antiAlias,
@@ -659,7 +735,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         child: Column(
                           children: [
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
+                              duration: KoinMotion.duration(
+                                context,
+                                const Duration(milliseconds: 200),
+                              ),
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
@@ -723,7 +802,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       child: Column(
                         children: [
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
+                            duration: KoinMotion.duration(
+                              context,
+                              const Duration(milliseconds: 200),
+                            ),
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
@@ -786,7 +868,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             const Gap(24),
 
             AnimatedSize(
-              duration: const Duration(milliseconds: 250),
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 250),
+              ),
               curve: Curves.easeOutCubic,
               alignment: Alignment.topCenter,
               child: selectedTemplateId == null
@@ -905,8 +990,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                         },
                                         child: Center(
                                           child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 200,
+                                            duration: KoinMotion.duration(
+                                              context,
+                                              const Duration(milliseconds: 200),
                                             ),
                                             margin: const EdgeInsets.only(
                                               right: 12,
@@ -1003,8 +1089,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                           },
                                           child: Center(
                                             child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 200,
+                                              duration: KoinMotion.duration(
+                                                context,
+                                                const Duration(
+                                                  milliseconds: 200,
+                                                ),
                                               ),
                                               margin: const EdgeInsets.only(
                                                 right: 12,
@@ -1052,7 +1141,12 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 ),
                                 const Gap(24),
                               ]
-                              .animate(interval: 40.ms)
+                              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                                interval: KoinMotion.duration(context, 40.ms),
+                              )
                               .fade(
                                 duration: 250.ms,
                                 curve: Curves.easeOutCubic,
@@ -1066,181 +1160,231 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   : const SizedBox.shrink(),
             ),
             AnimatedSize(
-              duration: const Duration(milliseconds: 250),
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 250),
+              ),
               curve: Curves.easeOutCubic,
               alignment: Alignment.topCenter,
               child: _previewHasColoredBackground
                   ? Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                  Icons.auto_awesome_motion_rounded,
-                  size: 16,
-                  color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
-                ),
-                const Gap(6),
-                Text(
-                  'Card Decoration',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: KoinTypography.caption,
-                    fontWeight: KoinTypography.labelWeight,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            SizedBox(
-              height: 90,
-              child: ListView.builder(
-                controller: _cardShapeScrollController,
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                itemCount: 9, // Default (None/Hash) + 8 shapes
-                itemBuilder: (context, index) {
-                  final isSelected = index == 0
-                      ? selectedCardShape == null
-                      : selectedCardShape == (index - 1);
-                  final shapeIndex = index == 0 ? null : index - 1;
-
-                  return GestureDetector(
-                    onTap: () {
-                      HapticService.light();
-                      setState(() => selectedCardShape = shapeIndex);
-                    },
-                    child: Container(
-                      width: 140,
-                      height: 80,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primaryColor(context)
-                              : AppTheme.fieldBorderColor(
-                                  context,
-                                  lightOpacity: 0.15,
-                                ),
-                          width: 2.5,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                AppTheme.boxShadow(
-                                  context,
-                                  color: AppTheme.primaryColor(
-                                    context,
-                                  ).withValues(alpha: 0.15),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        children: [
-                          if (index == 0)
-                            Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.auto_awesome_rounded,
-                                    size: 20,
-                                    color: isSelected
-                                        ? AppTheme.primaryColor(context)
-                                        : AppTheme.fieldHintColor(
-                                            context,
-                                            lightOpacity: 0.5,
-                                          ),
-                                  ),
-                                  const Gap(4),
-                                  Text(
-                                    'Auto',
-                                    style: TextStyle(
-                                      fontSize: KoinTypography.small,
-                                      fontWeight: KoinTypography.titleWeight,
-                                      color: isSelected
-                                          ? AppTheme.textColor(context)
-                                          : AppTheme.textLightColor(
-                                              context,
-                                            ).withValues(alpha: 0.7),
+                      children:
+                          [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_motion_rounded,
+                                      size: 16,
+                                      color: AppTheme.primaryColor(
+                                        context,
+                                      ).withValues(alpha: 0.7),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            Positioned.fill(
-                              child: Center(
-                                child: IgnorePointer(
-                                  child: Transform.scale(
-                                    scale: 0.6,
-                                    child: SizedBox(
-                                      width: 200,
-                                      height: 120,
-                                      child: AccountItem(
-                                        account: Account(
-                                          id: 'shape_preview_$index',
-                                          name: 'Preview',
-                                          iconCodePoint: selectedIcon,
-                                          colorHex:
-                                              '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
-                                          cardColorHex:
-                                              '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
-                                          cardShapeType: index - 1,
-                                        ),
-                                        balance: 0,
-                                        currencySymbol: '',
-                                        onTap: () {},
-                                        isPreview: true,
+                                    const Gap(6),
+                                    Text(
+                                      'Card Decoration',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(
+                                          context,
+                                        ).withValues(alpha: 0.7),
+                                        fontSize: KoinTypography.caption,
+                                        fontWeight: KoinTypography.labelWeight,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
+                                  ],
+                                ),
+                                const Gap(12),
+                                SizedBox(
+                                  height: 90,
+                                  child: ListView.builder(
+                                    controller: _cardShapeScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    clipBehavior: Clip.none,
+                                    itemCount:
+                                        9, // Default (None/Hash) + 8 shapes
+                                    itemBuilder: (context, index) {
+                                      final isSelected = index == 0
+                                          ? selectedCardShape == null
+                                          : selectedCardShape == (index - 1);
+                                      final shapeIndex = index == 0
+                                          ? null
+                                          : index - 1;
+
+                                      return GestureDetector(
+                                        onTap: () {
+                                          HapticService.light();
+                                          setState(
+                                            () =>
+                                                selectedCardShape = shapeIndex,
+                                          );
+                                        },
+                                        child: Container(
+                                          width: 140,
+                                          height: 80,
+                                          margin: const EdgeInsets.only(
+                                            right: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.surfaceColor(
+                                              context,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? AppTheme.primaryColor(
+                                                      context,
+                                                    )
+                                                  : AppTheme.fieldBorderColor(
+                                                      context,
+                                                      lightOpacity: 0.15,
+                                                    ),
+                                              width: 2.5,
+                                            ),
+                                            boxShadow: isSelected
+                                                ? [
+                                                    AppTheme.boxShadow(
+                                                      context,
+                                                      color:
+                                                          AppTheme.primaryColor(
+                                                            context,
+                                                          ).withValues(
+                                                            alpha: 0.15,
+                                                          ),
+                                                      blurRadius: 10,
+                                                      offset: const Offset(
+                                                        0,
+                                                        4,
+                                                      ),
+                                                    ),
+                                                  ]
+                                                : null,
+                                          ),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: Stack(
+                                            children: [
+                                              if (index == 0)
+                                                Center(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .auto_awesome_rounded,
+                                                        size: 20,
+                                                        color: isSelected
+                                                            ? AppTheme.primaryColor(
+                                                                context,
+                                                              )
+                                                            : AppTheme.fieldHintColor(
+                                                                context,
+                                                                lightOpacity:
+                                                                    0.5,
+                                                              ),
+                                                      ),
+                                                      const Gap(4),
+                                                      Text(
+                                                        'Auto',
+                                                        style: TextStyle(
+                                                          fontSize:
+                                                              KoinTypography
+                                                                  .small,
+                                                          fontWeight:
+                                                              KoinTypography
+                                                                  .titleWeight,
+                                                          color: isSelected
+                                                              ? AppTheme.textColor(
+                                                                  context,
+                                                                )
+                                                              : AppTheme.textLightColor(
+                                                                  context,
+                                                                ).withValues(
+                                                                  alpha: 0.7,
+                                                                ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              else
+                                                Positioned.fill(
+                                                  child: Center(
+                                                    child: IgnorePointer(
+                                                      child: Transform.scale(
+                                                        scale: 0.6,
+                                                        child: SizedBox(
+                                                          width: 200,
+                                                          height: 120,
+                                                          child: AccountItem(
+                                                            account: Account(
+                                                              id: 'shape_preview_$index',
+                                                              name: 'Preview',
+                                                              iconCodePoint:
+                                                                  selectedIcon,
+                                                              colorHex:
+                                                                  '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+                                                              cardColorHex:
+                                                                  '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+                                                              cardShapeType:
+                                                                  index - 1,
+                                                            ),
+                                                            balance: 0,
+                                                            currencySymbol: '',
+                                                            onTap: () {},
+                                                            isPreview: true,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (isSelected)
+                                                Positioned(
+                                                  top: 8,
+                                                  right: 8,
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          AppTheme.primaryColor(
+                                                            context,
+                                                          ),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.check_rounded,
+                                                      color: Colors.white,
+                                                      size: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
-                              ),
-                            ),
-                          if (isSelected)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor(context),
-                                  shape: BoxShape.circle,
+                                const Gap(24),
+                              ]
+                              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
                                 ),
-                                child: const Icon(
-                                  Icons.check_rounded,
-                                  color: Colors.white,
-                                  size: 12,
-                                ),
+                                onInit: KoinMotion.onInit(context),
+                                interval: KoinMotion.duration(context, 40.ms),
+                              )
+                              .fade(
+                                duration: 250.ms,
+                                curve: Curves.easeOutCubic,
+                              )
+                              .scale(
+                                begin: const Offset(0.95, 0.95),
+                                duration: 250.ms,
+                                curve: Curves.easeOutCubic,
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Gap(24),
-                      ]
-                      .animate(interval: 40.ms)
-                      .fade(
-                        duration: 250.ms,
-                        curve: Curves.easeOutCubic,
-                      )
-                      .scale(
-                        begin: const Offset(0.95, 0.95),
-                        duration: 250.ms,
-                        curve: Curves.easeOutCubic,
-                      ),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -1436,6 +1580,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             const Gap(40),
 
             KoinPrimaryButton(
+              isLoading: _saving,
               label: isEditing ? 'Save Changes' : 'Create Account',
               onPressed: _saveAccount,
             ),

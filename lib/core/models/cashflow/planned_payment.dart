@@ -1,4 +1,5 @@
 import 'package:koin/core/models/models.dart';
+import 'package:intl/intl.dart';
 
 enum PaymentFrequency {
   flexible,
@@ -7,7 +8,17 @@ enum PaymentFrequency {
   biWeekly,
   monthly,
   quarterly,
-  yearly,
+  yearly;
+
+  String get label => switch (this) {
+    flexible => 'Flexible',
+    daily => 'Daily',
+    weekly => 'Weekly',
+    biWeekly => 'Every two weeks',
+    monthly => 'Monthly',
+    quarterly => 'Quarterly',
+    yearly => 'Yearly',
+  };
 }
 
 class PlannedPayment {
@@ -23,6 +34,7 @@ class PlannedPayment {
   final PaymentFrequency frequency;
   final String? notes;
   final bool isAutoProcess;
+  final int recurrenceDay;
 
   PlannedPayment({
     required this.id,
@@ -37,7 +49,8 @@ class PlannedPayment {
     required this.frequency,
     this.notes,
     this.isAutoProcess = false,
-  });
+    int? recurrenceDay,
+  }) : recurrenceDay = recurrenceDay ?? nextDate.day;
 
   Map<String, dynamic> toMap() {
     return {
@@ -53,6 +66,7 @@ class PlannedPayment {
       'frequency': frequency.name,
       'notes': notes,
       'isAutoProcess': isAutoProcess ? 1 : 0,
+      'recurrenceDay': recurrenceDay,
     };
   }
 
@@ -70,10 +84,49 @@ class PlannedPayment {
       frequency: PaymentFrequency.values.byName(map['frequency']),
       notes: map['notes'],
       isAutoProcess: map['isAutoProcess'] == 1,
+      recurrenceDay: map['recurrenceDay'] as int? ?? _legacyAnchor(map),
     );
   }
 
   /// Calculates the previous due date when an auto-processed or linked transaction is rolled back.
+  DateTime _calendarShift(DateTime date, int months) {
+    final month = DateTime(date.year, date.month + months);
+    final lastDay = DateTime(month.year, month.month + 1, 0).day;
+    return DateTime(month.year, month.month, recurrenceDay.clamp(1, lastDay));
+  }
+
+  static int _legacyAnchor(Map<String, dynamic> map) {
+    final next = DateTime.parse(map['nextDate']);
+    final start = DateTime.parse(map['startDate']);
+    final last = DateTime(next.year, next.month + 1, 0).day;
+    return next.day == last && start.day > next.day ? start.day : next.day;
+  }
+
+  bool isEligible([DateTime? at]) {
+    final reference = at ?? DateTime.now();
+    final today = DateTime(reference.year, reference.month, reference.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = endDate == null
+        ? null
+        : DateTime(endDate!.year, endDate!.month, endDate!.day);
+    return !today.isBefore(start) && (end == null || !today.isAfter(end));
+  }
+
+  String availabilityLabel([DateTime? at]) {
+    final reference = at ?? DateTime.now();
+    final today = DateTime(reference.year, reference.month, reference.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    if (today.isBefore(start)) {
+      return 'Available from ${DateFormat.yMMMd().format(start)}';
+    }
+    if (!isEligible(reference)) {
+      return 'Ended ${DateFormat.yMMMd().format(endDate!)}';
+    }
+    return frequency == PaymentFrequency.flexible
+        ? 'Available anytime'
+        : DateFormat.yMMMd().format(nextDate);
+  }
+
   DateTime computePreviousDate() {
     DateTime prevDate = nextDate;
     switch (frequency) {
@@ -84,11 +137,11 @@ class PlannedPayment {
       case PaymentFrequency.biWeekly:
         return prevDate.subtract(const Duration(days: 14));
       case PaymentFrequency.monthly:
-        return DateTime(prevDate.year, prevDate.month - 1, prevDate.day);
+        return _calendarShift(prevDate, -1);
       case PaymentFrequency.quarterly:
-        return DateTime(prevDate.year, prevDate.month - 3, prevDate.day);
+        return _calendarShift(prevDate, -3);
       case PaymentFrequency.yearly:
-        return DateTime(prevDate.year - 1, prevDate.month, prevDate.day);
+        return _calendarShift(prevDate, -12);
       case PaymentFrequency.flexible:
         return prevDate;
     }
@@ -105,11 +158,11 @@ class PlannedPayment {
       case PaymentFrequency.biWeekly:
         return base.add(const Duration(days: 14));
       case PaymentFrequency.monthly:
-        return DateTime(base.year, base.month + 1, base.day);
+        return _calendarShift(base, 1);
       case PaymentFrequency.quarterly:
-        return DateTime(base.year, base.month + 3, base.day);
+        return _calendarShift(base, 3);
       case PaymentFrequency.yearly:
-        return DateTime(base.year + 1, base.month, base.day);
+        return _calendarShift(base, 12);
       case PaymentFrequency.flexible:
         return base;
     }
@@ -118,9 +171,11 @@ class PlannedPayment {
   /// Returns the number of days until the payment's next due date relative to [now].
   int daysUntilNext([DateTime? now]) {
     final ref = now ?? DateTime.now();
-    return DateTime(nextDate.year, nextDate.month, nextDate.day)
-        .difference(DateTime(ref.year, ref.month, ref.day))
-        .inDays;
+    return DateTime(
+      nextDate.year,
+      nextDate.month,
+      nextDate.day,
+    ).difference(DateTime(ref.year, ref.month, ref.day)).inDays;
   }
 
   /// Whether this recurring commitment is overdue relative to [now].
@@ -144,6 +199,7 @@ class PlannedPayment {
     PaymentFrequency? frequency,
     String? notes,
     bool? isAutoProcess,
+    int? recurrenceDay,
   }) {
     return PlannedPayment(
       id: id ?? this.id,
@@ -158,6 +214,7 @@ class PlannedPayment {
       frequency: frequency ?? this.frequency,
       notes: notes ?? this.notes,
       isAutoProcess: isAutoProcess ?? this.isAutoProcess,
+      recurrenceDay: recurrenceDay ?? this.recurrenceDay,
     );
   }
 }

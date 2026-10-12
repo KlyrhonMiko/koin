@@ -20,7 +20,7 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.0.1" apply false
-    // Supplies a supported compiler to built-in Kotlin without applying KGP.
+    // Supplies the compiler for the Kotlin compatibility path.
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
 }
 

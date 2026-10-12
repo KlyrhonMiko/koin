@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/reports/report_service.dart';
@@ -93,7 +92,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                           const Gap(12),
                           _buildAccountSelector(context, accounts),
                         ]
-                        .animate(interval: 40.ms)
+                        .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                          onInit: KoinMotion.onInit(context),
+                          interval: KoinMotion.duration(context, 40.ms),
+                        )
                         .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                         .scale(
                           begin: const Offset(0.95, 0.95),
@@ -103,7 +105,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               ),
             ),
             _buildExportActions(context, categories, accounts, currencySymbol)
-                .animate()
+                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                 .scale(
                   begin: const Offset(0.95, 0.95),
@@ -270,9 +274,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               AnimatedCounter(
                 value: value,
                 formatter: (v) => currencySymbol != null
-                    ? NumberFormat.compactCurrency(
-                        symbol: currencySymbol,
-                      ).format(v)
+                    ? ref.read(settingsProvider).currency.compactFormatter.format(v)
                     : v.toInt().toString(),
                 style: TextStyle(
                   color: AppTheme.textColor(context),
@@ -317,7 +319,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           setState(() => _selectedType = type);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 250),
+          ),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -385,7 +390,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 200),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: isSelected
@@ -469,7 +477,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 200),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: isSelected
@@ -679,6 +690,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         categories: categories,
         accounts: accounts,
         currencySymbol: currencySymbol,
+        currencyCode: ref.read(settingsProvider).currency.code,
         isPdf: isPdf,
       );
 
@@ -716,7 +728,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       KoinSnackBar.error(
         context,
         'Export Failed',
-        subtitle: 'An error occurred while saving the report: $e',
+        subtitle: 'Check available storage and folder access, then try again.',
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 
 import 'package:koin/core/core.dart';
 import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
@@ -62,12 +61,8 @@ class CashflowScheduleTab extends ConsumerWidget {
 
               final payment = payments[index];
               final category = categories
-                  .cast<TransactionCategory?>()
-                  .firstWhere(
-                    (c) => c?.id == payment.categoryId,
-                    orElse: () =>
-                        categories.isNotEmpty ? categories.first : null,
-                  );
+                  .where((c) => c.id == payment.categoryId)
+                  .firstOrNull;
 
               final account = accounts
                   .where((a) => a.id == payment.accountId)
@@ -80,15 +75,15 @@ class CashflowScheduleTab extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(24),
                   confirmTitle: _isIncome
                       ? 'Delete Recurring Income?'
-                      : 'Delete Subscription?',
+                      : 'Delete Planned Payment?',
                   confirmDescription:
                       'Are you sure you want to delete "${payment.title}"? This action cannot be undone.',
                   confirmLabel: _isIncome
                       ? 'Delete Income'
-                      : 'Delete Subscription',
-                  onDelete: () {
+                      : 'Delete Planned Payment',
+                  onDelete: () async {
                     HapticService.heavy();
-                    ref
+                    await ref
                         .read(plannedPaymentProvider.notifier)
                         .deletePlannedPayment(payment.id);
                   },
@@ -105,7 +100,11 @@ class CashflowScheduleTab extends ConsumerWidget {
 
               if (showEntranceAnimations) {
                 return tile
-                    .animate()
+                    .koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
+                    )
                     .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                     .scale(
                       begin: const Offset(0.95, 0.95),
@@ -119,7 +118,8 @@ class CashflowScheduleTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(plannedPaymentProvider)),
     );
   }
 
@@ -127,14 +127,12 @@ class CashflowScheduleTab extends ConsumerWidget {
     icon: _isIncome
         ? Icons.account_balance_wallet_rounded
         : Icons.event_repeat_rounded,
-    title: _isIncome ? 'No recurring incomes' : 'No subscriptions',
+    title: _isIncome ? 'No recurring incomes' : 'No planned payments',
     subtitle: _isIncome
         ? 'Add regular income streams like salary or freelance retainers'
         : 'Add recurring payments to track your future obligations',
     action: KoinPrimaryButton(
-      label: _isIncome
-          ? 'Add Recurring Income'
-          : 'Add Subscription',
+      label: _isIncome ? 'Add Recurring Income' : 'Add Planned Payment',
       icon: Icons.add_rounded,
       onPressed: () {
         HapticService.medium();
@@ -156,6 +154,8 @@ class CashflowScheduleTab extends ConsumerWidget {
   ) {
     final catColor = category?.color ?? AppTheme.primaryColor(context);
     final isOverdue = payment.isOverdue();
+    final isAvailable = payment.isEligible();
+    final currency = ref.watch(settingsProvider).currency;
 
     return PressableScale(
       onTap: () {
@@ -231,7 +231,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            payment.frequency.name.toUpperCase(),
+                            payment.frequency.label.toUpperCase(),
                             style: TextStyle(
                               color: AppTheme.textLightColor(context),
                               fontSize: KoinTypography.overline,
@@ -278,7 +278,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${_isIncome ? '+' : '-'}$currencySymbol${NumberFormat('#,##0.00').format(payment.amount)}',
+                  '${_isIncome ? '+' : '-'}${currency.formatter.format(payment.amount)}',
                   style: TextStyle(
                     fontWeight: KoinTypography.titleWeight,
                     fontSize: KoinTypography.itemAmount,
@@ -299,58 +299,63 @@ class CashflowScheduleTab extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.backgroundColor(context),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.calendar_today_rounded,
-                        size: 14,
-                        color: AppTheme.textLightColor(context),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          payment.frequency == PaymentFrequency.flexible
-                              ? 'Availability'
-                              : _isIncome
-                              ? 'Next Income Date'
-                              : 'Next Payment',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: KoinTypography.overline,
-                            fontWeight: KoinTypography.supportingWeight,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.backgroundColor(context),
+                          shape: BoxShape.circle,
                         ),
-                        Text(
-                          payment.frequency == PaymentFrequency.flexible
-                              ? 'Available Anytime'
-                              : DateFormat.yMMMd().format(payment.nextDate),
-                          style: const TextStyle(
-                            fontWeight: KoinTypography.titleWeight,
-                            fontSize: KoinTypography.caption,
-                          ),
+                        child: Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: AppTheme.textLightColor(context),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              payment.frequency == PaymentFrequency.flexible
+                                  ? 'Availability'
+                                  : _isIncome
+                                  ? 'Next Income Date'
+                                  : 'Next Payment',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context),
+                                fontSize: KoinTypography.overline,
+                                fontWeight: KoinTypography.supportingWeight,
+                              ),
+                            ),
+                            Text(
+                              payment.availabilityLabel(),
+                              style: const TextStyle(
+                                fontWeight: KoinTypography.titleWeight,
+                                fontSize: KoinTypography.caption,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
                 InkWell(
-                  onTap: () {
-                    HapticService.light();
-                    PaymentConfirmationSheet.confirmAndProcess(
-                      context: context,
-                      ref: ref,
-                      payment: payment,
-                    );
-                  },
+                  onTap: !isAvailable
+                      ? null
+                      : () {
+                          HapticService.light();
+                          PaymentConfirmationSheet.confirmAndProcess(
+                            context: context,
+                            ref: ref,
+                            payment: payment,
+                          );
+                        },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -372,9 +377,14 @@ class CashflowScheduleTab extends ConsumerWidget {
                       ],
                     ),
                     child: Text(
-                      _isIncome ? 'Collect Now' : 'Pay Now',
-                      style: const TextStyle(
+                      !isAvailable
+                          ? 'Unavailable'
+                          : _isIncome
+                          ? 'Collect Now'
+                          : 'Pay Now',
+                      style: TextStyle(
                         color: Colors.white,
+
                         fontSize: KoinTypography.caption,
                         fontWeight: KoinTypography.titleWeight,
                       ),
@@ -434,7 +444,7 @@ class CashflowScheduleTab extends ConsumerWidget {
   }
 }
 
-/// Convenience view specialized for Planned Payments (expenses/bills/subscriptions).
+/// Convenience view specialized for Planned Payments (expenses/bills/planned payments).
 class PlannedPaymentsTab extends StatelessWidget {
   final bool showEntranceAnimations;
 

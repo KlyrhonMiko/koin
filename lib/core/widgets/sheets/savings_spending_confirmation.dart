@@ -55,9 +55,7 @@ Future<bool> confirmSavingsSpending({
   }
   if (releases.isEmpty) return true;
   final notifier = ref.read(savingsGoalsProvider.notifier);
-  final money = NumberFormat.currency(
-    symbol: ref.read(settingsProvider).currency.symbol,
-  );
+  final money = ref.read(settingsProvider).currency.formatter;
   ModalRoute<dynamic>? sheetRoute;
   onSheetVisibilityChanged?.call(true);
   try {

@@ -22,7 +22,7 @@ class DebtsTab extends ConsumerWidget {
     final summary = ref.watch(debtSummaryProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
-    final fmt = NumberFormat.simpleCurrency(name: currency.code);
+    final fmt = currency.formatter;
 
     return debtsAsync.when(
       data: (debts) {
@@ -58,8 +58,8 @@ class DebtsTab extends ConsumerWidget {
                     );
                   },
                   icon: const Icon(Icons.add_rounded, color: Colors.white),
-                  label: const Text(
-                    'Add Account',
+                  label: Text(
+                    'Add credit / IOU',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: KoinTypography.titleWeight,
@@ -106,9 +106,9 @@ class DebtsTab extends ConsumerWidget {
                 confirmTitle: 'Delete Credit/IOU?',
                 confirmDescription:
                     'Are you sure you want to delete "${debt.personName}"? This action cannot be undone.',
-                onDelete: () {
+                onDelete: () async {
                   HapticService.heavy();
-                  ref.read(debtsProvider.notifier).deleteDebt(debt.id);
+                  await ref.read(debtsProvider.notifier).deleteDebt(debt.id);
                 },
                 child: DebtCard(
                   debt: debt,
@@ -122,7 +122,8 @@ class DebtsTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: \$e')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(debtsProvider)),
     );
   }
 
@@ -140,6 +141,12 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
+          padding: const EdgeInsets.fromLTRB(
+            KoinSpacing.summaryInset,
+            KoinSpacing.summaryInset,
+            KoinSpacing.summaryInset,
+            16,
+          ),
           shapeStyle: SummaryShapeStyle.defaultStyle,
           margin: const EdgeInsets.only(bottom: 24),
           glowColor: cardColor,
@@ -205,7 +212,11 @@ class DebtsTab extends ConsumerWidget {
             ],
           ),
         )
-        .animate()
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
         .fade(duration: 250.ms, curve: Curves.easeOutCubic)
         .scale(
           begin: const Offset(0.95, 0.95),
@@ -342,7 +353,11 @@ class DebtCard extends StatelessWidget {
     if (showEntranceAnimations) {
       final delay = Duration(milliseconds: 40 * index);
       content = content
-          .animate()
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .slideY(
             begin: 0.07,
             delay: delay,
@@ -384,6 +399,7 @@ class DebtCard extends StatelessWidget {
                     '${currencyFormat.format(remaining)} left',
                     style: TextStyle(
                       color: color,
+
                       fontSize: KoinTypography.small,
                       fontWeight: KoinTypography.labelWeight,
                     ),

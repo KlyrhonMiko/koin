@@ -128,7 +128,10 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
   }
 
   Future<void> stopListening() async {
-    await _speechToText.stop();
-    state = state.copyWith(isListening: false);
+    try {
+      await _speechToText.stop();
+    } finally {
+      if (ref.mounted) state = state.copyWith(isListening: false);
+    }
   }
 }

@@ -289,6 +289,43 @@ void main() {
     expect(categoryTile(tester).selectedName, 'Transport');
   });
 
+  testWidgets(
+    'uncategorized Analysis drilldown keeps the original category ID',
+    (tester) async {
+      await container
+          .read(ledgerProvider)
+          .recordTransaction(
+            AppTransaction(
+              id: 'uncategorized',
+              amount: 75,
+              date: DateTime.now(),
+              accountId: 'cash',
+              categoryId: '',
+              type: TransactionType.expense,
+            ),
+          );
+      await launch(tester, const AnalysisScreen());
+      final drilldown = find.ancestor(
+        of: find.text('Uncategorized'),
+        matching: find.byType(PressableScale),
+      );
+      expect(drilldown, findsOneWidget);
+      await tester.ensureVisible(drilldown);
+      await tester.tap(drilldown);
+      await tester.pumpAndSettle();
+      expect(container.read(transactionFilterProvider).categoryIds, {''});
+      expect(container.read(activityTabProvider), 1);
+      expect(
+        container
+            .read(filteredTransactionsProvider)
+            .requireValue
+            .map((tx) => tx.id),
+        ['uncategorized'],
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final scale in [1.0, 2.0]) {
     testWidgets('forecast keeps details optional at text scale $scale', (
       tester,

@@ -18,30 +18,8 @@ class DebtDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
-  final Set<String> _pendingRepaymentDeletions = {};
-
   Future<void> _deleteRepayment(DebtRepayment repayment) async {
-    // A dismissed row must leave the tree before the provider refreshes.
-    setState(() => _pendingRepaymentDeletions.add(repayment.id));
-    try {
-      await ref.read(debtsProvider.notifier).deleteRepayment(repayment);
-      await ref.read(debtRepaymentsProvider(repayment.debtId).future);
-    } catch (_) {
-      if (mounted) {
-        KoinSnackBar.error(
-          context,
-          'Could not delete payment',
-          subtitle: 'Please try again',
-        );
-      }
-    } finally {
-      // Even an immediate failure needs one frame without the dismissed row,
-      // so restoring it creates a fresh swipe state.
-      if (mounted) await WidgetsBinding.instance.endOfFrame;
-      if (mounted) {
-        setState(() => _pendingRepaymentDeletions.remove(repayment.id));
-      }
-    }
+    await ref.read(debtsProvider.notifier).deleteRepayment(repayment);
   }
 
   void _addRepayment(
@@ -52,7 +30,15 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     AddRepaymentSheet.show(context, debt: debt, isIncrease: isIncrease);
   }
 
-  Future<void> _showDeleteConfirmation(Debt debt) async {
+  final KoinAsyncActionGuard _deleteGuard = KoinAsyncActionGuard();
+
+  Future<void> _showDeleteConfirmation(Debt debt) => _deleteGuard.run(
+    context,
+    () => _showDeleteConfirmationImpl(debt),
+    errorTitle: 'Could not delete this item',
+  );
+
+  Future<void> _showDeleteConfirmationImpl(Debt debt) async {
     final confirmed = await ConfirmationSheet.show(
       context: context,
       title: 'Delete Credit/IOU?',
@@ -78,9 +64,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     final debtsAsync = ref.watch(debtsProvider);
     final repaymentsAsync = ref.watch(debtRepaymentsProvider(widget.debtId));
     final settings = ref.watch(settingsProvider);
-    final currencyFormat = NumberFormat.simpleCurrency(
-      name: settings.currency.code,
-    );
+    final currencyFormat = settings.currency.formatter;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -184,7 +168,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: \$e')),
+        error: (_, _) =>
+            KoinErrorState(onRetry: () => ref.invalidate(debtsProvider)),
       ),
     );
   }
@@ -222,7 +207,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   Expanded(
                     child: Text(
                       debt.personName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: KoinTypography.sectionTitle,
                         fontWeight: KoinTypography.headingWeight,
@@ -240,7 +225,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 debt.isMonthlyPurchaseAccount && !debt.isSettled
                     ? '${currencyFormat.format(debt.upcomingPaymentAmount)} next bill · ${DateFormat.MMMd().format(debt.nextDueDate)}'
                     : debt.totalInstallments > 0
-                    ? '${currencyFormat.format(debt.amount)} total · ${debt.totalInstallments} ${debt.frequency.name} payments'
+                    ? '${currencyFormat.format(debt.amount)} total · ${debt.totalInstallments} ${debt.frequency.label.toLowerCase()} payments'
                     : '${currencyFormat.format(debt.amount)} total',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
@@ -257,7 +242,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 formatter: (v) => currencyFormat.format(v),
                 duration: const Duration(milliseconds: 1400),
                 curve: Curves.easeOutCubic,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: KoinTypography.summaryAmount,
                   fontWeight: KoinTypography.headingWeight,
@@ -311,7 +296,11 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             ],
           ),
         )
-        .animate()
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.05, curve: Curves.easeOutCubic);
   }
@@ -357,7 +346,11 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             ),
           ],
         )
-        .animate()
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
         .fade(duration: 250.ms, curve: Curves.easeOutCubic)
         .scale(
           begin: const Offset(0.95, 0.95),
@@ -499,9 +492,11 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               confirmTitle: 'Delete Purchase?',
               confirmDescription:
                   'Delete "${item.name}"? This will update the credit total. This action cannot be undone.',
-              onDelete: () {
+              onDelete: () async {
                 HapticService.heavy();
-                ref.read(debtsProvider.notifier).removeDebtItem(debt, item);
+                await ref
+                    .read(debtsProvider.notifier)
+                    .removeDebtItem(debt, item);
               },
               child: PressableScale(
                 onTap: () async {
@@ -615,9 +610,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required NumberFormat currencyFormat,
     required Color color,
   }) {
-    final repayments = (repaymentsAsync.value ?? <DebtRepayment>[])
-        .where((entry) => !_pendingRepaymentDeletions.contains(entry.id))
-        .toList();
+    final repayments = (repaymentsAsync.value ?? <DebtRepayment>[]).toList();
     return SliverMainAxisGroup(
       slivers: [
         SliverToBoxAdapter(
@@ -696,7 +689,12 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             hasScrollBody: false,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => SliverToBoxAdapter(child: Text('Error: $e')),
+          error: (_, _) => SliverToBoxAdapter(
+            child: KoinErrorState(
+              onRetry: () =>
+                  ref.invalidate(debtRepaymentsProvider(widget.debtId)),
+            ),
+          ),
         ),
       ],
     );
@@ -777,6 +775,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
                 confirmLabel: 'Delete Payment',
                 onDelete: () => _deleteRepayment(repayment),
+                failureTitle: 'Could not delete payment',
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,

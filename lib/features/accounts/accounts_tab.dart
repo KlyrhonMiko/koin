@@ -72,6 +72,7 @@ class AccountsTab extends ConsumerWidget {
                   )
                   .fold<double>(0, (sum, g) => sum + g.currentAmount),
               currencySymbol: currency.symbol,
+              currency: currency,
               animationSessionKey: animationSessionKey,
               onTap: () {
                 HapticService.light();
@@ -80,14 +81,24 @@ class AccountsTab extends ConsumerWidget {
                   SlideUpRoute(page: AccountFormScreen(account: account)),
                 );
               },
-              onPrivateToggle: () {
+              onPrivateToggle: () async {
                 final updatedAccount = account.copyWith(
                   excludeFromTotal: !account.excludeFromTotal,
                 );
-                ref
-                    .read(accountProvider.notifier)
-                    .updateAccount(updatedAccount);
-                HapticService.selection();
+                try {
+                  await ref
+                      .read(accountProvider.notifier)
+                      .updateAccount(updatedAccount);
+                  HapticService.selection();
+                } catch (_) {
+                  if (context.mounted) {
+                    KoinSnackBar.error(
+                      context,
+                      'Could not update account inclusion',
+                      subtitle: 'Try again.',
+                    );
+                  }
+                }
               },
               trailing: Listener(
                 onPointerDown: (_) => HapticService.light(),
@@ -106,7 +117,9 @@ class AccountsTab extends ConsumerWidget {
 
             if (showEntranceAnimations) {
               accountItem = accountItem
-                  .animate()
+                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                    onInit: KoinMotion.onInit(context),
+                  )
                   .fade(delay: (index * 60).ms, duration: 400.ms)
                   .slideY(
                     begin: 0.1,
@@ -128,9 +141,9 @@ class AccountsTab extends ConsumerWidget {
                   confirmTitle: 'Delete Account?',
                   confirmDescription:
                       'All transactions associated with this account will be unlinked. This cannot be undone.',
-                  onDelete: () {
+                  onDelete: () async {
                     HapticService.heavy();
-                    ref
+                    await ref
                         .read(accountProvider.notifier)
                         .deleteAccount(account.id);
                   },
@@ -142,7 +155,8 @@ class AccountsTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(accountProvider)),
     );
   }
 
@@ -163,7 +177,9 @@ class AccountsTab extends ConsumerWidget {
 
     if (showEntranceAnimations) {
       return button
-          .animate()
+          .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .fade(duration: 250.ms, curve: Curves.easeOutCubic)
           .scale(
             begin: const Offset(0.95, 0.95),

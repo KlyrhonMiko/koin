@@ -3,6 +3,7 @@ export 'koin_activity_empty_state.dart';
 export 'koin_back_button.dart';
 export 'koin_bottom_sheet_handle.dart';
 export 'koin_empty_state.dart';
+export 'koin_error_state.dart';
 export 'koin_primary_button.dart';
 export 'koin_reorder_proxy.dart';
 export 'koin_screen_header.dart';

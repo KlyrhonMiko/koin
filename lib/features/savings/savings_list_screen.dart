@@ -23,9 +23,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final goalsAsync = ref.watch(computedSavingsGoalsProvider);
     final summary = ref.watch(savingsSummaryProvider);
     final settings = ref.watch(settingsProvider);
-    final currencyFormat = NumberFormat.simpleCurrency(
-      name: settings.currency.code,
-    );
+    final currencyFormat = settings.currency.formatter;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return goalsAsync.when(
@@ -112,9 +110,9 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                             confirmTitle: 'Delete Goal?',
                             confirmDescription:
                                 'Are you sure you want to delete "${goal.name}"? This action cannot be undone.',
-                            onDelete: () {
+                            onDelete: () async {
                               HapticService.heavy();
-                              ref
+                              await ref
                                   .read(savingsGoalsProvider.notifier)
                                   .deleteGoal(goal.id);
                             },
@@ -165,7 +163,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(savingsGoalsProvider)),
     );
   }
 
@@ -225,7 +224,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                   child: Center(
                     child: TweenAnimationBuilder<double>(
                       tween: Tween<double>(begin: 0, end: overallProgress),
-                      duration: const Duration(milliseconds: 1400),
+                      duration: KoinMotion.duration(
+                        context,
+                        const Duration(milliseconds: 1400),
+                      ),
                       curve: Curves.easeOutCubic,
                       builder: (context, val, child) {
                         return Stack(
@@ -252,7 +254,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                             ),
                             Text(
                               '${(val * 100).toInt()}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -298,7 +300,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
     if (widget.showEntranceAnimations) {
       card = card
-          .animate()
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .fade(duration: 400.ms, curve: Curves.easeOutCubic)
           .scale(
             begin: const Offset(0.96, 0.96),
@@ -336,7 +342,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             formatter: (v) => fmt.format(v),
             duration: const Duration(milliseconds: 1400),
             curve: Curves.easeOutCubic,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -454,7 +460,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 borderRadius: BorderRadius.circular(2),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: goal.progress),
-                  duration: Duration(milliseconds: 800 + (index * 100)),
+                  duration: KoinMotion.duration(
+                    context,
+                    Duration(milliseconds: 800 + (index * 100)),
+                  ),
                   curve: Curves.easeOutCubic,
                   builder: (context, animatedProgress, _) {
                     return LinearProgressIndicator(
@@ -476,7 +485,12 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
     if (widget.showEntranceAnimations) {
       card = card
-          .animate(key: ValueKey('goal_${goal.id}_entrance'))
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+            key: ValueKey('goal_${goal.id}_entrance'),
+          )
           .fade(delay: (index * 40).ms, duration: 400.ms)
           .slideX(begin: 0.05, curve: Curves.easeOutCubic);
     }
@@ -517,7 +531,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 ],
               ),
               padding: const EdgeInsets.symmetric(vertical: 18),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
@@ -551,7 +565,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
     if (widget.showEntranceAnimations) {
       state = state
-          .animate()
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .fade(delay: 50.ms, duration: 400.ms, curve: Curves.easeOutCubic)
           .slideY(begin: 0.1, curve: Curves.easeOutCubic);
     }
@@ -571,7 +589,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
     if (widget.showEntranceAnimations) {
       btn = btn
-          .animate()
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .fade(duration: 400.ms, curve: Curves.easeOutCubic)
           .scale(begin: const Offset(0.96, 0.96), curve: Curves.easeOutCubic);
     }

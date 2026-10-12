@@ -11,6 +11,8 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/utils/slide_up_route.dart';
 import 'package:koin/core/widgets/primitives/pressable_scale.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:koin/core/providers/transaction_provider.dart';
 
 /// Deep UI Component: Encapsulates transaction row presentation, icon and badge resolution,
 /// subtitle route formatting (e.g. transfer source → destination), signed currency formatting,
@@ -101,7 +103,9 @@ class TransactionTile extends StatelessWidget {
                     ? Icons.arrow_downward_rounded
                     : Icons.arrow_upward_rounded));
 
-    final categoryName = isTransfer ? 'Transfer' : (category?.name ?? 'Others');
+    final categoryName = isTransfer
+        ? 'Transfer'
+        : (category?.name ?? 'Uncategorized');
     final displayTitle = transaction.note.isEmpty
         ? categoryName
         : transaction.note;
@@ -114,9 +118,7 @@ class TransactionTile extends StatelessWidget {
               ? accountName
               : '$categoryName • $accountName');
 
-    final formattedAmount = NumberFormat.currency(
-      symbol: currency.symbol,
-    ).format(transaction.amount);
+    final formattedAmount = currency.formatter.format(transaction.amount);
 
     final signedAmount = isTransfer
         ? formattedAmount
@@ -127,10 +129,18 @@ class TransactionTile extends StatelessWidget {
           onTap ??
           () {
             HapticService.light();
+            final editing = transaction.transferId == null
+                ? transaction
+                : ProviderScope.containerOf(context)
+                          .read(transactionProvider)
+                          .value
+                          ?.where((tx) => tx.id == transaction.transferId)
+                          .firstOrNull ??
+                      transaction;
             Navigator.push(
               context,
               SlideUpRoute(
-                page: AddTransactionScreen(editingTransaction: transaction),
+                page: AddTransactionScreen(editingTransaction: editing),
               ),
             );
           },
@@ -182,6 +192,7 @@ class TransactionTile extends StatelessWidget {
                   signedAmount,
                   style: TextStyle(
                     color: typeColor,
+
                     fontWeight: KoinTypography.headingWeight,
                     fontSize: KoinTypography.body,
                     letterSpacing: -0.5,

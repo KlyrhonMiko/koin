@@ -99,6 +99,7 @@ class TransferDraft {
         type: TransactionType.expense,
         categoryId: 'cat_others',
         accountId: sourceAccountId,
+        transferId: transferTx.id,
       );
     }
 

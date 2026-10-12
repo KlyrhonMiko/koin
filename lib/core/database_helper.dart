@@ -26,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 39,
+      version: 40,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -353,6 +353,51 @@ CREATE TABLE debt_items (
       }
       await _createSavingsSpendingLinks(db);
     }
+    if (oldVersion < 40) {
+      final paymentColumns = await db.rawQuery(
+        'PRAGMA table_info(planned_payments)',
+      );
+      if (!paymentColumns.any((column) => column['name'] == 'recurrenceDay')) {
+        await db.execute(
+          'ALTER TABLE planned_payments ADD COLUMN recurrenceDay INTEGER',
+        );
+      }
+      final transactionColumns = await db.rawQuery(
+        'PRAGMA table_info(transactions)',
+      );
+      if (!transactionColumns.any((column) => column['name'] == 'transferId')) {
+        await db.execute('ALTER TABLE transactions ADD COLUMN transferId TEXT');
+      }
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS transaction_transfer_parent ON transactions(transferId)',
+      );
+      // Historical references use an empty ID when their entity was removed.
+      // Integrity is maintained explicitly because older non-null schemas cannot
+      // implement their declared SET NULL foreign-key behavior.
+      await db.execute(
+        "UPDATE transactions SET accountId = '' WHERE accountId NOT IN (SELECT id FROM accounts)",
+      );
+      await db.execute(
+        'UPDATE transactions SET toAccountId = NULL WHERE toAccountId NOT IN (SELECT id FROM accounts)',
+      );
+      await db.execute(
+        "UPDATE transactions SET categoryId = '' WHERE categoryId NOT IN (SELECT id FROM categories)",
+      );
+      // Link only uniquely attributable legacy fees; never guess between transfers.
+      await db.execute("""
+        UPDATE transactions AS fee SET transferId = (
+          SELECT parent.id FROM transactions AS parent
+          WHERE parent.type = 'transfer' AND parent.accountId = fee.accountId
+            AND parent.date = fee.date
+            AND fee.title = CASE WHEN parent.title = '' THEN 'Transfer Fee' ELSE 'Transfer Fee: ' || parent.title END
+        ) WHERE fee.type = 'expense' AND fee.transferId IS NULL AND (
+          SELECT COUNT(*) FROM transactions AS parent
+          WHERE parent.type = 'transfer' AND parent.accountId = fee.accountId
+            AND parent.date = fee.date
+            AND fee.title = CASE WHEN parent.title = '' THEN 'Transfer Fee' ELSE 'Transfer Fee: ' || parent.title END
+        ) = 1
+      """);
+    }
   }
 
   Future<void> _createSavingsSpendingLinks(Database db) async {
@@ -461,6 +506,7 @@ CREATE TABLE planned_payments (
   frequency $textType,
   notes TEXT,
   isAutoProcess INTEGER DEFAULT 0,
+  recurrenceDay INTEGER,
   FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE SET NULL,
   FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE SET NULL
 )
@@ -621,6 +667,7 @@ CREATE TABLE transactions (
   toAccountId TEXT,
   plannedPaymentId TEXT,
   debtRepaymentId TEXT,
+  transferId TEXT,
   FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE SET NULL,
   FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE SET NULL,
   FOREIGN KEY (toAccountId) REFERENCES accounts (id) ON DELETE SET NULL,
@@ -802,7 +849,25 @@ CREATE TABLE transactions (
 
   Future<int> deleteCategory(String id) async {
     final db = await instance.database;
-    return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      for (final table in ['transactions', 'planned_payments']) {
+        await txn.update(
+          table,
+          {'categoryId': ''},
+          where: 'categoryId = ?',
+          whereArgs: [id],
+        );
+      }
+      for (final table in ['debts', 'debt_items']) {
+        await txn.update(
+          table,
+          {'categoryId': null},
+          where: 'categoryId = ?',
+          whereArgs: [id],
+        );
+      }
+      return txn.delete('categories', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   Future<void> updateCategoryPositions(
@@ -848,7 +913,37 @@ CREATE TABLE transactions (
 
   Future<int> deleteAccount(String id) async {
     final db = await instance.database;
-    return await db.delete('accounts', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      for (final table in ['transactions', 'planned_payments']) {
+        await txn.update(
+          table,
+          {'accountId': ''},
+          where: 'accountId = ?',
+          whereArgs: [id],
+        );
+      }
+      await txn.update(
+        'transactions',
+        {'toAccountId': null},
+        where: 'toAccountId = ?',
+        whereArgs: [id],
+      );
+      for (final table in ['debts', 'debt_repayments']) {
+        await txn.update(
+          table,
+          {'accountId': null},
+          where: 'accountId = ?',
+          whereArgs: [id],
+        );
+      }
+      await txn.update(
+        'savings_goals',
+        {'linkedAccountId': null},
+        where: 'linkedAccountId = ?',
+        whereArgs: [id],
+      );
+      return txn.delete('accounts', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   Future<void> updateAccountPositions(List<Account> accounts) async {
@@ -880,15 +975,49 @@ CREATE TABLE transactions (
     return result.map((json) => AppTransaction.fromMap(json)).toList();
   }
 
-  Future<int> updateTransaction(AppTransaction transaction) async {
+  Future<int> updateTransaction(
+    AppTransaction transaction, {
+    Future<void> Function(DatabaseExecutor)? validate,
+  }) async {
     final db = await instance.database;
-    return db.transaction((txn) => _updateTransaction(txn, transaction));
+    return db.transaction((txn) async {
+      await validate?.call(txn);
+      return _updateTransaction(txn, transaction);
+    });
+  }
+
+  Future<void> updateTransfer(
+    AppTransaction transaction,
+    AppTransaction? fee, {
+    Future<void> Function(DatabaseExecutor)? validate,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await validate?.call(txn);
+      await _updateTransaction(
+        txn,
+        transaction,
+        debitAmount: transaction.amount + (fee?.amount ?? 0),
+      );
+      await txn.delete(
+        'transactions',
+        where: 'transferId = ?',
+        whereArgs: [transaction.id],
+      );
+      if (fee != null) {
+        await txn.insert(
+          'transactions',
+          fee.copyWith(transferId: transaction.id).toMap(),
+        );
+      }
+    });
   }
 
   Future<int> _updateTransaction(
     DatabaseExecutor txn,
-    AppTransaction transaction,
-  ) async {
+    AppTransaction transaction, {
+    double? debitAmount,
+  }) async {
     final rows = await txn.query(
       'transactions',
       where: 'id = ?',
@@ -901,8 +1030,13 @@ CREATE TABLE transactions (
     final updated = transaction.copyWith(
       plannedPaymentId: previous.plannedPaymentId,
       debtRepaymentId: previous.debtRepaymentId,
+      transferId: previous.transferId,
     );
-    await _syncSavingsRelease(txn, previous, updated);
+    await _syncSavingsRelease(
+      txn,
+      previous,
+      updated.copyWith(amount: debitAmount),
+    );
     if (updated.debtRepaymentId != null) {
       final repayments = await txn.query(
         'debt_repayments',
@@ -1074,7 +1208,10 @@ CREATE TABLE transactions (
 
   Future<int> deleteSavingsGoal(String id) async {
     final db = await instance.database;
-    return await db.delete('savings_goals', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      await txn.delete('savings_logs', where: 'goalId = ?', whereArgs: [id]);
+      return txn.delete('savings_goals', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   // Savings Logs commands
@@ -1261,11 +1398,15 @@ CREATE TABLE transactions (
 
   Future<int> deletePlannedPayment(String id) async {
     final db = await instance.database;
-    return await db.delete(
-      'planned_payments',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.transaction((txn) async {
+      await txn.update(
+        'transactions',
+        {'plannedPaymentId': null},
+        where: 'plannedPaymentId = ?',
+        whereArgs: [id],
+      );
+      return txn.delete('planned_payments', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   // Settings commands
@@ -1386,7 +1527,15 @@ CREATE TABLE transactions (
 
   Future<int> deleteDebt(String id) async {
     final db = await instance.database;
-    return await db.delete('debts', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      await txn.rawUpdate(
+        'UPDATE transactions SET debtRepaymentId = NULL WHERE debtRepaymentId IN (SELECT id FROM debt_repayments WHERE debtId = ?)',
+        [id],
+      );
+      await txn.delete('debt_repayments', where: 'debtId = ?', whereArgs: [id]);
+      await txn.delete('debt_items', where: 'debtId = ?', whereArgs: [id]);
+      return txn.delete('debts', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   /// Atomically inserts or updates a debt and synchronizes all its itemized sub-purchases in a single transaction.

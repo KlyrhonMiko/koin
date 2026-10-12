@@ -55,10 +55,17 @@ void main() {
     directory = await Directory.systemTemp.createTemp('koin_credit_sync_');
     await databaseFactory.setDatabasesPath(directory.path);
     db = await helper.database;
+    await db.update(
+      'accounts',
+      {'initialBalance': 1000},
+      where: 'id = ?',
+      whereArgs: ['default_account'],
+    );
     await helper.insertAccount(
       Account(
         id: 'edited_account',
         name: 'Edited account',
+        initialBalance: 1000,
         iconCodePoint: 0xe041,
         colorHex: '#00D09E',
       ),

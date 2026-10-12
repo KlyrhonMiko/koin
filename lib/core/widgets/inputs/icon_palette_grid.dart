@@ -1,3 +1,4 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -82,7 +83,10 @@ class IconPaletteGrid extends StatelessWidget {
         scale: isSelected ? 1.1 : 1.0,
         duration: const Duration(milliseconds: 200),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 200),
+          ),
           width: itemSize,
           height: itemSize,
           decoration: BoxDecoration(

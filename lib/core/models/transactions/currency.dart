@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class Currency {
   final String code;
   final String symbol;
@@ -8,6 +10,37 @@ class Currency {
     required this.symbol,
     required this.name,
   });
+
+  int get decimalDigits => NumberFormat.currency(name: code).decimalDigits ?? 2;
+  NumberFormat get formatter => NumberFormat.currency(
+    name: code,
+    symbol: symbol,
+    decimalDigits: decimalDigits,
+  );
+  NumberFormat get compactFormatter => NumberFormat.compactCurrency(
+    name: code,
+    symbol: symbol,
+    decimalDigits: decimalDigits,
+  );
+
+  /// Parses the dot-decimal input used by the app's numeric keypad and editors.
+  /// Grouped comma input is accepted only when groups contain three digits.
+  /// Trailing fractional zeroes remain compatible with older editor values.
+  double? tryParseInput(String text, {int? precision}) {
+    final input = text.trim();
+    if (!RegExp(
+      r'^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$',
+    ).hasMatch(input)) {
+      return null;
+    }
+    final normalized = input.replaceAll(',', '');
+    final fraction = normalized.contains('.')
+        ? normalized.split('.').last.replaceFirst(RegExp(r'0+$'), '')
+        : '';
+    if (fraction.length > (precision ?? decimalDigits)) return null;
+    final value = double.tryParse(normalized);
+    return value != null && value.isFinite ? value : null;
+  }
 
   Map<String, dynamic> toMap() {
     return {'code': code, 'symbol': symbol, 'name': name};

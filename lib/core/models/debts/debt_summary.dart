@@ -23,15 +23,15 @@ class DebtSummary {
   });
 
   factory DebtSummary.empty() => const DebtSummary(
-        netBalance: 0.0,
-        totalOwedToMe: 0.0,
-        totalIOwe: 0.0,
-        totalRepaid: 0.0,
-        totalOriginalPrincipal: 0.0,
-        activeCount: 0,
-        settledCount: 0,
-        overdueCount: 0,
-      );
+    netBalance: 0.0,
+    totalOwedToMe: 0.0,
+    totalIOwe: 0.0,
+    totalRepaid: 0.0,
+    totalOriginalPrincipal: 0.0,
+    activeCount: 0,
+    settledCount: 0,
+    overdueCount: 0,
+  );
 
   factory DebtSummary.calculate(List<Debt> debts, {DateTime? now}) {
     final referenceDate = now ?? DateTime.now();

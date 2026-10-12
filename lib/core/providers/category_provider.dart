@@ -3,6 +3,9 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/repositories/category_repository.dart';
 import 'dart:developer' as dev;
+import 'transaction_provider.dart';
+import 'planned_payment_provider.dart';
+import 'debt_provider.dart';
 
 class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
   CategoryRepository get _repository => ref.read(categoryRepositoryProvider);
@@ -33,11 +36,12 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     } catch (e, st) {
       state = previousState;
       dev.log('Error adding category', error: e, stackTrace: st);
+      rethrow;
     }
   }
 
   Future<void> editCategory(TransactionCategory category) async {
-    if (!state.hasValue) return;
+    if (!state.hasValue) throw StateError('Categories are not available');
 
     final previousState = state;
     final currentCategories = state.value!;
@@ -51,11 +55,15 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     } catch (e, st) {
       state = previousState;
       dev.log('Error updating category', error: e, stackTrace: st);
+      rethrow;
     }
   }
 
   Future<void> deleteCategory(String id) async {
     await _repository.deleteCategory(id);
+    ref.invalidate(transactionProvider);
+    ref.invalidate(plannedPaymentProvider);
+    ref.invalidate(debtsProvider);
     await _loadCategories();
   }
 
@@ -93,9 +101,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
     // Update database
     try {
-      await _repository.updateCategoryPositions(
-        updatedTypeCategories,
-      );
+      await _repository.updateCategoryPositions(updatedTypeCategories);
     } catch (e, stackTrace) {
       dev.log(
         'Error updating category positions',
@@ -112,13 +118,14 @@ final categoriesProvider =
     });
 
 /// Reactive provider for monthly category budgets and progress metrics.
-final monthlyBudgetOverviewProvider =
-    Provider.family<BudgetOverview, DateTime>((ref, month) {
-  final categories = ref.watch(categoriesProvider).value ?? [];
-  final stats = ref.watch(monthlyDashboardStatsProvider(month));
-  return BudgetOverview.calculate(
-    categories: categories,
-    categorySpending: stats.categorySpending,
-    totalIncome: stats.totalIncome,
-  );
-});
+final monthlyBudgetOverviewProvider = Provider.family<BudgetOverview, DateTime>(
+  (ref, month) {
+    final categories = ref.watch(categoriesProvider).value ?? [];
+    final stats = ref.watch(monthlyDashboardStatsProvider(month));
+    return BudgetOverview.calculate(
+      categories: categories,
+      categorySpending: stats.categorySpending,
+      totalIncome: stats.totalIncome,
+    );
+  },
+);

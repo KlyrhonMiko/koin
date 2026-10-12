@@ -110,7 +110,10 @@ void main() {
   );
   test('automatic releases cannot be deleted directly from savings', () async {
     await record();
-    await expectLater(helper.deleteSavingsLog(release()), throwsStateError);
+    await expectLater(
+      helper.deleteSavingsLog(release()),
+      throwsA(anyOf(isA<StateError>(), isA<FinancialValidationException>())),
+    );
     expect((await ledger.getTransactions()).single.amount, 500);
     expect(await saved('goal'), 63);
     expect((await helper.getSavingsLogs('goal')).length, 2);
@@ -165,7 +168,7 @@ void main() {
     );
     await expectLater(
       helper.updateSavingsLog(release(), edited),
-      throwsStateError,
+      throwsA(anyOf(isA<StateError>(), isA<FinancialValidationException>())),
     );
     final transaction = (await ledger.getTransactions()).single;
     expect(transaction.amount, 500);
@@ -184,13 +187,13 @@ void main() {
       await record();
       await expectLater(
         ledger.updateTransaction(expense(amount: 700)),
-        throwsStateError,
+        throwsA(anyOf(isA<StateError>(), isA<FinancialValidationException>())),
       );
       expect(await saved('goal'), 63);
       expect((await ledger.getTransactions()).single.amount, 500);
       await expectLater(
         helper.updateSavingsLog(release(), release(amount: -600)),
-        throwsStateError,
+        throwsA(anyOf(isA<StateError>(), isA<FinancialValidationException>())),
       );
       expect(await saved('goal'), 63);
       expect((await ledger.getTransactions()).single.amount, 500);
@@ -272,7 +275,7 @@ void main() {
       await db.setVersion(37);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 39);
+      expect(await db.getVersion(), 40);
       final legacy = (await helper.getSavingsGoals()).firstWhere(
         (g) => g.id == 'goal',
       );
@@ -319,7 +322,7 @@ void main() {
       await db.setVersion(36);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 39);
+      expect(await db.getVersion(), 40);
       expect(await saved('goal'), 63);
       expect((await helper.getSavingsLogs('goal')).length, 2);
       expect(

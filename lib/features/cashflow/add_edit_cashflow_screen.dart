@@ -25,6 +25,7 @@ class AddEditCashflowScreen extends ConsumerStatefulWidget {
 
 class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _notesController;
@@ -91,7 +92,12 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     if (_titleController.text.trim().isEmpty) return;
     final revision = _suggestionRevision;
 
-    double amount = double.tryParse(_amountController.text) ?? 1.0;
+    double amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        1.0;
     if (amount == 0.0) amount = 1.0;
 
     try {
@@ -138,7 +144,37 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   void _savePayment() async {
-    if (_titleController.text.isEmpty) {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _savePaymentImpl();
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not save schedule',
+          subtitle: 'Your changes are kept. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _savePaymentImpl() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_endDate != null &&
+        DateTime(_endDate!.year, _endDate!.month, _endDate!.day).isBefore(
+          DateTime(_startDate.year, _startDate.month, _startDate.day),
+        )) {
+      KoinSnackBar.error(
+        context,
+        'Check the end date',
+        subtitle: 'The end date must be on or after the start date.',
+      );
+      return;
+    }
+    if (_titleController.text.trim().isEmpty) {
       HapticService.error();
       KoinSnackBar.error(
         context,
@@ -148,8 +184,13 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       return;
     }
 
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
-    if (amount <= 0) {
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0.0;
+    if (!amount.isFinite || amount <= 0) {
       HapticService.error();
       KoinSnackBar.error(
         context,
@@ -190,45 +231,31 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
 
     if (calcDate.isBefore(today)) {
       while (calcDate.isBefore(today)) {
-        switch (_selectedFrequency) {
-          case PaymentFrequency.daily:
-            calcDate = calcDate.add(const Duration(days: 1));
-            break;
-          case PaymentFrequency.weekly:
-            calcDate = calcDate.add(const Duration(days: 7));
-            break;
-          case PaymentFrequency.biWeekly:
-            calcDate = calcDate.add(const Duration(days: 14));
-            break;
-          case PaymentFrequency.monthly:
-            calcDate = DateTime(
-              calcDate.year,
-              calcDate.month + 1,
-              calcDate.day,
-            );
-            break;
-          case PaymentFrequency.quarterly:
-            calcDate = DateTime(
-              calcDate.year,
-              calcDate.month + 3,
-              calcDate.day,
-            );
-            break;
-          case PaymentFrequency.yearly:
-            calcDate = DateTime(
-              calcDate.year + 1,
-              calcDate.month,
-              calcDate.day,
-            );
-            break;
-          case PaymentFrequency.flexible:
-            calcDate = today;
-            break;
+        if (_selectedFrequency == PaymentFrequency.flexible) {
+          calcDate = today;
+        } else {
+          calcDate = PlannedPayment(
+            id: '',
+            title: '',
+            amount: amount,
+            type: _selectedType,
+            categoryId: _selectedCategoryId!,
+            accountId: _selectedAccountId!,
+            startDate: _startDate,
+            recurrenceDay: _startDate.day,
+            nextDate: calcDate,
+            frequency: _selectedFrequency,
+          ).computeNextDate();
         }
       }
       nextDate = calcDate;
     }
 
+    if (widget.payment != null &&
+        widget.payment!.startDate == _startDate &&
+        widget.payment!.frequency == _selectedFrequency) {
+      nextDate = widget.payment!.nextDate;
+    }
     final newPayment = PlannedPayment(
       id: widget.payment?.id ?? const Uuid().v4(),
       title: _titleController.text.trim(),
@@ -237,13 +264,18 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       categoryId: _selectedCategoryId!,
       accountId: _selectedAccountId!,
       startDate: _startDate,
+      recurrenceDay:
+          widget.payment != null && widget.payment!.startDate == _startDate
+          ? widget.payment!.recurrenceDay
+          : _startDate.day,
       endDate: _endDate,
       nextDate: nextDate,
       frequency: _selectedFrequency,
       notes: _notesController.text.isEmpty
           ? null
           : _notesController.text.trim(),
-      isAutoProcess: _isAutoProcess,
+      isAutoProcess:
+          _isAutoProcess && _selectedFrequency != PaymentFrequency.flexible,
     );
 
     if (widget.payment == null) {
@@ -271,7 +303,15 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     }
   }
 
-  Future<void> _showDeleteConfirmation() async {
+  final KoinAsyncActionGuard _deleteGuard = KoinAsyncActionGuard();
+
+  Future<void> _showDeleteConfirmation() => _deleteGuard.run(
+    context,
+    () => _showDeleteConfirmationImpl(),
+    errorTitle: 'Could not delete this item',
+  );
+
+  Future<void> _showDeleteConfirmationImpl() async {
     final confirmed = await ConfirmationSheet.show(
       context: context,
       title: 'Delete $_domainNoun?',
@@ -338,6 +378,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         HeroAmountField(
           controller: _amountController,
           currencySymbol: currency.symbol,
+          currency: currency,
           primaryColor: primaryColor,
           onChanged: (_) {
             setState(() {});
@@ -436,9 +477,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         SelectionTile(
                           fallbackIcon: Icons.repeat_rounded,
                           label: 'Repeats',
-                          selectedName:
-                              _selectedFrequency.name[0].toUpperCase() +
-                              _selectedFrequency.name.substring(1),
+                          selectedName: _selectedFrequency.label,
                           selectedColor: primaryColor,
                           selectedIconCodePoint: Icons.repeat_rounded.codePoint,
                           placeholder: 'Choose frequency',
@@ -473,6 +512,40 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                                   ),
                                 ),
                         ),
+                        if (_endDate != null) ...[
+                          const Gap(12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DateSelectorTile(
+                                  label: 'Ends on',
+                                  date: _endDate!,
+                                  primaryColor: primaryColor,
+                                  onDateSelected: (date) =>
+                                      setState(() => _endDate = date),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Remove end date',
+                                onPressed: () =>
+                                    setState(() => _endDate = null),
+                                icon: const Icon(Icons.clear_rounded),
+                              ),
+                            ],
+                          ),
+                        ] else if (!_isIncome)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () => setState(
+                                () => _endDate = _startDate.add(
+                                  const Duration(days: 30),
+                                ),
+                              ),
+                              icon: const Icon(Icons.event_available_outlined),
+                              label: const Text('Add end date'),
+                            ),
+                          ),
                         const Gap(24),
                         _fieldLabel(context, 'Details'),
                         const Gap(12),
@@ -534,6 +607,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: KoinPrimaryButton(
+                  isLoading: _saving,
                   label: isEditing ? 'Save Changes' : 'Create $_domainNoun',
                   onPressed: _savePayment,
                 ),
@@ -579,8 +653,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                   minTileHeight: 64,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   title: Text(
-                    frequency.name[0].toUpperCase() +
-                        frequency.name.substring(1),
+                    frequency.label,
                     style: Theme.of(sheetContext).textTheme.bodyLarge?.copyWith(
                       fontWeight: frequency == _selectedFrequency
                           ? FontWeight.w700

@@ -102,7 +102,12 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       const Gap(100),
                     ]
-                    .animate(interval: 40.ms)
+                    .koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
+                      interval: KoinMotion.duration(context, 40.ms),
+                    )
                     .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                     .scale(
                       begin: const Offset(0.95, 0.95),
@@ -142,13 +147,15 @@ class DashboardScreen extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    _getGreeting(),
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.screenTitle,
-                      fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: KoinTypography.headingTracking,
+                  Flexible(
+                    child: Text(
+                      _getGreeting(),
+                      style: TextStyle(
+                        color: AppTheme.textColor(context),
+                        fontSize: KoinTypography.screenTitle,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.headingTracking,
+                      ),
                     ),
                   ),
                   const Gap(8),
@@ -187,9 +194,7 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settings.currency;
     final excludedSavings = ref.watch(dashboardExcludedSavingsProvider);
     final netChange = stats.totalIncome - stats.totalExpense;
-    final monthlyAmount = NumberFormat.compactCurrency(
-      symbol: currency.symbol,
-    ).format(netChange.abs());
+    final monthlyAmount = currency.compactFormatter.format(netChange.abs());
     final monthlySummary = settings.hideBalance
         ? 'This month: ••••••'
         : netChange == 0
@@ -199,7 +204,7 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       borderRadius: 28,
       shapeStyle: SummaryShapeStyle.dashboard,
       child: Column(
@@ -208,32 +213,48 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: KoinTypography.caption,
-                  fontWeight: KoinTypography.labelWeight,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Text(
+                  excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.labelWeight,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticService.selection();
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setHideBalance(!settings.hideBalance);
-                    },
-                    child: Icon(
-                      settings.hideBalance
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: Colors.white.withValues(
-                        alpha: settings.hideBalance ? 0.6 : 0.9,
+                  Tooltip(
+                    excludeFromSemantics: true,
+                    message: settings.hideBalance
+                        ? 'Show summary balance'
+                        : 'Hide summary balance',
+                    child: PressableScale(
+                      semanticLabel: settings.hideBalance
+                          ? 'Show summary balance'
+                          : 'Hide summary balance',
+                      enableHaptic: false,
+                      onTap: () {
+                        HapticService.selection();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setHideBalance(!settings.hideBalance);
+                      },
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(
+                          settings.hideBalance
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: Colors.white.withValues(
+                            alpha: settings.hideBalance ? 0.6 : 0.9,
+                          ),
+                          size: 20,
+                        ),
                       ),
-                      size: 20,
                     ),
                   ),
                   const Gap(12),
@@ -250,44 +271,51 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const Gap(16),
-          settings.hideBalance
-              ? const Text(
-                  '••••••',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: KoinTypography.summaryAmount,
-                    fontWeight: KoinTypography.headingWeight,
-                    letterSpacing: 2.0,
-                    height: KoinTypography.amountHeight,
-                  ),
-                )
-              : FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedCounter(
-                    value: stats.currentBalance - excludedSavings,
-                    lastValueToken: 'dashboard_total_balance',
-                    formatter: (v) => NumberFormat.currency(
-                      symbol: currency.symbol,
-                    ).format(v),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeOutCubic,
-                    style: const TextStyle(
+          SizedBox(
+            width: double.infinity,
+            child: settings.hideBalance
+                ? Text(
+                    '••••••',
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: KoinTypography.summaryAmount,
                       fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: KoinTypography.amountTracking,
+                      letterSpacing: 2.0,
                       height: KoinTypography.amountHeight,
                     ),
+                  )
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedCounter(
+                      value: stats.currentBalance - excludedSavings,
+                      lastValueToken: 'dashboard_total_balance',
+                      formatter: (v) => currency.formatter.format(v),
+                      duration: const Duration(milliseconds: 1400),
+                      curve: Curves.easeOutCubic,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: KoinTypography.summaryAmount,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: KoinTypography.amountTracking,
+                        height: KoinTypography.amountHeight,
+                      ),
+                    ),
                   ),
-                ),
+          ),
           const Gap(16),
-          Text(
-            monthlySummary,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: KoinTypography.labelWeight,
-              fontSize: KoinTypography.small,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                monthlySummary,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontWeight: KoinTypography.labelWeight,
+                  fontSize: KoinTypography.small,
+                ),
+              ),
             ),
           ),
         ],
@@ -373,38 +401,40 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return PressableScale(
-      enableHaptic: false,
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              shape: BoxShape.circle,
-              boxShadow: [
-                AppTheme.boxShadow(
-                  context,
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    return Expanded(
+      child: PressableScale(
+        enableHaptic: false,
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  AppTheme.boxShadow(
+                    context,
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const Gap(8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: KoinTypography.small,
-              fontWeight: KoinTypography.labelWeight,
-              color: AppTheme.textLightColor(context),
+            const Gap(8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: KoinTypography.small,
+                fontWeight: KoinTypography.labelWeight,
+                color: AppTheme.textLightColor(context),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -717,9 +747,7 @@ class DashboardScreen extends ConsumerWidget {
                         child: AnimatedCounter(
                           value: balance,
                           lastValueToken: 'account_card_${account.id}',
-                          formatter: (v) => NumberFormat.currency(
-                            symbol: currency.symbol,
-                          ).format(v),
+                          formatter: (v) => currency.formatter.format(v),
                           style: TextStyle(
                             fontWeight: KoinTypography.titleWeight,
                             fontSize: KoinTypography.cardAmount,
@@ -959,7 +987,8 @@ class DashboardScreen extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (e, st) => Center(child: Text('Error: $e')),
+      error: (_, _) =>
+          KoinErrorState(onRetry: () => ref.invalidate(transactionProvider)),
     );
   }
 
@@ -1006,7 +1035,14 @@ class DashboardScreen extends ConsumerWidget {
               );
 
               if (!AnimationTracker.hasSeen(trackId)) {
-                child = child.animate().fadeIn().slideY(begin: 0.1);
+                child = child
+                    .koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
+                    )
+                    .fadeIn()
+                    .slideY(begin: 0.1);
               }
 
               return child;
@@ -1017,7 +1053,11 @@ class DashboardScreen extends ConsumerWidget {
 
     if (!AnimationTracker.hasSeen('dash_upcoming_section')) {
       content = content
-          .animate()
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
           .fade(delay: 550.ms, duration: 500.ms)
           .slideY(
             begin: 0.1,
@@ -1033,8 +1073,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildEmptyUpcoming(BuildContext context, WidgetRef ref) =>
       KoinEmptyState(
         icon: Icons.event_repeat_rounded,
-        title: 'No upcoming payments',
-        subtitle: 'Add your first subscription to see it here',
+        title: 'Nothing upcoming',
+        subtitle: 'Add a planned payment or recurring income to see it here',
         action: TextButton(
           onPressed: () {
             HapticService.medium();
@@ -1047,7 +1087,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             );
           },
-          child: const Text('Add subscription'),
+          child: const Text('Add planned payment'),
         ),
       );
 }

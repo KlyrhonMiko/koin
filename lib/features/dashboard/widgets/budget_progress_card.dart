@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 
 /// A quick preview of the category budgets needing the most attention.
@@ -16,8 +15,7 @@ class BudgetProgressCard extends StatelessWidget {
     required this.onManage,
   });
 
-  String _money(double value) =>
-      NumberFormat.compactCurrency(symbol: currency.symbol).format(value);
+  String _money(double value) => currency.compactFormatter.format(value);
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +151,10 @@ class BudgetProgressCard extends StatelessWidget {
                       begin: 0,
                       end: metrics.progress.clamp(0.0, 1.0),
                     ),
-                    duration: const Duration(milliseconds: 600),
+                    duration: KoinMotion.duration(
+                      context,
+                      const Duration(milliseconds: 600),
+                    ),
                     curve: Curves.easeOutCubic,
                     builder: (context, progress, _) => LinearProgressIndicator(
                       value: progress,

@@ -60,6 +60,7 @@ void main() {
     directory = await Directory.systemTemp.createTemp('koin_history_test_');
     await databaseFactory.setDatabasesPath(directory.path);
     db = await helper.database;
+    await db.update('accounts', {'initialBalance': 1000000});
   });
 
   setUp(() async {
@@ -429,6 +430,7 @@ void main() {
       // Recreate defaults for following tests through the production reset path.
       await helper.resetDatabase();
       db = await helper.database;
+      await db.update('accounts', {'initialBalance': 1000000});
     },
   );
 
@@ -454,7 +456,8 @@ void main() {
 
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
-      expect(await db.getVersion(), 39);
+      await db.update('accounts', {'initialBalance': 1000000});
+      expect(await db.getVersion(), 40);
       expect((await suggest('Restored bakery'))?.destinationId, 'cat_food');
 
       await ledger.recordTransaction(
@@ -477,7 +480,8 @@ void main() {
 
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
-      expect(await db.getVersion(), 39);
+      await db.update('accounts', {'initialBalance': 1000000});
+      expect(await db.getVersion(), 40);
       expect(await db.query('categorization_feedback'), isEmpty);
       expect((await suggest('Repair bakery'))?.destinationId, 'cat_food');
       expect((await ledger.getTransactions()).single.id, 'repair');

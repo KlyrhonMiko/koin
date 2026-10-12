@@ -24,7 +24,7 @@ class ForecastSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final format = NumberFormat.currency(symbol: currency.symbol);
+    final format = currency.formatter;
     final shortfall = forecast.firstShortfallDate;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -56,13 +56,13 @@ class ForecastSummary extends StatelessWidget {
                   spacing: 12,
                   runSpacing: 4,
                   children: [
-                    const Text(
+                    Text(
                       'Forecast',
                       style: TextStyle(fontSize: KoinTypography.small),
                     ),
                     Text(
                       format.format(forecast.predictedNetBalance),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: KoinTypography.body,
                         fontWeight: KoinTypography.headingWeight,
                       ),

@@ -199,15 +199,15 @@ void main() {
       );
 
       expect(stats.totalIncome, 200.0);
-      expect(stats.totalExpense, 50.0);
+      expect(stats.totalExpense, 150.0);
       // Main balance: 1000 + 200 - 50 = 1150
       expect(stats.accountBalances['acc_main'], 1150.0);
       // Secret balance: 5000 - 100 = 4900
       expect(stats.accountBalances['acc_secret'], 4900.0);
       // Current net balance only includes acc_main
       expect(stats.currentBalance, 1150.0);
-      // Category spending only tracks included accounts
-      expect(stats.categorySpending['cat_food'], 50.0);
+      // Category spending includes history from every account.
+      expect(stats.categorySpending['cat_food'], 150.0);
     });
 
     test(
@@ -232,7 +232,7 @@ void main() {
           ),
         ];
 
-        // Transfer from included to excluded -> counts as expense from user's visible net pool
+        // Transfers change visible balances but never count as spending history.
         final tx = AppTransaction(
           id: 'tx_transfer',
           amount: 300.0,
@@ -248,7 +248,7 @@ void main() {
           transactions: [tx],
         );
 
-        expect(stats.totalExpense, 300.0);
+        expect(stats.totalExpense, 0.0);
         expect(stats.accountBalances['acc_in'], 700.0);
         expect(stats.accountBalances['acc_out'], 800.0);
         expect(stats.currentBalance, 700.0);

@@ -32,7 +32,10 @@ class TransactionGroup {
     for (final tx in transactions) {
       final key = formatter.format(tx.date);
       groupedMap.putIfAbsent(key, () => []).add(tx);
-      dateMap.putIfAbsent(key, () => DateTime(tx.date.year, tx.date.month, tx.date.day));
+      dateMap.putIfAbsent(
+        key,
+        () => DateTime(tx.date.year, tx.date.month, tx.date.day),
+      );
     }
 
     final groups = <TransactionGroup>[];

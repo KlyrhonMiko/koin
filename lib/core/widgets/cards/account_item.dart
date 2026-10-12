@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/animation_utils.dart';
@@ -15,6 +14,7 @@ class AccountItem extends StatelessWidget {
   final double balance;
   final double savingsAmount;
   final String currencySymbol;
+  final Currency? currency;
   final VoidCallback onTap;
   final VoidCallback? onPrivateToggle;
   final Widget? trailing;
@@ -29,6 +29,7 @@ class AccountItem extends StatelessWidget {
     required this.balance,
     this.savingsAmount = 0,
     required this.currencySymbol,
+    this.currency,
     required this.onTap,
     this.onPrivateToggle,
     this.trailing,
@@ -111,6 +112,10 @@ class AccountItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final money =
+        (currency ??
+                Currency(code: 'USD', symbol: currencySymbol, name: 'Currency'))
+            .formatter;
     final isPrivate = account.excludeFromTotal;
     if (isPrivate && animationSessionKey != null) {
       AnimationTracker.updateValue(
@@ -203,9 +208,7 @@ class AccountItem extends StatelessWidget {
                                 )
                               : !animateBalance
                               ? Text(
-                                  NumberFormat.currency(
-                                    symbol: currencySymbol,
-                                  ).format(balance),
+                                  money.format(balance),
                                   style: PortfolioCardStyle.amount(
                                     context,
                                     colored: colored,
@@ -216,9 +219,7 @@ class AccountItem extends StatelessWidget {
                                   lastValueToken: animationSessionKey != null
                                       ? 'acc_bal_${account.id}_$animationSessionKey'
                                       : null,
-                                  formatter: (v) => NumberFormat.currency(
-                                    symbol: currencySymbol,
-                                  ).format(v),
+                                  formatter: money.format,
                                   duration: const Duration(milliseconds: 600),
                                   style: PortfolioCardStyle.amount(
                                     context,
@@ -228,7 +229,7 @@ class AccountItem extends StatelessWidget {
                           if (savingsAmount > 0 && !isPrivate) ...[
                             const Gap(2),
                             Text(
-                              '$currencySymbol${NumberFormat('#,##0.##').format(savingsAmount)} in savings',
+                              '${money.format(savingsAmount)} in savings',
                               style: TextStyle(
                                 fontSize: KoinTypography.small,
                                 height: 1.1,
@@ -246,30 +247,36 @@ class AccountItem extends StatelessWidget {
 
                     // ── Privacy Toggle ──
                     if (onPrivateToggle != null) ...[
-                      GestureDetector(
-                        onTap: onPrivateToggle,
-                        behavior: HitTestBehavior.opaque,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 8,
-                          ),
-                          child: Icon(
-                            isPrivate
-                                ? Icons.visibility_off_rounded
-                                : Icons.visibility_rounded,
-                            size: 20,
-                            color: colored
-                                ? Colors.white.withValues(
-                                    alpha: isPrivate ? 0.5 : 0.8,
-                                  )
-                                : (isPrivate
-                                      ? AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.4)
-                                      : AppTheme.primaryColor(
-                                          context,
-                                        ).withValues(alpha: 0.6)),
+                      Tooltip(
+                        excludeFromSemantics: true,
+                        message: isPrivate
+                            ? 'Show balance and include in totals'
+                            : 'Hide balance and exclude from totals',
+                        child: PressableScale(
+                          semanticLabel: isPrivate
+                              ? 'Show balance and include in totals'
+                              : 'Hide balance and exclude from totals',
+                          onTap: onPrivateToggle!,
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(
+                              isPrivate
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              size: 20,
+                              color: colored
+                                  ? Colors.white.withValues(
+                                      alpha: isPrivate ? 0.5 : 0.8,
+                                    )
+                                  : (isPrivate
+                                        ? AppTheme.textLightColor(
+                                            context,
+                                          ).withValues(alpha: 0.4)
+                                        : AppTheme.primaryColor(
+                                            context,
+                                          ).withValues(alpha: 0.6)),
+                            ),
                           ),
                         ),
                       ),

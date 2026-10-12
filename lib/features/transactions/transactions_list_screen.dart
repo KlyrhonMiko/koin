@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/transactions/widgets/filter_bottom_sheet.dart';
@@ -144,10 +143,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                             ),
                                         lastValueToken: 'total_$dateKey',
                                         formatter: (v) {
-                                          String fmtBalance =
-                                              NumberFormat.currency(
-                                                symbol: currency.symbol,
-                                              ).format(v);
+                                          String fmtBalance = currency.formatter
+                                              .format(v);
                                           if (dailyTotal > 0) {
                                             fmtBalance = '+$fmtBalance';
                                           }
@@ -163,6 +160,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                           color: dailyTotal > 0
                                               ? AppTheme.incomeColor(context)
                                               : AppTheme.expenseColor(context),
+
                                           fontSize: KoinTypography.caption,
                                           fontWeight:
                                               KoinTypography.titleWeight,
@@ -184,21 +182,33 @@ class TransactionsListScreen extends ConsumerWidget {
                                   currency: currency,
                                 );
 
-                                Widget txAnimated = SwipeToDeleteTile(
-                                  key: Key(tx.id),
-                                  borderRadius: BorderRadius.zero,
-                                  backgroundColor: AppTheme.errorColor(context),
-                                  icon: Icons.delete_forever_rounded,
-                                  confirmTitle: 'Delete Transaction?',
-                                  confirmDescription:
-                                      'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
-                                  onDelete: () {
-                                    ref
-                                        .read(transactionProvider.notifier)
-                                        .deleteTransaction(tx.id);
-                                  },
-                                  child: listItem,
-                                ).animate(key: ValueKey('tx_item_${tx.id}'));
+                                Widget txAnimated =
+                                    SwipeToDeleteTile(
+                                      key: Key(tx.id),
+                                      borderRadius: BorderRadius.zero,
+                                      backgroundColor: AppTheme.errorColor(
+                                        context,
+                                      ),
+                                      icon: Icons.delete_forever_rounded,
+                                      confirmTitle: 'Delete Transaction?',
+                                      confirmDescription:
+                                          'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
+                                      onDelete: () async {
+                                        await ref
+                                            .read(transactionProvider.notifier)
+                                            .deleteTransaction(
+                                              tx.transferId ?? tx.id,
+                                            );
+                                      },
+                                      child: listItem,
+                                    ).koinAnimate(
+                                      context,
+                                      autoPlay: !MediaQuery.disableAnimationsOf(
+                                        context,
+                                      ),
+                                      onInit: KoinMotion.onInit(context),
+                                      key: ValueKey('tx_item_${tx.id}'),
+                                    );
 
                                 if (!AnimationTracker.hasSeen('tx_${tx.id}')) {
                                   txAnimated = (txAnimated as Animate)
@@ -234,7 +244,10 @@ class TransactionsListScreen extends ConsumerWidget {
                       ),
                     );
 
-                    Widget dayGroupAnimated = dayGroup.animate(
+                    Widget dayGroupAnimated = dayGroup.koinAnimate(
+                      context,
+                      autoPlay: !MediaQuery.disableAnimationsOf(context),
+                      onInit: KoinMotion.onInit(context),
                       key: GlobalObjectKey('day_group_$dateKey'),
                     );
 
@@ -253,7 +266,9 @@ class TransactionsListScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (_, _) => KoinErrorState(
+                onRetry: () => ref.invalidate(transactionProvider),
+              ),
             ),
           ),
         ],
@@ -462,7 +477,11 @@ class TransactionsListScreen extends ConsumerWidget {
                           ),
                         ],
                       )
-                      .animate()
+                      .koinAnimate(
+                        context,
+                        autoPlay: !MediaQuery.disableAnimationsOf(context),
+                        onInit: KoinMotion.onInit(context),
+                      )
                       .fadeIn(duration: 200.ms)
                       .slideY(begin: -0.3, duration: 200.ms),
             ),

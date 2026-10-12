@@ -9,12 +9,56 @@ import 'package:koin/features/activity/activity_screen.dart';
 import 'package:koin/features/budgets/budgets_screen.dart';
 import 'package:koin/features/transactions/transactions.dart';
 
-class MainLayout extends ConsumerWidget {
+class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends ConsumerState<MainLayout>
+    with SingleTickerProviderStateMixin {
+  final List<Widget?> _pages = List.filled(4, null);
+  late final AnimationController _transition;
+
+  @override
+  void initState() {
+    super.initState();
+    _transition = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+      value: 1,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _transition.stop();
+      _transition.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _transition.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
+    _pages[currentIndex] ??= _getPage(currentIndex);
+    ref.listen<int>(navigationProvider, (previous, next) {
+      if (previous != next) {
+        if (MediaQuery.disableAnimationsOf(context)) {
+          _transition.value = 1;
+        } else {
+          _transition.forward(from: 0);
+        }
+      }
+    });
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     void onItemTapped(int index) {
@@ -45,27 +89,28 @@ class MainLayout extends ConsumerWidget {
         ),
         child: Scaffold(
           extendBody: true,
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.97, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-                  child: child,
+          body: FadeTransition(
+            opacity: _transition,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.97, end: 1).animate(
+                CurvedAnimation(
+                  parent: _transition,
+                  curve: Curves.easeOutCubic,
                 ),
-              );
-            },
-            child: KeyedSubtree(
-              key: ValueKey<int>(currentIndex),
-              child: _getPage(currentIndex),
+              ),
+              child: IndexedStack(
+                index: currentIndex,
+                children: [
+                  for (var i = 0; i < 4; i++)
+                    ExcludeFocus(
+                      excluding: i != currentIndex,
+                      child: TickerMode(
+                        enabled: i == currentIndex,
+                        child: _pages[i] ?? const SizedBox.shrink(),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           bottomNavigationBar: SafeArea(
@@ -74,77 +119,91 @@ class MainLayout extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(
-                        context,
-                      ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        AppTheme.boxShadow(
+                  Expanded(
+                    child: Container(
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor(
                           context,
-                          color: Colors.black.withValues(
-                            alpha: isDarkMode ? 0.4 : 0.08,
+                        ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          AppTheme.boxShadow(
+                            context,
+                            color: Colors.black.withValues(
+                              alpha: isDarkMode ? 0.4 : 0.08,
+                            ),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
                           ),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
+                        ],
+                        border: Border.all(
+                          color: (isDarkMode ? Colors.white : Colors.black)
+                              .withValues(alpha: isDarkMode ? 0.08 : 0.05),
+                          width: 1,
                         ),
-                      ],
-                      border: Border.all(
-                        color: (isDarkMode ? Colors.white : Colors.black)
-                            .withValues(alpha: isDarkMode ? 0.08 : 0.05),
-                        width: 1,
                       ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildNavItem(
-                              context,
-                              icon: Icons.home_outlined,
-                              activeIcon: Icons.home_rounded,
-                              isActive: currentIndex == 0,
-                              targetIndex: 0,
-                              onTap: onItemTapped,
-                            ),
-                            _buildNavItem(
-                              context,
-                              icon: Icons.receipt_long_outlined,
-                              activeIcon: Icons.receipt_long_rounded,
-                              isActive: currentIndex == 1,
-                              targetIndex: 1,
-                              onTap: onItemTapped,
-                            ),
-                            _buildNavItem(
-                              context,
-                              icon: Icons.savings_outlined,
-                              activeIcon: Icons.savings_rounded,
-                              isActive: currentIndex == 2,
-                              targetIndex: 2,
-                              onTap: onItemTapped,
-                            ),
-                            _buildNavItem(
-                              context,
-                              icon: Icons.account_balance_wallet_outlined,
-                              activeIcon: Icons.account_balance_wallet_rounded,
-                              isActive: currentIndex == 3,
-                              targetIndex: 3,
-                              onTap: onItemTapped,
-                            ),
-                          ],
+                      clipBehavior: Clip.antiAlias,
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: _buildNavItem(
+                                  context,
+                                  icon: Icons.home_outlined,
+                                  activeIcon: Icons.home_rounded,
+                                  isActive: currentIndex == 0,
+                                  targetIndex: 0,
+                                  onTap: onItemTapped,
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildNavItem(
+                                  context,
+                                  icon: Icons.receipt_long_outlined,
+                                  activeIcon: Icons.receipt_long_rounded,
+                                  isActive: currentIndex == 1,
+                                  targetIndex: 1,
+                                  onTap: onItemTapped,
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildNavItem(
+                                  context,
+                                  icon: Icons.savings_outlined,
+                                  activeIcon: Icons.savings_rounded,
+                                  isActive: currentIndex == 2,
+                                  targetIndex: 2,
+                                  onTap: onItemTapped,
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildNavItem(
+                                  context,
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  activeIcon:
+                                      Icons.account_balance_wallet_rounded,
+                                  isActive: currentIndex == 3,
+                                  targetIndex: 3,
+                                  onTap: onItemTapped,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   AnimatedSlide(
-                    duration: const Duration(milliseconds: 600),
+                    duration: KoinMotion.duration(
+                      context,
+                      const Duration(milliseconds: 600),
+                    ),
                     curve: Curves.easeOutBack,
                     offset: Offset.zero,
                     child: _GlowFAB(
@@ -153,6 +212,7 @@ class MainLayout extends ConsumerWidget {
                         width: 66,
                         height: 66,
                         child: FloatingActionButton(
+                          tooltip: 'Add transaction',
                           onPressed: () {
                             HapticService.medium();
                             Navigator.push(
@@ -203,34 +263,47 @@ class MainLayout extends ConsumerWidget {
   }) {
     final primaryColor = AppTheme.primaryColor(context);
 
-    return GestureDetector(
-      onTap: () => onTap(targetIndex),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-        width: 56,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(color: Colors.transparent),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.elasticOut,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: 0.9 + (value * 0.1),
-              child: Icon(
-                isActive ? activeIcon : icon,
-                color: Color.lerp(
-                  AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                  primaryColor,
-                  value,
+    const labels = ['Home', 'Activity', 'Budgets', 'Portfolio'];
+    return Tooltip(
+      excludeFromSemantics: true,
+      message: labels[targetIndex],
+      child: PressableScale(
+        semanticLabel: labels[targetIndex],
+        selected: isActive,
+        enableHaptic: false,
+        onTap: () => onTap(targetIndex),
+        child: AnimatedContainer(
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 350),
+          ),
+          curve: Curves.easeOutCubic,
+          width: double.infinity,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(color: Colors.transparent),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 400),
+            ),
+            curve: Curves.elasticOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: 0.9 + (value * 0.1),
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  color: Color.lerp(
+                    AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    primaryColor,
+                    value,
+                  ),
+                  size: 24,
                 ),
-                size: 24,
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -260,7 +333,7 @@ class AnimatedClipRect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: duration,
+      duration: KoinMotion.duration(context, duration),
       curve: curve,
       alignment: alignment,
       child: ClipRect(

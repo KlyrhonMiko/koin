@@ -17,6 +17,9 @@ Future<DebtItem?> showAddPurchaseSheet({
   DebtItem? existingItem,
   CategorySuggester? suggester,
 }) {
+  final currency = ProviderScope.containerOf(
+    context,
+  ).read(settingsProvider).currency;
   String name = existingItem?.name ?? '';
   String amountStr =
       existingItem?.amount.toString().replaceAll(RegExp(r'\.0$'), '') ?? '';
@@ -63,7 +66,7 @@ Future<DebtItem?> showAddPurchaseSheet({
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    final amt = double.tryParse(amountStr.replaceAll(',', '')) ?? 1.0;
+    final amt = currency.tryParseInput(amountStr) ?? 1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
     final targetType = debtType == DebtType.owedToMe
         ? TransactionType.income
@@ -100,9 +103,6 @@ Future<DebtItem?> showAddPurchaseSheet({
   }
 
   final formKey = GlobalKey<FormState>();
-  final currency = ProviderScope.containerOf(
-    context,
-  ).read(settingsProvider).currency;
 
   return showModalBottomSheet<DebtItem?>(
     context: context,
@@ -254,8 +254,8 @@ Future<DebtItem?> showAddPurchaseSheet({
                                     ),
                                   ),
                                   validator: (value) {
-                                    final amount = double.tryParse(
-                                      (value ?? '').replaceAll(',', ''),
+                                    final amount = currency.tryParseInput(
+                                      (value ?? ''),
                                     );
                                     return amount == null ||
                                             !amount.isFinite ||
@@ -406,7 +406,13 @@ Future<DebtItem?> showAddPurchaseSheet({
                                     if (autoCatKey > 0 &&
                                         !MediaQuery.disableAnimationsOf(ctx)) {
                                       child = child
-                                          .animate(key: ValueKey(autoCatKey))
+                                          .koinAnimate(context, autoPlay:
+                                                !MediaQuery.disableAnimationsOf(
+                                                  context,
+                                                ),
+                                            onInit: KoinMotion.onInit(context),
+                                            key: ValueKey(autoCatKey),
+                                          )
                                           .shimmer(
                                             duration: 400.ms,
                                             color: primaryColor.withValues(
@@ -440,10 +446,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                             onPressed: () {
                               if (!formKey.currentState!.validate()) return;
                               final amt =
-                                  double.tryParse(
-                                    amountStr.replaceAll(',', ''),
-                                  ) ??
-                                  0;
+                                  currency.tryParseInput(amountStr) ?? 0;
                               final inst = monthlyBillingDay != null
                                   ? numberOfPayments()
                                   : int.tryParse(installmentsStr) ?? 1;

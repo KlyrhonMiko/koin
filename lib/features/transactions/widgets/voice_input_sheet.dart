@@ -8,14 +8,21 @@ class VoiceInputSheet extends ConsumerStatefulWidget {
   const VoiceInputSheet({super.key});
 
   /// Displays [VoiceInputSheet] in a modal bottom sheet and returns parsed transaction data if accepted.
-  static Future<ParsedTransactionData?> show(BuildContext context) {
+  static Future<ParsedTransactionData?> show(BuildContext context) async {
     HapticService.selection();
-    return showModalBottomSheet<ParsedTransactionData>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const VoiceInputSheet(),
-    );
+    final voice = ProviderScope.containerOf(
+      context,
+    ).read(voiceInputProvider.notifier);
+    try {
+      return await showModalBottomSheet<ParsedTransactionData>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const VoiceInputSheet(),
+      );
+    } finally {
+      await voice.stopListening();
+    }
   }
 
   @override
@@ -276,7 +283,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
       previous,
       isListening,
     ) {
-      if (isListening) {
+      if (isListening && !MediaQuery.disableAnimationsOf(context)) {
         _pulseController.repeat(reverse: true);
         _ringController.repeat();
       } else {
@@ -463,7 +470,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
           // ── Status label ──
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 200),
+            ),
             child: Text(
               state.isListening
                   ? 'Listening…'
@@ -495,7 +505,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
           // ── Hint / error subtitle ──
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 200),
+            ),
             child: Text(
               state.error.isNotEmpty
                   ? state.error
@@ -537,7 +550,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 ),
               ),
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
+                duration: KoinMotion.duration(
+                  context,
+                  const Duration(milliseconds: 250),
+                ),
                 child: Text(
                   hasWords ? state.lastWords : 'Try: "Spent 50 on lunch"',
                   key: ValueKey(hasWords ? state.lastWords : 'placeholder'),
@@ -569,92 +585,99 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             const Gap(16),
             // Actions
             Row(
-              children: [
-                // Retry
-                Expanded(
-                  child: PressableScale(
-                    onTap: () {
-                      HapticService.light();
-                      setState(() => _parsedData = null);
-                      ref.read(voiceInputProvider.notifier).startListening();
-                    },
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.6),
+                  children: [
+                    // Retry
+                    Expanded(
+                      child: PressableScale(
+                        onTap: () {
+                          HapticService.light();
+                          setState(() => _parsedData = null);
+                          ref
+                              .read(voiceInputProvider.notifier)
+                              .startListening();
+                        },
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceColor(context),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppTheme.dividerColor(
+                                context,
+                              ).withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.refresh_rounded,
+                                size: 18,
+                                color: AppTheme.textLightColor(context),
+                              ),
+                              const Gap(6),
+                              Text(
+                                'Retry',
+                                style: TextStyle(
+                                  fontSize: KoinTypography.compact,
+                                  fontWeight: KoinTypography.labelWeight,
+                                  color: AppTheme.textColor(context),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.refresh_rounded,
-                            size: 18,
-                            color: AppTheme.textLightColor(context),
+                    ),
+                    const Gap(12),
+                    // Confirm
+                    Expanded(
+                      flex: 2,
+                      child: PressableScale(
+                        onTap: _onConfirm,
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient(context),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              AppTheme.boxShadow(
+                                context,
+                                color: primaryColor.withValues(alpha: 0.25),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          const Gap(6),
-                          Text(
-                            'Retry',
-                            style: TextStyle(
-                              fontSize: KoinTypography.compact,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.textColor(context),
-                            ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                                color: Colors.white,
+                              ),
+                              Gap(6),
+                              Text(
+                                'Use This',
+                                style: TextStyle(
+                                  fontSize: KoinTypography.compact,
+                                  fontWeight: KoinTypography.titleWeight,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const Gap(12),
-                // Confirm
-                Expanded(
-                  flex: 2,
-                  child: PressableScale(
-                    onTap: _onConfirm,
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient(context),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          AppTheme.boxShadow(
-                            context,
-                            color: primaryColor.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_rounded,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                          Gap(6),
-                          Text(
-                            'Use This',
-                            style: TextStyle(
-                              fontSize: KoinTypography.compact,
-                              fontWeight: KoinTypography.titleWeight,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.1, end: 0),
+                  ],
+                )
+                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
+                .fadeIn(duration: 250.ms)
+                .slideY(begin: 0.1, end: 0),
           ],
           const Gap(8),
         ],
@@ -672,140 +695,285 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     final typeColor = _getTypeColor(context, data.type);
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
-        ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.6),
+            ),
+            boxShadow: [
+              AppTheme.boxShadow(
+                context,
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Amount row
-          _buildPreviewRow(
-            context,
-            icon: Icons.payments_rounded,
-            label: 'Amount',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  currency.symbol,
-                  style: TextStyle(
-                    fontSize: KoinTypography.compact,
-                    fontWeight: KoinTypography.labelWeight,
-                    color: typeColor.withValues(alpha: 0.6),
-                  ),
-                ),
-                const Gap(4),
-                SizedBox(
-                  width: 80,
-                  child: TextField(
-                    controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      fontSize: KoinTypography.sectionTitle,
-                      fontWeight: KoinTypography.headingWeight,
-                      color: typeColor,
-                      letterSpacing: KoinTypography.headingTracking,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '0.00',
-                      hintStyle: TextStyle(
-                        fontSize: KoinTypography.sectionTitle,
-                        letterSpacing: KoinTypography.headingTracking,
-                        fontWeight: KoinTypography.headingWeight,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.4),
+          child: Column(
+            children: [
+              // Amount row
+              _buildPreviewRow(
+                context,
+                icon: Icons.payments_rounded,
+                label: 'Amount',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      currency.symbol,
+                      style: TextStyle(
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.labelWeight,
+                        color: typeColor.withValues(alpha: 0.6),
                       ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                      fillColor: Colors.transparent,
-                      hoverColor: Colors.transparent,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
                     ),
-                    onChanged: (val) {
-                      final parsed = double.tryParse(val);
-                      if (parsed != null) {
-                        setState(() {
-                          _parsedData = _parsedData!.copyWith(amount: parsed);
-                        });
-                      }
-                    },
-                  ),
+                    const Gap(4),
+                    SizedBox(
+                      width: 80,
+                      child: TextField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: KoinTypography.sectionTitle,
+                          fontWeight: KoinTypography.headingWeight,
+                          color: typeColor,
+                          letterSpacing: KoinTypography.headingTracking,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '0.00',
+                          hintStyle: TextStyle(
+                            fontSize: KoinTypography.sectionTitle,
+                            letterSpacing: KoinTypography.headingTracking,
+                            fontWeight: KoinTypography.headingWeight,
+                            color: AppTheme.textLightColor(
+                              context,
+                            ).withValues(alpha: 0.4),
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          fillColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (val) {
+                          final parsed = ref
+                              .read(settingsProvider)
+                              .currency
+                              .tryParseInput(val);
+                          if (parsed != null) {
+                            setState(() {
+                              _parsedData = _parsedData!.copyWith(
+                                amount: parsed,
+                              );
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          _buildPreviewDivider(context),
+              ),
+              _buildPreviewDivider(context),
 
-          // Type Selector
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: TransactionTypeSelector(
-              selectedType: data.type,
-              activeColor: typeColor,
-              onChanged: (val) {
-                if (val != data.type) {
-                  setState(() {
-                    _parsedData = _parsedData!.copyWith(
-                      type: val,
-                      category: null,
+              // Type Selector
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: TransactionTypeSelector(
+                  selectedType: data.type,
+                  activeColor: typeColor,
+                  onChanged: (val) {
+                    if (val != data.type) {
+                      setState(() {
+                        _parsedData = _parsedData!.copyWith(
+                          type: val,
+                          category: null,
+                        );
+                      });
+                    }
+                  },
+                ),
+              ),
+              const Gap(8),
+              _buildPreviewDivider(context),
+
+              // Category row (only if not transfer)
+              if (data.type != TransactionType.transfer) ...[
+                Builder(
+                  builder: (context) {
+                    Widget child = _buildPreviewRow(
+                      context,
+                      onTap: _editCategory,
+                      icon: data.category != null
+                          ? IconUtils.getIcon(data.category!.iconCodePoint)
+                          : Icons.category_rounded,
+                      iconColor: data.category?.color,
+                      label: 'Category',
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (data.category != null) ...[
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: data.category!.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const Gap(8),
+                            Text(
+                              data.category!.name,
+                              style: TextStyle(
+                                fontSize: KoinTypography.compact,
+                                fontWeight: KoinTypography.labelWeight,
+                                color: AppTheme.textColor(context),
+                              ),
+                            ),
+                          ] else
+                            Text(
+                              'Not detected',
+                              style: TextStyle(
+                                fontSize: KoinTypography.compact,
+                                fontWeight: KoinTypography.supportingWeight,
+                                color: AppTheme.textLightColor(
+                                  context,
+                                ).withValues(alpha: 0.5),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          const Gap(8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: AppTheme.textLightColor(
+                              context,
+                            ).withValues(alpha: 0.3),
+                          ),
+                        ],
+                      ),
                     );
-                  });
-                }
-              },
-            ),
-          ),
-          const Gap(8),
-          _buildPreviewDivider(context),
 
-          // Category row (only if not transfer)
-          if (data.type != TransactionType.transfer) ...[
-            Builder(
-              builder: (context) {
-                Widget child = _buildPreviewRow(
+                    if (_autoCatKey > 0) {
+                      child = child
+                          .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                            onInit: KoinMotion.onInit(context),
+                            key: ValueKey(_autoCatKey),
+                          )
+                          .shimmer(
+                            duration: 400.ms,
+                            color: AppTheme.primaryColor(
+                              context,
+                            ).withValues(alpha: 0.2),
+                          )
+                          .scale(
+                            duration: 150.ms,
+                            curve: Curves.easeOut,
+                            begin: const Offset(1, 1),
+                            end: const Offset(1.02, 1.02),
+                          )
+                          .then()
+                          .scale(
+                            duration: 250.ms,
+                            curve: Curves.easeOutBack,
+                            begin: const Offset(1.02, 1.02),
+                            end: const Offset(1, 1),
+                          );
+                    }
+                    return child;
+                  },
+                ),
+                _buildPreviewDivider(context),
+              ],
+
+              // Account row (From Account if transfer)
+              _buildPreviewRow(
+                context,
+                onTap: _editAccount,
+                icon: Icons.account_balance_wallet_rounded,
+                iconColor: data.account?.color,
+                label: data.type == TransactionType.transfer
+                    ? 'From'
+                    : 'Account',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (data.account != null) ...[
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: data.account!.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        data.account!.name,
+                        style: TextStyle(
+                          fontSize: KoinTypography.compact,
+                          fontWeight: KoinTypography.labelWeight,
+                          color: AppTheme.textColor(context),
+                        ),
+                      ),
+                    ] else
+                      Text(
+                        'Select Account',
+                        style: TextStyle(
+                          fontSize: KoinTypography.compact,
+                          fontWeight: KoinTypography.supportingWeight,
+                          color: AppTheme.textLightColor(
+                            context,
+                          ).withValues(alpha: 0.5),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    const Gap(8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: AppTheme.textLightColor(
+                        context,
+                      ).withValues(alpha: 0.3),
+                    ),
+                  ],
+                ),
+              ),
+
+              // To Account row (Transfer only)
+              if (data.type == TransactionType.transfer) ...[
+                _buildPreviewDivider(context),
+                _buildPreviewRow(
                   context,
-                  onTap: _editCategory,
-                  icon: data.category != null
-                      ? IconUtils.getIcon(data.category!.iconCodePoint)
-                      : Icons.category_rounded,
-                  iconColor: data.category?.color,
-                  label: 'Category',
+                  onTap: _editToAccount,
+                  icon: Icons.account_balance_wallet_rounded,
+                  iconColor: data.toAccount?.color,
+                  label: 'To',
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (data.category != null) ...[
+                      if (data.toAccount != null) ...[
                         Container(
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: data.category!.color,
+                            color: data.toAccount!.color,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const Gap(8),
                         Text(
-                          data.category!.name,
+                          data.toAccount!.name,
                           style: TextStyle(
                             fontSize: KoinTypography.compact,
                             fontWeight: KoinTypography.labelWeight,
@@ -814,7 +982,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         ),
                       ] else
                         Text(
-                          'Not detected',
+                          'Select Target',
                           style: TextStyle(
                             fontSize: KoinTypography.compact,
                             fontWeight: KoinTypography.supportingWeight,
@@ -834,123 +1002,27 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                       ),
                     ],
                   ),
-                );
+                ),
+              ],
+              _buildPreviewDivider(context),
 
-                if (_autoCatKey > 0) {
-                  child = child
-                      .animate(key: ValueKey(_autoCatKey))
-                      .shimmer(
-                        duration: 400.ms,
-                        color: AppTheme.primaryColor(
-                          context,
-                        ).withValues(alpha: 0.2),
-                      )
-                      .scale(
-                        duration: 150.ms,
-                        curve: Curves.easeOut,
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.02, 1.02),
-                      )
-                      .then()
-                      .scale(
-                        duration: 250.ms,
-                        curve: Curves.easeOutBack,
-                        begin: const Offset(1.02, 1.02),
-                        end: const Offset(1, 1),
-                      );
-                }
-                return child;
-              },
-            ),
-            _buildPreviewDivider(context),
-          ],
-
-          // Account row (From Account if transfer)
-          _buildPreviewRow(
-            context,
-            onTap: _editAccount,
-            icon: Icons.account_balance_wallet_rounded,
-            iconColor: data.account?.color,
-            label: data.type == TransactionType.transfer ? 'From' : 'Account',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (data.account != null) ...[
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: data.account!.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const Gap(8),
-                  Text(
-                    data.account!.name,
+              // Note row
+              _buildPreviewRow(
+                context,
+                icon: Icons.sticky_note_2_rounded,
+                label: 'Note',
+                trailing: Flexible(
+                  child: TextField(
+                    controller: _noteController,
+                    textAlign: TextAlign.end,
                     style: TextStyle(
                       fontSize: KoinTypography.compact,
                       fontWeight: KoinTypography.labelWeight,
                       color: AppTheme.textColor(context),
                     ),
-                  ),
-                ] else
-                  Text(
-                    'Select Account',
-                    style: TextStyle(
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.supportingWeight,
-                      color: AppTheme.textLightColor(
-                        context,
-                      ).withValues(alpha: 0.5),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                const Gap(8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.3),
-                ),
-              ],
-            ),
-          ),
-
-          // To Account row (Transfer only)
-          if (data.type == TransactionType.transfer) ...[
-            _buildPreviewDivider(context),
-            _buildPreviewRow(
-              context,
-              onTap: _editToAccount,
-              icon: Icons.account_balance_wallet_rounded,
-              iconColor: data.toAccount?.color,
-              label: 'To',
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (data.toAccount != null) ...[
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: data.toAccount!.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      data.toAccount!.name,
-                      style: TextStyle(
-                        fontSize: KoinTypography.compact,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: AppTheme.textColor(context),
-                      ),
-                    ),
-                  ] else
-                    Text(
-                      'Select Target',
-                      style: TextStyle(
+                    decoration: InputDecoration(
+                      hintText: 'Add note...',
+                      hintStyle: TextStyle(
                         fontSize: KoinTypography.compact,
                         fontWeight: KoinTypography.supportingWeight,
                         color: AppTheme.textLightColor(
@@ -958,65 +1030,31 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         ).withValues(alpha: 0.5),
                         fontStyle: FontStyle.italic,
                       ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      fillColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
-                  const Gap(8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.3),
+                    onChanged: (val) {
+                      setState(() {
+                        _parsedData = _parsedData!.copyWith(note: val);
+                      });
+                    },
                   ),
-                ],
-              ),
-            ),
-          ],
-          _buildPreviewDivider(context),
-
-          // Note row
-          _buildPreviewRow(
-            context,
-            icon: Icons.sticky_note_2_rounded,
-            label: 'Note',
-            trailing: Flexible(
-              child: TextField(
-                controller: _noteController,
-                textAlign: TextAlign.end,
-                style: TextStyle(
-                  fontSize: KoinTypography.compact,
-                  fontWeight: KoinTypography.labelWeight,
-                  color: AppTheme.textColor(context),
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Add note...',
-                  hintStyle: TextStyle(
-                    fontSize: KoinTypography.compact,
-                    fontWeight: KoinTypography.supportingWeight,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                    fontStyle: FontStyle.italic,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  fillColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (val) {
-                  setState(() {
-                    _parsedData = _parsedData!.copyWith(note: val);
-                  });
-                },
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+        )
+        .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+          onInit: KoinMotion.onInit(context),
+        )
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildPreviewRow(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 
 /// Modal bottom sheet for logging or editing a [SavingsLog] against a [SavingsGoal].
@@ -101,7 +100,10 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
       );
       return;
     }
-    final amount = double.tryParse(_evaluatedResult);
+    final amount = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_evaluatedResult);
     final available = _availableBalance();
     String? error;
     if (amount == null || !amount.isFinite || amount <= 0) {
@@ -129,9 +131,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     });
     try {
       if (_isRelease) {
-        final money = NumberFormat.currency(
-          symbol: ref.read(settingsProvider).currency.symbol,
-        );
+        final money = ref.read(settingsProvider).currency.formatter;
         final confirmed = await ConfirmationSheet.show(
           context: context,
           title: 'Release savings?',
@@ -166,7 +166,9 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';
     final primaryColor = AppTheme.primaryColor(context);
-    final parsedAmount = double.tryParse(_evaluatedResult) ?? 0;
+    final parsedAmount =
+        ref.read(settingsProvider).currency.tryParseInput(_evaluatedResult) ??
+        0;
     final accountId = widget.goal.linkedAccountId;
     final available = accountId == null
         ? null
@@ -281,12 +283,12 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                       child: Text(
                         _saveError ??
                             (_isRelease
-                                ? 'Available to release: ${NumberFormat.currency(symbol: settings.currency.symbol).format(editableBalance ?? 0)}'
+                                ? 'Available to release: ${settings.currency.formatter.format(editableBalance ?? 0)}'
                                 : isExceeded
                                 ? 'Insufficient available balance in ${widget.linkedAccount?.name ?? 'the linked account'}'
                                 : editableBalance == null
                                 ? 'Account balance is unavailable'
-                                : 'Available for savings: ${NumberFormat.currency(symbol: settings.currency.symbol).format(editableBalance.clamp(0, double.infinity))}'),
+                                : 'Available for savings: ${settings.currency.formatter.format(editableBalance.clamp(0, double.infinity))}'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: KoinTypography.small,
@@ -316,6 +318,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
           const Gap(32),
 
           NumPad(
+            decimalDigits: settings.currency.decimalDigits,
+            enabled: !_saving,
             compact: true,
             doneLabel: _isRelease ? 'Release' : 'Save',
             initialValue: _currentExpression,

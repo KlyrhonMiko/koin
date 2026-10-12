@@ -62,9 +62,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat.currency(
-      symbol: ref.watch(settingsProvider).currency.symbol,
-    );
+    final currencyFmt = ref.watch(settingsProvider).currency.formatter;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -126,7 +124,10 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
 
               // 2. Big Result Headline
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
+                duration: KoinMotion.duration(
+                  context,
+                  const Duration(milliseconds: 300),
+                ),
                 child: _mode == StashSimMode.balance
                     ? _buildBalanceHeadline(currencyFmt)
                     : _buildTimeHeadline(currencyFmt),

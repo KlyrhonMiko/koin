@@ -1,3 +1,4 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,9 @@ import '../inputs/selection_tile.dart';
 import '../inputs/numpad.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/ledger/transaction_rules.dart';
+import 'package:koin/core/providers/transaction_provider.dart';
+import 'package:koin/core/providers/savings_provider.dart';
 
 class PaymentConfirmationResult {
   final double amount;
@@ -30,6 +34,7 @@ class PaymentConfirmationResult {
 }
 
 class PaymentConfirmationSheet extends ConsumerStatefulWidget {
+  static final Set<String> _pendingPaymentIds = {};
   final PlannedPayment payment;
 
   const PaymentConfirmationSheet({super.key, required this.payment});
@@ -53,43 +58,87 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
     required WidgetRef ref,
     required PlannedPayment payment,
   }) async {
+    if (!_pendingPaymentIds.add(payment.id)) return false;
+    try {
+      return await _confirmAndProcess(
+        context: context,
+        ref: ref,
+        payment: payment,
+      );
+    } finally {
+      _pendingPaymentIds.remove(payment.id);
+    }
+  }
+
+  static Future<bool> _confirmAndProcess({
+    required BuildContext context,
+    required WidgetRef ref,
+    required PlannedPayment payment,
+  }) async {
     final result = await show(context: context, payment: payment);
     if (result == null || !context.mounted) return false;
 
     final isExpense = payment.type == TransactionType.expense;
     final transactionId = const Uuid().v4();
-    if (isExpense &&
-        !await confirmSavingsSpending(
-          context: context,
-          ref: ref,
-          accountId: result.accountId,
-          amount: result.amount,
-          transactionId: transactionId,
-        )) {
-      return false;
-    }
-    if (!context.mounted) return false;
-
-    await ref
-        .read(plannedPaymentProvider.notifier)
-        .processOccurrence(
-          payment: payment,
-          amount: result.amount,
-          accountId: result.accountId,
-          categoryId: result.categoryId,
-          transactionId: transactionId,
-        );
-
-    if (context.mounted) {
-      KoinSnackBar.success(
-        context,
-        isExpense ? 'Payment processed' : 'Income processed',
-        subtitle: isExpense
-            ? 'Your planned payment has been completed'
-            : 'Your recurring income has been completed',
+    final savings = ref.read(savingsGoalsProvider.notifier);
+    bool processed = false;
+    try {
+      TransactionRules.account(
+        accountId: result.accountId,
+        value: result.amount,
+        isExpense: isExpense,
+        accounts: await ref.read(accountProvider.future),
+        transactions: await ref.read(transactionProvider.future),
       );
+      if (!context.mounted) return false;
+      if (isExpense &&
+          !await confirmSavingsSpending(
+            context: context,
+            ref: ref,
+            accountId: result.accountId,
+            amount: result.amount,
+            transactionId: transactionId,
+          )) {
+        return false;
+      }
+      if (!context.mounted) return false;
+
+      await ref
+          .read(plannedPaymentProvider.notifier)
+          .processOccurrence(
+            payment: payment,
+            amount: result.amount,
+            accountId: result.accountId,
+            categoryId: result.categoryId,
+            transactionId: transactionId,
+          );
+
+      processed = true;
+
+      if (context.mounted) {
+        KoinSnackBar.success(
+          context,
+          isExpense ? 'Payment processed' : 'Income processed',
+          subtitle: isExpense
+              ? 'Your planned payment has been completed'
+              : 'Your recurring income has been completed',
+        );
+      }
+      return true;
+    } catch (error) {
+      if (context.mounted) {
+        KoinSnackBar.error(
+          context,
+          error is FinancialValidationException
+              ? error.message
+              : 'Could not process schedule',
+          subtitle: 'No payment was completed. Try again.',
+        );
+      }
+      return false;
+    } finally {
+      if (!processed) await savings.rollbackDraftRelease(transactionId);
     }
-    return true;
   }
 
   @override
@@ -281,7 +330,11 @@ class _PaymentConfirmationSheetState
                     ],
                   ),
                 )
-                .animate()
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fadeIn(duration: 300.ms)
                 .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
@@ -350,13 +403,18 @@ class _PaymentConfirmationSheetState
                     ),
                   ),
                 )
-                .animate()
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fadeIn(delay: 100.ms, duration: 300.ms)
                 .slideY(begin: 0.1, curve: Curves.easeOutCubic),
 
             const Gap(16),
 
             NumPad(
+                  decimalDigits: currency.decimalDigits,
                   compact: true,
                   initialValue: _currentExpression,
                   onValueChanged: (expression, result) {
@@ -367,7 +425,11 @@ class _PaymentConfirmationSheetState
                   },
                   onDone: _submit,
                 )
-                .animate()
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                )
                 .fadeIn(delay: 200.ms, duration: 300.ms)
                 .slideY(begin: 0.15, curve: Curves.easeOutCubic),
           ],
@@ -379,7 +441,32 @@ class _PaymentConfirmationSheetState
   void _submit() {
     HapticService.medium();
     final amount =
-        double.tryParse(_amountController.text) ?? widget.payment.amount;
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0;
+    try {
+      TransactionRules.account(
+        accountId: _selectedAccountId,
+        value: amount,
+        isExpense: widget.payment.type == TransactionType.expense,
+        accounts: ref.read(accountProvider).value ?? [],
+        transactions: ref.read(transactionProvider).value ?? [],
+      );
+      if (!(ref.read(categoriesProvider).value ?? []).any(
+        (category) =>
+            category.id == _selectedCategoryId &&
+            category.type == widget.payment.type,
+      )) {
+        throw const FinancialValidationException(
+          'Choose an available category',
+        );
+      }
+    } on FinancialValidationException catch (error) {
+      KoinSnackBar.error(context, error.message);
+      return;
+    }
     Navigator.pop(
       context,
       PaymentConfirmationResult(

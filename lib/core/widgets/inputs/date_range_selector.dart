@@ -54,11 +54,11 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
     final diffDays = end.difference(start).inDays;
 
     if (end.isAtSameMomentAs(today) || end.isAfter(today)) {
-      if (diffDays == 7) {
+      if (diffDays == 6) {
         _selectedPreset = 0;
-      } else if (diffDays == 30) {
+      } else if (diffDays == 29) {
         _selectedPreset = 1;
-      } else if (diffDays == 90) {
+      } else if (diffDays == 89) {
         _selectedPreset = 2;
       } else if (start.isAtSameMomentAs(DateTime(now.year, 1, 1)) &&
           end.isAtSameMomentAs(today)) {
@@ -72,25 +72,26 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
   }
 
   void _applyPreset(int index) {
-    final now = DateTime.now();
+    final reference = DateTime.now();
+    final now = DateTime(reference.year, reference.month, reference.day);
     setState(() {
       _selectedPreset = index;
       switch (index) {
         case 0:
           _dateRange = DateTimeRange(
-            start: now.subtract(const Duration(days: 7)),
+            start: DateTime(now.year, now.month, now.day - 6),
             end: now,
           );
           break;
         case 1:
           _dateRange = DateTimeRange(
-            start: now.subtract(const Duration(days: 30)),
+            start: DateTime(now.year, now.month, now.day - 29),
             end: now,
           );
           break;
         case 2:
           _dateRange = DateTimeRange(
-            start: now.subtract(const Duration(days: 90)),
+            start: DateTime(now.year, now.month, now.day - 89),
             end: now,
           );
           break;
@@ -115,8 +116,8 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
     final picked = await showDateRangePicker(
       context: context,
       initialDateRange: _dateRange,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -328,7 +329,9 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                 }
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,

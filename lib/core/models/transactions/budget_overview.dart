@@ -73,7 +73,9 @@ class BudgetOverview {
     for (final cat in budgeted) {
       final resBudget = cat.resolvedBudget(totalIncome);
       final spent = categorySpending[cat.id] ?? 0.0;
-      final progress = resBudget > 0 ? (spent / resBudget).clamp(0.0, 1.0) : 0.0;
+      final progress = resBudget > 0
+          ? (spent / resBudget).clamp(0.0, 1.0)
+          : 0.0;
       final remaining = (resBudget - spent).clamp(0.0, double.infinity);
       final isOver = resBudget > 0 && spent > resBudget;
 
@@ -116,38 +118,21 @@ class BudgetOverview {
     DateTime? month,
   }) {
     final targetMonth = month ?? DateTime.now();
-    final includedAccountIds = accounts.isEmpty
-        ? null
-        : accounts
-            .where((a) => !a.excludeFromTotal)
-            .map((a) => a.id)
-            .toSet();
 
     double totalIncome = 0.0;
     final Map<String, double> categorySpending = {};
 
     for (final t in transactions) {
-      if (t.date.year != targetMonth.year || t.date.month != targetMonth.month) {
+      if (t.date.year != targetMonth.year ||
+          t.date.month != targetMonth.month) {
         continue;
       }
 
-      final isSourceIncluded = includedAccountIds == null ||
-          includedAccountIds.contains(t.accountId);
-      final isDestIncluded = t.toAccountId != null &&
-          (includedAccountIds == null ||
-              includedAccountIds.contains(t.toAccountId));
-
       if (t.type == TransactionType.income) {
-        if (isSourceIncluded) totalIncome += t.amount;
+        totalIncome += t.amount;
       } else if (t.type == TransactionType.expense) {
-        if (isSourceIncluded) {
-          categorySpending[t.categoryId] =
-              (categorySpending[t.categoryId] ?? 0.0) + t.amount;
-        }
-      } else if (t.type == TransactionType.transfer) {
-        if (!isSourceIncluded && isDestIncluded) {
-          totalIncome += t.amount;
-        }
+        categorySpending[t.categoryId] =
+            (categorySpending[t.categoryId] ?? 0.0) + t.amount;
       }
     }
 
@@ -158,4 +143,3 @@ class BudgetOverview {
     );
   }
 }
-

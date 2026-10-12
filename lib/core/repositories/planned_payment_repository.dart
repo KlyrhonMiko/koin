@@ -16,7 +16,7 @@ class SqlitePlannedPaymentAdapter implements PlannedPaymentRepository {
   final DatabaseHelper _dbHelper;
 
   SqlitePlannedPaymentAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<PlannedPayment>> getPlannedPayments() =>
@@ -81,6 +81,8 @@ class InMemoryPlannedPaymentAdapter implements PlannedPaymentRepository {
 }
 
 /// Riverpod provider exposing the PlannedPaymentRepository seam.
-final plannedPaymentRepositoryProvider = Provider<PlannedPaymentRepository>((ref) {
+final plannedPaymentRepositoryProvider = Provider<PlannedPaymentRepository>((
+  ref,
+) {
   return SqlitePlannedPaymentAdapter();
 });

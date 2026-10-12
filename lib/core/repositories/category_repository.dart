@@ -16,10 +16,11 @@ class SqliteCategoryAdapter implements CategoryRepository {
   final DatabaseHelper _dbHelper;
 
   SqliteCategoryAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
-  Future<List<TransactionCategory>> getCategories() => _dbHelper.getCategories();
+  Future<List<TransactionCategory>> getCategories() =>
+      _dbHelper.getCategories();
 
   @override
   Future<TransactionCategory> insertCategory(TransactionCategory category) =>
@@ -60,7 +61,9 @@ class InMemoryCategoryAdapter implements CategoryRepository {
   }
 
   @override
-  Future<TransactionCategory> insertCategory(TransactionCategory category) async {
+  Future<TransactionCategory> insertCategory(
+    TransactionCategory category,
+  ) async {
     _categories.removeWhere((c) => c.id == category.id);
     _categories.add(category);
     _sort();
@@ -82,11 +85,15 @@ class InMemoryCategoryAdapter implements CategoryRepository {
   }
 
   @override
-  Future<void> updateCategoryPositions(List<TransactionCategory> categories) async {
+  Future<void> updateCategoryPositions(
+    List<TransactionCategory> categories,
+  ) async {
     for (final updated in categories) {
       final idx = _categories.indexWhere((c) => c.id == updated.id);
       if (idx != -1) {
-        _categories[idx] = _categories[idx].copyWith(position: updated.position);
+        _categories[idx] = _categories[idx].copyWith(
+          position: updated.position,
+        );
       }
     }
     _sort();

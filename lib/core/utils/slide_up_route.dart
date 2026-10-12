@@ -14,6 +14,7 @@ class SlideUpRoute<T> extends PageRouteBuilder<T> {
         transitionDuration: const Duration(milliseconds: 350),
         reverseTransitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          if (MediaQuery.disableAnimationsOf(context)) return child;
           final slideAnimation =
               Tween<Offset>(
                 begin: const Offset(0, 0.12),

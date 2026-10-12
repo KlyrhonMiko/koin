@@ -80,9 +80,7 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       );
     }
 
-    final currencyFmt = NumberFormat.currency(
-      symbol: ref.watch(settingsProvider).currency.symbol,
-    );
+    final currencyFmt = ref.watch(settingsProvider).currency.formatter;
 
     final headline = CoachCopy.getHeadline(
       _baseline,
@@ -105,14 +103,19 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
               ),
               const Gap(24),
               Text(
-                headline,
-                style: const TextStyle(
-                  fontSize: KoinTypography.screenTitle,
-                  letterSpacing: KoinTypography.headingTracking,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ).animate().fade().scale(),
+                    headline,
+                    style: const TextStyle(
+                      fontSize: KoinTypography.screenTitle,
+                      letterSpacing: KoinTypography.headingTracking,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  )
+                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                    onInit: KoinMotion.onInit(context),
+                  )
+                  .fade()
+                  .scale(),
             ],
           ),
         ),
@@ -341,56 +344,61 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
 
               // 7. Reset and Use this amount
               Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        HapticService.medium();
-                        setState(() {
-                          _extraPerWeek = 0;
-                          _deadlineShiftWeeks = 0;
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        "Reset",
-                        style: TextStyle(
-                          fontSize: KoinTypography.itemTitle,
-                          fontWeight: KoinTypography.labelWeight,
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            HapticService.medium();
+                            setState(() {
+                              _extraPerWeek = 0;
+                              _deadlineShiftWeeks = 0;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            "Reset",
+                            style: TextStyle(
+                              fontSize: KoinTypography.itemTitle,
+                              fontWeight: KoinTypography.labelWeight,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticService.success();
-                        Navigator.pop(context, sim);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor(context),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      const Gap(16),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            HapticService.success();
+                            Navigator.pop(context, sim);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor(context),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Use this amount",
+                            style: TextStyle(
+                              fontSize: KoinTypography.itemTitle,
+                              fontWeight: KoinTypography.titleWeight,
+                            ),
+                          ),
                         ),
-                        elevation: 0,
                       ),
-                      child: const Text(
-                        "Use this amount",
-                        style: TextStyle(
-                          fontSize: KoinTypography.itemTitle,
-                          fontWeight: KoinTypography.titleWeight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ).animate().fade().slideY(begin: 0.2),
+                    ],
+                  )
+                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                    onInit: KoinMotion.onInit(context),
+                  )
+                  .fade()
+                  .slideY(begin: 0.2),
 
               const Gap(40),
             ],
@@ -431,7 +439,10 @@ class _TimelineView extends StatelessWidget {
                 sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ??
                 latestDate.millisecondsSinceEpoch.toDouble(),
           ),
-          duration: const Duration(milliseconds: 400),
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 400),
+          ),
           curve: Curves.easeOutCubic,
           builder: (context, animatedProjMs, child) {
             final animProjFinish = sim.projectedFinish != null

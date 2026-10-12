@@ -83,7 +83,9 @@ class UpcomingScreen extends ConsumerWidget {
                                   payment: payment,
                                 ),
                           )
-                          .animate()
+                          .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                            onInit: KoinMotion.onInit(context),
+                          )
                           .fade(delay: (index * 40).ms)
                           .slideY(begin: 0.08);
                     },
@@ -97,8 +99,8 @@ class UpcomingScreen extends ConsumerWidget {
   Widget _buildEmptyUpcoming(BuildContext context) => KoinEmptyState(
     fullScreen: true,
     icon: Icons.event_repeat_rounded,
-    title: 'No upcoming payments',
-    subtitle: 'Add your first subscription to see it here',
+    title: 'Nothing upcoming',
+    subtitle: 'Add a planned payment or recurring income to see it here',
     action: TextButton(
       onPressed: () {
         HapticService.medium();
@@ -111,7 +113,7 @@ class UpcomingScreen extends ConsumerWidget {
           ),
         );
       },
-      child: const Text('Add subscription'),
+      child: const Text('Add planned payment'),
     ),
   );
 }

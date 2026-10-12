@@ -1,6 +1,8 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:gap/gap.dart';
+import 'package:koin/core/models/models.dart';
 
 /// Consolidated hero amount input field module for entity creation forms
 /// (Savings Goals, Debts, Cashflow Schedules).
@@ -15,6 +17,7 @@ class HeroAmountField extends StatelessWidget {
   final bool autoFocus;
   final Key? fieldKey;
   final FormFieldValidator<String>? validator;
+  final Currency? currency;
 
   const HeroAmountField({
     super.key,
@@ -26,6 +29,7 @@ class HeroAmountField extends StatelessWidget {
     this.autoFocus = false,
     this.fieldKey,
     this.validator,
+    this.currency,
   });
 
   @override
@@ -34,12 +38,16 @@ class HeroAmountField extends StatelessWidget {
       valueListenable: controller,
       builder: (context, value, _) {
         final isNotEmpty = value.text.isNotEmpty;
+        final hintColor = AppTheme.hasEditorAppearance(context)
+            ? AppTheme.textLightColor(context)
+            : primaryColor.withValues(alpha: 0.35);
         final amountStyle = TextStyle(
           fontSize: KoinTypography.inputAmount,
           fontWeight: KoinTypography.headingWeight,
           color: isNotEmpty
               ? primaryColor
               : primaryColor.withValues(alpha: 0.35),
+
           letterSpacing: -2,
           height: KoinTypography.amountHeight,
         );
@@ -66,7 +74,17 @@ class HeroAmountField extends StatelessWidget {
                     child: TextFormField(
                       key: fieldKey,
                       controller: controller,
-                      validator: validator,
+                      validator: (text) {
+                        if (currency != null &&
+                            text != null &&
+                            text.trim().isNotEmpty &&
+                            currency!.tryParseInput(text) == null) {
+                          return currency!.decimalDigits == 0
+                              ? 'Enter a whole amount with valid number grouping'
+                              : 'Use at most ${currency!.decimalDigits} decimal places and valid number grouping';
+                        }
+                        return validator?.call(text);
+                      },
                       textInputAction: TextInputAction.done,
                       autofocus: autoFocus,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -85,11 +103,7 @@ class HeroAmountField extends StatelessWidget {
                         fillColor: Colors.transparent,
                         filled: true,
                         contentPadding: EdgeInsets.zero,
-                        hintStyle: amountStyle.copyWith(
-                          color: AppTheme.hasEditorAppearance(context)
-                              ? AppTheme.textLightColor(context)
-                              : primaryColor.withValues(alpha: 0.35),
-                        ),
+                        hintStyle: amountStyle.copyWith(color: hintColor),
                       ),
                       onChanged: (text) {
                         onChanged?.call(text);
@@ -100,7 +114,10 @@ class HeroAmountField extends StatelessWidget {
               ],
             ),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 200),
+              ),
               width: isNotEmpty ? 60 : 40,
               height: 3,
               margin: const EdgeInsets.only(top: 8, bottom: 24),

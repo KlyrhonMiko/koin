@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:koin/core/utils/animation_utils.dart';
 
-/// A premium animated counter that rolls individual digits up/down
-/// like a mechanical odometer. Each digit independently transitions
-/// with a slight stagger for a sophisticated cascading effect.
-class AnimatedCounter extends StatefulWidget {
+/// Displays a formatted amount immediately, without counting or rolling digits.
+///
+/// The existing name and motion parameters are retained for compatibility with
+/// callers. Financial values always render in full, including on first display
+/// and subsequent updates.
+class AnimatedCounter extends StatelessWidget {
   final double value;
   final String Function(double) formatter;
   final TextStyle? style;
@@ -20,134 +21,21 @@ class AnimatedCounter extends StatefulWidget {
     required this.value,
     required this.formatter,
     this.style,
-    this.duration = const Duration(milliseconds: 1200),
+    this.duration = Duration.zero,
     this.curve = Curves.easeOutCubic,
     this.maxLines,
     this.overflow,
-    this.animateFromZero = true,
+    this.animateFromZero = false,
     this.lastValueToken,
   });
 
   @override
-  State<AnimatedCounter> createState() => _AnimatedCounterState();
-}
-
-class _AnimatedCounterState extends State<AnimatedCounter> {
-  double? _oldValue;
-
-  @override
   Widget build(BuildContext context) {
-    double? trackerValue;
-    if (widget.lastValueToken != null) {
-      trackerValue = AnimationTracker.getValue(widget.lastValueToken!);
-      // Update the value in tracker for next time
-      AnimationTracker.updateValue(widget.lastValueToken!, widget.value);
-    }
-
-    final beginValue =
-        _oldValue ??
-        trackerValue ??
-        (widget.animateFromZero ? 0.0 : widget.value);
-    _oldValue = widget.value;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: beginValue, end: widget.value),
-      duration: widget.duration,
-      curve: widget.curve,
-      builder: (context, animatedValue, child) {
-        final formatted = widget.formatter(animatedValue);
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: _buildDigits(formatted, animatedValue, widget.style),
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildDigits(
-    String formatted,
-    double animatedValue,
-    TextStyle? style,
-  ) {
-    final effectiveStyle = style ?? const TextStyle();
-    final List<Widget> widgets = [];
-
-    for (int i = 0; i < formatted.length; i++) {
-      final char = formatted[i];
-
-      if (_isDigit(char)) {
-        // Animate digit with a rolling effect
-        final digit = int.parse(char);
-        widgets.add(
-          _RollingDigit(
-            digit: digit,
-            progress: widget.value == 0
-                ? 1.0
-                : (animatedValue / widget.value).clamp(0.0, 1.0),
-            style: effectiveStyle,
-          ),
-        );
-      } else {
-        // Static character (currency symbol, comma, period, etc.)
-        widgets.add(Text(char, style: effectiveStyle));
-      }
-    }
-
-    return widgets;
-  }
-
-  bool _isDigit(String char) {
-    return char.codeUnitAt(0) >= 48 && char.codeUnitAt(0) <= 57;
-  }
-}
-
-class _RollingDigit extends StatelessWidget {
-  final int digit;
-  final double progress; // 0.0 to 1.0
-  final TextStyle style;
-
-  const _RollingDigit({
-    required this.digit,
-    required this.progress,
-    required this.style,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // When progress is near completion, show the final digit clearly
-    // The rolling effect happens during the animation
-    final opacity = (0.7 + (progress * 0.3)).clamp(0.0, 1.0);
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        // Slide up transition for changing digits
-        final slideAnimation =
-            Tween<Offset>(
-              begin: const Offset(0, 0.3),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(position: slideAnimation, child: child),
-        );
-      },
-      child: Text(
-        '$digit',
-        key: ValueKey<int>(digit),
-        style: style.copyWith(
-          color: (style.color ?? Theme.of(context).colorScheme.onSurface)
-              .withValues(alpha: opacity),
-        ),
-      ),
+    return Text(
+      formatter(value),
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
     );
   }
 }

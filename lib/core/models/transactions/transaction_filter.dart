@@ -69,9 +69,7 @@ class TransactionFilter {
   String get summaryText {
     final parts = <String>[];
     if (type != null) {
-      parts.add(
-        type!.name[0].toUpperCase() + type!.name.substring(1),
-      );
+      parts.add(type!.name[0].toUpperCase() + type!.name.substring(1));
     }
     if (dateRange != null) {
       parts.add('Date range');
@@ -93,10 +91,7 @@ class TransactionFilter {
   }
 
   /// Pure domain predicate: returns whether [tx] satisfies this filter's criteria.
-  bool matches(
-    AppTransaction tx, {
-    Map<String, String>? categoryNamesById,
-  }) {
+  bool matches(AppTransaction tx, {Map<String, String>? categoryNamesById}) {
     if (isEmpty) return true;
 
     // Type filter
@@ -115,7 +110,11 @@ class TransactionFilter {
 
     // Date range filter
     if (dateRange != null) {
-      final startBoundary = dateRange!.start.subtract(const Duration(seconds: 1));
+      final startBoundary = DateTime(
+        dateRange!.start.year,
+        dateRange!.start.month,
+        dateRange!.start.day,
+      );
       final endBoundary = DateTime(
         dateRange!.end.year,
         dateRange!.end.month,
@@ -135,8 +134,12 @@ class TransactionFilter {
       return false;
     }
 
-    // Account filter
-    if (accountIds.isNotEmpty && !accountIds.contains(tx.accountId)) {
+    // Transfers belong to both endpoint accounts, without duplicating the row.
+    final matchesAccount =
+        accountIds.contains(tx.accountId) ||
+        (tx.type == TransactionType.transfer &&
+            accountIds.contains(tx.toAccountId));
+    if (accountIds.isNotEmpty && !matchesAccount) {
       return false;
     }
 

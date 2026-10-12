@@ -11,6 +11,8 @@ class NumPad extends StatefulWidget {
   final bool compact;
   final bool inline;
   final String doneLabel;
+  final int decimalDigits;
+  final bool enabled;
 
   const NumPad({
     super.key,
@@ -20,6 +22,8 @@ class NumPad extends StatefulWidget {
     this.compact = false,
     this.inline = false,
     this.doneLabel = 'Save',
+    this.decimalDigits = 2,
+    this.enabled = true,
   });
 
   @override
@@ -53,6 +57,7 @@ class _NumPadState extends State<NumPad> {
   }
 
   void _onPress(String value, NumPadAction action) {
+    if (!widget.enabled) return;
     if (action != NumPadAction.done) {
       HapticService.light();
     }
@@ -66,7 +71,7 @@ class _NumPadState extends State<NumPad> {
         final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
         if (lastPart.contains('.')) {
           final decimalPart = lastPart.split('.').last;
-          if (decimalPart.length >= 2) return;
+          if (decimalPart.length >= widget.decimalDigits) return;
         }
 
         if (_expression == '0') {
@@ -75,6 +80,7 @@ class _NumPadState extends State<NumPad> {
           _expression += value;
         }
       } else if (action == NumPadAction.decimal) {
+        if (widget.decimalDigits == 0) return;
         final lastPart = _expression.split(RegExp(r'[+\-*/]')).last;
         if (!lastPart.contains('.')) {
           if (lastPart.isEmpty) {
@@ -161,7 +167,7 @@ class _NumPadState extends State<NumPad> {
       if (currentResult == currentResult.toInt()) {
         _result = currentResult.toInt().toString();
       } else {
-        _result = currentResult.toStringAsFixed(2);
+        _result = currentResult.toStringAsFixed(widget.decimalDigits);
         if (_result.endsWith('0')) {
           _result = _result.replaceAll(RegExp(r'\.?0+$'), '');
         }
@@ -534,7 +540,7 @@ class _AnimatedKeyWrapperState extends State<_AnimatedKeyWrapper>
   }
 
   void _onTapDown(TapDownDetails _) {
-    _controller.forward();
+    if (!MediaQuery.disableAnimationsOf(context)) _controller.forward();
   }
 
   void _onTapUp(TapUpDetails _) {
@@ -558,7 +564,9 @@ class _AnimatedKeyWrapperState extends State<_AnimatedKeyWrapper>
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,
-        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+        child: MediaQuery.disableAnimationsOf(context)
+            ? widget.child
+            : ScaleTransition(scale: _scaleAnimation, child: widget.child),
       ),
     );
   }

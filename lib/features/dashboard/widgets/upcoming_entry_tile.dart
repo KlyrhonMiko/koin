@@ -155,7 +155,7 @@ class UpcomingEntryTile extends StatelessWidget {
             ),
             const Gap(8),
             Text(
-              "${isExpense ? '-' : '+'}${NumberFormat.currency(symbol: currency.symbol).format(entry.amount)}",
+              "${isExpense ? '-' : '+'}${currency.formatter.format(entry.amount)}",
               style: TextStyle(
                 color: amountColor,
                 fontWeight: KoinTypography.headingWeight,

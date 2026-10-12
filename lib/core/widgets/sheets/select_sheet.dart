@@ -1,3 +1,4 @@
+import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -43,7 +44,10 @@ class SelectSheetItem extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(20),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 200),
+          ),
           curve: Curves.easeOutCubic,
           constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -314,11 +314,11 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(
-      find.text('Deducted ${symbol}60 · Receives ${symbol}50'),
+      find.text('Deducted ${symbol}60.00 · Receives ${symbol}50.00'),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('amount-stripe')), findsNothing);
-    final summary = find.text('Deducted ${symbol}60 · Receives ${symbol}50');
+    final summary = find.text('Deducted ${symbol}60.00 · Receives ${symbol}50.00');
     expect(tester.getTopLeft(summary).dy, greaterThan(amountRect.bottom));
     expect(tester.getBottomLeft(summary).dy, lessThan(feeRect.top));
     expect(tester.getRect(find.text('50')), amountRect);
@@ -326,13 +326,13 @@ void main() {
     await tester.tap(find.text('Percentage (%)'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Deducted ${symbol}55 · Receives ${symbol}50'),
+      find.text('Deducted ${symbol}55.00 · Receives ${symbol}50.00'),
       findsOneWidget,
     );
     await tester.tap(find.text('C'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Deducted ${symbol}50 · Receives ${symbol}50'),
+      find.text('Deducted ${symbol}50.00 · Receives ${symbol}50.00'),
       findsOneWidget,
     );
     await tester.tap(find.text('Select account'));
@@ -346,7 +346,7 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(
-      find.text('Deducted ${symbol}80 · Receives ${symbol}50'),
+      find.text('Deducted ${symbol}80.00 · Receives ${symbol}50.00'),
       findsNothing,
     );
     final warning = find.text('Amount exceeds available balance');
@@ -359,7 +359,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(warning, findsNothing);
     expect(
-      find.text('Deducted ${symbol}50 · Receives ${symbol}50'),
+      find.text('Deducted ${symbol}50.00 · Receives ${symbol}50.00'),
       findsOneWidget,
     );
     await tester.tap(find.text('Expense'));
@@ -479,7 +479,7 @@ void main() {
     expect(find.textContaining('Cash • '), findsOneWidget);
     expect(
       find.textContaining('Cash • ').evaluate().single.widget,
-      isA<Text>().having((text) => text.data, 'available', endsWith('100')),
+      isA<Text>().having((text) => text.data, 'available', endsWith('100.00')),
     );
     expect(find.text('Amount exceeds available balance'), findsNothing);
     expect(tester.takeException(), isNull);

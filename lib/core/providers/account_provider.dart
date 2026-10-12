@@ -2,6 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/repositories/account_repository.dart';
 import 'dart:developer' as dev;
+import 'transaction_provider.dart';
+import 'planned_payment_provider.dart';
+import 'savings_provider.dart';
+import 'debt_provider.dart';
 
 class AccountNotifier extends AsyncNotifier<List<Account>> {
   AccountRepository get _repository => ref.read(accountRepositoryProvider);
@@ -35,11 +39,12 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     } catch (e, st) {
       state = previousState;
       dev.log('Error adding account', error: e, stackTrace: st);
+      rethrow;
     }
   }
 
   Future<void> updateAccount(Account account) async {
-    if (!state.hasValue) return;
+    if (!state.hasValue) throw StateError('Accounts are not available');
 
     final previousState = state;
     final currentAccounts = state.value!;
@@ -54,11 +59,17 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     } catch (e, st) {
       state = previousState;
       dev.log('Error updating account', error: e, stackTrace: st);
+      rethrow;
     }
   }
 
   Future<void> deleteAccount(String id) async {
     await _repository.deleteAccount(id);
+    ref.invalidate(transactionProvider);
+    ref.invalidate(plannedPaymentProvider);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(debtsProvider);
+    ref.invalidate(debtRepaymentsProvider);
     await loadAccounts();
   }
 

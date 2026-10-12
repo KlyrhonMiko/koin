@@ -116,8 +116,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No subscriptions'), findsOneWidget);
-      expect(find.text('Add Subscription'), findsOneWidget);
+      expect(find.text('No planned payments'), findsOneWidget);
+      expect(find.text('Add Planned Payment'), findsOneWidget);
     });
   });
 }

@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<AccountItem>(find.byType(AccountItem)).balance, 263);
     final symbol = providers.read(settingsProvider).currency.symbol;
-    expect(find.text('${symbol}200 in savings'), findsOneWidget);
+    expect(find.text('${symbol}200.00 in savings'), findsOneWidget);
     await providers
         .read(accountProvider.notifier)
         .updateAccount(account.copyWith(excludeFromTotal: true));

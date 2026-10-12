@@ -28,6 +28,7 @@ class AddEditDebtScreen extends ConsumerStatefulWidget {
 
 class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
@@ -84,7 +85,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     if (notes.isEmpty) return;
 
     final amt =
-        double.tryParse(_amountController.text.replaceAll(',', '')) ?? 1.0;
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
     final targetType = _selectedType == DebtType.owedToMe
         ? TransactionType.income
@@ -136,6 +141,24 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   }
 
   void _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _saveImpl();
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not save debt',
+          subtitle: 'Your changes are kept. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveImpl() async {
     if (!_formKey.currentState!.validate()) return;
     if (_bnpl && _items.isEmpty) {
       KoinSnackBar.error(context, 'Add at least one purchase');
@@ -144,7 +167,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
 
     final name = _nameController.text.trim();
     final amount =
-        double.tryParse(_amountController.text.trim().replaceAll(',', '')) ?? 0;
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text.trim()) ??
+        0;
     final notes = _notesController.text.trim();
     final isEdit = widget.debt != null;
     final id = isEdit ? widget.debt!.id : const Uuid().v4();
@@ -310,11 +337,13 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                           HeroAmountField(
                             controller: _amountController,
                             currencySymbol: currency.symbol,
+                            currency: currency,
                             primaryColor: primaryColor,
                             validator: (value) {
-                              final amount = double.tryParse(
-                                (value ?? '').replaceAll(',', ''),
-                              );
+                              final amount = ref
+                                  .read(settingsProvider)
+                                  .currency
+                                  .tryParseInput((value ?? ''));
                               return amount == null ||
                                       !amount.isFinite ||
                                       amount <= 0
@@ -424,6 +453,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: KoinPrimaryButton(
+                  isLoading: _saving,
                   label: isEdit ? 'Update' : 'Create',
                   onPressed: _save,
                 ),
@@ -620,10 +650,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   Widget _buildInstallmentsCard(BuildContext context, Color primaryColor) {
     final count = int.tryParse(_installmentsController.text) ?? 0;
     final amount =
-        double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
-    final format = NumberFormat.simpleCurrency(
-      name: ref.watch(settingsProvider).currency.code,
-    );
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0;
+    final format = ref.watch(settingsProvider).currency.formatter;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -660,8 +692,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                       fallbackIcon: Icons.event_repeat_rounded,
                       label: 'Payment frequency',
                       selectedName:
-                          _selectedFrequency.name[0].toUpperCase() +
-                          _selectedFrequency.name.substring(1),
+                          _selectedFrequency.label,
                       selectedColor: primaryColor,
                       selectedIconCodePoint:
                           Icons.event_repeat_rounded.codePoint,
@@ -778,7 +809,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       itemBuilder: (sheetContext, index) {
         final f = frequencies[index];
         return SelectSheetItem(
-          name: f.name[0].toUpperCase() + f.name.substring(1),
+          name: f.label,
           accentColor: primaryColor,
           selected: f == _selectedFrequency,
           onTap: () => Navigator.pop(sheetContext, f),
@@ -852,9 +883,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 child: DebtPurchaseCard(
                   item: item,
                   categories: categories,
-                  currencyFormat: NumberFormat.simpleCurrency(
-                    name: ref.watch(settingsProvider).currency.code,
-                  ),
+                  currencyFormat: ref
+                      .watch(settingsProvider)
+                      .currency
+                      .formatter,
                   color: _selectedType == DebtType.owedToMe
                       ? AppTheme.incomeColor(context)
                       : AppTheme.expenseColor(context),

@@ -12,11 +12,36 @@ import 'package:koin/core/maintenance/recovery_service.dart';
 import 'backup_recovery_panel.dart';
 import 'package:koin/core/core.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _maintenanceBusy = false;
+
+  Future<void> _runMaintenanceAction(Future<void> Function() action) async {
+    if (_maintenanceBusy) return;
+    setState(() => _maintenanceBusy = true);
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not finish this action',
+          subtitle: 'Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _maintenanceBusy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) =>
       KoinFormTheme(builder: (context) => _buildContent(context, ref));
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
@@ -85,7 +110,7 @@ class SettingsScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Koin',
                             style: TextStyle(
                               color: Colors.white,
@@ -201,7 +226,10 @@ class SettingsScreen extends ConsumerWidget {
                                       .setThemeColor(color);
                                 },
                                 child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
+                                  duration: KoinMotion.duration(
+                                    context,
+                                    const Duration(milliseconds: 200),
+                                  ),
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
@@ -294,31 +322,41 @@ class SettingsScreen extends ConsumerWidget {
                 padding: EdgeInsets.only(left: 4),
               ),
               const Gap(12),
-              KoinGroupedCard(
-                children: [
-                  KoinSettingTile(
-                    title: 'Delete All Records',
-                    subtitle: 'Clear all your transaction history',
-                    icon: Icons.delete_sweep_rounded,
-                    isDestructive: true,
-                    onTap: () => _handleDeleteAllTransactions(context, ref),
-                  ),
-                  KoinSettingTile(
-                    title: 'Delete All Data',
-                    subtitle: 'Clear all records, accounts, and categories',
-                    icon: Icons.delete_forever_rounded,
-                    isDestructive: true,
-                    onTap: () => _handleDeleteAllData(context, ref),
-                  ),
-                  KoinSettingTile(
-                    title: 'Factory Reset',
-                    subtitle: 'Reset app to its initial state',
-                    icon: Icons.restore_rounded,
-                    isDestructive: true,
-                    onTap: () => _handleFactoryReset(context, ref),
-                  ),
-                ],
+              IgnorePointer(
+                ignoring: _maintenanceBusy,
+                child: KoinGroupedCard(
+                  children: [
+                    KoinSettingTile(
+                      title: 'Delete All Records',
+                      subtitle: 'Clear all your transaction history',
+                      icon: Icons.delete_sweep_rounded,
+                      isDestructive: true,
+                      onTap: () => _runMaintenanceAction(
+                        () => _handleDeleteAllTransactions(context, ref),
+                      ),
+                    ),
+                    KoinSettingTile(
+                      title: 'Delete All Data',
+                      subtitle: 'Clear all records, accounts, and categories',
+                      icon: Icons.delete_forever_rounded,
+                      isDestructive: true,
+                      onTap: () => _runMaintenanceAction(
+                        () => _handleDeleteAllData(context, ref),
+                      ),
+                    ),
+                    KoinSettingTile(
+                      title: 'Factory Reset',
+                      subtitle: 'Reset app to its initial state',
+                      icon: Icons.restore_rounded,
+                      isDestructive: true,
+                      onTap: () => _runMaintenanceAction(
+                        () => _handleFactoryReset(context, ref),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              if (_maintenanceBusy) const LinearProgressIndicator(),
               const Gap(KoinSpacing.sectionGap),
             ],
           ),
@@ -359,7 +397,8 @@ class SettingsScreen extends ConsumerWidget {
         KoinSnackBar.error(
           context,
           'Error creating backup',
-          subtitle: 'An unexpected error occurred: $e',
+          subtitle:
+              'Check available storage and folder access, then try again.',
         );
       }
     }
@@ -752,7 +791,12 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                       ]
-                      .animate(interval: 40.ms)
+                      .koinAnimate(
+                        context,
+                        autoPlay: !MediaQuery.disableAnimationsOf(context),
+                        onInit: KoinMotion.onInit(context),
+                        interval: KoinMotion.duration(context, 40.ms),
+                      )
                       .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                       .scale(
                         begin: const Offset(0.95, 0.95),
@@ -785,7 +829,10 @@ class SettingsScreen extends ConsumerWidget {
         Navigator.pop(context);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 300),
+        ),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         decoration: BoxDecoration(
@@ -814,7 +861,10 @@ class SettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 300),
+              ),
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

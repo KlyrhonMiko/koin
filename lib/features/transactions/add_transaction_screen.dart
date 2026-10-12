@@ -58,6 +58,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   bool _initializedColors = false;
   bool _savingTransaction = false;
+  bool _transactionSaved = false;
+  AppTransaction? _existingFee;
 
   @override
   void initState() {
@@ -100,6 +102,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _selectedCategoryId = tx.categoryId;
       _selectedAccountId = tx.accountId;
       _selectedToAccountId = tx.toAccountId;
+      _existingFee = ref
+          .read(transactionProvider)
+          .value
+          ?.where((fee) => fee.transferId == tx.id)
+          .firstOrNull;
+      if (_existingFee != null) {
+        _feeController.text = _existingFee!.amount.toString();
+        _feeExpression = _feeController.text;
+      }
     }
   }
 
@@ -197,7 +208,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
 
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0.0;
     // SuggestionContext preserves the direction of a blank amount for category
     // matching while keeping the real zero available to transfer detection.
 
@@ -243,7 +259,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   void _saveTransaction() async {
     if (_savingTransaction) return;
-    _savingTransaction = true;
+    setState(() => _savingTransaction = true);
+    final savings = ref.read(savingsGoalsProvider.notifier);
     try {
       await _saveTransactionImpl();
     } catch (_) {
@@ -254,7 +271,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         );
       }
     } finally {
-      _savingTransaction = false;
+      if (!_transactionSaved) {
+        await savings.rollbackDraftRelease(_transactionId);
+      }
+      if (mounted) setState(() => _savingTransaction = false);
     }
   }
 
@@ -273,7 +293,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return;
     }
 
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0.0;
     if (!amount.isFinite || amount <= 0) {
       HapticService.error();
       _showErrorSnackbar(
@@ -285,7 +310,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     AppTransaction newTransaction;
     AppTransaction? feeTransaction;
-    final enteredFee = double.tryParse(_feeController.text) ?? 0.0;
+    final enteredFee =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(
+              _feeController.text,
+              precision: _isTransferFeePercentage ? 2 : null,
+            ) ??
+        0.0;
     final feeAmount = isTransfer
         ? (_isTransferFeePercentage ? amount * (enteredFee / 100) : enteredFee)
         : 0.0;
@@ -304,7 +337,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _showErrorSnackbar(
           'Insufficient balance',
           subtitle:
-              'Available in ${debitAccount.name}: ${NumberFormat.currency(symbol: ref.read(settingsProvider).currency.symbol).format(balance)}',
+              'Available in ${debitAccount.name}: ${ref.read(settingsProvider).currency.formatter.format(balance)}',
         );
         return;
       }
@@ -321,7 +354,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           previousDebit:
               widget.editingTransaction?.accountId == _selectedAccountId &&
                   widget.editingTransaction?.type != TransactionType.income
-              ? widget.editingTransaction!.amount
+              ? widget.editingTransaction!.amount + (_existingFee?.amount ?? 0)
               : 0,
         )) {
       return;
@@ -344,7 +377,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         if (widget.editingTransaction != null &&
             widget.editingTransaction!.accountId == selectedAccount.id &&
             widget.editingTransaction!.type == TransactionType.transfer) {
-          previousDeduction = widget.editingTransaction!.amount;
+          previousDeduction =
+              widget.editingTransaction!.amount + (_existingFee?.amount ?? 0);
         }
 
         if (currentBalance + previousDeduction - (amount + feeAmount) < 0) {
@@ -419,18 +453,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     // Saved history trains the model through database change tracking.
     // Sending separate feedback here would count the transaction twice.
     if (widget.editingTransaction != null) {
-      await ref
-          .read(transactionProvider.notifier)
-          .updateTransaction(
-            newTransaction.copyWith(
-              plannedPaymentId: widget.editingTransaction!.plannedPaymentId,
-              debtRepaymentId: widget.editingTransaction!.debtRepaymentId,
-            ),
-          );
-      if (feeTransaction != null) {
+      if (isTransfer ||
+          widget.editingTransaction!.type == TransactionType.transfer) {
         await ref
             .read(transactionProvider.notifier)
-            .addTransaction(feeTransaction);
+            .updateTransfer(newTransaction, feeTransaction);
+      } else {
+        await ref
+            .read(transactionProvider.notifier)
+            .updateTransaction(
+              newTransaction.copyWith(
+                plannedPaymentId: widget.editingTransaction!.plannedPaymentId,
+                debtRepaymentId: widget.editingTransaction!.debtRepaymentId,
+              ),
+            );
       }
     } else {
       if (isTransfer) {
@@ -446,6 +482,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             .addTransaction(newTransaction);
       }
     }
+    _transactionSaved = true;
     HapticService.success();
     if (mounted) Navigator.pop(context);
   }
@@ -718,6 +755,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ),
                       child: TextFieldTapRegion(
                         child: NumPad(
+                          enabled: !_savingTransaction,
+                          decimalDigits: _editingFee && _isTransferFeePercentage
+                              ? 2
+                              : currency.decimalDigits,
                           key: ValueKey(_editingFee ? 'fee-numpad' : 'numpad'),
                           compact: true,
                           initialValue: _editingFee
@@ -1044,7 +1085,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 children: [
                   currencySymbol,
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 150),
+                    duration: KoinMotion.duration(
+                      context,
+                      const Duration(milliseconds: 150),
+                    ),
                     transitionBuilder: (child, anim) =>
                         FadeTransition(opacity: anim, child: child),
                     child: Text(
@@ -1155,8 +1199,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Form Section
   // ═══════════════════════════════════════════════════════
   String? _transferSummaryText() {
-    final amount = double.tryParse(_amountController.text) ?? 0;
-    final fee = double.tryParse(_feeController.text) ?? 0;
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0;
+    final fee =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(
+              _feeController.text,
+              precision: _isTransferFeePercentage ? 2 : null,
+            ) ??
+        0;
     final draft = TransferDraft(
       sourceAccountId: _selectedAccountId ?? '',
       destinationAccountId: _selectedToAccountId ?? '',
@@ -1173,10 +1230,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         !total.isFinite) {
       return null;
     }
-    final symbol = ref.watch(settingsProvider).currency.symbol;
-    final format = NumberFormat('#,##0.##');
-    return 'Deducted $symbol${format.format(total)} · '
-        'Receives $symbol${format.format(draft.calculateNetAmount())}';
+
+    final format = ref.read(settingsProvider).currency.formatter;
+    return 'Deducted ${format.format(total)} · '
+        'Receives ${format.format(draft.calculateNetAmount())}';
   }
 
   String? _savingsUsageText(Currency currency) {
@@ -1185,7 +1242,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     ref.watch(dashboardStatsProvider);
     final goals = ref.watch(savingsGoalsProvider).value;
     final account = _accountById(accounts, _selectedAccountId);
-    final amount = double.tryParse(_amountController.text) ?? 0;
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0;
     if (account == null ||
         account.isCredit ||
         goals == null ||
@@ -1205,7 +1267,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       reservedCents,
     );
     if (neededCents == 0) return null;
-    final money = NumberFormat.currency(symbol: currency.symbol);
+    final money = currency.formatter;
     return 'Uses ${money.format(neededCents / 100)} from savings';
   }
 
@@ -1218,8 +1280,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedType == TransactionType.income) {
       return false;
     }
-    final amount = double.tryParse(_amountController.text) ?? 0;
-    final fee = double.tryParse(_feeController.text) ?? 0;
+    final amount =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_amountController.text) ??
+        0;
+    final fee =
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(
+              _feeController.text,
+              precision: _isTransferFeePercentage ? 2 : null,
+            ) ??
+        0;
     final debit = _selectedType == TransactionType.transfer
         ? amount + (_isTransferFeePercentage ? amount * (fee / 100) : fee)
         : amount;
@@ -1516,7 +1591,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
                             if (_autoCatKey > 0) {
                               child = child
-                                  .animate(key: ValueKey(_autoCatKey))
+                                  .koinAnimate(
+                                    context,
+                                    autoPlay: !MediaQuery.disableAnimationsOf(
+                                      context,
+                                    ),
+                                    onInit: KoinMotion.onInit(context),
+                                    key: ValueKey(_autoCatKey),
+                                  )
                                   .shimmer(
                                     duration: 400.ms,
                                     color: AppTheme.primaryColor(
@@ -1594,7 +1676,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           label: 'To',
           selectedName: account == null || balance == null
               ? null
-              : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(balance)}',
+              : '${account.name} • ${currency.formatter.format(balance)}',
           selectedColor: account?.color,
           selectedIconCodePoint: account?.iconCodePoint,
           selectedLogoAsset: account?.logoAsset,
@@ -1633,7 +1715,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     if (previous?.accountId == account.id &&
         (previous?.type == TransactionType.expense ||
             previous?.type == TransactionType.transfer)) {
-      return balance + previous!.amount;
+      return balance +
+          previous!.amount +
+          (_existingFee?.accountId == account.id ? _existingFee!.amount : 0);
     }
     return balance;
   }
@@ -1683,12 +1767,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             fallbackIcon: Icons.account_balance_wallet_outlined,
             label: reserved > 0
                 ? (visibleSavings > 0
-                      ? 'Spendable · ${currency.symbol}${NumberFormat('#,##0.##').format(visibleSavings)} in savings'
+                      ? 'Spendable · ${currency.formatter.format(visibleSavings)} in savings'
                       : 'Spendable')
                 : label,
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${currency.symbol}${NumberFormat('#,##0.##').format(displayBalance)}',
+                : '${account.name} • ${currency.formatter.format(displayBalance)}',
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,

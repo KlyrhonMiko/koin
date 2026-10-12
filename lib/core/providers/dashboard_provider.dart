@@ -59,59 +59,42 @@ class DashboardStats {
     Map<String, double> monthlyCatSpending = {};
     Map<String, double> allTimeCatSpending = {};
 
-    final includedAccountIds = accounts
-        .where((a) => !a.excludeFromTotal)
-        .map((a) => a.id)
-        .toSet();
-
-    for (var a in accounts) {
-      balances[a.id] = a.initialBalance;
+    final now = DateTime.now();
+    for (final account in accounts) {
+      balances[account.id] = account.initialBalance;
     }
-
-    for (var t in transactions) {
-      final isSourceIncluded = includedAccountIds.contains(t.accountId);
-      final isDestIncluded =
-          t.toAccountId != null && includedAccountIds.contains(t.toAccountId);
-
-      final isCurrentMonth =
-          t.date.year == targetDate.year && t.date.month == targetDate.month;
-
-      if (t.type == TransactionType.income) {
-        if (isSourceIncluded) {
-          allTimeInc += t.amount;
-          if (isCurrentMonth) monthlyIncome += t.amount;
+    for (final transaction in transactions) {
+      final inMonth =
+          transaction.date.year == targetDate.year &&
+          transaction.date.month == targetDate.month;
+      // Hiding or excluding an account changes balance visibility, never history.
+      if (transaction.type == TransactionType.income) {
+        allTimeInc += transaction.amount;
+        if (inMonth) monthlyIncome += transaction.amount;
+      } else if (transaction.type == TransactionType.expense) {
+        allTimeExp += transaction.amount;
+        allTimeCatSpending[transaction.categoryId] =
+            (allTimeCatSpending[transaction.categoryId] ?? 0) +
+            transaction.amount;
+        if (inMonth) {
+          monthlyExpense += transaction.amount;
+          monthlyCatSpending[transaction.categoryId] =
+              (monthlyCatSpending[transaction.categoryId] ?? 0) +
+              transaction.amount;
         }
-        balances[t.accountId] = (balances[t.accountId] ?? 0) + t.amount;
-      } else if (t.type == TransactionType.expense) {
-        if (isSourceIncluded) {
-          allTimeExp += t.amount;
-          allTimeCatSpending[t.categoryId] =
-              (allTimeCatSpending[t.categoryId] ?? 0) + t.amount;
-
-          if (isCurrentMonth) {
-            monthlyExpense += t.amount;
-            monthlyCatSpending[t.categoryId] =
-                (monthlyCatSpending[t.categoryId] ?? 0) + t.amount;
-          }
-        }
-        balances[t.accountId] = (balances[t.accountId] ?? 0) - t.amount;
-      } else if (t.type == TransactionType.transfer) {
-        // Internal transfer between included/excluded accounts
-        if (isSourceIncluded && !isDestIncluded) {
-          // Moving money Out of included pool
-          allTimeExp += t.amount;
-          if (isCurrentMonth) monthlyExpense += t.amount;
-        } else if (!isSourceIncluded && isDestIncluded) {
-          // Moving money Into included pool
-          allTimeInc += t.amount;
-          if (isCurrentMonth) monthlyIncome += t.amount;
-        }
-        // Both included or both excluded -> no net change to total income/expense
-
-        balances[t.accountId] = (balances[t.accountId] ?? 0) - t.amount;
-        if (t.toAccountId != null) {
-          balances[t.toAccountId!] = (balances[t.toAccountId!] ?? 0) + t.amount;
-        }
+      }
+      if (transaction.date.isAfter(now)) continue;
+      if (balances.containsKey(transaction.accountId)) {
+        balances[transaction.accountId] =
+            balances[transaction.accountId]! +
+            (transaction.type == TransactionType.income
+                ? transaction.amount
+                : -transaction.amount);
+      }
+      if (transaction.type == TransactionType.transfer &&
+          balances.containsKey(transaction.toAccountId)) {
+        balances[transaction.toAccountId!] =
+            balances[transaction.toAccountId!]! + transaction.amount;
       }
     }
 
@@ -141,6 +124,12 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
   final transactionsState = ref.watch(transactionProvider);
   final accountsState = ref.watch(accountProvider);
 
+  if (transactionsState.value != null && accountsState.value != null) {
+    return DashboardStats.calculate(
+      accounts: accountsState.value!,
+      transactions: transactionsState.value!,
+    );
+  }
   return transactionsState.maybeWhen(
     data: (transactions) {
       return accountsState.maybeWhen(
@@ -155,22 +144,31 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
   );
 });
 
-final monthlyDashboardStatsProvider =
-    Provider.family<DashboardStats, DateTime>((ref, date) {
-  final transactionsState = ref.watch(transactionProvider);
-  final accountsState = ref.watch(accountProvider);
+final monthlyDashboardStatsProvider = Provider.family<DashboardStats, DateTime>(
+  (ref, date) {
+    final transactionsState = ref.watch(transactionProvider);
+    final accountsState = ref.watch(accountProvider);
 
-  return transactionsState.maybeWhen(
-    data: (transactions) {
-      return accountsState.maybeWhen(
-        data: (accounts) => DashboardStats.calculate(
-          accounts: accounts,
-          transactions: transactions,
-          referenceDate: date,
-        ),
-        orElse: () => DashboardStats.empty(),
+    if (transactionsState.value != null && accountsState.value != null) {
+      return DashboardStats.calculate(
+        accounts: accountsState.value!,
+        transactions: transactionsState.value!,
+        referenceDate: date,
       );
-    },
-    orElse: () => DashboardStats.empty(),
-  );
-});
+    }
+
+    return transactionsState.maybeWhen(
+      data: (transactions) {
+        return accountsState.maybeWhen(
+          data: (accounts) => DashboardStats.calculate(
+            accounts: accounts,
+            transactions: transactions,
+            referenceDate: date,
+          ),
+          orElse: () => DashboardStats.empty(),
+        );
+      },
+      orElse: () => DashboardStats.empty(),
+    );
+  },
+);

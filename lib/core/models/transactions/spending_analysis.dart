@@ -111,9 +111,9 @@ enum AnalysisPeriod {
       case AnalysisPeriod.week:
         return baseDate.add(const Duration(days: 7));
       case AnalysisPeriod.month:
-        return DateTime(baseDate.year, baseDate.month + 1, baseDate.day);
+        return DateTime(baseDate.year, baseDate.month + 1);
       case AnalysisPeriod.year:
-        return DateTime(baseDate.year + 1, baseDate.month, baseDate.day);
+        return DateTime(baseDate.year + 1);
     }
   }
 
@@ -123,9 +123,9 @@ enum AnalysisPeriod {
       case AnalysisPeriod.week:
         return baseDate.subtract(const Duration(days: 7));
       case AnalysisPeriod.month:
-        return DateTime(baseDate.year, baseDate.month - 1, baseDate.day);
+        return DateTime(baseDate.year, baseDate.month - 1);
       case AnalysisPeriod.year:
-        return DateTime(baseDate.year - 1, baseDate.month, baseDate.day);
+        return DateTime(baseDate.year - 1);
     }
   }
 }
@@ -193,7 +193,8 @@ class SpendingAnalysis {
 
     // Previous period transactions
     final prevExpenses = expenseTransactions.where((t) {
-      return !t.date.isBefore(prevRange.start) && !t.date.isAfter(prevRange.end);
+      return !t.date.isBefore(prevRange.start) &&
+          !t.date.isAfter(prevRange.end);
     }).toList();
 
     final currentTotal = currentExpenses.fold<double>(

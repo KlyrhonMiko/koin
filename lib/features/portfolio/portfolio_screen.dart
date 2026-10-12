@@ -94,7 +94,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     final stats = ref.watch(dashboardStatsProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
-    final fmt = NumberFormat.currency(symbol: currency.symbol);
+    final fmt = currency.formatter;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

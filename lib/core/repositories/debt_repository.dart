@@ -22,7 +22,7 @@ class SqliteDebtAdapter implements DebtRepository {
   final DatabaseHelper _dbHelper;
 
   SqliteDebtAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<Debt>> getDebts() => _dbHelper.getDebts();
@@ -41,7 +41,8 @@ class SqliteDebtAdapter implements DebtRepository {
   }
 
   @override
-  Future<DebtItem> insertDebtItem(DebtItem item) => _dbHelper.insertDebtItem(item);
+  Future<DebtItem> insertDebtItem(DebtItem item) =>
+      _dbHelper.insertDebtItem(item);
 
   @override
   Future<void> updateDebtItem(DebtItem oldItem, DebtItem newItem) =>

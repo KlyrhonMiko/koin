@@ -1,6 +1,18 @@
 import 'debt_item.dart';
 
-enum InstallmentFrequency { weekly, biweekly, monthly, yearly }
+enum InstallmentFrequency {
+  weekly,
+  biweekly,
+  monthly,
+  yearly;
+
+  String get label => switch (this) {
+    weekly => 'Weekly',
+    biweekly => 'Every two weeks',
+    monthly => 'Monthly',
+    yearly => 'Yearly',
+  };
+}
 
 enum DebtType { owedToMe, iOwe }
 

@@ -353,12 +353,12 @@ void main() {
     );
     expect(tester.widget<AccountItem>(cashCard).balance, 63);
     final symbol = providers.read(settingsProvider).currency.symbol;
-    expect(find.text('${symbol}200 in savings'), findsOneWidget);
+    expect(find.text('${symbol}200.00 in savings'), findsOneWidget);
     await tap(tester, 'Cash');
-    final label = find.text('Spendable · ${symbol}200 in savings');
+    final label = find.text('Spendable · ${symbol}200.00 in savings');
     expect(label, findsOneWidget);
-    expect(find.text('Cash • ${symbol}63'), findsOneWidget);
-    expect(find.text('Cash • ${symbol}263'), findsNothing);
+    expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
+    expect(find.text('Cash • ${symbol}263.00'), findsNothing);
     final compactHeight = tester
         .getSize(find.ancestor(of: label, matching: find.byType(SelectionTile)))
         .height;
@@ -368,7 +368,7 @@ void main() {
         .updateGoal(goal.copyWith(includeInDashboardBalance: false));
     await tester.pumpAndSettle();
     expect(find.text('Spendable'), findsOneWidget);
-    expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+    expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
     expect(label, findsNothing);
     await providers
         .read(savingsGoalsProvider.notifier)
@@ -407,12 +407,12 @@ void main() {
     await tester.pumpAndSettle();
     await tap(tester, 'Open picker');
     expect(tester.widget<AccountItem>(cashCard).balance, 63);
-    expect(find.text('${symbol}200 in savings'), findsOneWidget);
+    expect(find.text('${symbol}200.00 in savings'), findsOneWidget);
     await providers
         .read(savingsGoalsProvider.notifier)
         .updateGoal(goal.copyWith(includeInDashboardBalance: false));
     await tester.pumpAndSettle();
-    expect(find.text('${symbol}200 in savings'), findsNothing);
+    expect(find.text('${symbol}200.00 in savings'), findsNothing);
     expect(tester.widget<AccountItem>(cashCard).balance, 63);
     await providers
         .read(savingsGoalsProvider.notifier)
@@ -751,8 +751,8 @@ void main() {
       await pickAccount(tester, 'Select account', 'Cash');
       await pickAccount(tester, 'Select receiving account', 'Bank');
       final symbol = providers.read(settingsProvider).currency.symbol;
-      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
-      expect(find.text('Bank • ${symbol}300'), findsOneWidget);
+      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
+      expect(find.text('Bank • ${symbol}300.00'), findsOneWidget);
       expect(find.text('From · Spendable'), findsOneWidget);
       expect(find.textContaining('Source balance:'), findsNothing);
       expect(
@@ -760,8 +760,8 @@ void main() {
         lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
       );
       await amount(tester, '50');
-      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
-      expect(find.text('Bank • ${symbol}300'), findsOneWidget);
+      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
+      expect(find.text('Bank • ${symbol}300.00'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('${symbol}50.00').first).dy,
         lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
@@ -773,8 +773,8 @@ void main() {
           .read(savingsGoalsProvider.notifier)
           .updateGoal(hidden.copyWith(includeInDashboardBalance: true));
       await tester.pumpAndSettle();
-      expect(find.text('Bank • ${symbol}400'), findsOneWidget);
-      expect(find.text('Cash • ${symbol}63'), findsOneWidget);
+      expect(find.text('Bank • ${symbol}400.00'), findsOneWidget);
+      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
       await tap(tester, 'Save transfer');
       expect(
         (await providers.read(transactionProvider.future)).single.amount,
@@ -950,7 +950,7 @@ void main() {
       await tap(tester, '2');
       await tap(tester, '5');
       final accountSummary =
-          'Cash • ${providers.read(settingsProvider).currency.symbol}5,000';
+          'Cash • ${providers.read(settingsProvider).currency.symbol}5,000.00';
       expect(find.text(accountSummary), findsOneWidget);
       expect(find.textContaining('Available:'), findsNothing);
       expect(

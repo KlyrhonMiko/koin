@@ -102,7 +102,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                     rightLabel: 'Transactions',
                   ),
                 ]
-                .animate(interval: 40.ms)
+                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                  interval: KoinMotion.duration(context, 40.ms),
+                )
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                 .scale(
                   begin: const Offset(0.95, 0.95),

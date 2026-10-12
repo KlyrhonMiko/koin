@@ -16,13 +16,14 @@ class SqliteAccountAdapter implements AccountRepository {
   final DatabaseHelper _dbHelper;
 
   SqliteAccountAdapter({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<Account>> getAccounts() => _dbHelper.getAccounts();
 
   @override
-  Future<Account> insertAccount(Account account) => _dbHelper.insertAccount(account);
+  Future<Account> insertAccount(Account account) =>
+      _dbHelper.insertAccount(account);
 
   @override
   Future<void> updateAccount(Account account) async {

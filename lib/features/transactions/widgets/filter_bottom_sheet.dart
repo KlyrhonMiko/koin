@@ -43,16 +43,41 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   int get _activeFilterCount => _filter
       .copyWith(
-        minAmount: double.tryParse(_minAmountController.text),
-        maxAmount: double.tryParse(_maxAmountController.text),
+        minAmount: ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_minAmountController.text),
+        maxAmount: ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_maxAmountController.text),
         clearMinAmount: _minAmountController.text.isEmpty,
         clearMaxAmount: _maxAmountController.text.isEmpty,
       )
       .activeFilterCount;
 
   void _apply() {
-    final min = double.tryParse(_minAmountController.text);
-    final max = double.tryParse(_maxAmountController.text);
+    final min = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_minAmountController.text);
+    final max = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(_maxAmountController.text);
+    if ((_minAmountController.text.trim().isNotEmpty &&
+            (min == null || !min.isFinite || min < 0)) ||
+        (_maxAmountController.text.trim().isNotEmpty &&
+            (max == null || !max.isFinite || max < 0)) ||
+        (min != null && max != null && min > max)) {
+      KoinSnackBar.error(
+        context,
+        'Check the amount range',
+        subtitle:
+            'Use non-negative amounts, with the minimum no greater than the maximum.',
+      );
+      return;
+    }
 
     final finalFilter = _filter.copyWith(
       minAmount: min,
@@ -171,7 +196,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   ],
                 ),
               )
-              .animate()
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fadeIn(duration: 300.ms)
               .slideY(
                 begin: -0.1,
@@ -334,7 +363,12 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ],
                         ),
                       ]
-                      .animate(interval: 40.ms)
+                      .koinAnimate(
+                        context,
+                        autoPlay: !MediaQuery.disableAnimationsOf(context),
+                        onInit: KoinMotion.onInit(context),
+                        interval: KoinMotion.duration(context, 40.ms),
+                      )
                       .fade(duration: 250.ms, curve: Curves.easeOutCubic)
                       .scale(
                         begin: const Offset(0.95, 0.95),
@@ -398,8 +432,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               filterCount > 0
                                   ? 'Apply $filterCount Filter${filterCount > 1 ? 's' : ''}'
                                   : 'Apply Filters',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
+
                                 fontSize: KoinTypography.itemTitle,
                                 fontWeight: KoinTypography.headingWeight,
                                 letterSpacing: 0.5,
@@ -412,7 +447,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   ),
                 ),
               )
-              .animate()
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
+                onInit: KoinMotion.onInit(context),
+              )
               .fadeIn(delay: 400.ms, duration: 300.ms)
               .slideY(begin: 0.2, duration: 400.ms, curve: Curves.easeOutCubic),
         ],
@@ -433,7 +472,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 250),
+        ),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -499,7 +541,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 250),
+        ),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
@@ -563,7 +608,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 250),
+        ),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(

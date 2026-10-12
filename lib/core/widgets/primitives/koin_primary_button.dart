@@ -38,18 +38,19 @@ class KoinPrimaryButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
     final isInteractive = enabled && !isLoading && onPressed != null;
+    final displayedGradient = isInteractive
+        ? effectiveGradient
+        : LinearGradient(
+            colors: [
+              AppTheme.textLightColor(context).withValues(alpha: 0.3),
+              AppTheme.textLightColor(context).withValues(alpha: 0.2),
+            ],
+          );
 
     Widget button = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        gradient: isInteractive
-            ? effectiveGradient
-            : LinearGradient(
-                colors: [
-                  AppTheme.textLightColor(context).withValues(alpha: 0.3),
-                  AppTheme.textLightColor(context).withValues(alpha: 0.2),
-                ],
-              ),
+        gradient: displayedGradient,
         boxShadow: isInteractive && !isDark
             ? [
                 AppTheme.boxShadow(
@@ -99,8 +100,9 @@ class KoinPrimaryButton extends StatelessWidget {
                     child: Text(
                       label,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
+
                         fontWeight: KoinTypography.titleWeight,
                         fontSize: KoinTypography.itemTitle,
                       ),

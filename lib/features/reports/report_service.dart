@@ -54,6 +54,7 @@ class ReportService {
     required List<TransactionCategory> categories,
     required List<Account> accounts,
     required String currencySymbol,
+    String? currencyCode,
     required bool isPdf,
     String title = 'Custom Financial Report',
     DateTime? timestamp,
@@ -67,6 +68,7 @@ class ReportService {
         accounts: accounts,
         title: title,
         currencySymbol: currencySymbol,
+        currencyCode: currencyCode,
       );
       return ReportExportPayload(
         bytes: bytes,
@@ -78,6 +80,7 @@ class ReportService {
         transactions: transactions,
         categories: categories,
         accounts: accounts,
+        currencyCode: currencyCode,
       );
       return ReportExportPayload(
         bytes: bytes,
@@ -88,10 +91,10 @@ class ReportService {
   }
 
   static Future<Uint8List> generateCSV({
-
     required List<AppTransaction> transactions,
     required List<TransactionCategory> categories,
     required List<Account> accounts,
+    String? currencyCode,
   }) async {
     List<List<dynamic>> rows = [];
 
@@ -104,6 +107,7 @@ class ReportService {
       'Account',
       'To Account',
       'Note',
+      'Currency',
     ]);
 
     for (var tx in transactions) {
@@ -115,7 +119,7 @@ class ReportService {
           (c) => c.id == tx.categoryId,
           orElse: () => TransactionCategory(
             id: 'unknown',
-            name: 'Unknown',
+            name: 'Unknown category',
             iconCodePoint: 0,
             colorHex: '#000000',
             type: tx.type,
@@ -128,7 +132,7 @@ class ReportService {
         (a) => a.id == tx.accountId,
         orElse: () => Account(
           id: 'unknown',
-          name: 'Unknown',
+          name: 'Unlinked account',
           iconCodePoint: 0,
           colorHex: '#000000',
         ),
@@ -140,7 +144,7 @@ class ReportService {
           (a) => a.id == tx.toAccountId,
           orElse: () => Account(
             id: 'unknown',
-            name: 'Unknown',
+            name: 'Unlinked account',
             iconCodePoint: 0,
             colorHex: '#000000',
           ),
@@ -156,6 +160,7 @@ class ReportService {
         account.name,
         toAccountName,
         tx.note,
+        currencyCode ?? '',
       ]);
     }
 
@@ -169,6 +174,7 @@ class ReportService {
     required List<Account> accounts,
     required String title,
     required String currencySymbol,
+    String? currencyCode,
   }) async {
     pw.Font? iconFont;
 
@@ -183,6 +189,13 @@ class ReportService {
     }
 
     final pdf = pw.Document();
+    final money = NumberFormat.currency(
+      name: currencyCode,
+      symbol: _sanitizeCurrency(currencySymbol, currencyCode),
+      decimalDigits: currencyCode == null
+          ? 2
+          : NumberFormat.currency(name: currencyCode).decimalDigits,
+    );
 
     // Define Colors from AppTheme
     final primaryColor = PdfColor.fromInt(0xFF00D09E);
@@ -198,7 +211,6 @@ class ReportService {
     final totalIncome = summary.totalIncome;
     final totalExpense = summary.totalExpense;
     final netBalance = summary.netBalance;
-
 
     pdf.addPage(
       pw.MultiPage(
@@ -296,19 +308,19 @@ class ReportService {
             children: [
               _buildSummaryCard(
                 'TOTAL INCOME',
-                '${_sanitizeCurrency(currencySymbol)}${totalIncome.toStringAsFixed(2)}',
+                money.format(totalIncome),
                 incomeColor,
               ),
               pw.SizedBox(width: 16),
               _buildSummaryCard(
                 'TOTAL EXPENSE',
-                '${_sanitizeCurrency(currencySymbol)}${totalExpense.toStringAsFixed(2)}',
+                money.format(totalExpense),
                 expenseColor,
               ),
               pw.SizedBox(width: 16),
               _buildSummaryCard(
                 'NET BALANCE',
-                '${_sanitizeCurrency(currencySymbol)}${netBalance.toStringAsFixed(2)}',
+                money.format(netBalance),
                 netBalance >= 0 ? incomeColor : expenseColor,
               ),
             ],
@@ -350,12 +362,25 @@ class ReportService {
 
                 final category = categories.firstWhere(
                   (c) => c.id == tx.categoryId,
-                  orElse: () => categories.first,
+                  orElse: () => TransactionCategory(
+                    id: '',
+                    name: tx.type == TransactionType.transfer
+                        ? 'Transfer'
+                        : 'Unknown category',
+                    iconCodePoint: 0,
+                    colorHex: '#64748B',
+                    type: tx.type,
+                  ),
                 );
 
                 final account = accounts.firstWhere(
                   (a) => a.id == tx.accountId,
-                  orElse: () => accounts.first,
+                  orElse: () => Account(
+                    id: '',
+                    name: 'Unlinked account',
+                    iconCodePoint: 0,
+                    colorHex: '#64748B',
+                  ),
                 );
 
                 String accountDisplay = account.name;
@@ -363,7 +388,12 @@ class ReportService {
                     tx.toAccountId != null) {
                   final toAccount = accounts.firstWhere(
                     (a) => a.id == tx.toAccountId,
-                    orElse: () => accounts.first,
+                    orElse: () => Account(
+                      id: '',
+                      name: 'Unlinked account',
+                      iconCodePoint: 0,
+                      colorHex: '#64748B',
+                    ),
                   );
                   accountDisplay = '${account.name} -> ${toAccount.name}';
                 }
@@ -390,8 +420,12 @@ class ReportService {
                   children: [
                     _buildDataCell(DateFormat('MMM dd, HH:mm').format(tx.date)),
                     _buildIconCell(
-                      category.name,
-                      category.iconCodePoint,
+                      tx.type == TransactionType.transfer
+                          ? 'Transfer'
+                          : category.name,
+                      tx.type == TransactionType.transfer
+                          ? 0
+                          : category.iconCodePoint,
                       PdfColor.fromHex(category.colorHex),
                       iconFont,
                     ),
@@ -403,7 +437,7 @@ class ReportService {
                     ),
                     _buildDataCell(tx.note.isEmpty ? '-' : tx.note),
                     _buildDataCell(
-                      '$amountPrefix${_sanitizeCurrency(currencySymbol)}${tx.amount.toStringAsFixed(2)}',
+                      '$amountPrefix${money.format(tx.amount)}',
                       color: amountColor,
                       align: pw.Alignment.centerRight,
                       bold: true,
@@ -538,14 +572,15 @@ class ReportService {
     );
   }
 
-  static String _sanitizeCurrency(String symbol) {
+  static String _sanitizeCurrency(String symbol, [String? code]) {
+    if (code != null) return '$code ';
     // Map problematic symbols to safe alternatives that are universally supported.
     final map = {
       '₹': 'INR ',
       '₱': 'PHP ',
       '€': 'EUR ',
       '£': 'GBP ',
-      '¥': 'JPY ',
+      '¥': '¥',
       '\$': '\$',
     };
     return map[symbol] ?? symbol;

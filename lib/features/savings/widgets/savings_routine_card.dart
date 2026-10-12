@@ -14,9 +14,7 @@ class SavingsRoutineCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = goal.savingsPlan;
-    final fmt = NumberFormat.simpleCurrency(
-      name: ref.watch(settingsProvider).currency.code,
-    );
+    final fmt = ref.watch(settingsProvider).currency.formatter;
     final logs = ref.watch(savingsLogsProvider(goal.id));
     final progress = logs.asData == null || plan == null
         ? null

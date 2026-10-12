@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/providers/savings_provider.dart';
+import 'package:koin/core/ledger/transaction_rules.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/sheets/confirmation_sheet.dart';
@@ -19,7 +23,8 @@ class SwipeToDeletePointerNotification extends Notification {
 /// and automated ConfirmationSheet integration.
 class SwipeToDeleteTile extends StatefulWidget {
   final Widget child;
-  final VoidCallback onDelete;
+  final FutureOr<void> Function() onDelete;
+  final String failureTitle;
   final String? confirmTitle;
   final String? confirmDescription;
   final String confirmLabel;
@@ -36,6 +41,7 @@ class SwipeToDeleteTile extends StatefulWidget {
     super.key,
     required this.child,
     required this.onDelete,
+    this.failureTitle = 'Could not delete this item',
     this.confirmTitle,
     this.confirmDescription,
     this.confirmLabel = 'Delete',
@@ -56,6 +62,54 @@ class SwipeToDeleteTile extends StatefulWidget {
 class _SwipeToDeleteTileState extends State<SwipeToDeleteTile> {
   double _swipeProgress = 0;
   DismissDirection _swipeDirection = DismissDirection.endToStart;
+  bool _deleting = false;
+
+  Future<bool> _delete(DismissDirection direction, Color color) async {
+    if (_deleting) return false;
+    setState(() => _deleting = true);
+    try {
+      bool confirmed = true;
+      if (widget.confirmDismiss != null) {
+        confirmed = await widget.confirmDismiss!(direction) ?? false;
+      } else if (widget.confirmTitle != null) {
+        confirmed =
+            await ConfirmationSheet.show(
+              context: context,
+              title: widget.confirmTitle!,
+              description:
+                  widget.confirmDescription ?? 'This action cannot be undone.',
+              confirmLabel: widget.confirmLabel,
+              confirmColor: color.withValues(alpha: 1),
+              icon: widget.icon,
+              isDanger: true,
+            ) ??
+            false;
+      }
+      if (confirmed && mounted) await widget.onDelete();
+    } catch (error) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          widget.failureTitle,
+          subtitle: error is SavingsBalanceException
+              ? error.message
+              : error is FinancialValidationException
+              ? error.message
+              : 'Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _deleting = false;
+          _swipeProgress = 0;
+        });
+      }
+    }
+    // The owner removes successful writes. Failed writes spring back without
+    // leaving a dismissed Dismissible in the widget tree.
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,31 +142,7 @@ class _SwipeToDeleteTileState extends State<SwipeToDeleteTile> {
           size: 28,
         ),
       ),
-      confirmDismiss: (dismissDirection) async {
-        if (widget.confirmDismiss != null) {
-          return await widget.confirmDismiss!(dismissDirection);
-        }
-
-        if (widget.confirmTitle != null) {
-          HapticService.medium();
-          final confirmed = await ConfirmationSheet.show(
-            context: context,
-            title: widget.confirmTitle!,
-            description:
-                widget.confirmDescription ?? 'This action cannot be undone.',
-            confirmLabel: widget.confirmLabel,
-            confirmColor: deleteBgColor.withValues(alpha: 1.0),
-            icon: widget.icon,
-            isDanger: true,
-          );
-          return confirmed ?? false;
-        }
-
-        return true;
-      },
-      onDismissed: (_) {
-        widget.onDelete();
-      },
+      confirmDismiss: (direction) => _delete(direction, deleteBgColor),
       child: widget.child,
     );
 
@@ -149,7 +179,7 @@ class _SwipeToDeleteTileState extends State<SwipeToDeleteTile> {
         pointer: event.pointer,
         isDown: false,
       ).dispatch(context),
-      child: content,
+      child: IgnorePointer(ignoring: _deleting, child: content),
     );
   }
 }

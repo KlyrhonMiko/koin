@@ -63,6 +63,13 @@ flutter pub get
 flutter run
 ```
 
+Use the same Flutter installation for the terminal, editor, and Android's
+`android/local.properties` (`flutter.sdk`). On Windows, `Get-Command flutter`
+shows which installation PowerShell uses. Switching between SDK versions can
+leave incompatible compiled native-hook caches and produce an “Invalid kernel
+binary format version” error. After intentionally switching SDKs, run
+`flutter clean` and `flutter pub get` with the selected SDK before building.
+
 **Check the project**
 
 ```bash

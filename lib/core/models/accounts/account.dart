@@ -131,4 +131,3 @@ class Account {
     return initialBalance + difference;
   }
 }
-

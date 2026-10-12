@@ -55,7 +55,10 @@ void main() {
       const expenseFilter = TransactionFilter(type: TransactionType.expense);
       final expenses = expenseFilter.apply(txList);
       expect(expenses.length, equals(2));
-      expect(expenses.every((tx) => tx.type == TransactionType.expense), isTrue);
+      expect(
+        expenses.every((tx) => tx.type == TransactionType.expense),
+        isTrue,
+      );
 
       const incomeFilter = TransactionFilter(type: TransactionType.income);
       final incomes = incomeFilter.apply(txList);
@@ -71,12 +74,15 @@ void main() {
 
       const accFilter = TransactionFilter(accountIds: {'acc_wallet'});
       final filteredAccs = accFilter.apply(txList);
-      expect(filteredAccs.length, equals(1));
-      expect(filteredAccs.first.id, equals('tx_1'));
+      expect(filteredAccs.map((tx) => tx.id), containsAll(['tx_1', 'tx_4']));
+      expect(filteredAccs.length, equals(2));
     });
 
     test('filters by Min and Max amount thresholds', () {
-      const amountFilter = TransactionFilter(minAmount: 100.0, maxAmount: 300.0);
+      const amountFilter = TransactionFilter(
+        minAmount: 100.0,
+        maxAmount: 300.0,
+      );
       final results = amountFilter.apply(txList);
       expect(results.length, equals(2)); // 120 and 200
       expect(results.map((t) => t.id), containsAll(['tx_2', 'tx_4']));
@@ -90,10 +96,16 @@ void main() {
       };
 
       const noteQuery = TransactionFilter(query: 'jollibee');
-      expect(noteQuery.apply(txList, categoryNamesById: categoryNames).length, equals(1));
+      expect(
+        noteQuery.apply(txList, categoryNamesById: categoryNames).length,
+        equals(1),
+      );
 
       const catQuery = TransactionFilter(query: 'dining');
-      expect(catQuery.apply(txList, categoryNamesById: categoryNames).length, equals(1));
+      expect(
+        catQuery.apply(txList, categoryNamesById: categoryNames).length,
+        equals(1),
+      );
     });
 
     test('filters by inclusive DateRange', () {
@@ -111,21 +123,24 @@ void main() {
   group('SpendingAnalysis & AnalysisPeriod Deep Domain Tests', () {
     final baseDate = DateTime(2026, 10, 15);
 
-    test('AnalysisPeriod computes weekly, monthly, and yearly windows accurately', () {
-      final weekRange = AnalysisPeriod.week.dateRange(baseDate);
-      expect(weekRange.start.weekday, equals(DateTime.monday));
-      expect(weekRange.end.weekday, equals(DateTime.sunday));
+    test(
+      'AnalysisPeriod computes weekly, monthly, and yearly windows accurately',
+      () {
+        final weekRange = AnalysisPeriod.week.dateRange(baseDate);
+        expect(weekRange.start.weekday, equals(DateTime.monday));
+        expect(weekRange.end.weekday, equals(DateTime.sunday));
 
-      final monthRange = AnalysisPeriod.month.dateRange(baseDate);
-      expect(monthRange.start, equals(DateTime(2026, 10, 1)));
-      expect(monthRange.end.month, equals(10));
-      expect(monthRange.end.day, equals(31));
+        final monthRange = AnalysisPeriod.month.dateRange(baseDate);
+        expect(monthRange.start, equals(DateTime(2026, 10, 1)));
+        expect(monthRange.end.month, equals(10));
+        expect(monthRange.end.day, equals(31));
 
-      final yearRange = AnalysisPeriod.year.dateRange(baseDate);
-      expect(yearRange.start, equals(DateTime(2026, 1, 1)));
-      expect(yearRange.end.month, equals(12));
-      expect(yearRange.end.day, equals(31));
-    });
+        final yearRange = AnalysisPeriod.year.dateRange(baseDate);
+        expect(yearRange.start, equals(DateTime(2026, 1, 1)));
+        expect(yearRange.end.month, equals(12));
+        expect(yearRange.end.day, equals(31));
+      },
+    );
 
     test('AnalysisPeriod computes previous comparison windows accurately', () {
       final prevMonth = AnalysisPeriod.month.previousDateRange(baseDate);
@@ -138,55 +153,64 @@ void main() {
       expect(prevYear.end.year, equals(2025));
     });
 
-    test('SpendingAnalysis calculates current vs previous totals and trend %', () {
-      final sampleTransactions = [
-        // Current month (October 2026)
-        AppTransaction(
-          id: 't1',
-          amount: 200.0,
-          type: TransactionType.expense,
-          categoryId: 'food',
-          accountId: 'a1',
-          date: DateTime(2026, 10, 5),
-        ),
-        AppTransaction(
-          id: 't2',
-          amount: 300.0,
-          type: TransactionType.expense,
-          categoryId: 'transport',
-          accountId: 'a1',
-          date: DateTime(2026, 10, 12),
-        ),
-        // Prior month (September 2026)
-        AppTransaction(
-          id: 't3',
-          amount: 400.0,
-          type: TransactionType.expense,
-          categoryId: 'food',
-          accountId: 'a1',
-          date: DateTime(2026, 9, 20),
-        ),
-      ];
+    test(
+      'SpendingAnalysis calculates current vs previous totals and trend %',
+      () {
+        final sampleTransactions = [
+          // Current month (October 2026)
+          AppTransaction(
+            id: 't1',
+            amount: 200.0,
+            type: TransactionType.expense,
+            categoryId: 'food',
+            accountId: 'a1',
+            date: DateTime(2026, 10, 5),
+          ),
+          AppTransaction(
+            id: 't2',
+            amount: 300.0,
+            type: TransactionType.expense,
+            categoryId: 'transport',
+            accountId: 'a1',
+            date: DateTime(2026, 10, 12),
+          ),
+          // Prior month (September 2026)
+          AppTransaction(
+            id: 't3',
+            amount: 400.0,
+            type: TransactionType.expense,
+            categoryId: 'food',
+            accountId: 'a1',
+            date: DateTime(2026, 9, 20),
+          ),
+        ];
 
-      final analysis = SpendingAnalysis.calculate(
-        transactions: sampleTransactions,
-        baseDate: baseDate,
-        period: AnalysisPeriod.month,
-      );
+        final analysis = SpendingAnalysis.calculate(
+          transactions: sampleTransactions,
+          baseDate: baseDate,
+          period: AnalysisPeriod.month,
+        );
 
-      expect(analysis.totalExpense, equals(500.0));
-      expect(analysis.previousExpense, equals(400.0));
-      expect(analysis.isIncrease, isTrue);
-      // diff = +100 / 400 = 25%
-      expect(analysis.trendPercentage, closeTo(25.0, 0.01));
-      expect(analysis.filteredTransactions.length, equals(2));
+        expect(analysis.totalExpense, equals(500.0));
+        expect(analysis.previousExpense, equals(400.0));
+        expect(analysis.isIncrease, isTrue);
+        // diff = +100 / 400 = 25%
+        expect(analysis.trendPercentage, closeTo(25.0, 0.01));
+        expect(analysis.filteredTransactions.length, equals(2));
 
-      // Category breakdown sorted descending
-      expect(analysis.categoryBreakdown.length, equals(2));
-      expect(analysis.categoryBreakdown.first.categoryId, equals('transport'));
-      expect(analysis.categoryBreakdown.first.amount, equals(300.0));
-      expect(analysis.categoryBreakdown.first.percentage, closeTo(60.0, 0.01));
-    });
+        // Category breakdown sorted descending
+        expect(analysis.categoryBreakdown.length, equals(2));
+        expect(
+          analysis.categoryBreakdown.first.categoryId,
+          equals('transport'),
+        );
+        expect(analysis.categoryBreakdown.first.amount, equals(300.0));
+        expect(
+          analysis.categoryBreakdown.first.percentage,
+          closeTo(60.0, 0.01),
+        );
+      },
+    );
   });
 
   group('BudgetOverview Deep Domain Model Tests', () {
@@ -219,39 +243,40 @@ void main() {
       ),
     ];
 
-    test('BudgetOverview calculates totals, resolved budgets, and progress', () {
-      final spending = {
-        'cat_dining': 600.0,
-        'cat_invest': 500.0,
-        'cat_other': 150.0,
-      };
+    test(
+      'BudgetOverview calculates totals, resolved budgets, and progress',
+      () {
+        final spending = {
+          'cat_dining': 600.0,
+          'cat_invest': 500.0,
+          'cat_other': 150.0,
+        };
 
-      final overview = BudgetOverview.calculate(
-        categories: categories,
-        categorySpending: spending,
-        totalIncome: 5000.0,
-      );
+        final overview = BudgetOverview.calculate(
+          categories: categories,
+          categorySpending: spending,
+          totalIncome: 5000.0,
+        );
 
-      expect(overview.budgetedCategories.length, equals(2));
-      expect(overview.unbudgetedCategories.length, equals(1));
-      // Dining: 1000 + Invest: 20% of 5000 (1000) = 2000 total budget
-      expect(overview.totalBudget, equals(2000.0));
-      // Dining: 600 + Invest: 500 = 1100 total spent
-      expect(overview.totalSpent, equals(1100.0));
-      expect(overview.overallProgress, closeTo(1100 / 2000, 0.01));
-      expect(overview.overallPercent, equals('55'));
+        expect(overview.budgetedCategories.length, equals(2));
+        expect(overview.unbudgetedCategories.length, equals(1));
+        // Dining: 1000 + Invest: 20% of 5000 (1000) = 2000 total budget
+        expect(overview.totalBudget, equals(2000.0));
+        // Dining: 600 + Invest: 500 = 1100 total spent
+        expect(overview.totalSpent, equals(1100.0));
+        expect(overview.overallProgress, closeTo(1100 / 2000, 0.01));
+        expect(overview.overallPercent, equals('55'));
 
-      final diningMetric = overview.metricsByCategory['cat_dining']!;
-      expect(diningMetric.spent, equals(600.0));
-      expect(diningMetric.budget, equals(1000.0));
-      expect(diningMetric.remaining, equals(400.0));
-      expect(diningMetric.isOverBudget, isFalse);
-    });
+        final diningMetric = overview.metricsByCategory['cat_dining']!;
+        expect(diningMetric.spent, equals(600.0));
+        expect(diningMetric.budget, equals(1000.0));
+        expect(diningMetric.remaining, equals(400.0));
+        expect(diningMetric.isOverBudget, isFalse);
+      },
+    );
 
     test('identifies over-budget state accurately', () {
-      final overSpending = {
-        'cat_dining': 1200.0,
-      };
+      final overSpending = {'cat_dining': 1200.0};
 
       final overview = BudgetOverview.calculate(
         categories: categories,
@@ -275,58 +300,67 @@ void main() {
       endDate: DateTime(2026, 12, 31),
     );
 
-    test('SavingsGoal computes elapsed days, expected amount, and pace directly', () {
-      final today = DateTime(2026, 7, 1); // ~halfway through year
-      expect(goal.elapsedDays(today), greaterThan(150));
-      expect(goal.expectedAmountToday(today), greaterThan(500.0));
-      expect(goal.currentWeeklyPace(today), greaterThan(0));
-      expect(goal.goalGap(today), greaterThan(0));
-    });
+    test(
+      'SavingsGoal computes elapsed days, expected amount, and pace directly',
+      () {
+        final today = DateTime(2026, 7, 1); // ~halfway through year
+        expect(goal.elapsedDays(today), greaterThan(150));
+        expect(goal.expectedAmountToday(today), greaterThan(500.0));
+        expect(goal.currentWeeklyPace(today), greaterThan(0));
+        expect(goal.goalGap(today), greaterThan(0));
+      },
+    );
 
-    test('CoachEngine simulates goal status, projected finish, and required pace', () {
-      final engine = CoachEngine(goal: goal, today: DateTime(2026, 6, 1));
-      final result = engine.simulate();
+    test(
+      'CoachEngine simulates goal status, projected finish, and required pace',
+      () {
+        final engine = CoachEngine(goal: goal, today: DateTime(2026, 6, 1));
+        final result = engine.simulate();
 
-      expect(result.weeklyAmountRequired, greaterThan(0));
-      expect(result.status, isNotNull);
-      expect(result.newDeadline, equals(DateTime(2026, 12, 31)));
+        expect(result.weeklyAmountRequired, greaterThan(0));
+        expect(result.status, isNotNull);
+        expect(result.newDeadline, equals(DateTime(2026, 12, 31)));
 
-      final presets = engine.generatePresets(500.0);
-      expect(presets, isA<List<double>>());
-    });
+        final presets = engine.generatePresets(500.0);
+        expect(presets, isA<List<double>>());
+      },
+    );
   });
 
   group('Ledger Seam Debt Repayment Voiding Tests', () {
-    test('InMemoryLedgerAdapter voids debt repayment and cleans up transactions', () async {
-      final ledger = InMemoryLedgerAdapter();
-      final debt = Debt(
-        id: 'd1',
-        personName: 'Alex',
-        amount: 1000.0,
-        currentAmount: 200.0,
-        type: DebtType.owedToMe,
-        startDate: DateTime(2026, 1, 1),
-      );
-      final repayment = DebtRepayment(
-        id: 'rep_1',
-        debtId: 'd1',
-        amount: 150.0,
-        date: DateTime(2026, 10, 1),
-        accountId: 'acc_wallet',
-      );
+    test(
+      'InMemoryLedgerAdapter voids debt repayment and cleans up transactions',
+      () async {
+        final ledger = InMemoryLedgerAdapter();
+        final debt = Debt(
+          id: 'd1',
+          personName: 'Alex',
+          amount: 1000.0,
+          currentAmount: 200.0,
+          type: DebtType.owedToMe,
+          startDate: DateTime(2026, 1, 1),
+        );
+        final repayment = DebtRepayment(
+          id: 'rep_1',
+          debtId: 'd1',
+          amount: 150.0,
+          date: DateTime(2026, 10, 1),
+          accountId: 'acc_wallet',
+        );
 
-      final tx = await ledger.recordDebtRepayment(
-        debt: debt,
-        repayment: repayment,
-        categoryId: 'cat_others_inc',
-      );
-      expect(tx, isNotNull);
-      expect((await ledger.getTransactions()).length, equals(1));
+        final tx = await ledger.recordDebtRepayment(
+          debt: debt,
+          repayment: repayment,
+          categoryId: 'cat_others_inc',
+        );
+        expect(tx, isNotNull);
+        expect((await ledger.getTransactions()).length, equals(1));
 
-      // Now void the repayment through the seam
-      await ledger.voidDebtRepayment(repayment);
-      expect((await ledger.getTransactions()).length, equals(0));
-    });
+        // Now void the repayment through the seam
+        await ledger.voidDebtRepayment(repayment);
+        expect((await ledger.getTransactions()).length, equals(0));
+      },
+    );
   });
 
   group('TransactionCategory Domain Budgeting Tests', () {

@@ -17,6 +17,7 @@ class CategoryDetailScreen extends StatefulWidget {
 
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final _nameController = TextEditingController();
+  bool _saving = false;
   late int _selectedIconCodePoint;
   late String _selectedColorHex;
   late TransactionType _selectedType;
@@ -91,7 +92,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     super.dispose();
   }
 
-  void _save(WidgetRef ref) {
+  Future<void> _save(WidgetRef ref) async {
+    if (_saving) return;
     if (_nameController.text.trim().isEmpty) {
       HapticService.error();
       KoinSnackBar.error(
@@ -102,25 +104,48 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       return;
     }
 
-    final category = TransactionCategory(
-      id: widget.category?.id ?? 'cat_${const Uuid().v4()}',
-      name: _nameController.text.trim(),
-      iconCodePoint: _selectedIconCodePoint,
-      colorHex: _selectedColorHex,
-      type: _selectedType,
-      budget: _selectedType == TransactionType.expense
-          ? widget.category?.budget
-          : null,
-    );
+    var category =
+        widget.category?.copyWith(
+          name: _nameController.text.trim(),
+          iconCodePoint: _selectedIconCodePoint,
+          colorHex: _selectedColorHex,
+          type: _selectedType,
+        ) ??
+        TransactionCategory(
+          id: widget.category?.id ?? 'cat_${const Uuid().v4()}',
+          name: _nameController.text.trim(),
+          iconCodePoint: _selectedIconCodePoint,
+          colorHex: _selectedColorHex,
+          type: _selectedType,
+          budget: _selectedType == TransactionType.expense
+              ? widget.category?.budget
+              : null,
+        );
 
-    if (widget.category != null) {
-      ref.read(categoriesProvider.notifier).editCategory(category);
-    } else {
-      ref.read(categoriesProvider.notifier).addCategory(category);
+    if (_selectedType != TransactionType.expense) {
+      category = category.withoutBudget();
     }
-
-    HapticService.success();
-    Navigator.pop(context);
+    setState(() => _saving = true);
+    try {
+      if (widget.category != null) {
+        await ref.read(categoriesProvider.notifier).editCategory(category);
+      } else {
+        await ref.read(categoriesProvider.notifier).addCategory(category);
+      }
+      if (!mounted) return;
+      HapticService.success();
+      Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not save category',
+          subtitle: 'Your changes are kept. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -175,11 +200,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Live preview card
-                        _buildPreviewCard(
-                          context,
-                          selectedColor,
-                          previewName,
-                        ).animate().fade(duration: 400.ms).slideY(begin: 0.05),
+                        _buildPreviewCard(context, selectedColor, previewName)
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(duration: 400.ms)
+                            .slideY(begin: 0.05),
 
                         const Gap(KoinSpacing.sectionGap),
 
@@ -187,49 +215,75 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         _buildSectionLabel(context, 'Category Name'),
                         const Gap(10),
                         TextField(
-                          controller: _nameController,
-                          autofocus: widget.category == null,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g., Groceries',
-                            prefixIcon: Icon(Icons.label_outline),
-                          ),
-                        ).animate().fade(delay: 100.ms),
+                              controller: _nameController,
+                              autofocus: widget.category == null,
+                              decoration: const InputDecoration(
+                                hintText: 'e.g., Groceries',
+                                prefixIcon: Icon(Icons.label_outline),
+                              ),
+                            )
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(delay: 100.ms),
 
                         const Gap(KoinSpacing.sectionGap),
 
                         // Type selector
                         _buildSectionLabel(context, 'Category Type'),
                         const Gap(10),
-                        _buildTypeSelector(
-                          context,
-                        ).animate().fade(delay: 120.ms),
+                        _buildTypeSelector(context)
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(delay: 120.ms),
 
                         const Gap(KoinSpacing.sectionGap),
 
                         // Icon picker
                         _buildSectionLabel(context, 'Icon'),
                         const Gap(12),
-                        _buildIconGrid(
-                          context,
-                          selectedColor,
-                        ).animate().fade(delay: 150.ms),
+                        _buildIconGrid(context, selectedColor)
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(delay: 150.ms),
 
                         const Gap(KoinSpacing.sectionGap),
 
                         // Color picker
                         _buildSectionLabel(context, 'Color'),
                         const Gap(12),
-                        _buildColorGrid(context).animate().fade(delay: 200.ms),
+                        _buildColorGrid(context)
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(delay: 200.ms),
 
                         const Gap(36),
 
                         KoinPrimaryButton(
-                          label: widget.category != null
-                              ? 'Update Category'
-                              : 'Create Category',
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          onPressed: () => _save(ref),
-                        ).animate().fade(delay: 250.ms),
+                              isLoading: _saving,
+                              label: widget.category != null
+                                  ? 'Update Category'
+                                  : 'Create Category',
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              onPressed: () => _save(ref),
+                            )
+                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                              onInit: KoinMotion.onInit(context),
+                            )
+                            .fade(delay: 250.ms),
                       ],
                     ),
                   ),
@@ -258,7 +312,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         children: [
           // Animated icon preview with glow
           AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 300),
+            ),
             curve: Curves.easeInOut,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -274,7 +331,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               ],
             ),
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 250),
+              ),
               child: Icon(
                 IconUtils.getIcon(_selectedIconCodePoint),
                 key: ValueKey(_selectedIconCodePoint),
@@ -300,7 +360,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 ),
                 const Gap(4),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+                  duration: KoinMotion.duration(
+                    context,
+                    const Duration(milliseconds: 200),
+                  ),
                   child: Text(
                     previewName,
                     key: ValueKey(previewName),
@@ -329,7 +392,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           ),
           // Color dot
           AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 300),
+            ),
             width: 20,
             height: 20,
             decoration: BoxDecoration(

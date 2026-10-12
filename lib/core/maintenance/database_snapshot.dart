@@ -64,7 +64,7 @@ class DatabaseSnapshot {
         throw const FormatException('Damaged backup');
       }
       final version = await db.getVersion();
-      if (version < 1 || version > 39) {
+      if (version < 1 || version > 40) {
         throw const FormatException('Unsupported backup version');
       }
       final requiredColumns = {
@@ -83,7 +83,15 @@ class DatabaseSnapshot {
               'contributionStartDate',
             ],
           ],
-        'transactions': ['id', 'title', 'amount', 'date', 'type', 'categoryId'],
+        'transactions': [
+          'id',
+          'title',
+          'amount',
+          'date',
+          'type',
+          'categoryId',
+          if (version >= 40) 'transferId',
+        ],
         'categories': ['id', 'name', 'iconCodePoint', 'colorHex', 'type'],
         if (version >= 2)
           'accounts': [

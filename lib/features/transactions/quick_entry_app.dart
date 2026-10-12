@@ -500,7 +500,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         return 'Choose a receiving account';
       }
       if (_destinationId == _accountId) return 'Choose two different accounts';
-      final fee = double.tryParse(_fee.text.isEmpty ? '0' : _fee.text);
+      final fee = ref
+          .read(settingsProvider)
+          .currency
+          .tryParseInput(
+            _fee.text.isEmpty ? '0' : _fee.text,
+            precision: _feePercentage ? 2 : null,
+          );
       if (fee == null ||
           !fee.isFinite ||
           fee < 0 ||
@@ -520,7 +526,12 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     sourceAccountId: _accountId!,
     destinationAccountId: _destinationId!,
     rawAmount: _amount,
-    enteredFee: double.tryParse(_fee.text) ?? 0,
+    enteredFee:
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(_fee.text, precision: _feePercentage ? 2 : null) ??
+        0,
     isFeePercentage: _feePercentage,
     note: _note.text.trim(),
     date: _date,
@@ -947,9 +958,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         .where((a) => a.id == _destinationId)
         .firstOrNull;
     final successColor = AppTheme.incomeContentColor(context);
-    final amount = NumberFormat.currency(
-      symbol: currency.symbol,
-    ).format(_amount);
+    final amount = currency.formatter.format(_amount);
     final summary = _income != null
         ? '${_income!.title} · ${account?.name ?? 'Your account'}'
         : _transfer
@@ -1081,7 +1090,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           ),
         ),
         if (_expression.contains(RegExp(r'[+\-*/]')))
-          Text('= ${currency.symbol}${NumberFormat('0.##').format(_amount)}'),
+          Text('= ${currency.formatter.format(_amount)}'),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -1127,13 +1136,17 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           const SizedBox(height: 16),
         ],
         NumPad(
+          enabled: !_saving,
+          decimalDigits: currency.decimalDigits,
           compact: true,
           initialValue: _expression,
           doneLabel: _saving ? 'Saving…' : (_transfer ? 'Review' : 'Next'),
           onValueChanged: (expression, result) {
             setState(() {
               _expression = expression;
-              _amount = double.tryParse(result) ?? 0;
+              _amount =
+                  ref.read(settingsProvider).currency.tryParseInput(result) ??
+                  0;
               _error = null;
             });
             _suggestCategory();
@@ -1155,7 +1168,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         ? null
         : ref.watch(dashboardStatsProvider).accountBalances[account.id] ??
               account.initialBalance;
-    final format = NumberFormat('#,##0.##');
+    final format = ref.read(settingsProvider).currency.formatter;
     final goals = ref.watch(savingsGoalsProvider).value ?? [];
     final reserved =
         account == null || account.isCredit || _type == TransactionType.income
@@ -1184,12 +1197,12 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           SelectionTile(
             label: reserved > 0
                 ? (visibleSavings > 0
-                      ? 'Spendable · ${currency.symbol}${format.format(visibleSavings)} in savings'
+                      ? 'Spendable · ${format.format(visibleSavings)} in savings'
                       : 'Spendable')
                 : (_transfer ? 'From account' : 'Account'),
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${currency.symbol}${format.format(displayBalance)}',
+                : '${account.name} • ${format.format(displayBalance)}',
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
@@ -1383,6 +1396,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                       )
                       .fold<double>(0, (sum, g) => sum + g.currentAmount),
                   currencySymbol: currency.symbol,
+                  currency: currency,
                   isSelected:
                       account.id == (destination ? _destinationId : _accountId),
                   onTap: () {
@@ -1531,7 +1545,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         .where((a) => a.id == _accountId)
         .firstOrNull;
     final currency = ref.watch(settingsProvider).currency;
-    final format = NumberFormat.currency(symbol: currency.symbol);
+    final format = currency.formatter;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1606,7 +1620,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         source != null &&
         !source.isCredit &&
         goals.any((g) => g.linkedAccountId == source.id && g.currentAmount > 0);
-    final format = NumberFormat('#,##0.##');
+    final format = ref.read(settingsProvider).currency.formatter;
     Widget accountRow(Account? account, bool receiving) => SelectionTile(
       asCard: false,
       label: receiving
@@ -1614,7 +1628,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           : (sourceHasSavings ? 'From · Spendable' : 'From account'),
       selectedName: account == null
           ? null
-          : '${account.name} • ${currency.symbol}${format.format(_displayAccountBalance(account, destination: receiving))}',
+          : '${account.name} • ${format.format(_displayAccountBalance(account, destination: receiving))}',
       selectedColor: account?.color,
       selectedIconCodePoint: account?.iconCodePoint,
       selectedLogoAsset: account?.logoAsset,
@@ -1668,8 +1682,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       );
     }
     final currency = ref.watch(settingsProvider).currency;
-    final format = NumberFormat.currency(symbol: currency.symbol);
-    final enteredFee = double.tryParse(_fee.text.isEmpty ? '0' : _fee.text);
+    final format = currency.formatter;
+    final enteredFee = ref
+        .read(settingsProvider)
+        .currency
+        .tryParseInput(
+          _fee.text.isEmpty ? '0' : _fee.text,
+          precision: _feePercentage ? 2 : null,
+        );
     final fee = enteredFee == null
         ? null
         : (_feePercentage ? _amount * enteredFee / 100 : enteredFee);

@@ -45,6 +45,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   late String _currentExpression;
   late String _currentResult;
   String? _validationError;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -72,9 +73,24 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
           widget.category.budgetPercent != null &&
           widget.category.budgetPercent! > 0);
 
-  void _saveUpdatedCategory(TransactionCategory updated) {
-    HapticService.success();
-    ref.read(categoriesProvider.notifier).editCategory(updated);
+  Future<bool> _saveUpdatedCategory(TransactionCategory updated) async {
+    if (_saving) return false;
+    setState(() => _saving = true);
+    try {
+      await ref.read(categoriesProvider.notifier).editCategory(updated);
+      HapticService.success();
+      return true;
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _validationError =
+              'Could not save budget. Your changes are kept. Try again.',
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -82,7 +98,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     final category = widget.category;
     final currency = widget.currency;
     final totalIncome = widget.totalIncome;
-    final fmt = NumberFormat.currency(symbol: currency.symbol);
+    final fmt = currency.formatter;
     final otherCategories = (ref.watch(categoriesProvider).value ?? []).where(
       (c) => c.id != category.id && c.type == TransactionType.expense,
     );
@@ -93,13 +109,21 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
       0.0,
       (sum, c) => sum + c.resolvedBudget(totalIncome),
     );
-    final value = double.tryParse(_currentResult) ?? 0;
+    final value =
+        widget.currency.tryParseInput(
+          _currentResult,
+          precision: _isPercentMode ? 2 : null,
+        ) ??
+        0;
     final allocation =
         otherBudget + (_isPercentMode ? totalIncome * value / 100 : value);
 
     double? resolvedAmount;
     if (_isPercentMode && _currentResult.isNotEmpty) {
-      final pct = double.tryParse(_currentResult);
+      final pct = widget.currency.tryParseInput(
+        _currentResult,
+        precision: _isPercentMode ? 2 : null,
+      );
       if (pct != null && pct > 0) {
         resolvedAmount = totalIncome * pct / 100;
       }
@@ -182,8 +206,12 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
 
                         if (confirmed == true && context.mounted) {
                           HapticService.heavy();
-                          _saveUpdatedCategory(category.withoutBudget());
-                          Navigator.pop(context);
+                          if (await _saveUpdatedCategory(
+                                category.withoutBudget(),
+                              ) &&
+                              context.mounted) {
+                            Navigator.pop(context);
+                          }
                         }
                       },
                       icon: Icon(
@@ -270,7 +298,10 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             // Resolved amount preview (percentage mode)
             if (_isPercentMode) ...[
               AnimatedSize(
-                duration: const Duration(milliseconds: 200),
+                duration: KoinMotion.duration(
+                  context,
+                  const Duration(milliseconds: 200),
+                ),
                 child: resolvedAmount != null
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(
@@ -425,6 +456,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             const Gap(24),
             // NumPad
             NumPad(
+              enabled: !_saving,
+              decimalDigits: _isPercentMode ? 2 : currency.decimalDigits,
               compact: true,
               initialValue: _currentExpression,
               onValueChanged: (expr, res) {
@@ -434,8 +467,11 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                   _validationError = null;
                 });
               },
-              onDone: () {
-                final value = double.tryParse(_currentResult);
+              onDone: () async {
+                final value = widget.currency.tryParseInput(
+                  _currentResult,
+                  precision: _isPercentMode ? 2 : null,
+                );
                 if (value == null ||
                     !value.isFinite ||
                     value <= 0 ||
@@ -454,12 +490,12 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                   );
                   return;
                 }
-                if (_isPercentMode) {
-                  _saveUpdatedCategory(category.withPercentBudget(value));
-                } else {
-                  _saveUpdatedCategory(category.withFixedBudget(value));
-                }
-                Navigator.pop(context);
+                final saved = await _saveUpdatedCategory(
+                  _isPercentMode
+                      ? category.withPercentBudget(value)
+                      : category.withFixedBudget(value),
+                );
+                if (saved && context.mounted) Navigator.pop(context);
               },
             ),
             const Gap(8),
