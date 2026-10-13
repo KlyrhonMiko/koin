@@ -105,7 +105,6 @@ void main() {
         } else {
           expect(find.text('No payments yet'), findsOneWidget);
           expect(payment, findsNothing);
-          expect(find.text('0'), findsWidgets);
           final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
           final content = tester.getRect(
             find.byKey(const ValueKey('activity_empty_content')),

@@ -212,7 +212,7 @@ void main() {
     expect(
       tester.getTopLeft(find.byTooltip('Hide summary balance')).dy -
           tester.getTopLeft(card).dy,
-      closeTo(16, 1),
+      closeTo(8, 1),
     );
     expect(tester.getSize(find.byTooltip('Hide summary balance')).height, 48);
     expect(tester.takeException(), isNull);

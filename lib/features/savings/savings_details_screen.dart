@@ -7,6 +7,7 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
 import 'widgets/savings_routine_card.dart';
+import 'widgets/savings_projection_view.dart' show contributionPhrase;
 
 class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final SavingsGoal goal;
@@ -97,32 +98,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (theme.brightness == Brightness.dark) return _buildScreen(context);
-    const foreground = Color(0xFF293330);
-    const secondary = Color(0xFF68746D);
-    return Theme(
-      data: theme.copyWith(
-        scaffoldBackgroundColor: const Color(0xFFF4F5F2),
-        dividerColor: const Color(0xFFD9E1DA),
-        colorScheme: theme.colorScheme.copyWith(
-          primary: const Color(0xFF00B993),
-          onPrimary: const Color(0xFF102A24),
-          surface: const Color(0xFFE6ECE7),
-          onSurface: foreground,
-          onSurfaceVariant: secondary,
-        ),
-        textTheme: theme.textTheme
-            .apply(bodyColor: foreground, displayColor: foreground)
-            .copyWith(
-              bodyMedium: theme.textTheme.bodyMedium?.copyWith(
-                color: secondary,
-              ),
-              bodySmall: theme.textTheme.bodySmall?.copyWith(color: secondary),
-            ),
-      ),
-      child: Builder(builder: _buildScreen),
-    );
+    return _buildScreen(context);
   }
 
   Widget _buildScreen(BuildContext context) {
@@ -172,8 +148,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         Text(
                           goal.name,
                           style: TextStyle(
-                            fontSize: KoinTypography.sectionTitle,
-                            fontWeight: KoinTypography.titleWeight,
+                            fontSize: KoinTypography.screenTitle,
+                            fontWeight: KoinTypography.headingWeight,
                             letterSpacing: KoinTypography.itemTracking,
                             color: AppTheme.textColor(context),
                           ),
@@ -185,23 +161,11 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         ),
                         if (linkedAccount != null) ...[
                           const Gap(3),
-                          Text(
-                            linkedAccount.name,
-                            key: const ValueKey('savings_account_label'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: KoinTypography.small,
-                              fontWeight: KoinTypography.supportingWeight,
-                              color: AppTheme.textLightColor(context),
-                            ),
-                          ),
+                          _buildLinkedAccount(context, linkedAccount),
                         ],
                       ],
                     ),
                   ),
-                  const Gap(8),
-                  _buildManagementActions(context, goal),
                 ],
               ),
             ),
@@ -226,13 +190,13 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               child: CustomScrollView(
                 slivers: [
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     sliver: SliverToBoxAdapter(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildGaugeHeader(context, goal, currencyFormat),
-                          const Gap(8),
+                          const Gap(20),
                           _buildQuickActions(
                             context,
                             goal,
@@ -252,8 +216,13 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                 ),
                               ),
                             ),
-                          const Gap(28),
-                          SavingsRoutineCard(goal: goal),
+                          if (!goal.isStash && goal.hasTarget) ...[
+                            const Gap(24),
+                            _buildGoalDetails(context, goal, currencyFormat),
+                          ] else if (goal.isStash) ...[
+                            const Gap(24),
+                            SavingsRoutineCard(goal: goal),
+                          ],
                         ],
                       ),
                     ),
@@ -275,6 +244,47 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLinkedAccount(BuildContext context, Account account) {
+    final fallback = Icon(
+      IconUtils.getIcon(account.iconCodePoint),
+      size: 14,
+      color: account.color,
+    );
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: account.logoAsset != null
+                ? Image.asset(
+                    account.logoAsset!,
+                    fit: BoxFit.cover,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => fallback,
+                  )
+                : fallback,
+          ),
+        ),
+        const Gap(6),
+        Expanded(
+          child: Text(
+            account.name,
+            key: const ValueKey('savings_account_label'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.supportingWeight,
+              color: AppTheme.textLightColor(context),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -310,47 +320,25 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     Account? linkedAccount,
     double? linkedBalance,
   ) {
-    final style = FilledButton.styleFrom(
-      minimumSize: const Size(0, 52),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: const TextStyle(
-        fontFamily: KoinTypography.fontFamily,
-        fontSize: KoinTypography.body,
-        fontWeight: KoinTypography.titleWeight,
-      ),
-    );
-    final save = Tooltip(
-      message: 'Add Savings',
-      child: FilledButton.icon(
-        style: style.copyWith(
-          backgroundColor: WidgetStatePropertyAll(
-            AppTheme.primaryColor(context),
-          ),
-          foregroundColor: const WidgetStatePropertyAll(Color(0xFF102A24)),
-        ),
+    final actions = [
+      _buildManagementAction(
+        context,
+        tooltip: 'Add Savings',
+        label: 'Save',
+        icon: Icons.add_rounded,
+        color: AppTheme.incomeContentColor(context),
         onPressed: () => _showAddLogSheet(
           goal: goal,
           linkedAccount: linkedAccount,
           linkedBalance: linkedBalance,
         ),
-        icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text('Save'),
       ),
-    );
-    final release = Tooltip(
-      message: 'Release savings',
-      child: FilledButton.tonalIcon(
-        style: style.copyWith(
-          backgroundColor: WidgetStateProperty.resolveWith(
-            (states) => AppTheme.surfaceColor(context),
-          ),
-          foregroundColor: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.disabled)
-                ? AppTheme.textLightColor(context)
-                : AppTheme.textColor(context),
-          ),
-        ),
+      _buildManagementAction(
+        context,
+        tooltip: 'Release savings',
+        label: 'Release',
+        icon: Icons.south_west_rounded,
+        color: AppTheme.textColor(context),
         onPressed: goal.currentAmount > 0
             ? () => _showAddLogSheet(
                 goal: goal,
@@ -359,24 +347,42 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                 linkedBalance: linkedBalance,
               )
             : null,
-        icon: const Icon(Icons.south_west_rounded, size: 20),
-        label: const Text('Release'),
       ),
-    );
+      _buildManagementAction(
+        context,
+        tooltip: 'Edit goal',
+        label: 'Edit',
+        icon: Icons.edit_rounded,
+        color: AppTheme.textLightColor(context),
+        onPressed: () {
+          HapticService.light();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: AddSavingsGoalScreen(goal: goal)),
+          );
+        },
+      ),
+      _buildManagementAction(
+        context,
+        tooltip: 'Delete goal',
+        label: 'Delete',
+        icon: Icons.delete_outline_rounded,
+        color: AppTheme.expenseColor(context),
+        onPressed: () => _deleteGoal(goal),
+      ),
+    ];
     return LayoutBuilder(
       builder: (context, constraints) {
-        final stacked = MediaQuery.textScalerOf(context).scale(15) > 22;
-        if (stacked) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [save, const Gap(10), release],
-          );
-        }
-        return Row(
+        final columns =
+            MediaQuery.textScalerOf(context).scale(12) > 18 ||
+                constraints.maxWidth < 280
+            ? 2
+            : 4;
+        return Wrap(
+          runSpacing: 20,
           children: [
-            Expanded(child: save),
-            const Gap(12),
-            Expanded(child: release),
+            for (final action in actions)
+              SizedBox(width: constraints.maxWidth / columns, child: action),
           ],
         );
       },
@@ -388,16 +394,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     SavingsGoal goal,
     NumberFormat currencyFormat,
   ) {
-    return Padding(
+    const foreground = Colors.white;
+    return KoinSummaryCard(
       key: const ValueKey('savings_balance'),
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      shapeStyle: SummaryShapeStyle.savings,
+      borderRadius: 28,
+      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Saved',
+            'Total saved',
             style: TextStyle(
-              color: AppTheme.textLightColor(context),
+              color: foreground.withValues(alpha: 0.75),
               fontSize: KoinTypography.body,
             ),
           ),
@@ -410,17 +419,15 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               formatter: currencyFormat.format,
               duration: const Duration(milliseconds: 400),
               style: TextStyle(
-                color: AppTheme.textColor(context),
-                fontSize: 48,
-                fontWeight: Theme.of(context).brightness == Brightness.dark
-                    ? KoinTypography.headingWeight
-                    : KoinTypography.titleWeight,
+                color: foreground,
+                fontSize: KoinTypography.summaryAmount,
+                fontWeight: KoinTypography.headingWeight,
                 letterSpacing: -1.5,
                 height: 1.1,
               ),
             ),
           ),
-          if (goal.hasTarget) ...[
+          if (goal.isStash && goal.hasTarget) ...[
             const Gap(20),
             Wrap(
               spacing: 16,
@@ -428,19 +435,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               children: [
                 Text(
                   'Target',
-                  style: TextStyle(color: AppTheme.textLightColor(context)),
+                  style: TextStyle(color: foreground.withValues(alpha: 0.75)),
                 ),
                 Text(
                   currencyFormat.format(goal.targetAmount),
                   style: TextStyle(
-                    color: AppTheme.textColor(context),
+                    color: foreground,
                     fontWeight: KoinTypography.titleWeight,
                   ),
                 ),
                 Text(
                   '${(goal.progress * 100).toInt()}%',
                   style: TextStyle(
-                    color: AppTheme.incomeContentColor(context),
+                    color: foreground,
                     fontWeight: KoinTypography.titleWeight,
                   ),
                 ),
@@ -451,14 +458,14 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               value: goal.progress,
               minHeight: 4,
               borderRadius: BorderRadius.circular(2),
-              color: AppTheme.primaryColor(context),
-              backgroundColor: AppTheme.surfaceLightColor(context),
+              color: foreground,
+              backgroundColor: foreground.withValues(alpha: 0.15),
             ),
             const Gap(8),
             Text(
               '${currencyFormat.format(goal.remainingAmount)} left${goal.remainingDays == null ? '' : ' · ${goal.remainingDays} days remaining'}',
               style: TextStyle(
-                color: AppTheme.textLightColor(context),
+                color: foreground.withValues(alpha: 0.75),
                 fontSize: KoinTypography.caption,
               ),
             ),
@@ -468,29 +475,171 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildManagementActions(BuildContext context, SavingsGoal goal) {
-    return Row(
+  Widget _buildGoalDetails(
+    BuildContext context,
+    SavingsGoal goal,
+    NumberFormat format,
+  ) {
+    final secondary = TextStyle(
+      color: AppTheme.textLightColor(context),
+      fontSize: KoinTypography.small,
+    );
+    final plan = goal.savingsPlan;
+    final days = goal.remainingDays;
+    return Column(
+      key: const ValueKey('goal_saving_pace'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KoinSectionHeader(
+          title: 'Goal progress',
+          subtitle: goal.endDate == null
+              ? null
+              : 'By ${DateFormat.yMMMd().format(goal.endDate!)}',
+          trailing: plan == null
+              ? null
+              : TextButton(
+                  onPressed: () =>
+                      SavingsRoutineCard.editPlan(context, ref, goal),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textLightColor(context),
+                    textStyle: const TextStyle(
+                      fontFamily: KoinTypography.fontFamily,
+                      fontSize: KoinTypography.caption,
+                      fontWeight: KoinTypography.titleWeight,
+                    ),
+                  ),
+                  child: const Text('Edit schedule'),
+                ),
+        ),
+        const Gap(16),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Target ${format.format(goal.targetAmount)}',
+                style: TextStyle(
+                  color: AppTheme.textColor(context),
+                  fontSize: KoinTypography.body,
+                  fontWeight: KoinTypography.titleWeight,
+                ),
+              ),
+            ),
+            const Gap(12),
+            Text('${(goal.progress * 100).toInt()}%', style: secondary),
+          ],
+        ),
+        const Gap(10),
+        LinearProgressIndicator(
+          value: goal.progress,
+          minHeight: 4,
+          borderRadius: BorderRadius.circular(2),
+          color: AppTheme.primaryColor(context),
+          backgroundColor: AppTheme.surfaceLightColor(context),
+        ),
+        const Gap(8),
+        Text(
+          goal.isCompleted
+              ? 'Target reached'
+              : '${format.format(goal.remainingAmount)} left${days != null && days > 0 ? ' · $days days remaining' : ''}',
+          style: secondary,
+        ),
+        if (!goal.isCompleted) ...[
+          if (plan != null) ...[
+            const Gap(16),
+            Text(
+              'Scheduled: ${format.format(plan.amount)} ${contributionPhrase(plan.frequency)}',
+              style: secondary,
+            ),
+          ],
+          if (days != null && days > 0) ...[
+            const Gap(20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns =
+                    constraints.maxWidth < 280 ||
+                        MediaQuery.textScalerOf(context).scale(12) > 18
+                    ? 1
+                    : 3;
+                return Wrap(
+                  runSpacing: 16,
+                  children: [
+                    for (final rate in [
+                      ('Per day', goal.dailyNeeded!),
+                      ('Per week', goal.weeklyNeeded!),
+                      ('Per month', goal.monthlyNeeded!),
+                    ])
+                      SizedBox(
+                        width: constraints.maxWidth / columns,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(rate.$1, style: secondary),
+                              const Gap(6),
+                              Text(
+                                format.format(rate.$2),
+                                style: TextStyle(
+                                  color: AppTheme.textColor(context),
+                                  fontSize: KoinTypography.itemAmount,
+                                  fontWeight: KoinTypography.titleWeight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ] else ...[
+            const Gap(12),
+            Text(
+              days == null
+                  ? 'Add a deadline to see how much to save.'
+                  : 'Deadline reached',
+              style: secondary,
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildManagementAction(
+    BuildContext context, {
+    required String tooltip,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onPressed,
+  }) {
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          tooltip: 'Edit goal',
-          icon: const Icon(Icons.edit_rounded, size: 24),
-          color: AppTheme.textLightColor(context),
-          onPressed: () {
-            HapticService.light();
-            Navigator.push(
+        IconButton.filledTonal(
+          tooltip: tooltip,
+          onPressed: onPressed,
+          style: IconButton.styleFrom(
+            fixedSize: const Size(54, 54),
+            backgroundColor: AppTheme.surfaceColor(context),
+            foregroundColor: color,
+            disabledForegroundColor: AppTheme.textLightColor(
               context,
-              SlideUpRoute(page: AddSavingsGoalScreen(goal: goal)),
-            );
-          },
+            ).withValues(alpha: 0.4),
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(icon, size: 22),
         ),
-        IconButton(
-          tooltip: 'Delete goal',
-          icon: const Icon(Icons.delete_rounded, size: 24),
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.expenseColor(context)
-              : const Color(0xFFB8434D),
-          onPressed: () => _deleteGoal(goal),
+        const Gap(8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: KoinTypography.small,
+            fontWeight: KoinTypography.labelWeight,
+            color: AppTheme.textLightColor(context),
+          ),
         ),
       ],
     );
@@ -508,17 +657,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 14),
-          child: Text(
-            'Recent Activity',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: Theme.of(context).brightness == Brightness.dark
-                  ? FontWeight.w800
-                  : KoinTypography.titleWeight,
-              color: AppTheme.textColor(context),
-              letterSpacing: -0.4,
-            ),
-          ),
+          child: const KoinSectionHeader(title: 'Recent activity'),
         ),
       ),
       logsAsync.when(
@@ -623,7 +762,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     final released = log.amount < 0;
     final secondary = AppTheme.textLightColor(context);
     final amount = Text(
-      '${released ? '-' : '+'} ${money.format(log.amount.abs())}',
+      '${released ? '-' : '+'}${money.format(log.amount.abs())}',
       textAlign: TextAlign.end,
       style: TextStyle(
         color: released
@@ -635,12 +774,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       ),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color:
+                  (released ? secondary : AppTheme.incomeContentColor(context))
+                      .withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
             child: Icon(
               released ? Icons.south_west_rounded : Icons.north_east_rounded,
               size: 20,
@@ -649,19 +795,19 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   : AppTheme.incomeContentColor(context),
             ),
           ),
-          const Gap(12),
+          const Gap(14),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final stacked =
-                    constraints.maxWidth < 260 ||
+                    constraints.maxWidth < 220 ||
                     MediaQuery.textScalerOf(context).scale(15) > 20;
                 final title = Text(
                   released ? 'Released' : 'Saved',
                   style: TextStyle(
                     color: AppTheme.textColor(context),
                     fontSize: KoinTypography.body,
-                    fontWeight: KoinTypography.labelWeight,
+                    fontWeight: KoinTypography.titleWeight,
                   ),
                 );
                 return Column(
@@ -685,7 +831,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       '${DateFormat.MMMd().format(log.date)} · ${_formatRelativeTime(log.date)}',
                       style: TextStyle(
                         color: secondary,
-                        fontSize: KoinTypography.caption,
+                        fontSize: KoinTypography.small,
                       ),
                     ),
                   ],
@@ -711,7 +857,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       children: [
         _activityEntryBody(context, log, money),
         Padding(
-          padding: const EdgeInsets.only(left: 32, bottom: 16),
+          padding: const EdgeInsets.only(left: 54, bottom: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -1,17 +1,25 @@
 # Koin interface
 
-The established app uses Outfit, teal accents, light and dark theme tokens, and Material icons. Preserve that identity across savings surfaces.
+The established app uses Outfit, teal accents, light and dark theme tokens, Material icons, patterned summary cards, and rounded grouped surfaces. Use shared components across savings surfaces.
 
 ## Savings details
 
-This screen operates a savings balance. Checking recorded savings and saving money are primary; projections support those tasks.
+Use the shared app theme without local palette overrides. Keep the goal name, linked account, and back navigation in a compact header. Show the linked account logo beside its name, falling back to the account icon when no image is available. Truncate long names safely and allow the goal title to wrap at larger text sizes.
 
-Use an open, left-aligned balance area with a large recorded amount. Follow with a prominent teal Save button and a neutral Release button. Show goal editing and deletion as direct header icon buttons, preserving their confirmation and transaction behavior.
+Show total saved in a KoinSummaryCard with the savings pattern, 28px corners, 24px padding, and the shared summary amount scale. Use white text throughout the main summary card, matching the dashboard hero. Retain actual target progress and remaining savings for goals with targets; omit target UI for open-ended savings.
 
-Keep the header restrained: a medium-weight title and plain secondary account name without a bank logo or colored icon. Use tighter back-button spacing and truncate long account names safely; allow the title to wrap at large accessibility text sizes.
+Place Save, Release, Edit, and Delete in one row of circular surface buttons with labels below the main card, matching dashboard quick actions. Wrap them into two columns at large text sizes or on narrow screens. Disable release for empty savings and preserve linked-account balance warnings.
 
-In light mode, use the user-selected soft neutral palette: off-white canvas (#F4F5F2), charcoal text (#293330), muted secondary text (#68746D), bright teal Save (#00B993) with dark text (#102A24), and a pale gray-green Release button (#E6ECE7). Use subtle dividers (#D9E1DA). Keep these overrides local to savings details. Retain the lighter balance and activity-heading weights and muted red delete icon. Dark mode retains its approved colors and emphasis.
+Use an open savings-plan section with the shared section header, muted edit action, and two columns for next contribution and projected total. Put muted labels above neutral amounts and scheduled dates below. Stack the metrics on narrow screens or at large text sizes. Offer plan setup with a short explanation when no plan exists.
 
-Render savings plans as a flat section separated by one divider, without a bordered card or nested surface. Group the recurring schedule beneath the title. Use two compact rows for next contribution and projected total, with neutral amounts aligned right and smaller dates beneath their labels. Omit metric icons, date badges, internal dividers, and accent-colored estimates. Stack the labels and amounts, and the deposit controls, at large accessibility text sizes. Show actual scheduled dates instead of substituting today for every outstanding contribution.
+Use a shared section heading for recent activity and flat rows for entries with subtle separators and no enclosing card. Use the transaction-list typography and small tinted circular direction icons. Keep entry dates, signed amounts, swipe deletion, manual editing, and expandable automatic-release explanations. Preserve loading, error, empty, and reduced-motion behavior.
 
-Retain actual target progress and remaining savings for goals with targets. Keep recent activity below the plan as flat, full-width rows with unboxed direction icons, neutral entry labels, readable dates, and right-aligned amounts. Separate multiple entries with thin dividers; omit timeline dots, connectors, card fills, and shadows. Preserve release explanations, swipe deletion, and manual entry editing. Respect the app's existing loading, error, empty, disabled, and reduced-motion behavior.
+For goals (not open-ended savings), keep the main summary card focused on the saved balance like the reference savings screen. Place target progress, deadline, saving pace, and schedule editing in an open Goal progress section below the action row. Show daily, weekly, and monthly rates without adding a separate Savings plan section. Completed goals show Target reached; goals without a deadline explain that a deadline is needed for pace estimates.
+
+## Savings overview
+
+Use a balance-only summary and one Savings & goals list with one outlined Add savings / goal action beneath the last item, using the shared portfolio add button. Align item amounts with the right content inset. Distinguish item types in their compact subtitles and icons, without separate group headings or type badges. Keep current balances prominent and target progress visible. Show only a short cadence label for savings (Weekly savings, Monthly savings, or Every 2 weeks), without repeating contribution amounts; use Open-ended savings when no schedule exists. Keep contribution amounts and projections in details. Preserve item navigation and swipe deletion.
+
+## Transaction history
+
+Use open, flat day sections matching the activity rows in flutter_03.png. Keep date headings and daily totals on the page background, with no enclosing surface cards or header borders. Use small tinted category icons, bold signed amounts aligned with the title, and category, account, and time together underneath. Preserve search, filters, editing, swipe deletion, and reduced-motion behavior.

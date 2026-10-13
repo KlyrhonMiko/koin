@@ -82,165 +82,127 @@ class TransactionsListScreen extends ConsumerWidget {
                       padding: EdgeInsets.only(
                         bottom: sectionIndex == groups.length - 1 ? 0 : 20,
                       ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            AppTheme.boxShadow(
-                              context,
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Day Header
-                              Container(
-                                padding: const EdgeInsets.fromLTRB(
-                                  KoinSpacing.screenInset,
-                                  16,
-                                  KoinSpacing.screenInset,
-                                  12,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: AppTheme.dividerColor(
-                                        context,
-                                      ).withValues(alpha: 0.3),
-                                      width: 1,
-                                    ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Day Header
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  dateKey.toUpperCase(),
+                                  style: TextStyle(
+                                    color: AppTheme.textLightColor(
+                                      context,
+                                    ).withValues(alpha: 0.8),
+                                    fontSize: KoinTypography.overline,
+                                    fontWeight: KoinTypography.titleWeight,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      dateKey.toUpperCase(),
-                                      style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.8),
-                                        fontSize: KoinTypography.overline,
-                                        fontWeight: KoinTypography.titleWeight,
-                                        letterSpacing: 0.5,
-                                      ),
+                                if (dailyTotal != 0)
+                                  AnimatedCounter(
+                                    key: ValueKey('total_$dateKey'),
+                                    value: dailyTotal.abs(),
+                                    animateFromZero: !AnimationTracker.isSeen(
+                                      'day_$dateKey',
                                     ),
-                                    if (dailyTotal != 0)
-                                      AnimatedCounter(
-                                        key: ValueKey('total_$dateKey'),
-                                        value: dailyTotal.abs(),
-                                        animateFromZero:
-                                            !AnimationTracker.isSeen(
-                                              'day_$dateKey',
-                                            ),
-                                        lastValueToken: 'total_$dateKey',
-                                        formatter: (v) {
-                                          String fmtBalance = currency.formatter
-                                              .format(v);
-                                          if (dailyTotal > 0) {
-                                            fmtBalance = '+$fmtBalance';
-                                          }
-                                          if (dailyTotal < 0) {
-                                            fmtBalance = '-$fmtBalance';
-                                          }
-                                          return fmtBalance;
-                                        },
-                                        duration: const Duration(
-                                          milliseconds: 1000,
-                                        ),
-                                        style: TextStyle(
-                                          color: dailyTotal > 0
-                                              ? AppTheme.incomeColor(context)
-                                              : AppTheme.expenseColor(context),
+                                    lastValueToken: 'total_$dateKey',
+                                    formatter: (v) {
+                                      String fmtBalance = currency.formatter
+                                          .format(v);
+                                      if (dailyTotal > 0) {
+                                        fmtBalance = '+$fmtBalance';
+                                      }
+                                      if (dailyTotal < 0) {
+                                        fmtBalance = '-$fmtBalance';
+                                      }
+                                      return fmtBalance;
+                                    },
+                                    duration: const Duration(
+                                      milliseconds: 1000,
+                                    ),
+                                    style: TextStyle(
+                                      color: dailyTotal > 0
+                                          ? AppTheme.incomeColor(context)
+                                          : AppTheme.expenseColor(context),
 
-                                          fontSize: KoinTypography.caption,
-                                          fontWeight:
-                                              KoinTypography.titleWeight,
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              // List of Transactions within the Day
-                              ...txList.asMap().entries.map((entry) {
-                                final i = entry.key;
-                                final tx = entry.value;
-
-                                final listItem = TransactionTile.resolve(
-                                  transaction: tx,
-                                  categories: categories,
-                                  accounts: accounts,
-                                  currency: currency,
-                                );
-
-                                Widget txAnimated =
-                                    SwipeToDeleteTile(
-                                      key: Key(tx.id),
-                                      borderRadius: BorderRadius.zero,
-                                      backgroundColor: AppTheme.errorColor(
-                                        context,
-                                      ),
-                                      icon: Icons.delete_forever_rounded,
-                                      confirmTitle: 'Delete Transaction?',
-                                      confirmDescription:
-                                          'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
-                                      onDelete: () async {
-                                        await ref
-                                            .read(transactionProvider.notifier)
-                                            .deleteTransaction(
-                                              tx.transferId ?? tx.id,
-                                            );
-                                      },
-                                      child: listItem,
-                                    ).koinAnimate(
-                                      context,
-                                      autoPlay: !MediaQuery.disableAnimationsOf(
-                                        context,
-                                      ),
-                                      onInit: KoinMotion.onInit(context),
-                                      key: ValueKey('tx_item_${tx.id}'),
-                                    );
-
-                                if (!AnimationTracker.hasSeen('tx_${tx.id}')) {
-                                  txAnimated = (txAnimated as Animate)
-                                      .fade()
-                                      .slideX(begin: 0.05);
-                                }
-
-                                return Column(
-                                  key: ValueKey('group_item_${tx.id}'),
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    txAnimated,
-
-                                    if (i < txList.length - 1)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: KoinSpacing.screenInset,
-                                        ).copyWith(left: 64),
-                                        child: Container(
-                                          height: 1,
-                                          color: AppTheme.dividerColor(
-                                            context,
-                                          ).withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              }),
-                            ],
+                                      fontSize: KoinTypography.caption,
+                                      fontWeight: KoinTypography.titleWeight,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
+                          // List of Transactions within the Day
+                          ...txList.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final tx = entry.value;
+
+                            final listItem = TransactionTile.resolve(
+                              transaction: tx,
+                              categories: categories,
+                              accounts: accounts,
+                              currency: currency,
+                              activityStyle: true,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            );
+
+                            Widget txAnimated =
+                                SwipeToDeleteTile(
+                                  key: Key(tx.id),
+                                  borderRadius: BorderRadius.zero,
+                                  backgroundColor: AppTheme.errorColor(context),
+                                  icon: Icons.delete_forever_rounded,
+                                  confirmTitle: 'Delete Transaction?',
+                                  confirmDescription:
+                                      'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
+                                  onDelete: () async {
+                                    await ref
+                                        .read(transactionProvider.notifier)
+                                        .deleteTransaction(
+                                          tx.transferId ?? tx.id,
+                                        );
+                                  },
+                                  child: listItem,
+                                ).koinAnimate(
+                                  context,
+                                  autoPlay: !MediaQuery.disableAnimationsOf(
+                                    context,
+                                  ),
+                                  onInit: KoinMotion.onInit(context),
+                                  key: ValueKey('tx_item_${tx.id}'),
+                                );
+
+                            if (!AnimationTracker.hasSeen('tx_${tx.id}')) {
+                              txAnimated = (txAnimated as Animate)
+                                  .fade()
+                                  .slideX(begin: 0.05);
+                            }
+
+                            return Column(
+                              key: ValueKey('group_item_${tx.id}'),
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                txAnimated,
+
+                                if (i < txList.length - 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 54),
+                                    child: Container(
+                                      height: 1,
+                                      color: AppTheme.dividerColor(
+                                        context,
+                                      ).withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }),
+                        ],
                       ),
                     );
 

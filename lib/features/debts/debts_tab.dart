@@ -84,7 +84,16 @@ class DebtsTab extends ConsumerWidget {
             KoinSpacing.screenInset,
             100,
           ),
-          header: _buildHeroSummaryCard(context, summary, debts.length, fmt),
+          header: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeroSummaryCard(context, summary, debts.length, fmt),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: KoinSectionHeader(title: 'Your balances'),
+              ),
+            ],
+          ),
           footer: _buildAddDebtButton(context),
           itemCount: debts.length,
           onReorderItem: (oldIndex, newIndex) {
@@ -296,7 +305,9 @@ class DebtCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Icon(
-                      isSettled
+                      debt.isPurchaseAccount
+                          ? Icons.shopping_bag_outlined
+                          : isSettled
                           ? Icons.check_rounded
                           : debt.type == DebtType.owedToMe
                           ? Icons.arrow_downward_rounded

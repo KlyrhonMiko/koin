@@ -26,14 +26,25 @@ class SavingsRoutineCard extends ConsumerWidget {
         padding: EdgeInsets.zero,
         minimumSize: const Size(64, 48),
         alignment: Alignment.centerRight,
-        foregroundColor: AppTheme.incomeContentColor(context),
+        foregroundColor: AppTheme.textLightColor(context),
         textStyle: secondary.copyWith(fontWeight: KoinTypography.titleWeight),
       ),
-      onPressed: () => _edit(context, ref),
+      onPressed: () => editPlan(context, ref, goal),
       child: Text(plan == null ? 'Set up savings plan' : 'Edit plan'),
     );
     if (plan == null) {
-      return Align(alignment: Alignment.centerLeft, child: edit);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const KoinSectionHeader(title: 'Savings plan'),
+          const SizedBox(height: 8),
+          Text(
+            'Choose an amount and a schedule to keep saving.',
+            style: secondary,
+          ),
+          Align(alignment: Alignment.centerLeft, child: edit),
+        ],
+      );
     }
     final progress = logs.asData == null
         ? null
@@ -54,35 +65,12 @@ class SavingsRoutineCard extends ConsumerWidget {
       key: const ValueKey('savings_plan_summary'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Divider(height: 1, color: AppTheme.dividerColor(context)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Savings plan',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.itemTitle,
-                      fontWeight: KoinTypography.titleWeight,
-                    ),
-                  ),
-                  if (!goal.isCompleted) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${format.format(plan.amount)} ${contributionPhrase(plan.frequency)}',
-                      style: secondary,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            edit,
-          ],
+        KoinSectionHeader(
+          title: 'Savings plan',
+          subtitle: goal.isCompleted
+              ? null
+              : '${format.format(plan.amount)} ${contributionPhrase(plan.frequency)}',
+          trailing: edit,
         ),
         const SizedBox(height: 20),
         if (logs.isLoading)
@@ -111,23 +99,40 @@ class SavingsRoutineCard extends ConsumerWidget {
             key: const ValueKey('helper_projection_message'),
             style: secondary,
           )
-        else if (progress != null) ...[
-          _metric(
-            context,
-            label: 'Next contribution',
-            value: format.format(progress.amountDue),
-            detail:
-                '${progress.isDue ? 'Due' : 'Next:'} ${DateFormat.MMMd().format(progress.nextDate)}',
+        else if (progress != null)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final next = _metric(
+                context,
+                label: 'Next contribution',
+                value: format.format(progress.amountDue),
+                detail:
+                    '${progress.isDue ? 'Due' : 'Next:'} ${DateFormat.MMMd().format(progress.nextDate)}',
+              );
+              final projection = _metric(
+                context,
+                label: 'Projected total',
+                value: format.format(projected),
+                detail: 'by ${DateFormat.yMMMd().format(horizon)}',
+                key: const ValueKey('helper_projection_message'),
+              );
+              if (constraints.maxWidth < 300 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 20) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [next, const SizedBox(height: 20), projection],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: next),
+                  const SizedBox(width: 24),
+                  Expanded(child: projection),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 16),
-          _metric(
-            context,
-            label: 'Projected total',
-            value: format.format(projected),
-            detail: 'by ${DateFormat.yMMMd().format(horizon)}',
-            key: const ValueKey('helper_projection_message'),
-          ),
-        ],
       ],
     );
   }
@@ -138,18 +143,21 @@ class SavingsRoutineCard extends ConsumerWidget {
     required String value,
     required String detail,
     Key? key,
-  }) => LayoutBuilder(
+  }) => Column(
     key: key,
-    builder: (context, constraints) {
-      final labelText = Text(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
         label,
         style: TextStyle(
-          color: AppTheme.textColor(context),
-          fontSize: KoinTypography.compact,
-          fontWeight: KoinTypography.supportingWeight,
+          color: AppTheme.textLightColor(context),
+          fontSize: KoinTypography.caption,
+          fontWeight: KoinTypography.labelWeight,
+          letterSpacing: KoinTypography.itemTracking,
         ),
-      );
-      final amountText = Text(
+      ),
+      const SizedBox(height: 6),
+      Text(
         value,
         style: TextStyle(
           color: AppTheme.textColor(context),
@@ -157,40 +165,22 @@ class SavingsRoutineCard extends ConsumerWidget {
           fontWeight: KoinTypography.titleWeight,
           letterSpacing: KoinTypography.itemTracking,
         ),
-      );
-      final stacked =
-          constraints.maxWidth < 280 ||
-          MediaQuery.textScalerOf(context).scale(14) > 20;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (stacked) ...[
-            labelText,
-            const SizedBox(height: 4),
-            amountText,
-          ] else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Expanded(child: labelText),
-                const SizedBox(width: 16),
-                amountText,
-              ],
-            ),
-          const SizedBox(height: 4),
-          Text(
-            detail,
-            style: TextStyle(
-              color: AppTheme.textLightColor(context),
-              fontSize: KoinTypography.small,
-            ),
-          ),
-        ],
-      );
-    },
+      ),
+      const SizedBox(height: 4),
+      Text(
+        detail,
+        style: TextStyle(
+          color: AppTheme.textLightColor(context),
+          fontSize: KoinTypography.small,
+        ),
+      ),
+    ],
   );
-  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+  static Future<void> editPlan(
+    BuildContext context,
+    WidgetRef ref,
+    SavingsGoal goal,
+  ) async {
     final result = await SavingsPlanEditor.open(
       context,
       initial: goal.savingsPlan,

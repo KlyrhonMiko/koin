@@ -110,6 +110,23 @@ void main() {
             widget is SwipeToDeleteTile &&
             widget.key == Key('dismiss_purchase_$id'),
       );
+      final purchasesToggle = find.byKey(const Key('toggle_purchases'));
+      await tester.ensureVisible(purchasesToggle);
+      await tester.tap(purchasesToggle);
+      await tester.pumpAndSettle();
+      expect(swipeFor('first'), findsNothing);
+      expect(swipeFor('second'), findsNothing);
+      expect(find.text('Purchases'), findsOneWidget);
+      expect(find.text('Credit Activity'), findsOneWidget);
+      expect(find.text('Add Purchase'), findsNothing);
+      expect((await repository.getDebts()).single.items.length, 2);
+
+      await tester.tap(purchasesToggle);
+      await tester.pumpAndSettle();
+      expect(swipeFor('first'), findsOneWidget);
+      expect(swipeFor('second'), findsOneWidget);
+      expect(find.text('Add Purchase'), bnpl ? findsOneWidget : findsNothing);
+
       Future<void> swipe(String id) async {
         final tile = swipeFor(id);
         await tester.ensureVisible(tile);

@@ -18,6 +18,8 @@ class DebtDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
+  bool _purchasesExpanded = true;
+
   Future<void> _deleteRepayment(DebtRepayment repayment) async {
     await ref.read(debtsProvider.notifier).deleteRepayment(repayment);
   }
@@ -475,70 +477,103 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DebtPurchaseSectionHeader(count: items.length, color: color),
-        const Gap(16),
-        // Item tiles
-        ...items.asMap().entries.map((entry) {
-          final item = entry.value;
-          return Padding(
-            key: ValueKey('purchase_${item.id}'),
-            padding: const EdgeInsets.only(bottom: 10),
-            child: SwipeToDeleteTile(
-              key: Key('dismiss_purchase_${item.id}'),
-              borderRadius: BorderRadius.circular(18),
-              fillRoundedCorners: true,
-              backgroundColor: AppTheme.errorColor(context),
-              icon: Icons.delete_rounded,
-              confirmTitle: 'Delete Purchase?',
-              confirmDescription:
-                  'Delete "${item.name}"? This will update the credit total. This action cannot be undone.',
-              onDelete: () async {
-                HapticService.heavy();
-                await ref
-                    .read(debtsProvider.notifier)
-                    .removeDebtItem(debt, item);
-              },
-              child: PressableScale(
-                onTap: () async {
-                  HapticService.light();
-                  final categories = ref.read(categoriesProvider).value ?? [];
-                  final updatedItem = await showAddPurchaseSheet(
-                    context: context,
-                    debtType: debt.type,
-                    primaryColor: color,
-                    categories: categories,
-                    defaultDate: debt.isMonthlyPurchaseAccount
-                        ? debt.nextPurchaseBillDate
-                        : DateTime.now(),
-                    monthlyBillingDay: debt.isMonthlyPurchaseAccount
-                        ? debt.startDate.day
-                        : null,
-                    existingItem: item,
-                    suggester: ref.read(categorySuggesterProvider),
-                  );
-
-                  if (updatedItem != null) {
-                    await ref
-                        .read(debtsProvider.notifier)
-                        .saveDebtItem(debt, updatedItem);
-
-                    if (context.mounted) {
-                      KoinSnackBar.success(context, 'Purchase Updated');
-                    }
-                  }
-                },
-                child: DebtPurchaseCard(
-                  item: item,
-                  categories: ref.watch(categoriesProvider).value ?? [],
-                  currencyFormat: currencyFormat,
-                  color: color,
-                  paidAmount: paidAmounts[item.id] ?? 0.0,
-                ),
+        Semantics(
+          button: true,
+          expanded: _purchasesExpanded,
+          child: InkWell(
+            key: const Key('toggle_purchases'),
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              HapticService.light();
+              setState(() => _purchasesExpanded = !_purchasesExpanded);
+            },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DebtPurchaseSectionHeader(
+                      count: items.length,
+                      color: color,
+                    ),
+                  ),
+                  Icon(
+                    _purchasesExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: AppTheme.textLightColor(context),
+                  ),
+                ],
               ),
             ),
-          );
-        }),
-        if (debt.isPurchaseAccount) ...[
+          ),
+        ),
+        if (_purchasesExpanded) const Gap(16),
+        // Item tiles
+        if (_purchasesExpanded)
+          ...items.asMap().entries.map((entry) {
+            final item = entry.value;
+            return Padding(
+              key: ValueKey('purchase_${item.id}'),
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SwipeToDeleteTile(
+                key: Key('dismiss_purchase_${item.id}'),
+                borderRadius: BorderRadius.circular(18),
+                fillRoundedCorners: true,
+                backgroundColor: AppTheme.errorColor(context),
+                icon: Icons.delete_rounded,
+                confirmTitle: 'Delete Purchase?',
+                confirmDescription:
+                    'Delete "${item.name}"? This will update the credit total. This action cannot be undone.',
+                onDelete: () async {
+                  HapticService.heavy();
+                  await ref
+                      .read(debtsProvider.notifier)
+                      .removeDebtItem(debt, item);
+                },
+                child: PressableScale(
+                  onTap: () async {
+                    HapticService.light();
+                    final categories = ref.read(categoriesProvider).value ?? [];
+                    final updatedItem = await showAddPurchaseSheet(
+                      context: context,
+                      debtType: debt.type,
+                      primaryColor: color,
+                      categories: categories,
+                      defaultDate: debt.isMonthlyPurchaseAccount
+                          ? debt.nextPurchaseBillDate
+                          : DateTime.now(),
+                      monthlyBillingDay: debt.isMonthlyPurchaseAccount
+                          ? debt.startDate.day
+                          : null,
+                      existingItem: item,
+                      suggester: ref.read(categorySuggesterProvider),
+                    );
+
+                    if (updatedItem != null) {
+                      await ref
+                          .read(debtsProvider.notifier)
+                          .saveDebtItem(debt, updatedItem);
+
+                      if (context.mounted) {
+                        KoinSnackBar.success(context, 'Purchase Updated');
+                      }
+                    }
+                  },
+                  child: DebtPurchaseCard(
+                    item: item,
+                    categories: ref.watch(categoriesProvider).value ?? [],
+                    currencyFormat: currencyFormat,
+                    color: color,
+                    paidAmount: paidAmounts[item.id] ?? 0.0,
+                  ),
+                ),
+              ),
+            );
+          }),
+        if (_purchasesExpanded && debt.isPurchaseAccount) ...[
           const Gap(6),
           PressableScale(
             onTap: () async {
@@ -616,40 +651,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    'Credit Activity',
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontSize: KoinTypography.sectionTitle,
-                      fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: KoinTypography.headingTracking,
-                    ),
-                  ),
-                ),
-                const Gap(10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${repayments.length}',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.headingWeight,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: const KoinSectionHeader(title: 'Credit Activity'),
           ),
         ),
         repaymentsAsync.when(
@@ -676,9 +678,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       repayment: repayment,
                       currencyFormat: currencyFormat,
                       color: color,
-                      tileIndex: index,
-                      paymentNumber: repayments.length - index,
-                      isLast: index == repayments.length - 1,
+                      isFirst: index == 0,
                     );
                   }).toList(),
                 ),
@@ -705,150 +705,133 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required DebtRepayment repayment,
     required NumberFormat currencyFormat,
     required Color color,
-    required int tileIndex,
-    required int paymentNumber,
-    required bool isLast,
+    required bool isFirst,
   }) {
-    return Padding(
-      key: ValueKey('repayment_row_${repayment.id}'),
-      padding: const EdgeInsets.only(bottom: 10),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Timeline connector
-            SizedBox(
-              width: 32,
-              child: Column(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Center(
-                      child: repayment.isIncrease
-                          ? Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 14,
-                              color: color,
-                            )
-                          : Text(
-                              '#$paymentNumber',
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                    ),
-                  ),
-                  if (!isLast)
-                    Expanded(
-                      child: Container(
-                        width: 2,
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const Gap(12),
-            // Payment card
-            Expanded(
-              child: SwipeToDeleteTile(
-                key: Key('dismiss_repayment_${repayment.id}'),
-                borderRadius: BorderRadius.circular(18),
-                fillRoundedCorners: true,
-                backgroundColor: AppTheme.errorColor(context),
-                icon: Icons.delete_rounded,
-                confirmTitle: 'Delete Payment?',
-                confirmDescription:
-                    'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
-                confirmLabel: 'Delete Payment',
-                onDelete: () => _deleteRepayment(repayment),
-                failureTitle: 'Could not delete payment',
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: AppTheme.dividerColor(
-                        context,
-                      ).withValues(alpha: 0.3),
-                    ),
-                    boxShadow: [
-                      AppTheme.boxShadow(
-                        context,
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              repayment.isIncrease
-                                  ? (repayment.note?.isNotEmpty == true
-                                        ? repayment.note!
-                                        : 'Increased Credit')
-                                  : (repayment.note?.isNotEmpty == true
-                                        ? repayment.note!
-                                        : 'Payment'),
-                              style: TextStyle(
-                                color: AppTheme.textColor(context),
-                                fontWeight: KoinTypography.labelWeight,
-                                fontSize: KoinTypography.body,
-                                letterSpacing: KoinTypography.itemTracking,
-                              ),
-                            ),
-                            const Gap(3),
-                            Text(
-                              DateFormat.yMMMd().format(repayment.date),
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: KoinTypography.small,
-                                fontWeight: KoinTypography.supportingWeight,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(repayment.amount),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: KoinTypography.headingWeight,
-                          fontSize: KoinTypography.itemTitle,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+    final amount = Text(
+      currencyFormat.format(repayment.amount),
+      textAlign: TextAlign.end,
+      style: TextStyle(
+        color: color,
+        fontSize: KoinTypography.itemAmount,
+        fontWeight: KoinTypography.titleWeight,
+        letterSpacing: KoinTypography.itemTracking,
       ),
     );
+    return Column(
+      key: ValueKey('repayment_row_${repayment.id}'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!isFirst) Divider(height: 1, color: AppTheme.dividerColor(context)),
+        SwipeToDeleteTile(
+          key: Key('dismiss_repayment_${repayment.id}'),
+          margin: EdgeInsets.zero,
+          borderRadius: BorderRadius.circular(8),
+          backgroundColor: AppTheme.errorColor(context).withValues(alpha: 0.15),
+          iconColor: AppTheme.errorColor(context),
+          icon: Icons.delete_outline_rounded,
+          confirmTitle: 'Delete Payment?',
+          confirmDescription:
+              'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
+          confirmLabel: 'Delete Payment',
+          onDelete: () => _deleteRepayment(repayment),
+          failureTitle: 'Could not delete payment',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    repayment.isIncrease
+                        ? Icons.north_east_rounded
+                        : Icons.south_west_rounded,
+                    size: 20,
+                    color: color,
+                  ),
+                ),
+                const Gap(14),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stacked =
+                          constraints.maxWidth < 220 ||
+                          MediaQuery.textScalerOf(context).scale(15) > 20;
+                      final title = Text(
+                        repayment.note?.isNotEmpty == true
+                            ? repayment.note!
+                            : repayment.isIncrease
+                            ? 'Increased Credit'
+                            : 'Payment',
+                        maxLines: stacked ? null : 1,
+                        overflow: stacked
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppTheme.textColor(context),
+                          fontSize: KoinTypography.body,
+                          fontWeight: KoinTypography.titleWeight,
+                        ),
+                      );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (stacked) ...[
+                            title,
+                            const Gap(4),
+                            amount,
+                          ] else
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: title),
+                                const Gap(12),
+                                amount,
+                              ],
+                            ),
+                          const Gap(4),
+                          Text(
+                            _formatActivityDate(repayment.date),
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontSize: KoinTypography.small,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatActivityDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    final formatted = date.year == now.year
+        ? DateFormat.MMMd().format(date)
+        : DateFormat.yMMMd().format(date);
+    if (difference.isNegative || difference.inDays >= 7) return formatted;
+    final relative = difference.inMinutes < 1
+        ? 'Just now'
+        : difference.inMinutes < 60
+        ? '${difference.inMinutes}m ago'
+        : difference.inHours < 24
+        ? '${difference.inHours}h ago'
+        : difference.inDays == 1
+        ? 'Yesterday'
+        : '${difference.inDays}d ago';
+    return '$formatted · $relative';
   }
 }
 

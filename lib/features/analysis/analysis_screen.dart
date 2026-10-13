@@ -300,9 +300,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             fontSize: KoinTypography.caption,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.5,
-            shadows: [
-              Shadow(color: badgeColor.withValues(alpha: 0.8), blurRadius: 6),
-            ],
           ),
         ),
       ],

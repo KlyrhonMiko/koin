@@ -204,7 +204,8 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      // Offset the header's tall touch target to center the visible text block.
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       borderRadius: 28,
       shapeStyle: SummaryShapeStyle.dashboard,
       child: Column(

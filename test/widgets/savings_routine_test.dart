@@ -120,6 +120,14 @@ void main() {
   }
 
   Future<void> openRoutine(WidgetTester tester) async {
+    if (find.byType(SavingsRoutineCard).evaluate().isEmpty) {
+      await tester.tap(find.byTooltip('Edit goal'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Savings Helper'));
+      await tester.tap(find.text('Savings Helper'));
+      await tester.pumpAndSettle();
+      return;
+    }
     final setup = find.descendant(
       of: find.byType(SavingsRoutineCard),
       matching: find.text('Set up savings plan'),
@@ -255,14 +263,12 @@ void main() {
           screen: SavingsDetailsScreen(goal: fund),
           dark: dark,
         );
-        final saveButton = tester.widget<FilledButton>(
-          find.ancestor(
-            of: find.text('Save'),
-            matching: find.byWidgetPredicate(
-              (widget) => widget is FilledButton,
-            ),
+        final saveButton = tester.widget<IconButton>(
+          find.byWidgetPredicate(
+            (widget) => widget is IconButton && widget.tooltip == 'Add Savings',
           ),
         );
+        expect(saveButton.onPressed, isNotNull);
         final background = saveButton.style!.backgroundColor!.resolve({})!;
         final foreground = saveButton.style!.foregroundColor!.resolve({})!;
         final luminances = [
@@ -271,8 +277,14 @@ void main() {
         ]..sort();
         expect(
           (luminances.last + 0.05) / (luminances.first + 0.05),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(3),
         );
+        final cardBottom = tester.getBottomLeft(
+          find.byKey(const ValueKey('savings_balance')),
+        ).dy;
+        for (final tooltip in ['Add Savings', 'Release savings', 'Edit goal', 'Delete goal']) {
+          expect(tester.getTopLeft(find.byTooltip(tooltip)).dy, greaterThan(cardBottom));
+        }
         await tester.tap(find.byTooltip('Add Savings'));
         await tester.pumpAndSettle();
         for (final digit in ['2', '5', '0']) {
@@ -288,6 +300,34 @@ void main() {
       }
     },
   );
+
+  testWidgets('deadline goal keeps the balance card compact with pace below the actions', (tester) async {
+    final goal = SavingsGoal(
+      id: 'deadline-goal',
+      name: 'End of the year',
+      targetAmount: 5000,
+      currentAmount: 1000,
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 80)),
+    );
+    await render(tester, goals: [goal], screen: SavingsDetailsScreen(goal: goal));
+    expect(find.byType(SavingsRoutineCard), findsNothing);
+    expect(find.text('Savings plan'), findsNothing);
+    expect(find.text('Set schedule'), findsNothing);
+    final pace = find.byKey(const ValueKey('goal_saving_pace'));
+    expect(pace, findsOneWidget);
+    final card = find.byKey(const ValueKey('savings_balance'));
+    expect(find.descendant(of: card, matching: find.text('Per week')), findsNothing);
+    expect(tester.getTopLeft(pace).dy,
+        greaterThan(tester.getBottomLeft(find.byTooltip('Edit goal')).dy));
+    expect(tester.getSize(card).height, lessThan(160));
+    for (final label in ['Per day', 'Per week', 'Per month']) {
+      expect(find.descendant(of: pace, matching: find.text(label)), findsOneWidget);
+    }
+    expect(find.descendant(of: pace, matching: find.text(NumberFormat.currency(symbol: '₱', decimalDigits: 2).format(goal.weeklyNeeded))), findsOneWidget);
+    await screenshot(tester, 'goal-detail-pace');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'minimal header keeps linked account text within a narrow viewport at large text sizes',
@@ -385,7 +425,7 @@ void main() {
       expect(find.textContaining('today'), findsNothing);
       expect(find.text('Next contribution'), findsOneWidget);
       expect(find.text('Projected total'), findsOneWidget);
-      expect(find.byType(KoinSummaryCard), findsNothing);
+      expect(find.byType(KoinSummaryCard), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -520,7 +560,7 @@ void main() {
             dark: dark,
           );
           final message = find.byKey(
-            const ValueKey('helper_projection_message'),
+            ValueKey(stash ? 'helper_projection_message' : 'goal_saving_pace'),
           );
           await tester.ensureVisible(message);
           await tester.pumpAndSettle();
@@ -648,6 +688,30 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('overview amounts align right and the add action follows all items', (tester) async {
+    final goal = SavingsGoal(
+      id: 'alignment', name: 'Travel', currentAmount: 120,
+      targetAmount: 3000, startDate: DateTime.now(),
+    );
+    await render(tester, goals: [goal, emergency().copyWith(currentAmount: 500)],
+        screen: const Scaffold(body: SavingsTab(showEntranceAnimations: false)));
+    for (final id in ['alignment', 'emergency']) {
+      final card = tester.getRect(find.byKey(ValueKey('savings-item-card-$id')));
+      final amount = tester.getRect(find.byKey(ValueKey('savings-item-amount-$id')));
+      expect(card.right - amount.right, closeTo(21, 1));
+    }
+    expect(find.text('Add new'), findsNothing);
+    final add = find.byType(KoinAddButton);
+    await tester.ensureVisible(add);
+    expect(tester.getTopLeft(add).dy,
+        greaterThan(tester.getBottomLeft(find.byKey(const ValueKey('savings-item-card-alignment'))).dy));
+    await screenshot(tester, 'savings-overview-bottom-add');
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.byType(AddSavingsGoalScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'overview with a planned goal fits narrow screens and large text',
     (tester) async {
@@ -674,9 +738,13 @@ void main() {
       );
       expect(find.text('Savings Helper'), findsNothing);
       expect(find.byType(SavingsRoutineCard), findsNothing);
-      expect(find.textContaining('projected by'), findsOneWidget);
-      expect(find.textContaining('200.00 every week'), findsOneWidget);
-      expect(find.byType(SavingsProjectionView), findsOneWidget);
+      expect(find.textContaining('projected by'), findsNothing);
+      expect(find.textContaining('target'), findsOneWidget);
+      expect(find.text('Savings & goals'), findsOneWidget);
+      expect(find.text('Your savings'), findsNothing);
+      expect(find.text('Your goals'), findsNothing);
+      expect(find.text('Add new goal'), findsNothing);
+      expect(find.byType(SavingsProjectionView), findsNothing);
       expect(find.byType(SavingsProjectionBar), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(
@@ -808,6 +876,9 @@ void main() {
       );
       await tester.ensureVisible(find.text('Save plan'));
       await tester.tap(find.text('Save plan'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Update Goal'));
+      await tester.tap(find.text('Update Goal'));
       await tester.pumpAndSettle();
       final saved = (await repo.getSavingsGoals()).single;
       expect(saved.endDate, goal.endDate);

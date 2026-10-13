@@ -165,49 +165,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'Targetless stash has an open balance layout and no progress ring',
-    (tester) async {
-      final stash = SavingsGoal(
-        id: 'stash',
-        name: 'Spare change',
-        startDate: DateTime(2026, 10, 10),
-        isStash: true,
-      );
-      final repository = await showSavings(tester, stash);
-      expect(find.text('Savings'), findsNothing);
-      expect(find.text('100%'), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
-      final emptyContent = tester.getRect(
-        find.byKey(const ValueKey('activity_empty_content')),
-      );
-      expect(emptyContent.center.dy, closeTo(emptyArea.center.dy, 1));
-      expect(find.text('Target'), findsNothing);
-      expect(find.byType(KoinSummaryCard), findsNothing);
-      expect(find.byKey(const ValueKey('savings_balance')), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsNothing);
-      expect(find.text('Save'), findsOneWidget);
-      expect(find.text('Release'), findsOneWidget);
-      expect(find.text('Coach'), findsNothing);
-      expect(find.byType(SavingsRoutineCard), findsOneWidget);
-      expect(find.byType(PopupMenuButton<String>), findsNothing);
-      expect(find.byTooltip('Edit goal'), findsOneWidget);
-      expect(find.byTooltip('Delete goal'), findsOneWidget);
-      await tester.tap(find.byTooltip('Delete goal'));
-      await tester.pumpAndSettle();
-      expect(find.text('Delete Goal?'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect((await repository.getSavingsGoals()).single.id, stash.id);
-      expect(tester.takeException(), isNull);
+  testWidgets('Targetless stash has a summary card and no progress ring', (
+    tester,
+  ) async {
+    final stash = SavingsGoal(
+      id: 'stash',
+      name: 'Spare change',
+      startDate: DateTime(2026, 10, 10),
+      isStash: true,
+    );
+    final repository = await showSavings(tester, stash);
+    expect(find.text('Savings'), findsNothing);
+    expect(find.text('100%'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final emptyArea = tester.getRect(find.byType(KoinActivityEmptyState));
+    final emptyContent = tester.getRect(
+      find.byKey(const ValueKey('activity_empty_content')),
+    );
+    expect(emptyContent.center.dy, closeTo(emptyArea.center.dy, 1));
+    expect(find.text('Target'), findsNothing);
+    expect(find.byType(KoinSummaryCard), findsOneWidget);
+    expect(find.byKey(const ValueKey('savings_balance')), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.text('Release'), findsOneWidget);
+    expect(find.text('Coach'), findsNothing);
+    expect(find.byType(SavingsRoutineCard), findsOneWidget);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    expect(find.byTooltip('Edit goal'), findsOneWidget);
+    expect(find.byTooltip('Delete goal'), findsOneWidget);
+    await tester.tap(find.byTooltip('Delete goal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Goal?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect((await repository.getSavingsGoals()).single.id, stash.id);
+    expect(tester.takeException(), isNull);
 
-      await showSavings(tester, stash, list: true);
-      expect(find.text('Savings'), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    await showSavings(tester, stash, list: true);
+    expect(find.text('Open-ended savings'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('Stash with a target shows its actual progress', (tester) async {
     await showSavings(

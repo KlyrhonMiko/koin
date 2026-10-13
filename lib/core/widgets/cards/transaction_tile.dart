@@ -26,6 +26,7 @@ class TransactionTile extends StatelessWidget {
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
   final bool showTime;
+  final bool activityStyle;
 
   const TransactionTile({
     super.key,
@@ -40,6 +41,7 @@ class TransactionTile extends StatelessWidget {
       vertical: 14,
     ),
     this.showTime = true,
+    this.activityStyle = false,
   });
 
   /// Convenience factory resolving [category], [accountName], and [toAccountName]
@@ -56,6 +58,7 @@ class TransactionTile extends StatelessWidget {
       vertical: 14,
     ),
     bool showTime = true,
+    bool activityStyle = false,
   }) {
     final cat = categories
         .where((c) => c.id == transaction.categoryId)
@@ -79,6 +82,7 @@ class TransactionTile extends StatelessWidget {
       onTap: onTap,
       padding: padding,
       showTime: showTime,
+      activityStyle: activityStyle,
     );
   }
 
@@ -146,76 +150,167 @@ class TransactionTile extends StatelessWidget {
           },
       child: Padding(
         padding: padding,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const Gap(14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: activityStyle
+            ? _activityRow(
+                context,
+                icon: icon,
+                color: color,
+                title: displayTitle,
+                subtitle: showTime
+                    ? '$displaySubtitle · ${DateFormat.jm().format(transaction.date)}'
+                    : displaySubtitle,
+                amount: signedAmount,
+                amountColor: typeColor,
+              )
+            : Row(
                 children: [
-                  Text(
-                    displayTitle,
-                    style: const TextStyle(
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.body,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    child: Icon(icon, color: color, size: 20),
                   ),
-                  const Gap(3),
-                  Text(
-                    displaySubtitle,
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(context),
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.supportingWeight,
+                  const Gap(14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayTitle,
+                          style: const TextStyle(
+                            fontWeight: KoinTypography.titleWeight,
+                            fontSize: KoinTypography.body,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Gap(3),
+                        Text(
+                          displaySubtitle,
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(context),
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.supportingWeight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Gap(12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        signedAmount,
+                        style: TextStyle(
+                          color: typeColor,
+
+                          fontWeight: KoinTypography.headingWeight,
+                          fontSize: KoinTypography.body,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      if (showTime) ...[
+                        const Gap(2),
+                        Text(
+                          DateFormat.jm().format(transaction.date),
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(
+                              context,
+                            ).withValues(alpha: 0.6),
+                            fontSize: KoinTypography.overline,
+                            fontWeight: KoinTypography.labelWeight,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
-            ),
-            const Gap(12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  signedAmount,
-                  style: TextStyle(
-                    color: typeColor,
-
-                    fontWeight: KoinTypography.headingWeight,
-                    fontSize: KoinTypography.body,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                if (showTime) ...[
-                  const Gap(2),
-                  Text(
-                    DateFormat.jm().format(transaction.date),
-                    style: TextStyle(
-                      color: AppTheme.textLightColor(
-                        context,
-                      ).withValues(alpha: 0.6),
-                      fontSize: KoinTypography.overline,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
+
+  Widget _activityRow(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required String amount,
+    required Color amountColor,
+  }) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      const Gap(14),
+      Expanded(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked =
+                constraints.maxWidth < 220 ||
+                MediaQuery.textScalerOf(context).scale(15) > 20;
+            final titleText = Text(
+              title,
+              maxLines: stacked ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: KoinTypography.body,
+                fontWeight: KoinTypography.titleWeight,
+              ),
+            );
+            final amountText = Text(
+              amount,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: amountColor,
+                fontSize: KoinTypography.itemAmount,
+                fontWeight: KoinTypography.titleWeight,
+                letterSpacing: KoinTypography.itemTracking,
+              ),
+            );
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (stacked) ...[
+                  titleText,
+                  const Gap(4),
+                  amountText,
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: titleText),
+                      const Gap(12),
+                      Flexible(fit: FlexFit.tight, child: amountText),
+                    ],
+                  ),
+                const Gap(4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontSize: KoinTypography.small,
+                    fontWeight: KoinTypography.supportingWeight,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ],
+  );
 }
