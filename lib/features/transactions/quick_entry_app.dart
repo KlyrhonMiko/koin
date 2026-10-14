@@ -90,9 +90,7 @@ class QuickEntryApp extends ConsumerWidget {
 
   ThemeData _theme(Color color, bool dark) {
     final theme = AppTheme.getTheme(color, dark);
-    final foreground = color.computeLuminance() > 0.179
-        ? Colors.black
-        : Colors.white;
+    final foreground = theme.colorScheme.onPrimary;
     return theme.copyWith(
       colorScheme: theme.colorScheme.copyWith(onPrimary: foreground),
       filledButtonTheme: FilledButtonThemeData(
@@ -701,7 +699,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           );
         },
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(KoinShape.sheet),
+          ),
           child: Scaffold(
             backgroundColor: _step == _Step.amount
                 ? AppTheme.backgroundColor(context)
@@ -1042,8 +1042,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     final color = Theme.of(context).brightness == Brightness.light
         ? switch (_type) {
             TransactionType.income => AppTheme.incomeContentColor(context),
-            TransactionType.expense => const Color(0xFFB42332),
-            TransactionType.transfer => const Color(0xFF1D4ED8),
+            TransactionType.expense => AppTheme.expenseContentColor(context),
+            TransactionType.transfer => AppTheme.transferContentColor(context),
           }
         : baseColor;
     return Column(
@@ -1077,13 +1077,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 ),
                 Text(
                   _expression.isEmpty ? '0' : _expression,
-                  style: TextStyle(
-                    fontSize: KoinTypography.inputAmount,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    letterSpacing: -2,
-                    height: KoinTypography.amountHeight,
-                  ),
+                  style: KoinTypography.inputAmountStyle.copyWith(color: color),
                 ),
               ],
             ),

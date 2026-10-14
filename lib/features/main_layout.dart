@@ -222,7 +222,9 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                           },
                           elevation: 0,
                           backgroundColor: AppTheme.primaryColor(context),
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                           shape: const CircleBorder(),
                           child: const Icon(Icons.add_rounded, size: 38),
                         ),

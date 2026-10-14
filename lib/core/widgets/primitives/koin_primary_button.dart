@@ -25,7 +25,7 @@ class KoinPrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
-    this.borderRadius = 16,
+    this.borderRadius = KoinShape.field,
     this.padding = const EdgeInsets.symmetric(vertical: 16),
     this.gradient,
     this.glowColor,
@@ -46,6 +46,9 @@ class KoinPrimaryButton extends StatelessWidget {
               AppTheme.textLightColor(context).withValues(alpha: 0.2),
             ],
           );
+    final foreground = isInteractive || isLoading
+        ? AppTheme.gradientForeground(context, displayedGradient)
+        : AppTheme.textLightColor(context);
 
     Widget button = Container(
       decoration: BoxDecoration(
@@ -78,12 +81,12 @@ class KoinPrimaryButton extends StatelessWidget {
           ),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 height: 20,
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: foreground,
                 ),
               )
             : Row(
@@ -93,7 +96,7 @@ class KoinPrimaryButton extends StatelessWidget {
                     : MainAxisSize.max,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: Colors.white, size: 20),
+                    Icon(icon, color: foreground, size: 20),
                     const Gap(8),
                   ],
                   Flexible(
@@ -101,7 +104,7 @@ class KoinPrimaryButton extends StatelessWidget {
                       label,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: foreground,
 
                         fontWeight: KoinTypography.titleWeight,
                         fontSize: KoinTypography.itemTitle,

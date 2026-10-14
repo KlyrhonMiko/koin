@@ -50,7 +50,14 @@ void main() {
               expect(AppTheme.expenseColor(context), const Color(0xFFFF6B6B));
               expect(AppTheme.transferColor(context), const Color(0xFF3B82F6));
               final fill = AppTheme.primaryGradient(context);
-              expect(fill.colors, [accent, accent.withValues(alpha: 0.8)]);
+              expect(fill.colors.first, accent);
+              for (final color in fill.colors) {
+                expect(color.a, 1);
+                expect(
+                  contrast(scheme.onPrimary, color),
+                  greaterThanOrEqualTo(4.5),
+                );
+              }
               final shadow = AppTheme.boxShadow(
                 context,
                 color: accent.withValues(alpha: 0.4),
@@ -78,10 +85,15 @@ void main() {
               ).color,
               Colors.teal.withValues(alpha: 0.3),
             );
-            expect(AppTheme.primaryGradient(context).colors, [
-              Colors.teal,
-              Colors.teal.withValues(alpha: 0.8),
-            ]);
+            final colors = AppTheme.primaryGradient(context).colors;
+            expect(colors.first, Colors.teal);
+            for (final color in colors) {
+              expect(color.a, 1);
+              expect(
+                contrast(Theme.of(context).colorScheme.onPrimary, color),
+                greaterThanOrEqualTo(4.5),
+              );
+            }
             return const SizedBox();
           },
         ),

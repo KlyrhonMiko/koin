@@ -257,10 +257,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     final hasInstallments =
         (int.tryParse(_installmentsController.text) ?? 0) > 0;
     final currency = ref.watch(settingsProvider).currency;
-    final nameStyle = TextStyle(
-      fontSize: KoinTypography.formTitle,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0,
+    final nameStyle = KoinTypography.entityNameStyle.copyWith(
       color: AppTheme.textColor(context),
     );
 
@@ -691,8 +688,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                     SelectionTile(
                       fallbackIcon: Icons.event_repeat_rounded,
                       label: 'Payment frequency',
-                      selectedName:
-                          _selectedFrequency.label,
+                      selectedName: _selectedFrequency.label,
                       selectedColor: primaryColor,
                       selectedIconCodePoint:
                           Icons.event_repeat_rounded.codePoint,

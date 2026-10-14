@@ -27,7 +27,7 @@ class KoinSummaryCard extends StatelessWidget {
     required this.child,
     this.gradient,
     this.glowColor,
-    this.borderRadius = 32,
+    this.borderRadius = KoinShape.summary,
     this.padding = const EdgeInsets.all(KoinSpacing.summaryInset),
     this.margin,
     this.shapeStyle = SummaryShapeStyle.defaultStyle,
@@ -73,7 +73,7 @@ class KoinSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveGradient = gradient ?? AppTheme.primaryGradient(context);
+    final effectiveGradient = gradient ?? AppTheme.summaryGradient(context);
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
 
     return Container(

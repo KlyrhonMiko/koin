@@ -24,8 +24,8 @@ class KoinBackButton extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
         child: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 20,
+          Icons.arrow_back_rounded,
+          size: 24,
           color: color ?? AppTheme.textColor(context),
         ),
       ),

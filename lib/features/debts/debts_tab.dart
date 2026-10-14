@@ -32,46 +32,12 @@ class DebtsTab extends ConsumerWidget {
             title: 'No credit or IOUs',
             subtitle:
                 'Track BNPL, credit cards, and\nmoney you owe or are owed.',
-            action: SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: AppTheme.primaryGradient(context),
-                  boxShadow: [
-                    AppTheme.boxShadow(
-                      context,
-                      color: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    HapticService.medium();
-                    Navigator.push(
-                      context,
-                      SlideUpRoute(page: const AddEditDebtScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.add_rounded, color: Colors.white),
-                  label: Text(
-                    'Add credit / IOU',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.body,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
+            action: KoinPrimaryButton(
+              label: 'Add credit / IOU',
+              icon: Icons.add_rounded,
+              onPressed: () => Navigator.push(
+                context,
+                SlideUpRoute(page: const AddEditDebtScreen()),
               ),
             ),
           );
@@ -272,8 +238,8 @@ class DebtCard extends StatelessWidget {
     final color = isSettled
         ? settledColor
         : debt.type == DebtType.owedToMe
-        ? AppTheme.incomeColor(context)
-        : AppTheme.expenseColor(context);
+        ? AppTheme.incomeContentColor(context)
+        : AppTheme.expenseContentColor(context);
 
     Widget content = PressableScale(
       onTap: () {
@@ -439,7 +405,7 @@ class DebtCard extends StatelessWidget {
                 fontSize: KoinTypography.overline,
                 fontWeight: KoinTypography.supportingWeight,
                 color: debt.isOverdue()
-                    ? Colors.redAccent
+                    ? AppTheme.errorContentColor(context)
                     : AppTheme.textLightColor(context).withValues(alpha: 0.6),
               ),
             ),

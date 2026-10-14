@@ -110,7 +110,7 @@ class KoinSettingTile extends StatelessWidget {
     final effectiveColor =
         iconColor ??
         (isDestructive
-            ? Colors.red
+            ? AppTheme.errorContentColor(context)
             : AppTheme.hasEditorAppearance(context)
             ? AppTheme.textLightColor(context)
             : AppTheme.primaryColor(context));
@@ -160,7 +160,7 @@ class KoinSettingTile extends StatelessWidget {
         style: TextStyle(
           fontWeight: KoinTypography.labelWeight,
           fontSize: KoinTypography.body,
-          color: isDestructive ? Colors.red : null,
+          color: isDestructive ? AppTheme.errorContentColor(context) : null,
         ),
       ),
       subtitle: subtitle != null

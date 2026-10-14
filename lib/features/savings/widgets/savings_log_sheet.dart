@@ -187,7 +187,9 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(KoinShape.sheet),
+        ),
         boxShadow: [
           AppTheme.boxShadow(
             context,
@@ -242,21 +244,17 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                       style: TextStyle(
                         fontSize: KoinTypography.screenTitle,
                         fontWeight: KoinTypography.labelWeight,
-                        color: primaryColor.withValues(alpha: 0.4),
+                        color: AppTheme.contentColor(context, primaryColor),
                       ),
                     ),
                     Text(
                       _currentExpression.isEmpty ? '0' : _currentExpression,
-                      style: TextStyle(
-                        fontSize: KoinTypography.inputAmount,
-                        fontWeight: FontWeight.w800,
+                      style: KoinTypography.inputAmountStyle.copyWith(
                         color: isExceeded
-                            ? AppTheme.expenseColor(context)
+                            ? AppTheme.expenseContentColor(context)
                             : (hasAmount
-                                  ? primaryColor
-                                  : primaryColor.withValues(alpha: 0.3)),
-                        letterSpacing: -2,
-                        height: KoinTypography.amountHeight,
+                                  ? AppTheme.contentColor(context, primaryColor)
+                                  : AppTheme.textLightColor(context)),
                       ),
                     ),
                   ],

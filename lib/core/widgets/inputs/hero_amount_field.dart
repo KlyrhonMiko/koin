@@ -38,18 +38,10 @@ class HeroAmountField extends StatelessWidget {
       valueListenable: controller,
       builder: (context, value, _) {
         final isNotEmpty = value.text.isNotEmpty;
-        final hintColor = AppTheme.hasEditorAppearance(context)
-            ? AppTheme.textLightColor(context)
-            : primaryColor.withValues(alpha: 0.35);
-        final amountStyle = TextStyle(
-          fontSize: KoinTypography.inputAmount,
-          fontWeight: KoinTypography.headingWeight,
-          color: isNotEmpty
-              ? primaryColor
-              : primaryColor.withValues(alpha: 0.35),
-
-          letterSpacing: -2,
-          height: KoinTypography.amountHeight,
+        final contentColor = AppTheme.contentColor(context, primaryColor);
+        final hintColor = AppTheme.textLightColor(context);
+        final amountStyle = KoinTypography.inputAmountStyle.copyWith(
+          color: isNotEmpty ? contentColor : hintColor,
         );
 
         return Column(
@@ -66,7 +58,7 @@ class HeroAmountField extends StatelessWidget {
                   style: TextStyle(
                     fontSize: KoinTypography.screenTitle,
                     fontWeight: KoinTypography.labelWeight,
-                    color: primaryColor.withValues(alpha: 0.5),
+                    color: contentColor,
                   ),
                 ),
                 Flexible(

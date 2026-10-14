@@ -26,8 +26,8 @@ class UpcomingEntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExpense = entry.isExpense;
     final amountColor = isExpense
-        ? AppTheme.expenseColor(context)
-        : AppTheme.incomeColor(context);
+        ? AppTheme.expenseContentColor(context)
+        : AppTheme.incomeContentColor(context);
 
     Color iconBgColor;
     Widget iconWidget;
@@ -129,8 +129,8 @@ class UpcomingEntryTile extends StatelessWidget {
                             'AUTO',
                             style: TextStyle(
                               color: AppTheme.primaryColor(context),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
+                              fontSize: KoinTypography.badgeLabel,
+                              fontWeight: KoinTypography.titleWeight,
                             ),
                           ),
                         ),
@@ -144,7 +144,7 @@ class UpcomingEntryTile extends StatelessWidget {
                         : '${DateFormat.MMMMd().format(entry.dueDate)} • ${entry.formattedDueStatus()}',
                     style: TextStyle(
                       color: entry.isOverdue()
-                          ? AppTheme.expenseColor(context)
+                          ? AppTheme.expenseContentColor(context)
                           : AppTheme.textLightColor(context),
                       fontSize: KoinTypography.small,
                       fontWeight: KoinTypography.supportingWeight,

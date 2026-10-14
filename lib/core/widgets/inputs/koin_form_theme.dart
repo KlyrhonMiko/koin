@@ -14,7 +14,7 @@ class KoinFormTheme extends StatelessWidget {
       return Builder(builder: builder);
     }
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(KoinShape.field),
       borderSide: BorderSide(color: theme.dividerColor.withValues(alpha: 0.65)),
     );
     return Theme(

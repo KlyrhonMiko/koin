@@ -22,7 +22,18 @@ void main() {
     prefs = await SharedPreferences.getInstance();
     if (const bool.fromEnvironment('FORM_PREVIEWS')) {
       final outfit = FontLoader('Outfit');
-      outfit.addFont(rootBundle.load('assets/fonts/outfit/Outfit-Regular.ttf'));
+      for (final weight in [
+        'Regular',
+        'Medium',
+        'SemiBold',
+        'Bold',
+        'ExtraBold',
+        'Black',
+      ]) {
+        outfit.addFont(
+          rootBundle.load('assets/fonts/outfit/Outfit-$weight.ttf'),
+        );
+      }
       await outfit.load();
       final icons = FontLoader('MaterialIcons');
       icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));

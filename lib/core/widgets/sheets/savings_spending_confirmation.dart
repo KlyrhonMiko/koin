@@ -64,7 +64,9 @@ Future<bool> confirmSavingsSpending({
           backgroundColor: AppTheme.surfaceColor(context),
           elevation: 0,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(KoinShape.sheet),
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           showDragHandle: true,
@@ -225,7 +227,7 @@ class _SavingsReleaseSheetState extends State<_SavingsReleaseSheet> {
                 if (_error != null) ...[
                   Text(
                     _error!,
-                    style: TextStyle(color: AppTheme.expenseColor(context)),
+                    style: TextStyle(color: AppTheme.expenseContentColor(context)),
                   ),
                   const SizedBox(height: 16),
                 ],

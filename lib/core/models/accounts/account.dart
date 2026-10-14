@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'bank_templates.dart';
 
 class Account {
   final String id;
@@ -103,7 +104,21 @@ class Account {
     );
   }
 
-  Color get color => Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+  Color get color => Color(
+    int.parse(
+      BankTemplate.resolveColorHex(
+        logoAsset,
+        colorHex,
+      ).replaceFirst('#', '0xFF'),
+    ),
+  );
+
+  /// Dark content for vivid bank defaults; explicit card colors keep their style.
+  Color? get cardForeground {
+    if (cardColorHex != null) return null;
+    final hex = BankTemplate.foregroundHexFor(logoAsset);
+    return hex == null ? null : Color(int.parse(hex.replaceFirst('#', '0xFF')));
+  }
 
   /// Returns the explicit card background color if set, otherwise null.
   Color? get cardColor => cardColorHex == null

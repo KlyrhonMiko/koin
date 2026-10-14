@@ -373,10 +373,10 @@ class _NumPadState extends State<NumPad> {
               children: [
                 Icon(
                   Icons.check_rounded,
-                  color:
-                      AppTheme.primaryColor(context).computeLuminance() > 0.179
-                      ? Colors.black
-                      : Colors.white,
+                  color: AppTheme.gradientForeground(
+                    context,
+                    AppTheme.primaryGradient(context),
+                  ),
                   size: 20,
                 ),
                 const SizedBox(width: 6),
@@ -385,11 +385,10 @@ class _NumPadState extends State<NumPad> {
                   style: TextStyle(
                     fontSize: c ? 15.5 : 16.0,
                     fontWeight: FontWeight.w700,
-                    color:
-                        AppTheme.primaryColor(context).computeLuminance() >
-                            0.179
-                        ? Colors.black
-                        : Colors.white,
+                    color: AppTheme.gradientForeground(
+                      context,
+                      AppTheme.primaryGradient(context),
+                    ),
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -415,7 +414,7 @@ class _NumPadState extends State<NumPad> {
         color: AppTheme.surfaceLightColor(context),
         borderRadius: widget.inline
             ? BorderRadius.circular(c ? 24 : 28)
-            : BorderRadius.vertical(top: Radius.circular(c ? 24 : 28)),
+            : BorderRadius.vertical(top: Radius.circular(KoinShape.sheet)),
         boxShadow: widget.inline
             ? null
             : [
@@ -468,8 +467,10 @@ class _NumPadState extends State<NumPad> {
                   context,
                   action: NumPadAction.clear,
                   text: 'C',
-                  color: const Color(0xFFFF6B6B),
-                  bgColor: const Color(0xFFFF6B6B).withValues(alpha: 0.08),
+                  color: AppTheme.errorContentColor(context),
+                  bgColor: AppTheme.errorContentColor(
+                    context,
+                  ).withValues(alpha: 0.08),
                 ),
                 _buildOperatorKey(context, '+', '+'),
               ],

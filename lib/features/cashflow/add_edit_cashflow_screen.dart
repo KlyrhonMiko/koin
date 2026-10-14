@@ -335,10 +335,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final currency = ref.watch(settingsProvider).currency;
-    final nameStyle = TextStyle(
-      fontSize: KoinTypography.formTitle,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0,
+    final nameStyle = KoinTypography.entityNameStyle.copyWith(
       color: AppTheme.textColor(context),
     );
     return Column(
@@ -451,7 +448,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
               tooltip: 'Delete $_domainNoun',
               icon: Icon(
                 Icons.delete_outline_rounded,
-                color: AppTheme.expenseColor(context),
+                color: AppTheme.expenseContentColor(context),
               ),
               onPressed: _showDeleteConfirmation,
             ),

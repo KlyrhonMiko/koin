@@ -113,7 +113,7 @@ class _SegmentTrack extends StatelessWidget {
     );
     final borderColor = AppTheme.fieldBorderColor(context);
     final color = AppTheme.textColor(context);
-    const radius = BorderRadius.all(Radius.circular(16));
+    const radius = BorderRadius.all(Radius.circular(KoinShape.field));
 
     return Container(
       height: height,

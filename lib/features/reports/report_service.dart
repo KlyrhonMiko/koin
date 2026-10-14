@@ -1,11 +1,13 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
+import 'package:flutter/painting.dart' as painting;
 import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, FontLoader;
 
 class ReportSummary {
   final double totalIncome;
@@ -49,6 +51,48 @@ class ReportExportPayload {
 }
 
 class ReportService {
+  static Future<void>? _iconFontLoaded;
+
+  /// Flutter ships Material Icons as CFF OpenType, unsupported by dart_pdf's
+  /// TrueType embedding. Render the bundled glyphs at high resolution instead.
+  static Future<pw.MemoryImage> _renderIcon(
+    int codePoint,
+    String colorHex,
+  ) async {
+    _iconFontLoaded ??= (FontLoader(
+      'KoinExportIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    await _iconFontLoaded;
+    final painter = painting.TextPainter(
+      text: painting.TextSpan(
+        text: String.fromCharCode(codePoint),
+        style: painting.TextStyle(
+          fontFamily: 'KoinExportIcons',
+          fontSize: 64,
+          color: ui.Color(
+            int.parse(colorHex.replaceFirst('#', 'FF'), radix: 16),
+          ),
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    final recorder = ui.PictureRecorder();
+    painter.paint(
+      ui.Canvas(recorder),
+      ui.Offset((80 - painter.width) / 2, (80 - painter.height) / 2),
+    );
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(80, 80);
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      return pw.MemoryImage(data!.buffer.asUint8List());
+    } finally {
+      image.dispose();
+      picture.dispose();
+      painter.dispose();
+    }
+  }
+
   static Future<ReportExportPayload> generateReport({
     required List<AppTransaction> transactions,
     required List<TransactionCategory> categories,
@@ -176,19 +220,31 @@ class ReportService {
     required String currencySymbol,
     String? currencyCode,
   }) async {
-    pw.Font? iconFont;
-
-    try {
-      // Try to load Material Icons font from the bundled assets
-      // This path is standard for Flutter apps using Material Icons
-      final iconFontData = await rootBundle.load('MaterialIcons-Regular.ttf');
-      iconFont = pw.Font.ttf(iconFontData);
-      debugPrint('Material Icons font loaded successfully');
-    } catch (e) {
-      debugPrint('Error loading Material Icons font: $e');
+    final usedCategoryIds = transactions.map((tx) => tx.categoryId).toSet();
+    final usedAccountIds = transactions.map((tx) => tx.accountId).toSet();
+    final iconKeys = {
+      for (final category in categories)
+        if (usedCategoryIds.contains(category.id) &&
+            category.iconCodePoint != 0)
+          (category.iconCodePoint, category.colorHex),
+      for (final account in accounts)
+        if (usedAccountIds.contains(account.id) && account.iconCodePoint != 0)
+          (account.iconCodePoint, account.colorHex),
+    };
+    final iconImages = <(int, String), pw.MemoryImage>{};
+    for (final key in iconKeys) {
+      iconImages[key] = await _renderIcon(key.$1, key.$2);
     }
 
-    final pdf = pw.Document();
+    final regular = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/outfit/Outfit-Regular.ttf'),
+    );
+    final bold = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/outfit/Outfit-Bold.ttf'),
+    );
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: regular, bold: bold),
+    );
     final money = NumberFormat.currency(
       name: currencyCode,
       symbol: _sanitizeCurrency(currencySymbol, currencyCode),
@@ -197,11 +253,11 @@ class ReportService {
           : NumberFormat.currency(name: currencyCode).decimalDigits,
     );
 
-    // Define Colors from AppTheme
-    final primaryColor = PdfColor.fromInt(0xFF00D09E);
-    final incomeColor = PdfColor.fromInt(0xFF00D09E);
-    final expenseColor = PdfColor.fromInt(0xFFFF6B6B);
-    final transferColor = PdfColor.fromInt(0xFF3B82F6);
+    // Reports retain the brand palette with readable foregrounds on paper.
+    final primaryColor = PdfColor.fromInt(0xFF007A5D);
+    final incomeColor = PdfColor.fromInt(0xFF007A5D);
+    final expenseColor = PdfColor.fromInt(0xFFB42332);
+    final transferColor = PdfColor.fromInt(0xFF1D4ED8);
     final textColor = PdfColor.fromInt(0xFF1A1A1A);
     final textLightColor = PdfColor.fromInt(0xFF6B7280);
     final greyColor = PdfColor.fromInt(0xFFF1F3F5);
@@ -423,17 +479,18 @@ class ReportService {
                       tx.type == TransactionType.transfer
                           ? 'Transfer'
                           : category.name,
-                      tx.type == TransactionType.transfer
-                          ? 0
-                          : category.iconCodePoint,
                       PdfColor.fromHex(category.colorHex),
-                      iconFont,
+                      tx.type == TransactionType.transfer
+                          ? null
+                          : iconImages[(
+                              category.iconCodePoint,
+                              category.colorHex,
+                            )],
                     ),
                     _buildIconCell(
                       accountDisplay,
-                      account.iconCodePoint,
                       PdfColor.fromHex(account.colorHex),
-                      iconFont,
+                      iconImages[(account.iconCodePoint, account.colorHex)],
                     ),
                     _buildDataCell(tx.note.isEmpty ? '-' : tx.note),
                     _buildDataCell(
@@ -537,35 +594,29 @@ class ReportService {
 
   static pw.Widget _buildIconCell(
     String text,
-    int iconCodePoint,
     PdfColor color,
-    pw.Font? iconFont,
+    pw.MemoryImage? iconImage,
   ) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: pw.Row(
         mainAxisSize: pw.MainAxisSize.min,
         children: [
-          if (iconFont != null)
+          if (iconImage != null)
             pw.Container(
               width: 10,
               height: 10,
               decoration: pw.BoxDecoration(
-                color: PdfColor(color.red, color.green, color.blue, 0.1),
+                color: PdfColor(
+                  0.9 + color.red * 0.1,
+                  0.9 + color.green * 0.1,
+                  0.9 + color.blue * 0.1,
+                ),
                 shape: pw.BoxShape.circle,
               ),
-              child: pw.Center(
-                child: pw.Text(
-                  String.fromCharCode(iconCodePoint),
-                  style: pw.TextStyle(
-                    font: iconFont,
-                    fontSize: 7,
-                    color: color,
-                  ),
-                ),
-              ),
+              child: pw.Center(child: pw.Image(iconImage, width: 9, height: 9)),
             ),
-          pw.SizedBox(width: iconFont != null ? 6 : 0),
+          pw.SizedBox(width: iconImage != null ? 6 : 0),
           pw.Text(text, style: const pw.TextStyle(fontSize: 8)),
         ],
       ),

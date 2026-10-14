@@ -111,7 +111,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                     ),
                     textAlign: TextAlign.center,
                   )
-                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  .koinAnimate(
+                    context,
+                    autoPlay: !MediaQuery.disableAnimationsOf(context),
                     onInit: KoinMotion.onInit(context),
                   )
                   .fade()
@@ -138,7 +140,7 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Choose an amount', style: TextStyle(fontSize: 16)),
+        title: const Text('Choose an amount'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -376,7 +378,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor(context),
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -394,7 +398,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                       ),
                     ],
                   )
-                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  .koinAnimate(
+                    context,
+                    autoPlay: !MediaQuery.disableAnimationsOf(context),
                     onInit: KoinMotion.onInit(context),
                   )
                   .fade()
@@ -562,7 +568,7 @@ class _TimelinePainter extends CustomPainter {
         text: 'Target',
         style: TextStyle(
           color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.7),
-          fontSize: 10,
+          fontSize: KoinTypography.chartLabel,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -598,8 +604,8 @@ class _TimelinePainter extends CustomPainter {
           text: 'Finish',
           style: TextStyle(
             color: theme.primaryColor,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
+            fontSize: KoinTypography.chartLabel,
+            fontWeight: KoinTypography.titleWeight,
           ),
         ),
         textDirection: TextDirection.ltr,

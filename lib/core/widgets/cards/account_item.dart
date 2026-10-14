@@ -124,6 +124,7 @@ class AccountItem extends StatelessWidget {
       );
     }
     final colored = _hasColoredBackground;
+    final foreground = account.cardForeground;
 
     return PressableScale(
       onTap: onTap,
@@ -148,13 +149,17 @@ class AccountItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: account.logoAsset == null
                             ? (colored
-                                  ? Colors.white.withValues(alpha: 0.15)
+                                  ? (foreground ?? Colors.white).withValues(
+                                      alpha: 0.15,
+                                    )
                                   : account.color.withValues(alpha: 0.1))
                             : null,
                         border: account.logoAsset == null
                             ? Border.all(
                                 color: colored
-                                    ? Colors.white.withValues(alpha: 0.25)
+                                    ? (foreground ?? Colors.white).withValues(
+                                        alpha: 0.25,
+                                      )
                                     : account.color.withValues(alpha: 0.15),
                                 width: 1,
                               )
@@ -172,7 +177,9 @@ class AccountItem extends StatelessWidget {
                           : Center(
                               child: Icon(
                                 IconUtils.getIcon(account.iconCodePoint),
-                                color: colored ? Colors.white : account.color,
+                                color: colored
+                                    ? (foreground ?? Colors.white)
+                                    : account.color,
                                 size: 24,
                               ),
                             ),
@@ -189,6 +196,7 @@ class AccountItem extends StatelessWidget {
                             style: PortfolioCardStyle.label(
                               context,
                               colored: colored,
+                              foreground: foreground,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -199,7 +207,7 @@ class AccountItem extends StatelessWidget {
                                   '••••••',
                                   style: TextStyle(
                                     color: colored
-                                        ? Colors.white
+                                        ? (foreground ?? Colors.white)
                                         : AppTheme.textColor(context),
                                     fontWeight: KoinTypography.titleWeight,
                                     fontSize: KoinTypography.itemAmount,
@@ -212,6 +220,7 @@ class AccountItem extends StatelessWidget {
                                   style: PortfolioCardStyle.amount(
                                     context,
                                     colored: colored,
+                                    foreground: foreground,
                                   ),
                                 )
                               : AnimatedCounter(
@@ -224,6 +233,7 @@ class AccountItem extends StatelessWidget {
                                   style: PortfolioCardStyle.amount(
                                     context,
                                     colored: colored,
+                                    foreground: foreground,
                                   ),
                                 ),
                           if (savingsAmount > 0 && !isPrivate) ...[
@@ -234,7 +244,9 @@ class AccountItem extends StatelessWidget {
                                 fontSize: KoinTypography.small,
                                 height: 1.1,
                                 color: colored
-                                    ? Colors.white.withValues(alpha: 0.7)
+                                    ? (foreground ?? Colors.white).withValues(
+                                        alpha: 0.7,
+                                      )
                                     : AppTheme.textLightColor(context),
                               ),
                               maxLines: 1,
@@ -266,7 +278,7 @@ class AccountItem extends StatelessWidget {
                                   : Icons.visibility_rounded,
                               size: 20,
                               color: colored
-                                  ? Colors.white.withValues(
+                                  ? (foreground ?? Colors.white).withValues(
                                       alpha: isPrivate ? 0.5 : 0.8,
                                     )
                                   : (isPrivate
@@ -289,7 +301,9 @@ class AccountItem extends StatelessWidget {
                         data: Theme.of(context).copyWith(
                           iconTheme: IconThemeData(
                             color: colored
-                                ? Colors.white.withValues(alpha: 0.5)
+                                ? (foreground ?? Colors.white).withValues(
+                                    alpha: 0.5,
+                                  )
                                 : AppTheme.textLightColor(
                                     context,
                                   ).withValues(alpha: 0.3),

@@ -281,8 +281,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     }
 
     final badgeColor = analysis.isIncrease
-        ? Colors.redAccent.shade100
-        : Colors.greenAccent.shade200;
+        ? AppTheme.expenseColor(context)
+        : AppTheme.incomeColor(context);
     final icon = analysis.isIncrease
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
@@ -467,7 +467,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppTheme.primaryColor(context) : Colors.white,
+              color: isSelected
+                  ? AppTheme.contentColor(
+                      context,
+                      AppTheme.primaryColor(context),
+                      background: Colors.white,
+                    )
+                  : Colors.white,
               fontWeight: isSelected
                   ? KoinTypography.headingWeight
                   : KoinTypography.labelWeight,
@@ -756,7 +762,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 Text(
                                   currency.compactFormatter.format(data.amount),
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: KoinTypography.chartLabel,
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.textLightColor(
                                       context,

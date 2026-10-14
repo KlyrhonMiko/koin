@@ -136,7 +136,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(KoinShape.sheet),
+          ),
         ),
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
         child: Column(
@@ -216,7 +218,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                       },
                       icon: Icon(
                         Icons.delete_outline_rounded,
-                        color: AppTheme.expenseColor(context),
+                        color: AppTheme.expenseContentColor(context),
                       ),
                       tooltip: 'Remove Budget',
                     ),

@@ -247,7 +247,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                           NumberFormat.compact().format(val),
                           style: TextStyle(
                             color: AppTheme.textLightColor(context),
-                            fontSize: 10,
+                            fontSize: KoinTypography.chartLabel,
                             fontWeight: FontWeight.w600,
                           ),
                           textAlign: TextAlign.right,
@@ -294,7 +294,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                       '${bottomLabels[group.x.toInt()]}\n',
                       TextStyle(
                         color: AppTheme.textLightColor(context),
-                        fontSize: 10,
+                        fontSize: KoinTypography.chartLabel,
                         fontWeight: FontWeight.w600,
                       ),
                       children: [

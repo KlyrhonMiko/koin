@@ -312,7 +312,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
       ),
       decoration: BoxDecoration(
         color: AppTheme.backgroundColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(KoinShape.sheet),
+        ),
         border: Border(
           top: BorderSide(
             color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
@@ -639,7 +641,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                           height: 48,
                           decoration: BoxDecoration(
                             gradient: AppTheme.primaryGradient(context),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(
+                              KoinShape.field,
+                            ),
                             boxShadow: [
                               AppTheme.boxShadow(
                                 context,
@@ -649,13 +653,16 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                               ),
                             ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.check_rounded,
                                 size: 20,
-                                color: Colors.white,
+                                color: AppTheme.gradientForeground(
+                                  context,
+                                  AppTheme.primaryGradient(context),
+                                ),
                               ),
                               Gap(6),
                               Text(
@@ -663,7 +670,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                                 style: TextStyle(
                                   fontSize: KoinTypography.compact,
                                   fontWeight: KoinTypography.titleWeight,
-                                  color: Colors.white,
+                                  color: AppTheme.gradientForeground(
+                                    context,
+                                    AppTheme.primaryGradient(context),
+                                  ),
                                 ),
                               ),
                             ],
@@ -673,7 +683,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     ),
                   ],
                 )
-                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
                   onInit: KoinMotion.onInit(context),
                 )
                 .fadeIn(duration: 250.ms)
@@ -866,7 +878,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
                     if (_autoCatKey > 0) {
                       child = child
-                          .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                          .koinAnimate(
+                            context,
+                            autoPlay: !MediaQuery.disableAnimationsOf(context),
                             onInit: KoinMotion.onInit(context),
                             key: ValueKey(_autoCatKey),
                           )
@@ -1050,7 +1064,9 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             ],
           ),
         )
-        .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+        .koinAnimate(
+          context,
+          autoPlay: !MediaQuery.disableAnimationsOf(context),
           onInit: KoinMotion.onInit(context),
         )
         .fadeIn(duration: 300.ms)

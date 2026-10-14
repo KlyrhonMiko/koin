@@ -69,7 +69,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Choose an amount', style: TextStyle(fontSize: 16)),
+        title: const Text('Choose an amount'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -324,7 +324,7 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor(context),
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

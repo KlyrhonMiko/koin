@@ -103,7 +103,7 @@ class DateSelectorTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           border: Border.all(
             color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
           ),

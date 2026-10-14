@@ -16,36 +16,32 @@ abstract final class PortfolioCardStyle {
     ),
   );
 
-  static TextStyle label(BuildContext context, {bool colored = false}) =>
-      TextStyle(
-        color: colored
+  static TextStyle label(
+    BuildContext context, {
+    bool colored = false,
+    Color? foreground,
+  }) => TextStyle(
+    color:
+        foreground ??
+        (colored
             ? Colors.white.withValues(alpha: 0.85)
-            : AppTheme.textLightColor(context),
-        fontSize: KoinTypography.caption,
-        fontWeight: KoinTypography.labelWeight,
-        letterSpacing: KoinTypography.itemTracking,
-      );
-
-  static TextStyle amount(BuildContext context, {bool colored = false}) =>
-      TextStyle(
-        color: colored ? Colors.white : AppTheme.textColor(context),
-        fontSize: KoinTypography.itemAmount,
-        fontWeight: KoinTypography.titleWeight,
-        letterSpacing: KoinTypography.itemTracking,
-      );
-
-  static final summaryLabel = TextStyle(
-    color: Colors.white.withValues(alpha: 0.8),
+            : AppTheme.textLightColor(context)),
     fontSize: KoinTypography.caption,
     fontWeight: KoinTypography.labelWeight,
-    letterSpacing: 0.5,
+    letterSpacing: KoinTypography.itemTracking,
   );
 
-  static const summaryAmount = TextStyle(
-    color: Colors.white,
-    fontSize: KoinTypography.summaryAmount,
-    fontWeight: KoinTypography.headingWeight,
-    letterSpacing: KoinTypography.amountTracking,
-    height: KoinTypography.amountHeight,
+  static TextStyle amount(
+    BuildContext context, {
+    bool colored = false,
+    Color? foreground,
+  }) => TextStyle(
+    color: foreground ?? (colored ? Colors.white : AppTheme.textColor(context)),
+    fontSize: KoinTypography.itemAmount,
+    fontWeight: KoinTypography.titleWeight,
+    letterSpacing: KoinTypography.itemTracking,
   );
+
+  static const summaryLabel = KoinTypography.summaryLabelStyle;
+  static const summaryAmount = KoinTypography.summaryAmountStyle;
 }

@@ -26,6 +26,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late bool isCredit;
   String? selectedLogoAsset;
   String? selectedTemplateId;
+  String? _suggestedName;
   bool _colorInitialized = false;
   Color? selectedCardColor; // null = Default (no explicit card background)
   final ScrollController _iconScrollController = ScrollController();
@@ -63,7 +64,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     super.initState();
     final isEditing = widget.account != null;
     nameController = TextEditingController(text: widget.account?.name)
-      ..addListener(_onInputChanged);
+      ..addListener(_onNameChanged);
 
     String amountText = '';
     if (isEditing) {
@@ -115,8 +116,37 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     });
   }
 
+  void _onNameChanged() {
+    if (nameController.text != _suggestedName) {
+      _suggestedName = null;
+    }
+    _onInputChanged();
+  }
+
   void _onInputChanged() {
     setState(() {});
+  }
+
+  void _updateSuggestedName(BankTemplate template) {
+    if (nameController.text.isNotEmpty &&
+        nameController.text != _suggestedName) {
+      return;
+    }
+    _suggestedName = isCredit ? '${template.name} Credit' : template.name;
+    nameController.text = _suggestedName!;
+  }
+
+  void _setCredit(bool value) {
+    HapticService.light();
+    setState(() {
+      isCredit = value;
+      for (final template in BankTemplate.templates) {
+        if (template.id == selectedTemplateId) {
+          _updateSuggestedName(template);
+          break;
+        }
+      }
+    });
   }
 
   void _scrollToSelectedIcon() {
@@ -192,13 +222,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     setState(() {
       if (template == null) {
         selectedTemplateId = null;
+        _suggestedName = null;
         selectedLogoAsset = null;
         selectedIcon = icons.first.codePoint;
         selectedColor = AppTheme.accentColors.first;
       } else {
         selectedTemplateId = template.id;
         selectedLogoAsset = template.logoAsset;
-        nameController.text = template.name;
+        _updateSuggestedName(template);
         selectedIcon = template.iconCodePoint;
         selectedColor = Color(
           int.parse(template.colorHex.replaceFirst('#', '0xFF')),
@@ -471,18 +502,24 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     Currency currency,
   ) {
     final colored = _previewHasColoredBackground;
+    final foregroundHex = selectedCardColor == null
+        ? BankTemplate.foregroundHexFor(selectedLogoAsset)
+        : null;
+    final foreground = foregroundHex == null
+        ? Colors.white
+        : Color(int.parse(foregroundHex.replaceFirst('#', '0xFF')));
 
     // Adaptive colors based on card background
-    final primaryTextColor = colored
-        ? Colors.white
-        : AppTheme.textColor(context);
+    final primaryTextColor = colored ? foreground : AppTheme.textColor(context);
     final secondaryTextColor = colored
-        ? Colors.white.withValues(alpha: 0.85)
+        ? (foregroundHex == null
+              ? foreground.withValues(alpha: 0.85)
+              : foreground)
         : AppTheme.textLightColor(context);
     final hintColor = colored
-        ? Colors.white.withValues(alpha: 0.5)
+        ? foreground.withValues(alpha: 0.5)
         : AppTheme.fieldHintColor(context, lightOpacity: 0.5);
-    final cursorColor = colored ? Colors.white : AppTheme.primaryColor(context);
+    final cursorColor = colored ? foreground : AppTheme.primaryColor(context);
 
     return AnimatedContainer(
       duration: KoinMotion.duration(context, const Duration(milliseconds: 300)),
@@ -506,13 +543,13 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   decoration: BoxDecoration(
                     color: selectedLogoAsset == null
                         ? (colored
-                              ? Colors.white.withValues(alpha: 0.15)
+                              ? foreground.withValues(alpha: 0.15)
                               : selectedColor.withValues(alpha: 0.1))
                         : null,
                     border: selectedLogoAsset == null
                         ? Border.all(
                             color: colored
-                                ? Colors.white.withValues(alpha: 0.25)
+                                ? foreground.withValues(alpha: 0.25)
                                 : selectedColor.withValues(alpha: 0.15),
                             width: 1,
                           )
@@ -530,7 +567,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       : Center(
                           child: Icon(
                             IconUtils.getIcon(selectedIcon),
-                            color: colored ? Colors.white : selectedColor,
+                            color: colored ? foreground : selectedColor,
                             size: 24,
                           ),
                         ),
@@ -678,7 +715,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           if (isEditing)
             IconButton(
               onPressed: _deleteAccount,
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: AppTheme.errorContentColor(context),
+              ),
             ),
           const Gap(8),
         ],
@@ -1141,7 +1181,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 ),
                                 const Gap(24),
                               ]
-                              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
                                   context,
                                 ),
                                 onInit: KoinMotion.onInit(context),
@@ -1370,7 +1412,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 ),
                                 const Gap(24),
                               ]
-                              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
                                   context,
                                 ),
                                 onInit: KoinMotion.onInit(context),
@@ -1454,10 +1498,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     style: TextStyle(fontSize: 12),
                   ),
                   value: isCredit,
-                  onChanged: (value) {
-                    HapticService.light();
-                    setState(() => isCredit = value);
-                  },
+                  onChanged: _setCredit,
                   activeThumbColor: AppTheme.primaryColor(context),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,

@@ -217,11 +217,8 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                           textAlign: TextAlign.center,
                           textCapitalization: TextCapitalization.sentences,
                           textInputAction: TextInputAction.next,
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
+                          style: KoinTypography.entityNameStyle.copyWith(
                             color: AppTheme.textColor(context),
-                            letterSpacing: -0.5,
                           ),
                           decoration: InputDecoration(
                             hintText: _isStash

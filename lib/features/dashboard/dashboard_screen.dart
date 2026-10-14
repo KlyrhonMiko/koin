@@ -206,7 +206,7 @@ class DashboardScreen extends ConsumerWidget {
     return KoinSummaryCard(
       // Offset the header's tall touch target to center the visible text block.
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-      borderRadius: 28,
+      borderRadius: KoinShape.summary,
       shapeStyle: SummaryShapeStyle.dashboard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,7 +327,7 @@ class DashboardScreen extends ConsumerWidget {
           context,
           icon: Icons.add_rounded,
           label: 'Income',
-          color: AppTheme.incomeColor(context),
+          color: AppTheme.incomeContentColor(context),
           onTap: () {
             HapticService.medium();
             Navigator.push(
@@ -344,7 +344,7 @@ class DashboardScreen extends ConsumerWidget {
           context,
           icon: Icons.remove_rounded,
           label: 'Expense',
-          color: AppTheme.expenseColor(context),
+          color: AppTheme.expenseContentColor(context),
           onTap: () {
             HapticService.medium();
             Navigator.push(
@@ -361,7 +361,7 @@ class DashboardScreen extends ConsumerWidget {
           context,
           icon: Icons.swap_horiz_rounded,
           label: 'Transfer',
-          color: AppTheme.transferColor(context),
+          color: AppTheme.transferContentColor(context),
           onTap: () {
             HapticService.medium();
             Navigator.push(
@@ -378,7 +378,7 @@ class DashboardScreen extends ConsumerWidget {
           context,
           icon: Icons.savings_outlined,
           label: 'Budgets',
-          color: AppTheme.primaryColor(context),
+          color: AppTheme.contentColor(context, AppTheme.primaryColor(context)),
           onTap: () {
             HapticService.medium();
             Navigator.popUntil(context, (route) => route.isFirst);
@@ -514,6 +514,7 @@ class DashboardScreen extends ConsumerWidget {
     required double width,
   }) {
     final isColored = account.cardColor != null || account.logoAsset != null;
+    final foreground = account.cardForeground;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     BoxDecoration decoration;
@@ -685,7 +686,9 @@ class DashboardScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: account.logoAsset == null
                             ? (isColored
-                                  ? Colors.white.withValues(alpha: 0.2)
+                                  ? (foreground ?? Colors.white).withValues(
+                                      alpha: 0.2,
+                                    )
                                   : account.color.withValues(alpha: 0.12))
                             : Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -701,7 +704,9 @@ class DashboardScreen extends ConsumerWidget {
                           : Center(
                               child: Icon(
                                 IconUtils.getIcon(account.iconCodePoint),
-                                color: isColored ? Colors.white : account.color,
+                                color: isColored
+                                    ? (foreground ?? Colors.white)
+                                    : account.color,
                                 size: 18,
                               ),
                             ),
@@ -714,7 +719,8 @@ class DashboardScreen extends ConsumerWidget {
                           fontWeight: KoinTypography.labelWeight,
                           fontSize: KoinTypography.caption,
                           color: isColored
-                              ? Colors.white.withValues(alpha: 0.9)
+                              ? (foreground ??
+                                    Colors.white.withValues(alpha: 0.9))
                               : AppTheme.textColor(context),
                           letterSpacing: KoinTypography.itemTracking,
                         ),
@@ -729,7 +735,7 @@ class DashboardScreen extends ConsumerWidget {
                         '••••••',
                         style: TextStyle(
                           color: isColored
-                              ? Colors.white
+                              ? (foreground ?? Colors.white)
                               : AppTheme.textColor(context),
                           fontWeight: KoinTypography.titleWeight,
                           fontSize: KoinTypography.cardAmount,
@@ -748,7 +754,7 @@ class DashboardScreen extends ConsumerWidget {
                             fontSize: KoinTypography.cardAmount,
                             letterSpacing: KoinTypography.itemTracking,
                             color: isColored
-                                ? Colors.white
+                                ? (foreground ?? Colors.white)
                                 : AppTheme.textColor(context),
                           ),
                         ),

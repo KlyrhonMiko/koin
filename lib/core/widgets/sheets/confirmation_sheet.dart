@@ -64,7 +64,9 @@ class ConfirmationSheet extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(KoinShape.sheet),
+        ),
         boxShadow: [
           AppTheme.boxShadow(
             context,
@@ -97,7 +99,9 @@ class ConfirmationSheet extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 42, color: confirmColor),
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
               .scale(
@@ -119,7 +123,9 @@ class ConfirmationSheet extends StatelessWidget {
                   letterSpacing: KoinTypography.headingTracking,
                 ),
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
               .fadeIn(delay: 100.ms, duration: 300.ms)
@@ -142,7 +148,9 @@ class ConfirmationSheet extends StatelessWidget {
                   ),
                 ),
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
               .fadeIn(delay: 180.ms, duration: 300.ms)
@@ -200,7 +208,7 @@ class ConfirmationSheet extends StatelessWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: confirmColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppTheme.foregroundFor(confirmColor),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -220,7 +228,9 @@ class ConfirmationSheet extends StatelessWidget {
                   ),
                 ],
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
               .fadeIn(delay: 260.ms, duration: 300.ms)

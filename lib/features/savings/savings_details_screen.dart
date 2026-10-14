@@ -211,7 +211,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                                 'Reserved savings exceed the account balance. Release savings to match your spending.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: AppTheme.expenseColor(context),
+                                  color: AppTheme.expenseContentColor(context),
                                   fontSize: KoinTypography.caption,
                                 ),
                               ),
@@ -367,7 +367,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         tooltip: 'Delete goal',
         label: 'Delete',
         icon: Icons.delete_outline_rounded,
-        color: AppTheme.expenseColor(context),
+        color: AppTheme.expenseContentColor(context),
         onPressed: () => _deleteGoal(goal),
       ),
     ];
@@ -398,18 +398,12 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     return KoinSummaryCard(
       key: const ValueKey('savings_balance'),
       shapeStyle: SummaryShapeStyle.savings,
-      borderRadius: 28,
+      borderRadius: KoinShape.summary,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Total saved',
-            style: TextStyle(
-              color: foreground.withValues(alpha: 0.75),
-              fontSize: KoinTypography.body,
-            ),
-          ),
+          Text('Total saved', style: KoinTypography.summaryLabelStyle),
           const Gap(8),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -418,13 +412,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               value: goal.currentAmount,
               formatter: currencyFormat.format,
               duration: const Duration(milliseconds: 400),
-              style: TextStyle(
-                color: foreground,
-                fontSize: KoinTypography.summaryAmount,
-                fontWeight: KoinTypography.headingWeight,
-                letterSpacing: -1.5,
-                height: 1.1,
-              ),
+              style: KoinTypography.summaryAmountStyle,
             ),
           ),
           if (goal.isStash && goal.hasTarget) ...[

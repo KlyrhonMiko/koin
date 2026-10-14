@@ -221,7 +221,9 @@ class _PaymentConfirmationSheetState
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
         decoration: BoxDecoration(
           color: AppTheme.backgroundColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(KoinShape.sheet),
+          ),
           boxShadow: [
             AppTheme.boxShadow(
               context,
@@ -285,21 +287,17 @@ class _PaymentConfirmationSheetState
                             style: TextStyle(
                               fontSize: KoinTypography.screenTitle,
                               fontWeight: KoinTypography.labelWeight,
-                              color: typeColor.withValues(alpha: 0.4),
+                              color: AppTheme.contentColor(context, typeColor),
                             ),
                           ),
                           Text(
                             _currentExpression.isEmpty
                                 ? '0'
                                 : _currentExpression,
-                            style: TextStyle(
-                              fontSize: KoinTypography.inputAmount,
-                              fontWeight: FontWeight.w800,
+                            style: KoinTypography.inputAmountStyle.copyWith(
                               color: hasAmount
-                                  ? typeColor
-                                  : typeColor.withValues(alpha: 0.3),
-                              letterSpacing: -2,
-                              height: KoinTypography.amountHeight,
+                                  ? AppTheme.contentColor(context, typeColor)
+                                  : AppTheme.textLightColor(context),
                             ),
                           ),
                         ],

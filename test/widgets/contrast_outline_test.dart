@@ -4,7 +4,7 @@ import 'package:koin/core/core.dart';
 
 void main() {
   testWidgets(
-    'primary text has no outline and preserves fill and card gradient',
+    'primary actions remain readable while cards preserve their original colors',
     (tester) async {
       const accent = Color(0xFFEAB308);
       await tester.pumpWidget(
@@ -23,7 +23,7 @@ void main() {
         ),
       );
       final buttonText = tester.widget<Text>(find.text('Save'));
-      expect(buttonText.style!.color, Colors.white);
+      expect(buttonText.style!.color, Colors.black);
       expect(buttonText.style!.shadows, isNull);
       final card = tester.widget<Container>(
         find

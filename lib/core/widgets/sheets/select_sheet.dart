@@ -234,7 +234,9 @@ Future<T?> showSelectSheet<T>({
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(KoinShape.sheet),
+            ),
             child: Container(
               constraints: BoxConstraints(maxHeight: maxHeight),
               decoration: BoxDecoration(

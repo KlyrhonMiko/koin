@@ -599,11 +599,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Color _getTypeColor(BuildContext context) {
     switch (_selectedType) {
       case TransactionType.expense:
-        return AppTheme.expenseColor(context);
+        return AppTheme.expenseContentColor(context);
       case TransactionType.income:
-        return AppTheme.incomeColor(context);
+        return AppTheme.incomeContentColor(context);
       case TransactionType.transfer:
-        return AppTheme.transferColor(context);
+        return AppTheme.transferContentColor(context);
     }
   }
 
@@ -1094,14 +1094,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     child: Text(
                       _currentExpression.isEmpty ? '0' : _currentExpression,
                       key: ValueKey(_currentExpression),
-                      style: TextStyle(
+                      style: KoinTypography.inputAmountStyle.copyWith(
                         fontSize: fontSize,
-                        fontWeight: KoinTypography.headingWeight,
                         color: hasAmount
                             ? typeColor
-                            : typeColor.withValues(alpha: 0.35),
-                        letterSpacing: -2,
-                        height: KoinTypography.amountHeight,
+                            : AppTheme.textLightColor(context),
                       ),
                     ),
                   ),
@@ -1315,7 +1312,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             constraints: const BoxConstraints(minHeight: 56),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(KoinShape.field),
               border: Border.all(
                 color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
               ),
@@ -1393,7 +1390,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             constraints: const BoxConstraints(minHeight: 56),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(KoinShape.field),
               border: Border.all(
                 color: _editingFee
                     ? typeColor
@@ -1492,7 +1489,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         Container(
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(KoinShape.field),
             border: Border.all(
               color: AppTheme.fieldBorderColor(context, lightOpacity: 0.7),
             ),

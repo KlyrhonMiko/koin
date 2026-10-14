@@ -339,44 +339,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       icon: Icons.account_balance_wallet_outlined,
       title: 'No categories yet',
       subtitle: 'Create categories first to set budgets',
-      action: SizedBox(
-        width: double.infinity,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: AppTheme.primaryGradient(context),
-            boxShadow: [
-              AppTheme.boxShadow(
-                context,
-                color: AppTheme.primaryColor(context).withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              HapticService.medium();
-              Navigator.push(
-                context,
-                SlideUpRoute(page: const CategoryDetailScreen()),
-              );
-            },
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: Text(
-              'Create Category',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: KoinTypography.titleWeight,
-                fontSize: KoinTypography.body,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
+      action: KoinPrimaryButton(
+        label: 'Create Category',
+        icon: Icons.add_rounded,
+        onPressed: () => Navigator.push(
+          context,
+          SlideUpRoute(page: const CategoryDetailScreen()),
         ),
       ),
     );
@@ -487,7 +455,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     return KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.budgets,
       padding: const EdgeInsets.all(24),
-      borderRadius: 28,
+      borderRadius: KoinShape.summary,
       child: Column(
         children: [
           Row(
@@ -532,7 +500,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isOver
-                      ? Colors.red.withValues(alpha: 0.2)
+                      ? AppTheme.errorContentColor(
+                          context,
+                        ).withValues(alpha: 0.2)
                       : Colors.white.withValues(alpha: 0.1),
                 ),
                 child: Center(
@@ -787,7 +757,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isOver
-                            ? Colors.red.withValues(alpha: 0.1)
+                            ? AppTheme.errorContentColor(
+                                context,
+                              ).withValues(alpha: 0.1)
                             : AppTheme.surfaceLightColor(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -796,7 +768,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         formatter: (v) => '${v.toStringAsFixed(0)}%',
                         style: TextStyle(
                           color: isOver
-                              ? Colors.red
+                              ? AppTheme.errorContentColor(context)
                               : AppTheme.textLightColor(context),
                           fontWeight: KoinTypography.titleWeight,
                           fontSize: KoinTypography.caption,
@@ -834,7 +806,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       minHeight: 4,
                       backgroundColor: AppTheme.surfaceLightColor(context),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isOver ? Colors.red : category.color,
+                        isOver
+                            ? AppTheme.errorContentColor(context)
+                            : category.color,
                       ),
                     );
                   },

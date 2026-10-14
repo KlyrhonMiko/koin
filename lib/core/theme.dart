@@ -59,6 +59,65 @@ class AppTheme {
   static Color expenseColor(BuildContext context) => const Color(0xFFFF6B6B);
   static Color transferColor(BuildContext context) => const Color(0xFF3B82F6);
 
+  static Color expenseContentColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? expenseColor(context)
+      : const Color(0xFFB42332);
+  static Color transferContentColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? contentColor(context, transferColor(context))
+      : const Color(0xFF1D4ED8);
+  static Color errorContentColor(BuildContext context) =>
+      expenseContentColor(context);
+
+  static double contrast(Color foreground, Color background) {
+    final a = foreground.computeLuminance();
+    final b = background.computeLuminance();
+    return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05);
+  }
+
+  static Color foregroundFor(Color background) =>
+      contrast(Colors.black, background) > contrast(Colors.white, background)
+      ? Colors.black
+      : Colors.white;
+
+  /// Keep the hue while making foreground text readable on neutral surfaces.
+  static Color contentColor(
+    BuildContext context,
+    Color color, {
+    Color? background,
+  }) {
+    final surface = background ?? surfaceLightColor(context);
+    final target = foregroundFor(surface);
+    for (var step = 0; step <= 100; step++) {
+      final candidate = Color.lerp(color, target, step / 100)!;
+      if (contrast(candidate, surface) >= 4.5) return candidate;
+    }
+    return target;
+  }
+
+  static Color gradientForeground(BuildContext context, Gradient gradient) {
+    final colors = gradient.colors.map(
+      (color) => Color.alphaBlend(color, surfaceColor(context)),
+    );
+    double weakest(Color foreground) => colors
+        .map((color) => contrast(foreground, color))
+        .reduce((a, b) => a < b ? a : b);
+    return weakest(Colors.black) > weakest(Colors.white)
+        ? Colors.black
+        : Colors.white;
+  }
+
+  /// Preserve the established bright card palette independently of buttons.
+  static LinearGradient summaryGradient(BuildContext context) {
+    final primary = primaryColor(context);
+    return LinearGradient(
+      colors: [primary, primary.withValues(alpha: 0.8)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
   static Color surfaceLightColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (hasEditorAppearance(context)) return const Color(0xFF252B2F);
@@ -101,8 +160,13 @@ class AppTheme {
 
   static LinearGradient primaryGradient(BuildContext context) {
     final primary = primaryColor(context);
+    final end = Color.lerp(
+      primary,
+      foregroundFor(primary) == Colors.black ? Colors.white : Colors.black,
+      0.1,
+    )!;
     return LinearGradient(
-      colors: [primary, primary.withValues(alpha: 0.8)],
+      colors: [primary, end],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -121,9 +185,7 @@ class AppTheme {
   );
 
   static ThemeData getTheme(Color primaryColor, bool isDarkMode) {
-    final onPrimary = isDarkMode && primaryColor.computeLuminance() > 0.179
-        ? Colors.black
-        : Colors.white;
+    final onPrimary = foregroundFor(primaryColor);
     final Color backgroundColor = isDarkMode
         ? _darkBackground
         : const Color(0xFFF8F9FA);
@@ -141,7 +203,9 @@ class AppTheme {
         ? const Color(0xFF363C40)
         : const Color(0xFFE5E7EB);
 
-    const Color errorColor = Color(0xFFFF6B6B);
+    final Color errorColor = isDarkMode
+        ? const Color(0xFFFF6B6B)
+        : const Color(0xFFB42332);
     const Color secondaryColor = Color(0xFF34D399);
 
     final brightness = isDarkMode ? Brightness.dark : Brightness.light;
@@ -187,10 +251,10 @@ class AppTheme {
               secondary: secondaryColor,
               surface: surfaceColor,
               error: errorColor,
-              onPrimary: Colors.white,
-              onSecondary: Colors.white,
+              onPrimary: onPrimary,
+              onSecondary: foregroundFor(secondaryColor),
               onSurface: textColor,
-              onError: Colors.white,
+              onError: foregroundFor(errorColor),
             ),
       scaffoldBackgroundColor: backgroundColor,
       textTheme: baseTheme.textTheme
@@ -331,7 +395,7 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(KoinShape.field),
           ),
           textStyle: TextStyle(
             fontFamily: KoinTypography.fontFamily,
@@ -355,23 +419,23 @@ class AppTheme {
         filled: true,
         fillColor: surfaceLightColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           borderSide: BorderSide(color: dividerColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           borderSide: BorderSide(color: errorColor, width: 2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           borderSide: BorderSide(color: errorColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -442,7 +506,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         elevation: 12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           side: BorderSide(color: dividerColor, width: 1),
         ),
       ),
@@ -456,14 +520,16 @@ class AppTheme {
           filled: true,
           fillColor: surfaceLightColor,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(KoinShape.field),
             borderSide: BorderSide(color: dividerColor),
           ),
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: surfaceLightColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(KoinShape.field),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:koin/core/typography.dart';
 
 /// Draws the first frame before database initialization starts.
 class AppStartup extends StatefulWidget {
@@ -49,6 +50,7 @@ class _AppStartupState extends State<AppStartup> {
     // Keep startup independent of downloaded fonts and database providers.
     ThemeData theme(Brightness brightness) => ThemeData(
       useMaterial3: true,
+      fontFamily: KoinTypography.fontFamily,
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF00D09E),

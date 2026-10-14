@@ -29,6 +29,41 @@ abstract final class KoinTypography {
   static const itemTracking = -0.2;
   static const overlineTracking = 1.2;
   static const amountHeight = 1.1;
+  static const inputTracking = -2.0;
+  static const chartLabel = overline;
+  static const badgeLabel = overline;
+
+  static const entityNameStyle = TextStyle(
+    fontSize: formTitle,
+    fontWeight: FontWeight.w800,
+    letterSpacing: headingTracking,
+  );
+  static const inputAmountStyle = TextStyle(
+    fontSize: inputAmount,
+    fontWeight: headingWeight,
+    letterSpacing: inputTracking,
+    height: amountHeight,
+  );
+  static const summaryLabelStyle = TextStyle(
+    color: Color(0xCCFFFFFF),
+    fontSize: caption,
+    fontWeight: labelWeight,
+    letterSpacing: 0.5,
+  );
+  static const summaryAmountStyle = TextStyle(
+    color: Colors.white,
+    fontSize: summaryAmount,
+    fontWeight: headingWeight,
+    letterSpacing: amountTracking,
+    height: amountHeight,
+  );
+}
+
+/// Shapes describe component roles rather than individual screens.
+abstract final class KoinShape {
+  static const field = 16.0;
+  static const sheet = 28.0;
+  static const summary = 28.0;
 }
 
 abstract final class KoinSpacing {

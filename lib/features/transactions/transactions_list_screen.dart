@@ -370,8 +370,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                   '$filterCount',
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: KoinTypography.badgeLabel,
+                                    fontWeight: KoinTypography.titleWeight,
                                   ),
                                 ),
                               ),

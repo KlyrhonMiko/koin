@@ -65,7 +65,9 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
       isScrollControlled: true,
       backgroundColor: AppTheme.surfaceColor(context),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(KoinShape.sheet),
+        ),
       ),
       builder: (context) => SafeArea(
         child: ConstrainedBox(

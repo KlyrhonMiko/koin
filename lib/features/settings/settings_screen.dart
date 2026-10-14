@@ -80,7 +80,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient(context),
+                  gradient: AppTheme.summaryGradient(context),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
@@ -588,7 +588,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(KoinShape.sheet),
+          ),
         ),
         child: Column(
           children: [
@@ -722,7 +724,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(KoinShape.sheet),
+          ),
           boxShadow: [
             AppTheme.boxShadow(
               context,

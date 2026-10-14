@@ -128,7 +128,7 @@ class SelectionTile extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(KoinShape.field),
           border: Border.all(color: AppTheme.fieldBorderColor(context)),
           boxShadow: [
             AppTheme.boxShadow(

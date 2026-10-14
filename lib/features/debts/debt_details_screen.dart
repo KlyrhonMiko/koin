@@ -190,7 +190,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 
     return KoinSummaryCard(
           shapeStyle: SummaryShapeStyle.debtDetails,
-          borderRadius: 28,
+          borderRadius: KoinShape.summary,
           padding: const EdgeInsets.all(24),
           gradient: LinearGradient(
             begin: Alignment.topLeft,

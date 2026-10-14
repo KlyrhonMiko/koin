@@ -92,7 +92,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                           const Gap(12),
                           _buildAccountSelector(context, accounts),
                         ]
-                        .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                        .koinAnimate(
+                          context,
+                          autoPlay: !MediaQuery.disableAnimationsOf(context),
                           onInit: KoinMotion.onInit(context),
                           interval: KoinMotion.duration(context, 40.ms),
                         )
@@ -105,7 +107,9 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               ),
             ),
             _buildExportActions(context, categories, accounts, currencySymbol)
-                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
                   onInit: KoinMotion.onInit(context),
                 )
                 .fade(duration: 250.ms, curve: Curves.easeOutCubic)
@@ -274,7 +278,11 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               AnimatedCounter(
                 value: value,
                 formatter: (v) => currencySymbol != null
-                    ? ref.read(settingsProvider).currency.compactFormatter.format(v)
+                    ? ref
+                          .read(settingsProvider)
+                          .currency
+                          .compactFormatter
+                          .format(v)
                     : v.toInt().toString(),
                 style: TextStyle(
                   color: AppTheme.textColor(context),
@@ -290,73 +298,15 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   }
 
   Widget _buildTypeSelector(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildTypeChip(null, 'All'),
-          _buildTypeChip(TransactionType.expense, 'Expenses'),
-          _buildTypeChip(TransactionType.income, 'Income'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeChip(TransactionType? type, String label) {
-    final isSelected = _selectedType == type;
-    return Expanded(
-      child: PressableScale(
-        enableHaptic: false,
-        onTap: () {
-          HapticService.selection();
-          setState(() => _selectedType = type);
-        },
-        child: AnimatedContainer(
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 250),
-          ),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.primaryColor(context)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? [
-                    AppTheme.boxShadow(
-                      context,
-                      color: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textColor(context),
-                fontWeight: isSelected
-                    ? KoinTypography.headingWeight
-                    : KoinTypography.labelWeight,
-                fontSize: KoinTypography.compact,
-              ),
-            ),
-          ),
-        ),
-      ),
+    const types = [null, TransactionType.expense, TransactionType.income];
+    return KoinChoiceControl(
+      segments: const [
+        KoinSegmentItem(label: 'All'),
+        KoinSegmentItem(label: 'Expenses'),
+        KoinSegmentItem(label: 'Income'),
+      ],
+      selectedIndex: types.indexOf(_selectedType),
+      onChanged: (index) => setState(() => _selectedType = types[index]),
     );
   }
 

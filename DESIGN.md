@@ -2,6 +2,14 @@
 
 The established app uses Outfit, teal accents, light and dark theme tokens, Material icons, patterned summary cards, and rounded grouped surfaces. Use shared components across savings surfaces.
 
+## Shared consistency rules
+
+Use KoinTypography's entity-name, amount-input and summary styles. Entity names use 28px, weight 800 and -0.5 tracking; amount inputs use 48px, weight 700 and -2 tracking. Summary labels use 13px, weight 500; summary amounts use 38px, weight 700 and -1 tracking. Chart and compact badge labels use the shared 11px metadata roles.
+
+Use KoinShape for 16px field corners, 28px modal-sheet top corners and 28px summary-card corners. Keep circular quick actions and 24px portfolio cards as separate intentional component roles. Reports and forms use the shared joined choice control. Back actions use the Material rounded arrow; functional delete actions use the rounded outlined glyph.
+
+Keep semantic fill and content colors separate. Use readable income, expense, transfer and error foregrounds on neutral surfaces. Solid action foregrounds follow onPrimary in both themes; gradient actions use a foreground chosen against their opaque stops. Preserve the original bright summary-card palette and white text: the default card gradient uses the selected accent and its 80%-opacity stop; custom card gradients retain their supplied colors. Do not darken main cards as part of contrast or consistency fixes. PDF exports retain fixed brand teal with readable print colors, embedded Outfit and rendered bundled Material glyphs.
+
 ## Savings details
 
 Use the shared app theme without local palette overrides. Keep the goal name, linked account, and back navigation in a compact header. Show the linked account logo beside its name, falling back to the account icon when no image is available. Truncate long names safely and allow the goal title to wrap at larger text sizes.

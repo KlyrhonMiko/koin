@@ -111,17 +111,11 @@ Future<DebtItem?> showAddPurchaseSheet({
     builder: (ctx) => KoinFormTheme(
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final nameStyle = TextStyle(
-            fontSize: KoinTypography.formTitle,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
+          final nameStyle = KoinTypography.entityNameStyle.copyWith(
             color: AppTheme.textColor(ctx),
           );
-          final amountStyle = TextStyle(
-            fontSize: KoinTypography.inputAmount,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
-            color: primaryColor,
+          final amountStyle = KoinTypography.inputAmountStyle.copyWith(
+            color: AppTheme.contentColor(ctx, primaryColor),
           );
           final inset = MediaQuery.viewInsetsOf(ctx).bottom;
           final maxHeight = (MediaQuery.sizeOf(ctx).height * 0.9 - inset).clamp(
@@ -135,7 +129,7 @@ Future<DebtItem?> showAddPurchaseSheet({
               decoration: BoxDecoration(
                 color: AppTheme.backgroundColor(ctx),
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
+                  top: Radius.circular(KoinShape.sheet),
                 ),
               ),
               child: Column(
@@ -406,7 +400,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                                     if (autoCatKey > 0 &&
                                         !MediaQuery.disableAnimationsOf(ctx)) {
                                       child = child
-                                          .koinAnimate(context, autoPlay:
+                                          .koinAnimate(
+                                            context,
+                                            autoPlay:
                                                 !MediaQuery.disableAnimationsOf(
                                                   context,
                                                 ),

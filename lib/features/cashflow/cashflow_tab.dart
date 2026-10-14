@@ -174,7 +174,7 @@ class CashflowScheduleTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isOverdue && !_isIncome
-                ? Colors.redAccent.withValues(alpha: 0.3)
+                ? AppTheme.errorContentColor(context).withValues(alpha: 0.3)
                 : AppTheme.textLightColor(context).withValues(alpha: 0.1),
             width: isOverdue && !_isIncome ? 1.5 : 1,
           ),
@@ -264,8 +264,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                                     'AUTO',
                                     style: TextStyle(
                                       color: AppTheme.primaryColor(context),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: KoinTypography.badgeLabel,
+                                      fontWeight: KoinTypography.titleWeight,
                                     ),
                                   ),
                                 ],
@@ -284,8 +284,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                     fontSize: KoinTypography.itemAmount,
                     letterSpacing: KoinTypography.itemTracking,
                     color: _isIncome
-                        ? AppTheme.incomeColor(context)
-                        : AppTheme.expenseColor(context),
+                        ? AppTheme.incomeContentColor(context)
+                        : AppTheme.expenseContentColor(context),
                   ),
                 ),
               ],

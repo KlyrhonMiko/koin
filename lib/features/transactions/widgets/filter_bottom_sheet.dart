@@ -113,7 +113,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(KoinShape.sheet),
+        ),
         boxShadow: [
           AppTheme.boxShadow(
             context,
@@ -401,48 +403,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                       ),
                     ),
-                    child: PressableScale(
-                      onTap: _apply,
-                      hapticLevel: HapticLevel.medium,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient(context),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            AppTheme.boxShadow(
-                              context,
-                              color: primary.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const Gap(8),
-                            Text(
-                              filterCount > 0
-                                  ? 'Apply $filterCount Filter${filterCount > 1 ? 's' : ''}'
-                                  : 'Apply Filters',
-                              style: TextStyle(
-                                color: Colors.white,
-
-                                fontSize: KoinTypography.itemTitle,
-                                fontWeight: KoinTypography.headingWeight,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: KoinPrimaryButton(
+                      label: 'Apply Filters',
+                      icon: Icons.check_rounded,
+                      onPressed: _apply,
                     ),
                   ),
                 ),
