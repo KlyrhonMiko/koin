@@ -83,6 +83,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
               ? Brightness.light
               : Brightness.dark,
           systemNavigationBarColor: AppTheme.surfaceColor(context),
+          systemNavigationBarContrastEnforced: false,
           systemNavigationBarIconBrightness: isDarkMode
               ? Brightness.light
               : Brightness.dark,

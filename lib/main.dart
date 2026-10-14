@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/features.dart';
 import 'package:koin/core/widgets/app_startup.dart';
+import 'package:koin/core/widgets/app_window_theme.dart';
 import 'package:koin/core/services/quick_transaction_service.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
 import 'package:koin/features/transactions/quick_entry_app.dart';
@@ -92,6 +93,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       theme: AppTheme.getTheme(settings.themeColor, false),
       darkTheme: AppTheme.getTheme(settings.themeColor, true),
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => AppWindowTheme(child: child!),
       home: const MainLayout(),
     );
   }

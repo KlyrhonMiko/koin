@@ -8,15 +8,68 @@ import android.content.ComponentName
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.content.res.Configuration
+import android.graphics.drawable.ColorDrawable
+import androidx.core.view.WindowCompat
 
 class MainActivity : FlutterActivity() {
     private var backupFolderBridge: BackupFolderBridge? = null
     private var channel: MethodChannel? = null
     private var dartReady = false
     private var pendingQuickEntry = false
+    private var windowThemeChannel: MethodChannel? = null
+    private var windowBackgroundColor: Int? = null
+    private var windowDark = false
+
+    @Suppress("DEPRECATION")
+    private fun applyWindowTheme() {
+        val background = windowBackgroundColor ?: return
+        window.setBackgroundDrawable(ColorDrawable(background))
+        window.navigationBarColor = background
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.navigationBarDividerColor = background
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = !windowDark
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyWindowTheme()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyWindowTheme()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyWindowTheme()
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        windowThemeChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "koin/window_theme")
+        windowThemeChannel?.setMethodCallHandler { call, result ->
+            if (call.method == "setTheme") {
+                val background = call.argument<Number>("backgroundColor")
+                val dark = call.argument<Boolean>("dark")
+                if (background == null || dark == null) {
+                    result.error("invalid_theme", "Window theme requires a background color and brightness", null)
+                } else {
+                    windowBackgroundColor = background.toInt()
+                    windowDark = dark
+                    applyWindowTheme()
+                    result.success(null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }
         backupFolderBridge = BackupFolderBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         pendingQuickEntry = pendingQuickEntry || intent?.action == QUICK_ENTRY_ACTION
         if (intent?.action == QUICK_ENTRY_ACTION) intent.action = Intent.ACTION_MAIN
@@ -84,6 +137,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        windowThemeChannel?.setMethodCallHandler(null)
+        windowThemeChannel = null
         backupFolderBridge?.dispose()
         backupFolderBridge = null
         channel?.setMethodCallHandler(null)

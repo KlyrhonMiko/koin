@@ -58,13 +58,13 @@ class DashboardScreen extends ConsumerWidget {
             children:
                 [
                       _buildHeader(context),
-                      const Gap(24),
+                      const Gap(16),
                       _buildBalanceCard(context, ref, stats, settings),
-                      const Gap(24),
+                      const Gap(16),
                       _buildQuickActions(context, ref),
-                      const Gap(KoinSpacing.sectionGap),
+                      const Gap(20),
                       _buildAccountsList(context, ref, stats, currency),
-                      const Gap(KoinSpacing.sectionGap),
+                      const Gap(24),
                       _buildUpcomingPayments(context, ref, currency),
                       const Gap(KoinSpacing.sectionGap),
                       _buildBudgetSection(context, ref, currency),
@@ -196,7 +196,7 @@ class DashboardScreen extends ConsumerWidget {
     final netChange = stats.totalIncome - stats.totalExpense;
     final monthlyAmount = currency.compactFormatter.format(netChange.abs());
     final monthlySummary = settings.hideBalance
-        ? 'This month: ••••••'
+        ? 'Monthly summary hidden'
         : netChange == 0
         ? 'Income matched spending this month'
         : netChange > 0
@@ -204,107 +204,96 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      // Offset the header's tall touch target to center the visible text block.
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       borderRadius: KoinShape.summary,
       shapeStyle: SummaryShapeStyle.dashboard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              Text(
+                excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
+                style: KoinTypography.summaryLabelStyle,
+              ),
+              ExcludeSemantics(
                 child: Text(
-                  excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: KoinTypography.caption,
-                    fontWeight: KoinTypography.labelWeight,
-                    letterSpacing: 0.5,
+                  '·',
+                  style: KoinTypography.summaryLabelStyle.copyWith(
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ),
-              Row(
-                children: [
-                  Tooltip(
-                    excludeFromSemantics: true,
-                    message: settings.hideBalance
-                        ? 'Show summary balance'
-                        : 'Hide summary balance',
-                    child: PressableScale(
-                      semanticLabel: settings.hideBalance
-                          ? 'Show summary balance'
-                          : 'Hide summary balance',
-                      enableHaptic: false,
-                      onTap: () {
-                        HapticService.selection();
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setHideBalance(!settings.hideBalance);
-                      },
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Icon(
-                          settings.hideBalance
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
-                          color: Colors.white.withValues(
-                            alpha: settings.hideBalance ? 0.6 : 0.9,
+              Text(currency.code, style: KoinTypography.summaryLabelStyle),
+            ],
+          ),
+          const Gap(6),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: settings.hideBalance
+                      ? const _HiddenBalanceMask(
+                          color: Colors.white,
+                          height:
+                              KoinTypography.summaryAmount *
+                              KoinTypography.amountHeight,
+                          prominent: true,
+                        )
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedCounter(
+                            value: stats.currentBalance - excludedSavings,
+                            lastValueToken: 'dashboard_total_balance',
+                            formatter: currency.formatter.format,
+                            duration: const Duration(milliseconds: 1400),
+                            curve: Curves.easeOutCubic,
+                            style: KoinTypography.summaryAmountStyle,
                           ),
-                          size: 20,
                         ),
+                ),
+              ),
+              const Gap(12),
+              Tooltip(
+                excludeFromSemantics: true,
+                message: settings.hideBalance
+                    ? 'Show balances'
+                    : 'Hide balances',
+                child: PressableScale(
+                  semanticLabel: settings.hideBalance
+                      ? 'Show balances'
+                      : 'Hide balances',
+                  enableHaptic: false,
+                  onTap: () {
+                    HapticService.selection();
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setHideBalance(!settings.hideBalance);
+                  },
+                  child: SizedBox(
+                    key: const ValueKey('dashboard_balance_visibility'),
+                    width: 56,
+                    height: 56,
+                    child: Icon(
+                      settings.hideBalance
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: Colors.white.withValues(
+                        alpha: settings.hideBalance ? 0.6 : 0.9,
                       ),
+                      size: 26,
                     ),
                   ),
-                  const Gap(12),
-                  Text(
-                    currency.code,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.caption,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
           const Gap(8),
-          SizedBox(
-            width: double.infinity,
-            child: settings.hideBalance
-                ? Text(
-                    '••••••',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: KoinTypography.summaryAmount,
-                      fontWeight: KoinTypography.headingWeight,
-                      letterSpacing: 2.0,
-                      height: KoinTypography.amountHeight,
-                    ),
-                  )
-                : FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedCounter(
-                      value: stats.currentBalance - excludedSavings,
-                      lastValueToken: 'dashboard_total_balance',
-                      formatter: (v) => currency.formatter.format(v),
-                      duration: const Duration(milliseconds: 1400),
-                      curve: Curves.easeOutCubic,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.summaryAmount,
-                        fontWeight: KoinTypography.headingWeight,
-                        letterSpacing: KoinTypography.amountTracking,
-                        height: KoinTypography.amountHeight,
-                      ),
-                    ),
-                  ),
-          ),
-          const Gap(16),
           Text(
             monthlySummary,
             style: TextStyle(
@@ -320,72 +309,85 @@ class DashboardScreen extends ConsumerWidget {
 
   // ─── Quick Actions ──────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context, WidgetRef ref) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildActionItem(
-          context,
-          icon: Icons.add_rounded,
-          label: 'Income',
-          color: AppTheme.incomeContentColor(context),
-          onTap: () {
-            HapticService.medium();
-            Navigator.push(
-              context,
-              SlideUpRoute(
-                page: const AddTransactionScreen(
-                  initialType: TransactionType.income,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactWidth = constraints.maxWidth.clamp(0.0, 280.0);
+        final actionWidth = (constraints.maxWidth + compactWidth) / 2;
+        return Center(
+          child: SizedBox(
+            width: actionWidth,
+            child: Row(
+              children: [
+                _buildActionItem(
+                  context,
+                  icon: Icons.add_rounded,
+                  label: 'Income',
+                  color: AppTheme.incomeContentColor(context),
+                  onTap: () {
+                    HapticService.medium();
+                    Navigator.push(
+                      context,
+                      SlideUpRoute(
+                        page: const AddTransactionScreen(
+                          initialType: TransactionType.income,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            );
-          },
-        ),
-        _buildActionItem(
-          context,
-          icon: Icons.remove_rounded,
-          label: 'Expense',
-          color: AppTheme.expenseContentColor(context),
-          onTap: () {
-            HapticService.medium();
-            Navigator.push(
-              context,
-              SlideUpRoute(
-                page: const AddTransactionScreen(
-                  initialType: TransactionType.expense,
+                _buildActionItem(
+                  context,
+                  icon: Icons.remove_rounded,
+                  label: 'Expense',
+                  color: AppTheme.expenseContentColor(context),
+                  onTap: () {
+                    HapticService.medium();
+                    Navigator.push(
+                      context,
+                      SlideUpRoute(
+                        page: const AddTransactionScreen(
+                          initialType: TransactionType.expense,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            );
-          },
-        ),
-        _buildActionItem(
-          context,
-          icon: Icons.swap_horiz_rounded,
-          label: 'Transfer',
-          color: AppTheme.transferContentColor(context),
-          onTap: () {
-            HapticService.medium();
-            Navigator.push(
-              context,
-              SlideUpRoute(
-                page: const AddTransactionScreen(
-                  initialType: TransactionType.transfer,
+                _buildActionItem(
+                  context,
+                  icon: Icons.swap_horiz_rounded,
+                  label: 'Transfer',
+                  color: AppTheme.transferContentColor(context),
+                  onTap: () {
+                    HapticService.medium();
+                    Navigator.push(
+                      context,
+                      SlideUpRoute(
+                        page: const AddTransactionScreen(
+                          initialType: TransactionType.transfer,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            );
-          },
-        ),
-        _buildActionItem(
-          context,
-          icon: Icons.savings_outlined,
-          label: 'Budgets',
-          color: AppTheme.contentColor(context, AppTheme.primaryColor(context)),
-          onTap: () {
-            HapticService.medium();
-            Navigator.popUntil(context, (route) => route.isFirst);
-            ref.read(navigationProvider.notifier).setIndex(2);
-          },
-        ),
-      ],
+                _buildActionItem(
+                  context,
+                  icon: Icons.savings_outlined,
+                  label: 'Budgets',
+                  color: AppTheme.contentColor(
+                    context,
+                    AppTheme.primaryColor(context),
+                  ),
+                  onTap: () {
+                    HapticService.medium();
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                    ref.read(navigationProvider.notifier).setIndex(2);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -404,22 +406,15 @@ class DashboardScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: AppTheme.surfaceColor(context),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  AppTheme.boxShadow(
-                    context,
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Icon(icon, color: color, size: 22),
             ),
-            const Gap(8),
+            const Gap(6),
             Text(
               label,
               style: TextStyle(
@@ -443,62 +438,57 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
     final displayedBalances = ref.watch(dashboardAccountBalancesProvider);
+    final hideBalance = ref.watch(
+      settingsProvider.select((s) => s.hideBalance),
+    );
+    final visibleAccounts = stats.accounts.take(4).toList();
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         KoinSectionHeader(
           title: 'Accounts',
-          actionLabel: 'View all',
+          actionLabel: 'View all · ${stats.accounts.length}',
           onActionTap: () {
             ref.read(portfolioTabProvider.notifier).setIndex(0);
             ref.read(navigationProvider.notifier).setIndex(3);
           },
         ),
-        const Gap(4),
+        const Gap(8),
         LayoutBuilder(
           builder: (context, constraints) {
-            // Keep a compact card width; adapt down on smaller screens.
-            // The trailing partial card remains a cue to swipe.
+            final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
+            final columns = constraints.maxWidth < 280 || largeText ? 1 : 2;
             final cardWidth =
-                ((constraints.maxWidth +
-                            KoinSpacing.screenInset -
-                            KoinSpacing.cardGap) /
-                        1.8)
-                    .clamp(0.0, 180.0);
-            return SizedBox(
-              // Keep the familiar credit-card silhouette as width changes.
-              height: cardWidth / 1.586,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                itemCount: stats.accounts.length + 1,
-                separatorBuilder: (context, index) =>
-                    const Gap(KoinSpacing.cardGap),
-                itemBuilder: (context, index) {
-                  if (index == stats.accounts.length) {
-                    return _buildAddAccountCard(context, ref);
-                  }
-                  final account = stats.accounts[index];
-                  final balance = displayedBalances[account.id] ?? 0;
-                  return PressableScale(
-                    onTap: () {
-                      HapticService.light();
-                      Navigator.push(
+                (constraints.maxWidth - KoinSpacing.cardGap * (columns - 1)) /
+                columns;
+            return Wrap(
+              spacing: KoinSpacing.cardGap,
+              runSpacing: KoinSpacing.cardGap,
+              children: [
+                for (final account in visibleAccounts)
+                  SizedBox(
+                    width: cardWidth,
+                    child: PressableScale(
+                      pressedScale: 0.98,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          SlideUpRoute(
+                            page: AccountFormScreen(account: account),
+                          ),
+                        );
+                      },
+                      child: _buildAccountCard(
                         context,
-                        SlideUpRoute(page: AccountFormScreen(account: account)),
-                      );
-                    },
-                    child: _buildAccountCard(
-                      context,
-                      account,
-                      balance,
-                      currency,
-                      width: cardWidth,
+                        account,
+                        displayedBalances[account.id] ?? 0,
+                        currency,
+                        hideBalance: hideBalance,
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ),
+              ],
             );
           },
         ),
@@ -511,297 +501,127 @@ class DashboardScreen extends ConsumerWidget {
     Account account,
     double balance,
     Currency currency, {
-    required double width,
+    required bool hideBalance,
   }) {
-    final isColored = account.cardColor != null || account.logoAsset != null;
-    final foreground = account.cardForeground;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    BoxDecoration decoration;
-    if (isColored) {
-      final baseColor = account.cardColor ?? account.color;
-      decoration = BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [baseColor.withValues(alpha: 0.95), baseColor],
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-                AppTheme.boxShadow(
-                  context,
-                  color: baseColor.withValues(alpha: 0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      );
-    } else {
-      decoration = BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : AppTheme.dividerColor(context).withValues(alpha: 0.4),
-          width: 1,
-        ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            spreadRadius: -2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      );
-    }
-
-    // Selected or Hash based shapes for variety (Synchronized with AccountItem)
-    final shapeType = account.cardShapeType ?? (account.id.hashCode.abs() % 8);
-    List<Widget> backgroundShapes = [];
-    if (isColored) {
-      switch (shapeType) {
-        case 0:
-          backgroundShapes = [
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-            ),
-          ];
-          break;
-        case 1:
-          backgroundShapes = [
-            Positioned(
-              right: -30,
-              bottom: -40,
-              child: Transform.rotate(
-                angle: 0.4,
-                child: Container(
-                  width: 110,
-                  height: 92,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withValues(alpha: 0.10),
-                  ),
-                ),
-              ),
-            ),
-          ];
-          break;
-        case 2:
-          backgroundShapes = [
-            Positioned(
-              right: 30,
-              top: -10,
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-            ),
-            Positioned(
-              right: -15,
-              bottom: -15,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-            ),
-          ];
-          break;
-        case 3:
-        default:
-          backgroundShapes = [
-            Positioned(
-              left: -30,
-              bottom: -35,
-              child: Transform.rotate(
-                angle: 0.8,
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withValues(alpha: 0.14),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              right: -10,
-              top: 10,
-              child: Container(
-                width: 50,
-                height: 90,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withValues(alpha: 0.10),
-                ),
-              ),
-            ),
-          ];
-          break;
-      }
-    }
-
+    final colored = account.cardColor != null || account.logoAsset != null;
+    final baseColor = account.cardColor ?? account.color;
+    final textColor = colored
+        ? (account.cardForeground ?? Colors.white)
+        : AppTheme.textColor(context);
+    final iconColor = colored
+        ? textColor
+        : AppTheme.contentColor(context, account.color);
     return Container(
-      width: width,
+      decoration: BoxDecoration(
+        color: colored ? null : AppTheme.surfaceColor(context),
+        gradient: colored
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  baseColor.withValues(alpha: 0.95),
+                  baseColor.withValues(alpha: 0.8),
+                ],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(KoinShape.field),
+        border: Border.all(
+          color: colored
+              ? Colors.white.withValues(alpha: 0.15)
+              : AppTheme.dividerColor(context).withValues(alpha: 0.6),
+          width: colored ? 0.5 : 1,
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
-      decoration: decoration,
       child: Stack(
         children: [
-          ...backgroundShapes,
+          if (colored)
+            Positioned.fill(
+              child: CardBackgroundShapes(
+                shapeType:
+                    account.cardShapeType ?? (account.id.hashCode.abs() % 8),
+              ),
+            ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         color: account.logoAsset == null
-                            ? (isColored
-                                  ? (foreground ?? Colors.white).withValues(
-                                      alpha: 0.2,
-                                    )
-                                  : account.color.withValues(alpha: 0.12))
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                            ? (colored ? textColor : account.color).withValues(
+                                alpha: 0.12,
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      clipBehavior: Clip.antiAlias,
                       child: account.logoAsset != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                account.logoAsset!,
-                                fit: BoxFit.cover,
-                              ),
+                          ? Image.asset(
+                              account.logoAsset!,
+                              fit: BoxFit.cover,
+                              excludeFromSemantics: true,
                             )
-                          : Center(
-                              child: Icon(
-                                IconUtils.getIcon(account.iconCodePoint),
-                                color: isColored
-                                    ? (foreground ?? Colors.white)
-                                    : account.color,
-                                size: 18,
-                              ),
+                          : Icon(
+                              IconUtils.getIcon(account.iconCodePoint),
+                              color: iconColor,
+                              size: 16,
                             ),
                     ),
                     const Gap(8),
                     Expanded(
                       child: Text(
                         account.name,
-                        style: TextStyle(
-                          fontWeight: KoinTypography.labelWeight,
-                          fontSize: KoinTypography.caption,
-                          color: isColored
-                              ? (foreground ??
-                                    Colors.white.withValues(alpha: 0.9))
-                              : AppTheme.textColor(context),
-                          letterSpacing: KoinTypography.itemTracking,
-                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colored
+                              ? textColor.withValues(alpha: 0.9)
+                              : AppTheme.textLightColor(context),
+                          fontSize: KoinTypography.caption,
+                          fontWeight: KoinTypography.labelWeight,
+                          height: 1.25,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                account.excludeFromTotal
-                    ? Text(
-                        '••••••',
-                        style: TextStyle(
-                          color: isColored
-                              ? (foreground ?? Colors.white)
-                              : AppTheme.textColor(context),
-                          fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.cardAmount,
-                          letterSpacing: 2,
-                        ),
-                      )
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: AnimatedCounter(
-                          value: balance,
-                          lastValueToken: 'account_card_${account.id}',
-                          formatter: (v) => currency.formatter.format(v),
-                          style: TextStyle(
-                            fontWeight: KoinTypography.titleWeight,
-                            fontSize: KoinTypography.cardAmount,
-                            letterSpacing: KoinTypography.itemTracking,
-                            color: isColored
-                                ? (foreground ?? Colors.white)
-                                : AppTheme.textColor(context),
+                const Gap(12),
+                SizedBox(
+                  height:
+                      MediaQuery.textScalerOf(
+                        context,
+                      ).scale(KoinTypography.sectionTitle) *
+                      1.25,
+                  child: hideBalance || account.excludeFromTotal
+                      ? _HiddenBalanceMask(color: textColor, height: 0)
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedCounter(
+                            value: balance,
+                            lastValueToken: 'account_card_${account.id}',
+                            formatter: currency.formatter.format,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: KoinTypography.sectionTitle,
+                              fontWeight: KoinTypography.titleWeight,
+                              letterSpacing: 0,
+                              height: 1.25,
+                            ),
                           ),
                         ),
-                      ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAddAccountCard(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      onTap: () {
-        HapticService.medium();
-        Navigator.push(context, SlideUpRoute(page: const AccountFormScreen()));
-      },
-      child: Container(
-        width: 88,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: AppTheme.textLightColor(context),
-              size: 22,
-            ),
-            const Gap(4),
-            Text(
-              'Add',
-              style: TextStyle(
-                fontWeight: KoinTypography.labelWeight,
-                fontSize: KoinTypography.small,
-                color: AppTheme.textLightColor(context),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1091,4 +911,38 @@ class DashboardScreen extends ConsumerWidget {
           child: const Text('Add planned payment'),
         ),
       );
+}
+
+class _HiddenBalanceMask extends StatelessWidget {
+  const _HiddenBalanceMask({
+    required this.color,
+    required this.height,
+    this.prominent = false,
+  });
+
+  final Color color;
+  final double height;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '****',
+          semanticsLabel: 'Balance hidden',
+          style: TextStyle(
+            fontFamily: KoinTypography.fontFamily,
+            color: color.withValues(alpha: 0.85),
+            fontSize: prominent ? 30 : KoinTypography.sectionTitle,
+            fontWeight: KoinTypography.supportingWeight,
+            letterSpacing: prominent ? 1.5 : 1,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+  }
 }

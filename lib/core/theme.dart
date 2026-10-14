@@ -25,6 +25,7 @@ class AppTheme {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
       systemNavigationBarColor: isDarkMode ? _darkBackground : Colors.white,
+      systemNavigationBarContrastEnforced: false,
       systemNavigationBarIconBrightness: isDarkMode
           ? Brightness.light
           : Brightness.dark,

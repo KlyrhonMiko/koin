@@ -83,6 +83,7 @@ class _AppStartupState extends State<AppStartup> {
               systemNavigationBarIconBrightness: dark
                   ? Brightness.light
                   : Brightness.dark,
+              systemNavigationBarContrastEnforced: false,
             ),
             child: Scaffold(
               body: Stack(
