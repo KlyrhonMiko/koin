@@ -31,3 +31,15 @@ Use a balance-only summary and one Savings & goals list with one outlined Add sa
 ## Transaction history
 
 Use open, flat day sections matching the activity rows in flutter_03.png. Keep date headings and daily totals on the page background, with no enclosing surface cards or header borders. Use small tinted category icons, bold signed amounts aligned with the title, and category, account, and time together underneath. Preserve search, filters, editing, swipe deletion, and reduced-motion behavior.
+
+## Spending analysis
+
+Keep spending primary within Koin's established teal, Outfit, patterned-card design. Keep the Activity & Flow header, tabs, spending card, period toolbar, chart, and category list on the shared KoinSpacing.screenInset (20px on both sides). Inset only Forecast by an additional 8px on each side (28px total), centering its content slightly inward from the surrounding sections.
+
+Place the regular spending card directly after the Analysis/Transactions tabs. Match the dashboard's internal 24px horizontal and 16px vertical padding, shared summary typography, label-to-amount spacing, full-width amount row, and trailing show/hide control. Use the shared balance-privacy preference and replace the comparison with a hidden-state message when spending is hidden. Put one compact comparison sentence below the amount. Preserve the bright teal card and white text; large totals must use the available width rather than a narrow column beside a cutout.
+
+Use one joined period toolbar below the card: date navigation on the left and week/month/year choices on the right, separated by a subtle divider within one outlined surface. Keep dates on one line and shorten same-month week ranges. At narrow widths or large text sizes, stack the period choices above date navigation within the same surface.
+
+Keep Forecast as a compact open row directly below the period toolbar and above the spending chart, inset 8px beyond the surrounding content. Put the explicit future horizon and Estimated balance label above the neutral 20px amount, with a muted Details action on the right. Omit a separate Forecast heading. Stack the action below the estimate on narrow widths or at large text sizes. The whole row and Details open the existing details sheet; keep shortfall warnings visible beneath the row and the estimation explanation in the sheet.
+
+Place the chart below the compact forecast row, with a labeled action switching between Trend and Categories. Follow the chart with Top Categories as flat rows on the page background. Preserve category drilldowns, loading, error, empty, refresh, and reduced-motion behavior.

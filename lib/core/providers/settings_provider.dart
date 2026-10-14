@@ -20,8 +20,8 @@ class SettingsState {
     required this.themeColor,
     required this.themeMode,
     required this.analysisFilterIndex,
-    bool? hideBalance,
-  }) : _hideBalance = hideBalance;
+    this._hideBalance,
+  });
 
   SettingsState copyWith({
     Currency? currency,

@@ -9,6 +9,7 @@ abstract class ForecastRepository {
     required List<AppTransaction> transactions,
     required List<Account> accounts,
     required DateTime referenceDate,
+    List<PlannedPayment> plannedPayments = const [],
   });
   Future<List<double>> getHistoricalVariableInflows();
   Future<List<double>> getHistoricalVariableOutflows();
@@ -27,6 +28,7 @@ class SqliteForecastAdapter implements ForecastRepository {
     required List<AppTransaction> transactions,
     required List<Account> accounts,
     required DateTime referenceDate,
+    List<PlannedPayment> plannedPayments = const [],
   }) async => ForecastHistory.fromTransactions(
     transactions: transactions,
     includedAccountIds: accounts
@@ -34,6 +36,7 @@ class SqliteForecastAdapter implements ForecastRepository {
         .map((a) => a.id)
         .toSet(),
     referenceDate: referenceDate,
+    plannedPayments: plannedPayments,
   );
 
   @override
@@ -66,6 +69,7 @@ class InMemoryForecastAdapter implements ForecastRepository {
     required List<AppTransaction> transactions,
     required List<Account> accounts,
     required DateTime referenceDate,
+    List<PlannedPayment> plannedPayments = const [],
   }) async => ForecastHistory(
     inflows: List.unmodifiable(inflows),
     outflows: List.unmodifiable(outflows),

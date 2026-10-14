@@ -3,7 +3,8 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 
-/// One useful estimate up front; supporting figures are available on demand.
+/// Open, compact estimate; spending remains the primary metric.
+/// The horizon stays explicit and supporting figures open on demand.
 class ForecastSummary extends StatelessWidget {
   final ForecastData forecast;
   final Currency currency;
@@ -22,60 +23,118 @@ class ForecastSummary extends StatelessWidget {
     ForecastHorizon.yearly => 'Next year',
   };
 
+  bool get _limitedHistory => forecast.historyMonths < 3;
+
+  String get _estimateLabel =>
+      _limitedHistory ? 'Rough estimate' : 'Estimated balance';
+
   @override
   Widget build(BuildContext context) {
     final format = currency.formatter;
     final shortfall = forecast.firstShortfallDate;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Divider(color: Colors.white.withValues(alpha: 0.15)),
-        TextButton(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
-            alignment: Alignment.centerLeft,
-          ),
-          onPressed: () => _showDetails(context, format),
-          child: Row(
-            children: [
-              if (shortfall != null) ...[
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 18,
-                  semanticLabel:
-                      'Review payments before ${DateFormat.MMMd().format(shortfall)}',
-                ),
-                const Gap(8),
-              ],
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 4,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showDetails(context, format),
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final estimate = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Forecast',
-                      style: TextStyle(fontSize: KoinTypography.small),
+                      '$_periodLabel · $_estimateLabel',
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(context),
+                        fontSize: KoinTypography.small,
+                        height: 1.4,
+                      ),
                     ),
+                    const Gap(4),
                     Text(
                       format.format(forecast.predictedNetBalance),
                       style: TextStyle(
-                        fontSize: KoinTypography.body,
-                        fontWeight: KoinTypography.headingWeight,
+                        color: AppTheme.textColor(context),
+                        fontSize: KoinTypography.cardAmount,
+                        fontWeight: KoinTypography.titleWeight,
+                        letterSpacing: KoinTypography.itemTracking,
+                        height: 1.2,
                       ),
                     ),
                   ],
+                );
+                final details = TextButton(
+                  onPressed: () => _showDetails(context, format),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textLightColor(context),
+                    minimumSize: const Size(48, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('Details'),
+                );
+                if (constraints.maxWidth < 280 ||
+                    MediaQuery.textScalerOf(context).scale(12) > 18) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      estimate,
+                      Align(alignment: Alignment.centerRight, child: details),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: estimate),
+                    const Gap(12),
+                    details,
+                  ],
+                );
+              },
+            ),
+            if (_limitedHistory) ...[
+              const Gap(6),
+              Text(
+                forecast.historyDays != null
+                    ? 'Based on ${forecast.historyDays} days · Limited history'
+                    : 'Limited history · This estimate may change significantly',
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: KoinTypography.small,
+                  height: 1.4,
                 ),
               ),
-              const Gap(4),
-              const Icon(Icons.chevron_right_rounded, size: 20),
             ],
-          ),
+            if (shortfall != null) ...[
+              const Gap(6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 18,
+                    color: AppTheme.expenseColor(context),
+                  ),
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      'Balance may run short on ${DateFormat.MMMd().format(shortfall)}',
+                      style: TextStyle(
+                        color: AppTheme.expenseColor(context),
+                        fontSize: KoinTypography.small,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -136,7 +195,7 @@ class ForecastSummary extends StatelessWidget {
                 ),
                 const Gap(4),
                 Text(
-                  '$_periodLabel · Estimated balance',
+                  '$_periodLabel · $_estimateLabel',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const Gap(8),
@@ -168,6 +227,16 @@ class ForecastSummary extends StatelessWidget {
                   'Expected outgoings',
                   format.format(forecast.forecastedOutflow),
                 ),
+                if (forecast.savingsOutflow > 0) ...[
+                  _metric(
+                    context,
+                    'Includes savings contributions',
+                    format.format(forecast.savingsOutflow),
+                  ),
+                  const Text(
+                    'Assumes you keep funding your savings goals. Money set aside for savings stays yours.',
+                  ),
+                ],
                 const Gap(8),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
@@ -199,7 +268,9 @@ class ForecastSummary extends StatelessWidget {
                       const Gap(12),
                     ],
                     Text(
-                      forecast.historyMonths == 0
+                      forecast.historyDays != null
+                          ? 'Based on ${forecast.historyDays} complete days of income and spending. Large one-off transactions can skew this early estimate. Flexible payments use their recorded history; future income amounts and dates may vary.'
+                          : forecast.historyMonths == 0
                           ? 'With no spending history yet, this estimate uses your planned payments, debts, and savings goals.'
                           : 'Based on recent income and spending, planned payments, debts, and savings goals. Unscheduled income and spending are spread across the period.',
                     ),

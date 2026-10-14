@@ -39,6 +39,8 @@ class ForecastData {
   final double? lowerNetBalance;
   final double? upperNetBalance;
   final int historyMonths;
+  final int? historyDays;
+  final double savingsOutflow;
   final ForecastEvaluation? inflowEvaluation;
   final ForecastEvaluation? outflowEvaluation;
 
@@ -53,6 +55,8 @@ class ForecastData {
     this.lowerNetBalance,
     this.upperNetBalance,
     this.historyMonths = 0,
+    this.historyDays,
+    this.savingsOutflow = 0,
     this.inflowEvaluation,
     this.outflowEvaluation,
   });
@@ -370,6 +374,7 @@ class CashflowForecaster {
     required double currentBaseline,
     required ForecastHorizon horizon,
     DateTime? referenceDate,
+    int? historyDays,
   }) {
     final start = _day(referenceDate ?? DateTime.now());
     final end = horizonEnd(horizon, start);
@@ -380,10 +385,16 @@ class CashflowForecaster {
     final outflowEvaluation = ForecastEvaluation.select(
       historicalVariableOutflows,
     );
+    // A cold-start sample is a daily run rate normalized to this calendar
+    // month's length. Undo that normalization before scaling to actual days.
+    final variableScale = historyDays == null
+        ? horizon.scaleFactor
+        : end.difference(start).inDays /
+              DateTime(start.year, start.month + 1, 0).day;
     final variableInflow =
-        inflowEvaluation.monthlyEstimate * horizon.scaleFactor;
+        inflowEvaluation.monthlyEstimate * variableScale;
     final variableOutflow =
-        outflowEvaluation.monthlyEstimate * horizon.scaleFactor;
+        outflowEvaluation.monthlyEstimate * variableScale;
     var forecastedInflow = variableInflow;
     var forecastedOutflow = variableOutflow;
     for (final payment in plannedPayments) {
@@ -399,9 +410,11 @@ class CashflowForecaster {
       if (debt.type == DebtType.owedToMe) forecastedInflow += amount;
       if (debt.type == DebtType.iOwe) forecastedOutflow += amount;
     }
-    for (final goal in savingsGoals) {
-      forecastedOutflow += _savingsProjection(goal, start, end);
-    }
+    final savingsOutflow = savingsGoals.fold<double>(
+      0,
+      (total, goal) => total + _savingsProjection(goal, start, end),
+    );
+    forecastedOutflow += savingsOutflow;
     final predictedNetBalance =
         currentBaseline + forecastedInflow - forecastedOutflow;
 
@@ -453,12 +466,12 @@ class CashflowForecaster {
     final lower = hasRange
         ? predictedNetBalance +
               math.min(0, ForecastEvaluation.quantile(errors, 0.1)) *
-                  horizon.scaleFactor
+                  variableScale
         : null;
     final upper = hasRange
         ? predictedNetBalance +
               math.max(0, ForecastEvaluation.quantile(errors, 0.9)) *
-                  horizon.scaleFactor
+                  variableScale
         : null;
 
     return ForecastData(
@@ -475,6 +488,8 @@ class CashflowForecaster {
         historicalVariableInflows.length,
         historicalVariableOutflows.length,
       ),
+      historyDays: historyDays,
+      savingsOutflow: savingsOutflow,
       inflowEvaluation: inflowEvaluation,
       outflowEvaluation: outflowEvaluation,
     );

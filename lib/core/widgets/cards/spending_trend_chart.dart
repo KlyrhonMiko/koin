@@ -28,6 +28,15 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
   int _touchedGroupIndex = -1;
 
   @override
+  void didUpdateWidget(covariant SpendingTrendChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filterIndex != widget.filterIndex ||
+        oldWidget.baseDate != widget.baseDate) {
+      _touchedGroupIndex = -1;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.expenses.isEmpty) return const SizedBox.shrink();
 
@@ -164,184 +173,166 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
           ),
         ],
       ),
-      child: TweenAnimationBuilder<double>(
-        key: ValueKey(widget.filterIndex),
-        tween: Tween<double>(begin: 0, end: 1),
+      child: BarChart(
         duration: KoinMotion.duration(
           context,
-          const Duration(milliseconds: 1000),
+          const Duration(milliseconds: 240),
         ),
-        curve: Curves.easeOutQuart,
-        builder: (context, value, child) {
-          return BarChart(
-            duration: KoinMotion.duration(
-              context,
-              const Duration(milliseconds: 250),
+        curve: const Cubic(0.23, 1, 0.32, 1),
+        BarChartData(
+          minY: 0,
+          maxY: maxY,
+          alignment: BarChartAlignment.spaceAround,
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: (maxY / 4) == 0 ? 1 : maxY / 4,
+            getDrawingHorizontalLine: (value) {
+              return FlLine(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+                strokeWidth: 1,
+                dashArray: [4, 4],
+              );
+            },
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
             ),
-            curve: Curves.easeInOut,
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: (maxY / 4) == 0 ? 1 : maxY / 4,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.3),
-                    strokeWidth: 1,
-                    dashArray: [4, 4],
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (val, meta) {
+                  int index = val.toInt();
+                  if (index < 0 || index >= bottomLabels.length) {
+                    return const SizedBox.shrink();
+                  }
+                  // Avoid crowding on non-weekly filters
+                  if (widget.filterIndex != 0 &&
+                      index % 2 != 0 &&
+                      bottomLabels.length > 7) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      bottomLabels[index],
+                      style: TextStyle(
+                        color: AppTheme.textLightColor(context),
+                        fontSize: KoinTypography.overline,
+                        fontWeight: KoinTypography.titleWeight,
+                      ),
+                    ),
                   );
                 },
               ),
-              titlesData: FlTitlesData(
-                show: true,
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (val, meta) {
-                      int index = val.toInt();
-                      if (index < 0 || index >= bottomLabels.length) {
-                        return const SizedBox.shrink();
-                      }
-                      // Avoid crowding on non-weekly filters
-                      if (widget.filterIndex != 0 &&
-                          index % 2 != 0 &&
-                          bottomLabels.length > 7) {
-                        return const SizedBox.shrink();
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          bottomLabels[index],
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: KoinTypography.overline,
-                            fontWeight: KoinTypography.titleWeight,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: (maxY / 4) == 0 ? 1 : maxY / 4,
-                    getTitlesWidget: (val, meta) {
-                      if (val == 0 || val >= maxY) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Text(
-                          NumberFormat.compact().format(val),
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: KoinTypography.chartLabel,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barTouchData: BarTouchData(
-                touchCallback: (FlTouchEvent event, barTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        barTouchResponse == null ||
-                        barTouchResponse.spot == null) {
-                      _touchedGroupIndex = -1;
-                      return;
-                    }
-                    _touchedGroupIndex =
-                        barTouchResponse.spot!.touchedBarGroupIndex;
-                  });
-
-                  if (event is FlTapDownEvent || event is FlPanStartEvent) {
-                    HapticService.light();
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                interval: (maxY / 4) == 0 ? 1 : maxY / 4,
+                getTitlesWidget: (val, meta) {
+                  if (val == 0 || val >= maxY) {
+                    return const SizedBox.shrink();
                   }
-                },
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (_) => AppTheme.surfaceColor(context),
-                  tooltipBorder: BorderSide(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                  tooltipMargin: 8,
-                  fitInsideHorizontally: true,
-                  fitInsideVertically: true,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    // Original toY is stored in the barGroups
-                    final originalY =
-                        barGroups[groupIndex].barRods[rodIndex].toY;
-                    return BarTooltipItem(
-                      '${bottomLabels[group.x.toInt()]}\n',
-                      TextStyle(
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Text(
+                      NumberFormat.compact().format(val),
+                      style: TextStyle(
                         color: AppTheme.textLightColor(context),
                         fontSize: KoinTypography.chartLabel,
                         fontWeight: FontWeight.w600,
                       ),
-                      children: [
-                        TextSpan(
-                          text: widget.currency.formatter.format(originalY),
-                          style: TextStyle(
-                            color: AppTheme.textColor(context),
-                            fontSize: KoinTypography.compact,
-                            fontWeight: KoinTypography.headingWeight,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                      textAlign: TextAlign.right,
+                    ),
+                  );
+                },
               ),
-              barGroups: barGroups.asMap().entries.map((entry) {
-                final index = entry.key;
-                final group = entry.value;
-                final isTouched = index == _touchedGroupIndex;
-                return BarChartGroupData(
-                  x: group.x,
-                  barRods: group.barRods.map((rod) {
-                    return rod.copyWith(
-                      toY: rod.toY * value,
-                      color: isTouched
-                          ? AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.8)
-                          : AppTheme.primaryColor(context),
-                      width: isTouched ? rod.width + 2 : rod.width,
-                      backDrawRodData: BackgroundBarChartRodData(
-                        show: rod.backDrawRodData.show,
-                        toY: rod.backDrawRodData.toY,
-                        color: isTouched
-                            ? AppTheme.dividerColor(
-                                context,
-                              ).withValues(alpha: 0.3)
-                            : rod.backDrawRodData.color,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barTouchData: BarTouchData(
+            touchCallback: (FlTouchEvent event, barTouchResponse) {
+              setState(() {
+                if (!event.isInterestedForInteractions ||
+                    barTouchResponse == null ||
+                    barTouchResponse.spot == null) {
+                  _touchedGroupIndex = -1;
+                  return;
+                }
+                _touchedGroupIndex =
+                    barTouchResponse.spot!.touchedBarGroupIndex;
+              });
+
+              if (event is FlTapDownEvent || event is FlPanStartEvent) {
+                HapticService.light();
+              }
+            },
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppTheme.surfaceColor(context),
+              tooltipBorder: BorderSide(
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.2),
+                width: 1,
+              ),
+              tooltipMargin: 8,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                // Original toY is stored in the barGroups
+                final originalY = barGroups[groupIndex].barRods[rodIndex].toY;
+                return BarTooltipItem(
+                  '${bottomLabels[group.x.toInt()]}\n',
+                  TextStyle(
+                    color: AppTheme.textLightColor(context),
+                    fontSize: KoinTypography.chartLabel,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: widget.currency.formatter.format(originalY),
+                      style: TextStyle(
+                        color: AppTheme.textColor(context),
+                        fontSize: KoinTypography.compact,
+                        fontWeight: KoinTypography.headingWeight,
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          barGroups: barGroups.asMap().entries.map((entry) {
+            final index = entry.key;
+            final group = entry.value;
+            final isTouched = index == _touchedGroupIndex;
+            return BarChartGroupData(
+              x: group.x,
+              barRods: group.barRods.map((rod) {
+                return rod.copyWith(
+                  toY: rod.toY,
+                  color: isTouched
+                      ? AppTheme.primaryColor(context).withValues(alpha: 0.8)
+                      : AppTheme.primaryColor(context),
+                  width: rod.width,
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: rod.backDrawRodData.show,
+                    toY: rod.backDrawRodData.toY,
+                    color: isTouched
+                        ? AppTheme.dividerColor(context).withValues(alpha: 0.3)
+                        : rod.backDrawRodData.color,
+                  ),
                 );
               }).toList(),
-            ),
-          );
-        },
+            );
+          }).toList(),
+        ),
       ),
     );
   }

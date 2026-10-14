@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/forecasting/cashflow_forecaster.dart';
+import 'package:koin/core/forecasting/forecast_history.dart';
 import 'package:koin/core/repositories/forecast_repository.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
@@ -42,14 +43,19 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
     transactions: transactions,
     accounts: accounts,
     referenceDate: now,
+    plannedPayments: payments,
   );
 
   return CashflowForecaster.calculate(
     historicalVariableInflows: history.inflows,
     historicalVariableOutflows: history.outflows,
-    plannedPayments: payments
-        .where((payment) => includedIds.contains(payment.accountId))
-        .toList(),
+    plannedPayments: ForecastHistory.outstandingPayments(
+      payments: payments
+          .where((payment) => includedIds.contains(payment.accountId))
+          .toList(),
+      transactions: transactions,
+      referenceDate: now,
+    ),
     debts: debts
         .where(
           (debt) =>
@@ -60,5 +66,6 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
     currentBaseline: dashboardStats.currentBalance,
     horizon: ForecastHorizon.fromIndex(filterIndex),
     referenceDate: now,
+    historyDays: history.observedDays,
   );
 });

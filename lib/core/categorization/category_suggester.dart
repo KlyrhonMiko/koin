@@ -197,9 +197,9 @@ class DebouncedSuggesterCoordinator {
   int _revision = 0;
 
   DebouncedSuggesterCoordinator({
-    required CategorySuggester suggester,
+    required this._suggester,
     this.debounceDuration = const Duration(milliseconds: 300),
-  }) : _suggester = suggester;
+  });
 
   void run({
     required SuggestionContext context,

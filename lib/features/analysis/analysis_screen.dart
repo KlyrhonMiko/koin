@@ -4,9 +4,9 @@ import 'package:gap/gap.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
+import 'package:intl/intl.dart';
+
 import 'widgets/forecast_summary.dart';
-import 'dart:ui';
-import 'dart:math' show pi;
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -105,6 +105,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate(
                         [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: _buildForecast(context, currency),
+                              ),
+                              const Gap(16),
                               _buildChartSection(
                                 context,
                                 analysis,
@@ -134,20 +141,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 categories,
                                 currency,
                               ),
-                              const Gap(32),
-                              Center(
-                                child: Container(
-                                  width: 48,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.dividerColor(
-                                      context,
-                                    ).withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                              const Gap(64),
                             ]
                             .koinAnimate(
                               context,
@@ -188,88 +181,169 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     SpendingAnalysis analysis,
     Currency currency,
   ) {
+    final hideAmount = ref.watch(settingsProvider.select((s) => s.hideBalance));
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(
         KoinSpacing.screenInset,
-        16,
+        0,
         KoinSpacing.screenInset,
         16,
       ),
       sliver: SliverToBoxAdapter(
-        child: KoinSummaryCard(
-          shapeStyle: SummaryShapeStyle.analysis,
-          padding: const EdgeInsets.fromLTRB(
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            8,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children:
-                [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Total Spent',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: KoinTypography.caption,
-                                fontWeight: KoinTypography.labelWeight,
-                                letterSpacing: 0.5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KoinSummaryCard(
+              shapeStyle: SummaryShapeStyle.analysis,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      const Text(
+                        'Total Spent',
+                        style: KoinTypography.summaryLabelStyle,
+                      ),
+                      Text(
+                        '·  ${currency.code}',
+                        style: KoinTypography.summaryLabelStyle,
+                      ),
+                    ],
+                  ),
+                  const Gap(6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: hideAmount
+                            ? const SizedBox(
+                                height: 42,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '****',
+                                    semanticsLabel: 'Spending hidden',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 30,
+                                      fontWeight:
+                                          KoinTypography.supportingWeight,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: AnimatedCounter(
+                                  value: analysis.totalExpense,
+                                  formatter: currency.formatter.format,
+                                  duration: const Duration(milliseconds: 1000),
+                                  style: KoinTypography.summaryAmountStyle,
+                                ),
                               ),
-                            ),
-                          ),
-                          const Gap(12),
-                          _buildGlassFilterControl(context),
-                        ],
                       ),
                       const Gap(12),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: AnimatedCounter(
-                          value: analysis.totalExpense,
-                          formatter: (val) => currency.formatter.format(val),
-                          duration: const Duration(milliseconds: 1000),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: KoinTypography.summaryAmount,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.amountTracking,
-                            height: KoinTypography.amountHeight,
-                          ),
+                      IconButton(
+                        tooltip: hideAmount ? 'Show spending' : 'Hide spending',
+                        onPressed: () {
+                          HapticService.selection();
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setHideBalance(!hideAmount);
+                        },
+                        constraints: const BoxConstraints(
+                          minWidth: 56,
+                          minHeight: 56,
+                        ),
+                        iconSize: 26,
+                        color: Colors.white.withValues(
+                          alpha: hideAmount ? 0.6 : 0.9,
+                        ),
+                        icon: Icon(
+                          hideAmount
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
                         ),
                       ),
-                      const Gap(12),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: [
-                          _buildInlinePeriodSelector(),
-                          if (analysis.previousExpense != null) ...[
-                            _buildTrendBadge(analysis),
-                          ],
-                        ],
+                    ],
+                  ),
+                  if (analysis.previousExpense != null &&
+                      analysis.previousExpense != 0) ...[
+                    const Gap(8),
+                    if (hideAmount)
+                      const Text(
+                        'Spending comparison hidden',
+                        style: KoinTypography.summaryLabelStyle,
+                      )
+                    else
+                      _buildTrendBadge(analysis),
+                  ],
+                ],
+              ),
+            ),
+            const Gap(12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final textScale = MediaQuery.textScalerOf(context);
+                final controlHeight =
+                    (textScale.scale(KoinTypography.caption) + 24).clamp(
+                      48.0,
+                      double.infinity,
+                    );
+                final stacked =
+                    constraints.maxWidth < 330 || textScale.scale(13) > 18;
+                final dateControl = SizedBox(
+                  key: const ValueKey('analysis_date_selector'),
+                  height: controlHeight,
+                  child: _buildInlinePeriodSelector(),
+                );
+                final selector = SizedBox(
+                  key: const ValueKey('analysis_period_selector'),
+                  width: stacked
+                      ? constraints.maxWidth
+                      : (152 * textScale.scale(13) / 13).clamp(
+                          152.0,
+                          constraints.maxWidth,
+                        ),
+                  height: controlHeight,
+                  child: _buildDetachedFilterControl(context),
+                );
+                final Widget controls;
+                if (stacked) {
+                  controls = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [selector, dateControl],
+                  );
+                } else {
+                  controls = Row(
+                    children: [
+                      Expanded(child: dateControl),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        color: AppTheme.dividerColor(context),
                       ),
-                      const Gap(12),
-                      _buildIntegratedForecast(context, currency),
-                    ]
-                    .koinAnimate(
-                      context,
-                      autoPlay: !MediaQuery.disableAnimationsOf(context),
-                      onInit: KoinMotion.onInit(context),
-                      interval: KoinMotion.duration(context, 40.ms),
-                    )
-                    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                    .scale(
-                      begin: const Offset(0.95, 0.95),
-                      duration: 250.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-          ),
+                      const Gap(4),
+                      selector,
+                    ],
+                  );
+                }
+                return Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor(context),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
+                  ),
+                  child: controls,
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -280,33 +354,29 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       return const SizedBox.shrink();
     }
 
-    final badgeColor = analysis.isIncrease
-        ? AppTheme.expenseColor(context)
-        : AppTheme.incomeColor(context);
-    final icon = analysis.isIncrease
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, color: badgeColor, size: 14),
-        const Gap(4),
-        Text(
-          '${analysis.trendPercentage.toStringAsFixed(1)}%',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: KoinTypography.caption,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${analysis.trendPercentage.toStringAsFixed(1)}% ',
+            style: const TextStyle(fontWeight: KoinTypography.titleWeight),
           ),
-        ),
-      ],
+          TextSpan(
+            text:
+                '${analysis.isIncrease ? 'more' : 'less'} than previous ${['week', 'month', 'year'][_selectedFilterIndex]}',
+          ),
+        ],
+      ),
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.9),
+        fontSize: KoinTypography.small,
+        fontWeight: KoinTypography.labelWeight,
+        height: 1.4,
+      ),
     );
   }
 
-  Widget _buildIntegratedForecast(BuildContext context, Currency currency) {
+  Widget _buildForecast(BuildContext context, Currency currency) {
     final forecastAsync = ref.watch(forecastProvider(_selectedFilterIndex));
     return forecastAsync.when(
       data: (forecast) => ForecastSummary(
@@ -314,15 +384,35 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         currency: currency,
         horizon: ForecastHorizon.fromIndex(_selectedFilterIndex),
       ),
-      loading: () => Text(
-        'Estimating balance...',
-        style: TextStyle(color: Colors.white, fontSize: KoinTypography.small),
+      loading: () => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Forecast',
+              style: TextStyle(
+                color: AppTheme.textColor(context),
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
+              ),
+            ),
+            const Gap(8),
+            Text(
+              'Estimating balance...',
+              style: TextStyle(
+                color: AppTheme.textLightColor(context),
+                fontSize: KoinTypography.caption,
+              ),
+            ),
+          ],
+        ),
       ),
       error: (_, _) => TextButton(
         onPressed: () => ref.invalidate(forecastProvider(_selectedFilterIndex)),
         child: Text(
           'Could not estimate balance. Retry',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textColor(context)),
         ),
       ),
     );
@@ -331,44 +421,65 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   AnalysisPeriod get _currentPeriod =>
       AnalysisPeriod.fromIndex(_selectedFilterIndex);
 
-  String _getPeriodLabel() => _currentPeriod.formatPeriod(_baseDate);
+  String _getPeriodLabel() {
+    if (_currentPeriod != AnalysisPeriod.week) {
+      return _currentPeriod.formatPeriod(_baseDate);
+    }
+    final range = _currentPeriod.dateRange(_baseDate);
+    if (range.start.year != range.end.year) {
+      final format = DateFormat('MMM d, yy');
+      return '${format.format(range.start)}–${format.format(range.end)}';
+    }
+    final start = DateFormat('MMM d').format(range.start);
+    final end = range.start.month == range.end.month
+        ? '${range.end.day}'
+        : DateFormat('MMM d').format(range.end);
+    return '$start–$end';
+  }
 
   Widget _buildInlinePeriodSelector() {
     final period = _currentPeriod;
     final isCurrentPeriod = period.isCurrentPeriod(_baseDate);
 
     return Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            GestureDetector(
-              onTap: () {
+            IconButton(
+              tooltip:
+                  'Previous ${['week', 'month', 'year'][_selectedFilterIndex]}',
+              onPressed: () {
                 HapticService.selection();
                 setState(() {
                   _baseDate = period.previousPeriod(_baseDate);
                 });
               },
-              child: const Icon(
+              icon: Icon(
                 Icons.chevron_left_rounded,
-                color: Colors.white,
-                size: 18,
+                color: AppTheme.textLightColor(context),
+                size: 20,
               ),
             ),
-            const Gap(6),
-            Flexible(
-              child: Text(
-                _getPeriodLabel(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: KoinTypography.caption,
-                  fontWeight: KoinTypography.titleWeight,
-                  letterSpacing: 0.3,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _getPeriodLabel(),
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTheme.textColor(context),
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ),
-            const Gap(6),
-            GestureDetector(
-              onTap: isCurrentPeriod
+            IconButton(
+              tooltip:
+                  'Next ${['week', 'month', 'year'][_selectedFilterIndex]}',
+              onPressed: isCurrentPeriod
                   ? null
                   : () {
                       HapticService.selection();
@@ -376,12 +487,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         _baseDate = period.nextPeriod(_baseDate);
                       });
                     },
-              child: Icon(
+              icon: Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.white.withValues(
-                  alpha: isCurrentPeriod ? 0.4 : 1.0,
-                ),
-                size: 18,
+                color: AppTheme.textLightColor(context)
+                    .withValues(alpha: isCurrentPeriod ? 0.4 : 1.0),
+                size: 20,
               ),
             ),
           ],
@@ -394,58 +504,48 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         .fade(delay: 150.ms);
   }
 
-  Widget _buildGlassFilterControl(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: SizedBox(
-            width: 156, // 52px per segment for better spacing
-            height: 32,
-            child: Stack(
-              children: [
-                // Sliding Indicator background
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutQuart,
-                  left: _selectedFilterIndex * (156 / 3.0),
-                  top: 0,
-                  bottom: 0,
-                  width: 156 / 3.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        AppTheme.boxShadow(
-                          context,
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+  Widget _buildDetachedFilterControl(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final segmentWidth = constraints.maxWidth / 3;
+          return Stack(
+            children: [
+              // Sliding Indicator background
+              AnimatedPositioned(
+                duration: KoinMotion.duration(context, 300.ms),
+                curve: Curves.easeOutQuart,
+                left: _selectedFilterIndex * segmentWidth,
+                top: 0,
+                bottom: 0,
+                width: segmentWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      AppTheme.boxShadow(
+                        context,
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
-                // Pill Options overlay
-                Row(
-                  children: [
-                    _buildFilterOption(0, 'Wk'),
-                    _buildFilterOption(1, 'Mo'),
-                    _buildFilterOption(2, 'Yr'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
+              // Pill Options overlay
+              Row(
+                children: [
+                  _buildFilterOption(0, 'Wk'),
+                  _buildFilterOption(1, 'Mo'),
+                  _buildFilterOption(2, 'Yr'),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -453,31 +553,36 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   Widget _buildFilterOption(int index, String label) {
     final isSelected = _selectedFilterIndex == index;
     return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticService.selection();
-          setState(() {
-            _selectedFilterIndex = index;
-            _baseDate = DateTime.now();
-          });
-          ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected
-                  ? AppTheme.contentColor(
-                      context,
-                      AppTheme.primaryColor(context),
-                      background: Colors.white,
-                    )
-                  : Colors.white,
-              fontWeight: isSelected
-                  ? KoinTypography.headingWeight
-                  : KoinTypography.labelWeight,
-              fontSize: KoinTypography.caption,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: ['Week', 'Month', 'Year'][index],
+        child: GestureDetector(
+          onTap: () {
+            HapticService.selection();
+            setState(() {
+              _selectedFilterIndex = index;
+              _baseDate = DateTime.now();
+            });
+            ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? AppTheme.contentColor(
+                        context,
+                        AppTheme.primaryColor(context),
+                        background: Colors.white,
+                      )
+                    : AppTheme.textColor(context),
+                fontWeight: isSelected
+                    ? KoinTypography.headingWeight
+                    : KoinTypography.labelWeight,
+                fontSize: KoinTypography.caption,
+              ),
             ),
           ),
         ),
@@ -507,72 +612,88 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 ),
               ),
             ),
-            IconButton(
+            TextButton.icon(
               onPressed: () {
                 HapticService.selection();
                 setState(() {
                   _showPieChart = !_showPieChart;
+                  _touchedPieIndex = -1;
                 });
               },
-              icon: AnimatedSwitcher(
-                duration: KoinMotion.duration(
-                  context,
-                  const Duration(milliseconds: 600),
-                ),
-                switchInCurve: Curves.easeOutBack,
-                switchOutCurve: Curves.easeInBack,
-                transitionBuilder: _buildFlipTransition,
-                child: Transform.scale(
-                  key: ValueKey(_showPieChart),
-                  scaleX: _showPieChart ? -1 : 1,
-                  child: Icon(
-                    Icons.flip_rounded,
-                    color: AppTheme.primaryColor(context),
-                  ),
-                ),
+              icon: Icon(
+                _showPieChart
+                    ? Icons.bar_chart_rounded
+                    : Icons.donut_small_rounded,
+                size: 18,
               ),
-              style: IconButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor(
-                  context,
-                ).withValues(alpha: 0.1),
+              label: Text(_showPieChart ? 'Trend' : 'Categories'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textLightColor(context),
+                minimumSize: const Size(48, 48),
               ),
             ),
           ],
         ),
-        const Gap(16),
-        AnimatedSwitcher(
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 600),
+        const Gap(8),
+        // The surface stays opaque while only the graph content fades through.
+        // No rotation or scale: category proportions and totals stay readable.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(32),
           ),
-          switchInCurve: Curves.easeOutBack,
-          switchOutCurve: Curves.easeInBack,
-          transitionBuilder: _buildFlipTransition,
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              alignment: Alignment.center,
-              children: <Widget>[...previousChildren, ?currentChild],
-            );
-          },
-          child: _showPieChart
-              ? KeyedSubtree(
-                  key: const ValueKey(true),
-                  child: _buildCategoryPieChart(
-                    context,
-                    analysis,
-                    categories,
-                    currency,
-                  ),
-                )
-              : KeyedSubtree(
-                  key: const ValueKey(false),
-                  child: SpendingTrendChart(
-                    expenses: analysis.filteredTransactions,
-                    currency: currency,
-                    filterIndex: _selectedFilterIndex,
-                    baseDate: _baseDate,
-                  ),
+          child: AnimatedSwitcher(
+            key: const ValueKey('spending-chart-switcher'),
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 240),
+            ),
+            switchInCurve: const Interval(
+              0.35,
+              1,
+              curve: Cubic(0.23, 1, 0.32, 1),
+            ),
+            switchOutCurve: const Interval(0.6, 1),
+            transitionBuilder: (child, animation) {
+              final outgoing = child.key != ValueKey(_showPieChart);
+              return IgnorePointer(
+                ignoring: outgoing,
+                child: ExcludeSemantics(
+                  excluding: outgoing,
+                  child: FadeTransition(opacity: animation, child: child),
                 ),
+              );
+            },
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      if (previousChildren.isNotEmpty) previousChildren.last,
+                      ?currentChild,
+                    ],
+                  );
+                },
+            child: _showPieChart
+                ? KeyedSubtree(
+                    key: const ValueKey(true),
+                    child: _buildCategoryPieChart(
+                      context,
+                      analysis,
+                      categories,
+                      currency,
+                    ),
+                  )
+                : KeyedSubtree(
+                    key: const ValueKey(false),
+                    child: SpendingTrendChart(
+                      expenses: analysis.filteredTransactions,
+                      currency: currency,
+                      filterIndex: _selectedFilterIndex,
+                      baseDate: _baseDate,
+                    ),
+                  ),
+          ),
         ),
       ],
     );
@@ -588,154 +709,169 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
     final breakdown = analysis.categoryBreakdown;
     final totalSpent = analysis.totalExpense;
+    // Keep every slice represented in the legend, including the long tail.
+    final visible = breakdown.length > 4 ? breakdown.take(3) : breakdown;
+    final slices = visible.map((item) {
+      final category = categories
+          .where((c) => c.id == item.categoryId)
+          .firstOrNull;
+      return (
+        name: category?.name ?? 'Uncategorized',
+        amount: item.amount,
+        color: category?.color ?? AppTheme.textLightColor(context),
+      );
+    }).toList();
+    if (breakdown.length > 4) {
+      slices.add((
+        name: 'Other',
+        amount: breakdown
+            .skip(3)
+            .fold<double>(0, (sum, item) => sum + item.amount),
+        color: AppTheme.textLightColor(context),
+      ));
+    }
+    final selected = _touchedPieIndex >= 0 && _touchedPieIndex < slices.length
+        ? _touchedPieIndex
+        : -1;
+    final label = selected < 0 ? 'Total' : slices[selected].name;
+    final amount = selected < 0 ? totalSpent : slices[selected].amount;
+    final text = AppTheme.textColor(context);
+    final muted = AppTheme.textLightColor(context);
 
-    return Container(
-      height: 240,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: TweenAnimationBuilder<double>(
-        key: ValueKey(_selectedFilterIndex), // Re-animate on filter change
-        tween: Tween<double>(begin: 0, end: 1),
-        duration: KoinMotion.duration(
-          context,
-          const Duration(milliseconds: 1000),
-        ),
-        curve: Curves.easeOutQuart,
-        builder: (context, value, child) {
-          return Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Keep the same footprint as Trend at every category count.
+        final chartSize = ((constraints.maxWidth - 32) * 0.43).clamp(
+          110.0,
+          160.0,
+        );
+        const thickness = 18.0;
+        final hole = chartSize / 2 - thickness - 2;
+        final donut = SizedBox(
+          key: const ValueKey('category-donut'),
+          width: chartSize,
+          height: chartSize,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Expanded(
-                flex: 10,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    PieChart(
-                      duration: KoinMotion.duration(
-                        context,
-                        const Duration(milliseconds: 250),
-                      ),
-                      curve: Curves.easeInOut,
-                      PieChartData(
-                        pieTouchData: PieTouchData(
-                          touchCallback:
-                              (FlTouchEvent event, pieTouchResponse) {
-                                setState(() {
-                                  if (!event.isInterestedForInteractions ||
-                                      pieTouchResponse == null ||
-                                      pieTouchResponse.touchedSection == null) {
-                                    _touchedPieIndex = -1;
-                                    return;
-                                  }
-                                  _touchedPieIndex = pieTouchResponse
-                                      .touchedSection!
-                                      .touchedSectionIndex;
-                                });
-
-                                if (event is FlTapDownEvent ||
-                                    event is FlPanStartEvent) {
-                                  HapticService.light();
-                                }
-                              },
-                        ),
-                        borderData: FlBorderData(show: false),
-                        sectionsSpace: 4,
-                        centerSpaceRadius: 46,
-                        sections: breakdown.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final data = entry.value;
-                          final isTouched = index == _touchedPieIndex;
-                          final radius = isTouched ? 22.0 : 16.0;
-
-                          final category = categories.firstWhere(
-                            (c) => c.id == data.categoryId,
-                            orElse: () => TransactionCategory(
-                              id: 'unknown',
-                              name: 'Uncategorized',
-                              iconCodePoint: Icons.help_outline.codePoint,
-                              colorHex: '#9E9E9E',
-                              type: TransactionType.expense,
-                            ),
-                          );
-
-                          return PieChartSectionData(
-                            color: category.color,
-                            value: data.amount * value,
-                            title: '',
-                            radius: radius * value,
-                            showTitle: false,
-                          );
-                        }).toList(),
+              Semantics(
+                label: slices
+                    .map(
+                      (s) =>
+                          '${s.name}: ${currency.formatter.format(s.amount)}',
+                    )
+                    .join('; '),
+                child: PieChart(
+                  duration: KoinMotion.duration(
+                    context,
+                    const Duration(milliseconds: 180),
+                  ),
+                  curve: const Cubic(0.23, 1, 0.32, 1),
+                  PieChartData(
+                    startDegreeOffset: -90,
+                    centerSpaceRadius: hole,
+                    sectionsSpace: slices.length == 1 ? 0 : 2,
+                    borderData: FlBorderData(show: false),
+                    pieTouchData: PieTouchData(
+                      touchCallback: (event, response) {
+                        if (event is! FlTapUpEvent &&
+                            event is! FlPanUpdateEvent) {
+                          return;
+                        }
+                        final index =
+                            response?.touchedSection?.touchedSectionIndex ?? -1;
+                        if (index < 0 || index >= slices.length) return;
+                        final next = event is FlTapUpEvent && selected == index
+                            ? -1
+                            : index;
+                        if (next == _touchedPieIndex) return;
+                        HapticService.selection();
+                        setState(() => _touchedPieIndex = next);
+                      },
+                    ),
+                    sections: List.generate(
+                      slices.length,
+                      (i) => PieChartSectionData(
+                        value: slices[i].amount,
+                        color: selected < 0 || selected == i
+                            ? slices[i].color
+                            : slices[i].color.withValues(alpha: 0.3),
+                        radius: thickness,
+                        showTitle: false,
                       ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Total',
-                          style: TextStyle(
-                            fontSize: KoinTypography.overline,
-                            fontWeight: KoinTypography.labelWeight,
-                            color: AppTheme.textLightColor(context),
-                          ),
-                        ),
-                        const Gap(2),
-                        Text(
-                          currency.compactFormatter.format(totalSpent * value),
-                          style: TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            color: AppTheme.textColor(context),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const Gap(16),
-              Expanded(
-                flex: 12,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: breakdown.take(4).map((data) {
-                    final index = breakdown.indexOf(data);
-                    final isTouched =
-                        _touchedPieIndex == -1 || _touchedPieIndex == index;
-                    final opacity = isTouched ? 1.0 : 0.4;
-                    final percent = data.percentage;
-
-                    final category = categories.firstWhere(
-                      (c) => c.id == data.categoryId,
-                      orElse: () => TransactionCategory(
-                        id: 'unknown',
-                        name: 'Uncategorized',
-                        iconCodePoint: Icons.help_outline.codePoint,
-                        colorHex: '#9E9E9E',
-                        type: TransactionType.expense,
+              IgnorePointer(
+                child: SizedBox(
+                  width: hole * 1.7,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: KoinTypography.chartLabel,
+                          fontWeight: KoinTypography.labelWeight,
+                        ),
                       ),
-                    );
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      const Gap(4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          currency.compactFormatter.format(amount),
+                          style: TextStyle(
+                            color: text,
+                            fontSize: KoinTypography.cardAmount,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.headingTracking,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        final legend = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(slices.length, (i) {
+            final slice = slices[i];
+            final percentage = totalSpent <= 0
+                ? 0.0
+                : slice.amount / totalSpent * 100;
+            final percentText = percentage > 0 && percentage < 1
+                ? '<1%'
+                : '${percentage.toStringAsFixed(0)}%';
+            return Semantics(
+              selected: selected == i,
+              child: Tooltip(
+                message:
+                    '${slice.name}: ${currency.formatter.format(slice.amount)} ($percentText)',
+                child: InkWell(
+                  key: ValueKey('category-legend-$i'),
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    HapticService.selection();
+                    setState(() => _touchedPieIndex = selected == i ? -1 : i);
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 7),
                       child: Row(
                         children: [
                           Container(
-                            width: 10,
-                            height: 10,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color: category.color.withValues(alpha: opacity),
+                              color: slice.color,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -744,54 +880,89 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        slice.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: text,
+                                          fontSize: KoinTypography.small,
+                                          fontWeight:
+                                              KoinTypography.titleWeight,
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(8),
+                                    Text(
+                                      percentText,
+                                      style: TextStyle(
+                                        color: muted,
+                                        fontSize: KoinTypography.chartLabel,
+                                        fontWeight: KoinTypography.labelWeight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Gap(3),
                                 Text(
-                                  category.name,
+                                  currency.compactFormatter.format(
+                                    slice.amount,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
+                                    color: text,
                                     fontSize: KoinTypography.small,
-                                    fontWeight: isTouched
-                                        ? KoinTypography.titleWeight
-                                        : KoinTypography.supportingWeight,
-                                    color: AppTheme.textColor(
-                                      context,
-                                    ).withValues(alpha: opacity),
-                                  ),
-                                ),
-                                const Gap(2),
-                                Text(
-                                  currency.compactFormatter.format(data.amount),
-                                  style: TextStyle(
-                                    fontSize: KoinTypography.chartLabel,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textLightColor(
-                                      context,
-                                    ).withValues(alpha: opacity),
+                                    fontWeight: KoinTypography.titleWeight,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Text(
-                            '${percent.toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              fontSize: KoinTypography.small,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textColor(
-                                context,
-                              ).withValues(alpha: opacity),
-                            ),
-                          ),
                         ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+        return Container(
+          key: const ValueKey('category-chart-card'),
+          height: 240,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              AppTheme.boxShadow(
+                context,
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              donut,
+              const Gap(16),
+              Expanded(
+                child: SingleChildScrollView(
+                  key: const ValueKey('category-legend-scroll'),
+                  primary: false,
+                  physics: const ClampingScrollPhysics(),
+                  child: legend,
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -833,25 +1004,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             ref.read(navigationProvider.notifier).setIndex(1);
           },
           child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                AppTheme.boxShadow(
-                  context,
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+              border: Border(
+                bottom: BorderSide(
+                  color: AppTheme.dividerColor(context).withValues(alpha: 0.35),
                 ),
-              ],
+              ),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: category.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -862,7 +1027,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     size: 20,
                   ),
                 ),
-                const Gap(14),
+                const Gap(16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -888,7 +1053,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 ),
                                 const Gap(6),
                                 Text(
-                                  '${percent.toStringAsFixed(0)}%',
+                                  percent > 0 && percent < 1
+                                      ? '<1%'
+                                      : '${percent.toStringAsFixed(0)}%',
                                   style: TextStyle(
                                     fontWeight: KoinTypography.labelWeight,
                                     fontSize: KoinTypography.small,
@@ -905,14 +1072,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 currency.compactFormatter.format(val),
                             duration: const Duration(milliseconds: 1000),
                             style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontWeight: KoinTypography.labelWeight,
-                              fontSize: KoinTypography.small,
+                              color: AppTheme.textColor(context),
+                              fontWeight: KoinTypography.titleWeight,
+                              fontSize: KoinTypography.compact,
                             ),
                           ),
                         ],
                       ),
-                      const Gap(8),
+                      const Gap(12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2),
                         child: Container(
@@ -974,26 +1141,4 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     title: title,
     subtitle: subtitle,
   );
-
-  Widget _buildFlipTransition(Widget child, Animation<double> animation) {
-    return AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, widget) {
-        final isEntering = (widget?.key == ValueKey(_showPieChart));
-        final rotation = isEntering
-            ? (1 - animation.value) * pi
-            : -(1 - animation.value) * pi;
-        return Transform(
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.001)
-            ..rotateY(rotation),
-          alignment: Alignment.center,
-          child: rotation.abs() <= (pi / 2 + 0.01)
-              ? widget
-              : const SizedBox.shrink(),
-        );
-      },
-    );
-  }
 }

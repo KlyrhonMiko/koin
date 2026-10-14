@@ -54,7 +54,7 @@ Koin checks for changes every 10 seconds while open and when moving between fore
 
 ## Development
 
-Install a Flutter SDK with Dart compatible with `^3.11.3` and the platform tooling for your target device. Dependencies are defined in [pubspec.yaml](pubspec.yaml).
+Install Flutter 3.47 or later with Dart compatible with `^3.13.0` and the platform tooling for your target device. Dependencies are defined in [pubspec.yaml](pubspec.yaml).
 
 ```bash
 git clone https://github.com/KlyrhonMiko/koin.git
@@ -71,6 +71,14 @@ binary format version” error. After intentionally switching SDKs, run
 `flutter clean` and `flutter pub get` with the selected SDK before building.
 
 **Check the project**
+
+To update dependencies within the existing version constraints, run
+`flutter pub upgrade`, review the `pubspec.lock` changes, then run the checks
+below. Use `flutter pub outdated` to compare installed, upgradable, resolvable,
+and latest versions. A newer version that is not resolvable can require a newer
+Flutter SDK or changes in an upstream package; keep the compatible version
+rather than adding dependency overrides. Flutter pins some test and framework
+dependencies, so their versions may change when switching SDK installations.
 
 ```bash
 flutter analyze

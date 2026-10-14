@@ -1731,6 +1731,7 @@ CREATE TABLE transactions (
   Future<ForecastHistory> _getForecastHistory() async {
     final transactions = await getTransactions();
     final accounts = await getAccounts();
+    final payments = await getPlannedPayments();
     return ForecastHistory.fromTransactions(
       transactions: transactions,
       includedAccountIds: accounts
@@ -1738,6 +1739,7 @@ CREATE TABLE transactions (
           .map((account) => account.id)
           .toSet(),
       referenceDate: DateTime.now(),
+      plannedPayments: payments,
     );
   }
 

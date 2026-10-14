@@ -15,12 +15,21 @@ are scaled to the chosen horizon; they do not yet model seasonality. Months
 without transactions contribute zero. The first recorded month is omitted if
 tracking started after its first day. When no complete samples exist, at least
 seven complete observed days are required before estimating a monthly run rate;
-today's incomplete activity is excluded from that estimate. Linked planned
-payments and debt repayments are excluded from both variable flow directions.
+today's incomplete activity is excluded from that estimate. Until a complete
+calendar month is available, the estimate uses all complete observed days,
+including recent days in the current month, and normalizes to the current
+month's length. It does not freeze at the first month boundary. Linked recurring
+Cold-start horizon projections then scale that daily rate by the actual number
+of days in the forecast, rather than using average month lengths.
+planned payments and debt repayments are excluded from both variable flow
+directions. Flexible payment receipts and expenses remain in history because
+those schedules have no recurring amount to replace them.
 
 Planned payments use their next date and recurrence, stopping at their end date.
 Expired schedules are ignored. Flexible payments contribute once at their known
-next date. Outstanding occurrences on active schedules are treated as payable
+next date. A flexible date already covered by a recorded linked transaction is
+not forecast again; changing its next date beyond the latest receipt makes it
+outstanding again. Outstanding occurrences on active schedules are treated as payable
 within the forecast, including arrears; schedules must be processed or updated
 when payments have already happened. Month-end dates clamp to the last valid day
 without changing the original recurrence anchor.
@@ -64,6 +73,10 @@ temporary shortfalls, and range availability. These regression tests establish
 calculation correctness; they do not establish a measured improvement on real
 users' future transactions.
 
+With fewer than three monthly samples, the analysis card labels the balance as
+a rough estimate with limited history. Cold-start estimates show the observed
+day count. Forecast details identify the savings contributions included in
+outgoings and explain that large one-off transactions can skew an early estimate.
 The analysis card shows the estimated balance and, when needed, a short prompt
 to review payment timing. Income, outgoings, balance ranges, and assumptions are
 available through Forecast details instead of adding several paragraphs to the

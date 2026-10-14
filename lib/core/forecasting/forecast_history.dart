@@ -5,12 +5,20 @@ class ForecastHistory {
   final List<double> inflows;
   final List<double> outflows;
 
-  const ForecastHistory({required this.inflows, required this.outflows});
+  /// Complete observed days used for a cold-start run rate, not a full month.
+  final int? observedDays;
+
+  const ForecastHistory({
+    required this.inflows,
+    required this.outflows,
+    this.observedDays,
+  });
 
   factory ForecastHistory.fromTransactions({
     required List<AppTransaction> transactions,
     required Set<String> includedAccountIds,
     required DateTime referenceDate,
+    List<PlannedPayment> plannedPayments = const [],
     int maxMonths = 12,
   }) {
     final observed = transactions.where(
@@ -34,11 +42,20 @@ class ForecastHistory {
     if (start.isBefore(earliest)) start = earliest;
     final inflows = <double>[];
     final outflows = <double>[];
+    final flexibleIds = plannedPayments
+        .where((payment) => payment.frequency == PaymentFrequency.flexible)
+        .map((payment) => payment.id)
+        .toSet();
+    bool isVariable(AppTransaction tx) =>
+        tx.debtRepaymentId == null &&
+        (tx.plannedPaymentId == null ||
+            flexibleIds.contains(tx.plannedPaymentId));
     final incomeByMonth = <DateTime, double>{};
     final expenseByMonth = <DateTime, double>{};
     for (final tx in observed) {
       // Both directions of a debt repayment belong to the scheduled layer.
-      if (tx.plannedPaymentId != null || tx.debtRepaymentId != null) continue;
+      // Flexible schedules have no recurring amount to replace their history.
+      if (!isVariable(tx)) continue;
       final month = DateTime(tx.date.year, tx.date.month);
       if (tx.type == TransactionType.income) {
         incomeByMonth[month] = (incomeByMonth[month] ?? 0) + tx.amount;
@@ -63,21 +80,19 @@ class ForecastHistory {
         referenceDate.month,
         referenceDate.day,
       );
-      final observedEnd = firstDay.isBefore(currentMonth)
-          ? currentMonth
-          : today;
+      // Until a complete calendar month exists, keep learning from every
+      // complete day across month boundaries instead of freezing on week one.
+      final observedEnd = today;
       final elapsed = observedEnd.difference(firstDay).inDays;
       if (elapsed < 7) {
         return const ForecastHistory(inflows: [], outflows: []);
       }
-      final daysInMonth = DateTime(firstDay.year, firstDay.month + 1, 0).day;
+      final daysInMonth = DateTime(today.year, today.month + 1, 0).day;
       // Use complete observed days; today's transactions are still incomplete.
       double income = 0;
       double expense = 0;
       for (final tx in observed) {
-        if (!tx.date.isBefore(observedEnd) ||
-            tx.plannedPaymentId != null ||
-            tx.debtRepaymentId != null) {
+        if (!tx.date.isBefore(observedEnd) || !isVariable(tx)) {
           continue;
         }
         if (tx.type == TransactionType.income) income += tx.amount;
@@ -85,7 +100,40 @@ class ForecastHistory {
       }
       inflows.add(income * daysInMonth / elapsed);
       outflows.add(expense * daysInMonth / elapsed);
+      return ForecastHistory(
+        inflows: inflows,
+        outflows: outflows,
+        observedDays: elapsed,
+      );
     }
     return ForecastHistory(inflows: inflows, outflows: outflows);
+  }
+
+  /// A flexible schedule keeps its original date after manual processing.
+  /// Once a receipt/payment covers that date it must not be forecast again.
+  static List<PlannedPayment> outstandingPayments({
+    required List<PlannedPayment> payments,
+    required List<AppTransaction> transactions,
+    required DateTime referenceDate,
+  }) {
+    final latestProcessed = <String, DateTime>{};
+    for (final tx in transactions) {
+      final id = tx.plannedPaymentId;
+      if (id == null || tx.date.isAfter(referenceDate)) continue;
+      final previous = latestProcessed[id];
+      if (previous == null || tx.date.isAfter(previous)) {
+        latestProcessed[id] = tx.date;
+      }
+    }
+    return payments.where((payment) {
+      if (payment.frequency != PaymentFrequency.flexible) return true;
+      final processed = latestProcessed[payment.id];
+      final dueDay = DateTime(
+        payment.nextDate.year,
+        payment.nextDate.month,
+        payment.nextDate.day,
+      );
+      return processed == null || processed.isBefore(dueDay);
+    }).toList();
   }
 }

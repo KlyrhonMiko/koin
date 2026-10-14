@@ -77,7 +77,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         children:
             [
                   KoinScreenHeader(
-                    tag: 'TIMELINE',
                     title: 'Activity & Flow',
                     padding: EdgeInsets.zero,
                     trailing: IconButton(
@@ -95,14 +94,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                       tooltip: 'Custom Reports',
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   KoinSegmentedControl(
                     controller: _tabController,
                     leftLabel: 'Analysis',
                     rightLabel: 'Transactions',
                   ),
                 ]
-                .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
                   onInit: KoinMotion.onInit(context),
                   interval: KoinMotion.duration(context, 40.ms),
                 )
