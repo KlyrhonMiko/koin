@@ -43,3 +43,13 @@ Use one joined period toolbar below the card: date navigation on the left and we
 Keep Forecast as a compact open row directly below the period toolbar and above the spending chart, inset 8px beyond the surrounding content. Put the explicit future horizon and Estimated balance label above the neutral 20px amount, with a muted Details action on the right. Omit a separate Forecast heading. Stack the action below the estimate on narrow widths or at large text sizes. The whole row and Details open the existing details sheet; keep shortfall warnings visible beneath the row and the estimation explanation in the sheet.
 
 Place the chart below the compact forecast row, with a labeled action switching between Trend and Categories. Follow the chart with Top Categories as flat rows on the page background. Preserve category drilldowns, loading, error, empty, refresh, and reduced-motion behavior.
+
+Category-list dividers appear only between rows in Top Categories and Active Budgets. Do not put a rule beneath the last item or a single-item list.
+
+## Monthly budgets
+
+Match Activity & Flow's plain screen header, shared 20px screen inset, and compact patterned teal summary card. Use 24px horizontal and 16px vertical card padding, the shared summary label and amount styles, a currency label, and the shared balance-privacy control. Show usage as a short sentence below the full-width amount instead of a circular gauge.
+
+Place month navigation as plain text with previous/next arrows beneath the card, without a pill background or border. Keep the controls accessible, prevent navigation beyond the current month, and let the month label return to the current month. Keep navigation available when no budgets are configured.
+
+Make Remaining the main teal card's label and large amount, using the shared summary typography. When overspent, show Over Budget and the amount exceeded. Combine the spent amount, percentage used, and remaining (or over-budget) amount into one wrapping sentence beneath the main amount, using the shared privacy preference. Omit separate Spent and Monthly Budget footer metrics. Do not add a separate totals section, progress bar, or metric cards beneath the month switcher. Use flat active-budget rows with small tinted category icons, progress bars, and separators only between items, preserving editing and setup actions.

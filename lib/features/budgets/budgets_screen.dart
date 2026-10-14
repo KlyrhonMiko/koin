@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/categories/categories.dart';
+
 import 'widgets/budget_editor_sheet.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
@@ -36,7 +37,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final unbudgeted = overview.unbudgetedCategories;
     final totalBudget = overview.totalBudget;
     final totalSpent = overview.totalSpent;
-    final overallProgress = overview.overallProgress;
     final overallPercent = overview.overallPercent;
     final totalIncome = stats.totalIncome;
 
@@ -78,13 +78,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                         context,
                                         totalBudget: totalBudget,
                                         totalSpent: totalSpent,
-                                        progress: overallProgress,
                                         percent: overallPercent,
                                         currency: currency,
                                       ),
 
-                                    if (budgeted.isNotEmpty)
-                                      const Gap(KoinSpacing.sectionGap),
+                                    const Gap(12),
+                                    _buildMonthToolbar(context),
+                                    const Gap(16),
 
                                     // Active budgets section
                                     if (budgeted.isNotEmpty) ...[
@@ -271,9 +271,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                         width: 48,
                                         height: 4,
                                         decoration: BoxDecoration(
-                                          color: AppTheme.dividerColor(
-                                            context,
-                                          ).withValues(alpha: 0.2),
+                                          color: AppTheme.dividerColor(context)
+                                              .withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(
                                             2,
                                           ),
@@ -317,7 +316,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return KoinScreenHeader(
-      tag: 'STRATEGY',
       title: 'Monthly Budgets',
       backgroundColor: AppTheme.backgroundColor(context),
       trailing: IconButton(
@@ -350,272 +348,169 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     );
   }
 
-  Widget _buildInlineMonthSelector({bool isDark = false}) {
+  Widget _buildMonthToolbar(BuildContext context) {
     final now = DateTime.now();
     final isCurrentMonth =
         _selectedMonth.year == now.year && _selectedMonth.month == now.month;
-    final monthLabel = DateFormat('MMMM yyyy').format(_selectedMonth);
-    final textColor = isDark ? AppTheme.textColor(context) : Colors.white;
-    final chevronColor = isDark ? AppTheme.textColor(context) : Colors.white;
-
-    return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                HapticService.selection();
-                setState(() {
-                  _selectedMonth = DateTime(
-                    _selectedMonth.year,
-                    _selectedMonth.month - 1,
-                  );
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: chevronColor,
-                  size: 18,
-                ),
-              ),
+    return SizedBox(
+      key: const ValueKey('budget_month_toolbar'),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Previous month',
+            onPressed: () {
+              HapticService.selection();
+              setState(() {
+                _selectedMonth = DateTime(
+                  _selectedMonth.year,
+                  _selectedMonth.month - 1,
+                );
+              });
+            },
+            icon: Icon(
+              Icons.chevron_left_rounded,
+              color: AppTheme.textLightColor(context),
+              size: 20,
             ),
-            const Gap(6),
-            Flexible(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: isCurrentMonth
-                    ? null
-                    : () {
-                        HapticService.selection();
-                        setState(() {
-                          _selectedMonth = DateTime(now.year, now.month);
-                        });
-                      },
-                child: Text(
-                  monthLabel,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: KoinTypography.caption,
-                    fontWeight: KoinTypography.titleWeight,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-            ),
-            const Gap(6),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: isCurrentMonth
+          ),
+          Expanded(
+            child: TextButton(
+              onPressed: isCurrentMonth
                   ? null
                   : () {
                       HapticService.selection();
-                      setState(() {
-                        _selectedMonth = DateTime(
-                          _selectedMonth.year,
-                          _selectedMonth.month + 1,
-                        );
-                      });
+                      setState(
+                        () => _selectedMonth = DateTime(now.year, now.month),
+                      );
                     },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  color: chevronColor.withValues(
-                    alpha: isCurrentMonth ? 0.4 : 1.0,
-                  ),
-                  size: 18,
+              child: Text(
+                DateFormat('MMMM yyyy').format(_selectedMonth),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textColor(context),
+                  fontSize: KoinTypography.caption,
+                  fontWeight: KoinTypography.titleWeight,
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
-          ],
-        )
-        .koinAnimate(
-          context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(delay: 150.ms);
+          ),
+          IconButton(
+            tooltip: 'Next month',
+            onPressed: isCurrentMonth
+                ? null
+                : () {
+                    HapticService.selection();
+                    setState(() {
+                      _selectedMonth = DateTime(
+                        _selectedMonth.year,
+                        _selectedMonth.month + 1,
+                      );
+                    });
+                  },
+            icon: const Icon(Icons.chevron_right_rounded, size: 20),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSummaryCard(
     BuildContext context, {
     required double totalBudget,
     required double totalSpent,
-    required double progress,
     required String percent,
-    required currency,
+    required Currency currency,
   }) {
+    final hideAmount = ref.watch(settingsProvider.select((s) => s.hideBalance));
     final isOver = totalSpent > totalBudget;
-    final remaining = totalBudget - totalSpent;
-    final fmt = currency.formatter;
-
     return KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.budgets,
-      padding: const EdgeInsets.all(24),
-      borderRadius: KoinShape.summary,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Text(
+                isOver ? 'Over Budget' : 'Remaining',
+                style: KoinTypography.summaryLabelStyle,
+              ),
+              Text(
+                '·  ${currency.code}',
+                style: KoinTypography.summaryLabelStyle,
+              ),
+            ],
+          ),
+          const Gap(6),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Monthly Budget',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: KoinTypography.caption,
-                        fontWeight: KoinTypography.labelWeight,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const Gap(4),
-                    AnimatedCounter(
-                      value: totalBudget,
-                      formatter: (v) => fmt.format(v),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: KoinTypography.summaryAmount,
-                        fontWeight: KoinTypography.headingWeight,
-                        letterSpacing: KoinTypography.amountTracking,
-                        height: KoinTypography.amountHeight,
-                      ),
-                    ),
-                    const Gap(16),
-                    Transform.translate(
-                      offset: const Offset(-6, 0),
-                      child: _buildInlineMonthSelector(),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isOver
-                      ? AppTheme.errorContentColor(
-                          context,
-                        ).withValues(alpha: 0.2)
-                      : Colors.white.withValues(alpha: 0.1),
-                ),
-                child: Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: progress),
-                    duration: KoinMotion.duration(
-                      context,
-                      const Duration(milliseconds: 1400),
-                    ),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, val, child) {
-                      final targetPercent = double.tryParse(percent) ?? 0;
-                      final displayPercent =
-                          (targetPercent *
-                                  (progress > 0 ? (val / progress) : 0))
-                              .round();
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 88,
-                            height: 88,
-                            child: CircularProgressIndicator(
-                              value: 1.0,
-                              strokeWidth: 6,
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 88,
-                            height: 88,
-                            child: CircularProgressIndicator(
-                              value: val,
-                              strokeWidth: 6,
-                              strokeCap: StrokeCap.round,
-                              color: isOver
-                                  ? const Color(0xFFFF8A80)
-                                  : Colors.white,
-                            ),
-                          ),
-                          Text(
-                            '$displayPercent%',
+                child: hideAmount
+                    ? const SizedBox(
+                        height: 42,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '****',
+                            semanticsLabel: 'Remaining budget hidden',
                             style: TextStyle(
-                              color: isOver
-                                  ? const Color(0xFFFFCDD2)
-                                  : Colors.white,
-                              fontSize: KoinTypography.itemTitle,
-                              fontWeight: KoinTypography.headingWeight,
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: KoinTypography.supportingWeight,
+                              letterSpacing: 1.5,
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  ),
+                        ),
+                      )
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedCounter(
+                          value: (totalBudget - totalSpent).abs(),
+                          formatter: currency.formatter.format,
+                          style: KoinTypography.summaryAmountStyle,
+                        ),
+                      ),
+              ),
+              const Gap(12),
+              IconButton(
+                tooltip: hideAmount ? 'Show budget' : 'Hide budget',
+                onPressed: () {
+                  HapticService.selection();
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setHideBalance(!hideAmount);
+                },
+                constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+                iconSize: 26,
+                color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
+                icon: Icon(
+                  hideAmount
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
                 ),
               ),
             ],
           ),
-          const Gap(24),
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
-          const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Spent',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                  const Gap(4),
-                  AnimatedCounter(
-                    value: totalSpent,
-                    formatter: (v) => fmt.format(v),
-                    style: TextStyle(
-                      color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
-                      fontSize: KoinTypography.body,
-                      fontWeight: KoinTypography.titleWeight,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    isOver ? 'Over Budget' : 'Remaining',
-                    style: TextStyle(
-                      color: isOver
-                          ? const Color(0xFFFFCDD2)
-                          : Colors.white.withValues(alpha: 0.6),
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                  const Gap(4),
-                  AnimatedCounter(
-                    value: isOver ? (totalSpent - totalBudget) : remaining,
-                    formatter: (v) => fmt.format(v),
-                    style: TextStyle(
-                      color: isOver ? const Color(0xFFFFCDD2) : Colors.white,
-                      fontSize: KoinTypography.body,
-                      fontWeight: KoinTypography.titleWeight,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const Gap(8),
+          Text(
+            hideAmount
+                ? 'Budget usage hidden'
+                : totalBudget <= 0
+                ? 'No income allocated this month'
+                : '${currency.formatter.format(totalSpent)} spent · '
+                      '$percent% used · '
+                      '${currency.formatter.format((totalBudget - totalSpent).abs())} '
+                      '${isOver ? 'over budget' : 'remaining'}',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.labelWeight,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -649,19 +544,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: index == 0
+              ? null
+              : Border(
+                  top: BorderSide(
+                    color: AppTheme.dividerColor(context)
+                        .withValues(alpha: 0.35),
+                  ),
+                ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,8 +561,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: category.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -681,7 +573,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     size: 20,
                   ),
                 ),
-                const Gap(14),
+                const Gap(16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,9 +611,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
                               fontSize: KoinTypography.small,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
+                              color: AppTheme.textLightColor(context),
                               fontWeight: KoinTypography.supportingWeight,
                             ),
                           ),
@@ -729,9 +619,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             ' / ',
                             style: TextStyle(
                               fontSize: KoinTypography.small,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.3),
+                              color: AppTheme.textLightColor(context)
+                                  .withValues(alpha: 0.3),
                             ),
                           ),
                           AnimatedCounter(
@@ -739,9 +628,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             formatter: (v) => fmt.format(v),
                             style: TextStyle(
                               fontSize: KoinTypography.small,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.8),
+                              color: AppTheme.textLightColor(context)
+                                  .withValues(alpha: 0.8),
                               fontWeight: KoinTypography.labelWeight,
                             ),
                           ),
@@ -757,9 +645,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isOver
-                            ? AppTheme.errorContentColor(
-                                context,
-                              ).withValues(alpha: 0.1)
+                            ? AppTheme.errorContentColor(context)
+                                  .withValues(alpha: 0.1)
                             : AppTheme.surfaceLightColor(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -790,7 +677,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             ),
             const Gap(8),
             Padding(
-              padding: const EdgeInsets.only(left: 58),
+              padding: const EdgeInsets.only(left: 56),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(2),
                 child: TweenAnimationBuilder<double>(
@@ -909,9 +796,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.12),
+                    color: AppTheme.primaryColor(context)
+                        .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -933,9 +819,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.5),
+                  color: AppTheme.textLightColor(context)
+                      .withValues(alpha: 0.5),
                 ),
               ],
             ),

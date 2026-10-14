@@ -70,6 +70,13 @@ leave incompatible compiled native-hook caches and produce an “Invalid kernel
 binary format version” error. After intentionally switching SDKs, run
 `flutter clean` and `flutter pub get` with the selected SDK before building.
 
+After changing Windows PATH, fully restart your editor and coding-agent app as
+well as their terminals; existing processes keep the old PATH. Check both
+`Get-Command flutter,dart` and `flutter --version` before running checks. If a
+process still selects an older installation, use the compatible SDK's absolute
+path for every Flutter command in that session, including `pub get`, `analyze`,
+and `test`. Do not lower the project's SDK requirements to match a stale PATH.
+
 **Check the project**
 
 To update dependencies within the existing version constraints, run

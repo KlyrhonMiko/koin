@@ -976,7 +976,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     if (analysis.categoryBreakdown.isEmpty) return const SizedBox.shrink();
 
     return Column(
-      children: analysis.categoryBreakdown.map((item) {
+      children: analysis.categoryBreakdown.asMap().entries.map((entry) {
+        final item = entry.value;
         final category = categories.firstWhere(
           (c) => c.id == item.categoryId,
           orElse: () => TransactionCategory(
@@ -1006,11 +1007,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.35),
-                ),
-              ),
+              border: entry.key == 0
+                  ? null
+                  : Border(
+                      top: BorderSide(
+                        color: AppTheme.dividerColor(context)
+                            .withValues(alpha: 0.35),
+                      ),
+                    ),
             ),
             child: Row(
               children: [
