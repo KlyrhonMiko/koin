@@ -50,6 +50,9 @@ void main() {
     double bottomSafeArea = 0,
     DebtRepository? debts,
     PlannedPaymentRepository? payments,
+    AccountRepository? accounts,
+    CategorySuggester? suggester,
+    List<TransactionCategory> categories = const [],
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -64,9 +67,14 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          accountRepositoryProvider.overrideWithValue(InMemoryAccountAdapter()),
+          accountRepositoryProvider.overrideWithValue(
+            accounts ?? InMemoryAccountAdapter(),
+          ),
+          categorySuggesterProvider.overrideWithValue(
+            suggester ?? TestStubSuggesterAdapter(),
+          ),
           categoryRepositoryProvider.overrideWithValue(
-            InMemoryCategoryAdapter(),
+            InMemoryCategoryAdapter(initial: categories),
           ),
           debtRepositoryProvider.overrideWithValue(
             debts ?? InMemoryDebtAdapter(),
@@ -673,4 +681,363 @@ void main() {
     expect(saved.items.single.id, 'item');
     expect(tester.takeException(), isNull);
   });
+  for (final debtForm in [false, true]) {
+    testWidgets('changing text clears automatic category in debt=$debtForm', (
+      tester,
+    ) async {
+      final type = debtForm ? TransactionType.income : TransactionType.expense;
+      final category = TransactionCategory(
+        id: 'food',
+        name: 'Food',
+        type: type,
+        iconCodePoint: Icons.restaurant.codePoint,
+        colorHex: '#008080',
+      );
+      final suggester = TestStubSuggesterAdapter(
+        stubbedSuggestion: CategorySuggestion(
+          categoryId: 'food',
+          type: type,
+          confidence: 0.95,
+          canAutoApply: true,
+        ),
+      );
+      await open(
+        tester,
+        debtForm ? const AddEditDebtScreen() : const AddEditCashflowScreen(),
+        suggester: suggester,
+        categories: [category],
+      );
+      final input = find.widgetWithText(
+        TextFormField,
+        debtForm ? 'Notes (Optional)' : 'Name your payment',
+      );
+      await tester.ensureVisible(input);
+      await tester.enterText(input, 'Coffee shop');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      final tile = find.widgetWithText(
+        SelectionTile,
+        debtForm ? 'Linked category' : 'Category',
+      );
+      expect(tester.widget<SelectionTile>(tile).selectedName, 'Food');
+      suggester.stubbedSuggestion = null;
+      await tester.enterText(input, 'Unrecognized new description');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(tester.widget<SelectionTile>(tile).selectedName, isNull);
+      expect(suggester.recordedFeedback, isEmpty);
+    });
+
+    testWidgets('manual category survives changed text in debt=$debtForm', (
+      tester,
+    ) async {
+      final category = TransactionCategory(
+        id: 'food',
+        name: 'Food',
+        type: debtForm ? TransactionType.income : TransactionType.expense,
+        iconCodePoint: Icons.restaurant.codePoint,
+        colorHex: '#008080',
+      );
+      await open(
+        tester,
+        debtForm ? const AddEditDebtScreen() : const AddEditCashflowScreen(),
+        categories: [category],
+      );
+      final tile = find.widgetWithText(
+        SelectionTile,
+        debtForm ? 'Linked category' : 'Category',
+      );
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Food').last);
+      await tester.pumpAndSettle();
+      final input = find.widgetWithText(
+        TextFormField,
+        debtForm ? 'Notes (Optional)' : 'Name your payment',
+      );
+      await tester.ensureVisible(input);
+      await tester.enterText(input, 'A changed description');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(tester.widget<SelectionTile>(tile).selectedName, 'Food');
+    });
+  }
+
+  testWidgets('purchase sheet defers explicit feedback to the parent save', (
+    tester,
+  ) async {
+    final category = TransactionCategory(
+      id: 'food',
+      name: 'Food',
+      type: TransactionType.expense,
+      iconCodePoint: Icons.restaurant.codePoint,
+      colorHex: '#008080',
+    );
+    final suggester = TestStubSuggesterAdapter();
+    DebtItem? result;
+    DebtItem? confirmed;
+    await open(
+      tester,
+      Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () async {
+              result = await showAddPurchaseSheet(
+                context: context,
+                debtType: DebtType.iOwe,
+                primaryColor: Colors.teal,
+                categories: [category],
+                defaultDate: DateTime(2026, 10, 14),
+                suggester: suggester,
+                onCategoryConfirmed: (item) => confirmed = item,
+              );
+            },
+            child: const Text('Purchase'),
+          ),
+        ),
+      ),
+      categories: [category],
+      suggester: suggester,
+    );
+    await tester.tap(find.text('Purchase'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Name your purchase'),
+      'Lunch',
+    );
+    await tester.enterText(find.widgetWithText(TextFormField, '0'), '100');
+    final tile = find.widgetWithText(SelectionTile, 'Linked category');
+    await tester.ensureVisible(tile);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Add to Plan'));
+    await tester.tap(find.text('Add to Plan'));
+    await tester.pumpAndSettle();
+    expect(result?.categoryId, 'food');
+    expect(confirmed?.id, result?.id);
+    expect(suggester.recordedFeedback, isEmpty);
+  });
+
+  testWidgets('changing a purchase name clears an automatic category', (
+    tester,
+  ) async {
+    final category = TransactionCategory(
+      id: 'food',
+      name: 'Food',
+      type: TransactionType.expense,
+      iconCodePoint: Icons.restaurant.codePoint,
+      colorHex: '#008080',
+    );
+    final suggester = TestStubSuggesterAdapter(
+      stubbedSuggestion: const CategorySuggestion(
+        categoryId: 'food',
+        type: TransactionType.expense,
+        confidence: 0.95,
+        canAutoApply: true,
+      ),
+    );
+    await open(
+      tester,
+      Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () => showAddPurchaseSheet(
+              context: context,
+              debtType: DebtType.iOwe,
+              primaryColor: Colors.teal,
+              categories: [category],
+              defaultDate: DateTime(2026, 10, 14),
+              suggester: suggester,
+            ),
+            child: const Text('Purchase'),
+          ),
+        ),
+      ),
+      categories: [category],
+      suggester: suggester,
+    );
+    await tester.tap(find.text('Purchase'));
+    await tester.pumpAndSettle();
+    final input = find.widgetWithText(TextFormField, 'Name your purchase');
+    await tester.enterText(input, 'Lunch');
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+    final tile = find.widgetWithText(SelectionTile, 'Linked category');
+    expect(tester.widget<SelectionTile>(tile).selectedName, 'Food');
+    suggester.stubbedSuggestion = null;
+    await tester.enterText(input, '');
+    await tester.pumpAndSettle();
+    expect(tester.widget<SelectionTile>(tile).selectedName, isNull);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+  });
+  for (final debtForm in [false, true]) {
+    for (final manual in [false, true]) {
+      testWidgets(
+        'saved labels remember only manual choices: debt=$debtForm manual=$manual',
+        (tester) async {
+          final type = debtForm
+              ? TransactionType.income
+              : TransactionType.expense;
+          final category = TransactionCategory(
+            id: 'food',
+            name: 'Food',
+            type: type,
+            iconCodePoint: Icons.restaurant.codePoint,
+            colorHex: '#008080',
+          );
+          final suggester = TestStubSuggesterAdapter(
+            stubbedSuggestion: CategorySuggestion(
+              categoryId: 'food',
+              type: type,
+              confidence: 0.95,
+              canAutoApply: true,
+            ),
+          );
+          final debts = InMemoryDebtAdapter();
+          final payments = InMemoryPlannedPaymentAdapter();
+          final accounts = InMemoryAccountAdapter(
+            initial: [
+              Account(
+                id: 'cash',
+                name: 'Cash',
+                initialBalance: 10000,
+                iconCodePoint: Icons.payments.codePoint,
+                colorHex: '#008080',
+              ),
+            ],
+          );
+          await open(
+            tester,
+            debtForm
+                ? const AddEditDebtScreen()
+                : const AddEditCashflowScreen(),
+            suggester: suggester,
+            categories: [category],
+            debts: debts,
+            payments: payments,
+            accounts: accounts,
+          );
+          await tester.enterText(
+            find.widgetWithText(
+              TextFormField,
+              debtForm ? 'Who is involved?' : 'Name your payment',
+            ),
+            'Coffee shop',
+          );
+          await tester.enterText(
+            find.widgetWithText(TextFormField, '0'),
+            '100',
+          );
+          if (debtForm) {
+            final notes = find.widgetWithText(
+              TextFormField,
+              'Notes (Optional)',
+            );
+            await tester.ensureVisible(notes);
+            await tester.enterText(notes, 'Coffee shop');
+          }
+          await tester.pump(const Duration(milliseconds: 600));
+          await tester.pumpAndSettle();
+          if (manual) {
+            final tile = find.widgetWithText(
+              SelectionTile,
+              debtForm ? 'Linked category' : 'Category',
+            );
+            await tester.ensureVisible(tile);
+            await tester.tap(tile);
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Food').last);
+            await tester.pumpAndSettle();
+          }
+          final account = find.widgetWithText(
+            SelectionTile,
+            debtForm ? 'Linked account' : 'Payment account',
+          );
+          await tester.ensureVisible(account);
+          await tester.tap(account);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Cash'));
+          await tester.pumpAndSettle();
+          final save = find.text(
+            debtForm ? 'Create' : 'Create Planned Payment',
+          );
+          await tester.ensureVisible(save);
+          await tester.tap(save);
+          await tester.pumpAndSettle();
+          expect(
+            debtForm
+                ? (await debts.getDebts()).length
+                : (await payments.getPlannedPayments()).length,
+            1,
+          );
+          expect(suggester.recordedFeedback, hasLength(manual ? 1 : 0));
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+  for (final saveParent in [false, true]) {
+    testWidgets(
+      'BNPL manual purchase feedback waits for parent save=$saveParent',
+      (tester) async {
+        final category = TransactionCategory(
+          id: 'food',
+          name: 'Food',
+          type: TransactionType.expense,
+          iconCodePoint: Icons.restaurant.codePoint,
+          colorHex: '#008080',
+        );
+        final suggester = TestStubSuggesterAdapter();
+        final debts = InMemoryDebtAdapter();
+        await open(
+          tester,
+          const AddEditDebtScreen(),
+          debts: debts,
+          suggester: suggester,
+          categories: [category],
+        );
+        await selectRecordType(tester, 'BNPL');
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'BNPL provider'),
+          'Shopping',
+        );
+        await tester.ensureVisible(find.text('Add Purchase'));
+        await tester.tap(find.text('Add Purchase'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Name your purchase'),
+          'Lunch',
+        );
+        await tester.enterText(find.widgetWithText(TextFormField, '0'), '100');
+        final categoryTile = find
+            .widgetWithText(SelectionTile, 'Linked category')
+            .last;
+        await tester.ensureVisible(categoryTile);
+        await tester.tap(categoryTile);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Food').last);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Add to Plan'));
+        await tester.tap(find.text('Add to Plan'));
+        await tester.pumpAndSettle();
+        expect(suggester.recordedFeedback, isEmpty);
+        if (saveParent) {
+          await tester.tap(find.text('Create'));
+        } else {
+          await tester.tap(find.byType(KoinBackButton));
+        }
+        await tester.pumpAndSettle();
+        expect(await debts.getDebts(), hasLength(saveParent ? 1 : 0));
+        expect(suggester.recordedFeedback, hasLength(saveParent ? 1 : 0));
+        if (saveParent) {
+          expect(suggester.recordedFeedback.single['text'], 'Lunch');
+          expect(suggester.recordedFeedback.single['destinationId'], 'food');
+        }
+      },
+    );
+  }
 }

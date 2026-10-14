@@ -242,7 +242,7 @@ void main() {
       await db.setVersion(39);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 40);
+      expect(await db.getVersion(), 41);
       final records = await helper.getTransactions();
       expect(
         records

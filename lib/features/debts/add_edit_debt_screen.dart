@@ -43,6 +43,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   List<DebtItem> _items = [];
   Timer? _debounceTimer;
   bool _manualCategory = false;
+  int _suggestionRevision = 0;
+  final _manualPurchaseIds = <String>{};
   bool _bnpl = false;
 
   @override
@@ -79,8 +81,21 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     super.dispose();
   }
 
+  void _onNotesChanged() {
+    _suggestionRevision++;
+    _debounceTimer?.cancel();
+    if (!_manualCategory && widget.debt == null) {
+      setState(() => _selectedCategoryId = null);
+    }
+    _debounceTimer = Timer(
+      const Duration(milliseconds: 350),
+      _runAutoCategorization,
+    );
+  }
+
   Future<void> _runAutoCategorization() async {
-    if (!mounted || _manualCategory || widget.debt != null) return;
+    final revision = _suggestionRevision;
+    if (!mounted || _saving || _manualCategory || widget.debt != null) return;
     final notes = _notesController.text.trim();
     if (notes.isEmpty) return;
 
@@ -111,6 +126,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
           mounted &&
           suggestion.canAutoApply &&
           !_manualCategory &&
+          !_saving &&
+          revision == _suggestionRevision &&
           notes == _notesController.text.trim() &&
           targetType ==
               (_selectedType == DebtType.owedToMe
@@ -219,11 +236,11 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       );
     }
 
-    if (_selectedCategoryId != null && notes.isNotEmpty) {
+    if (_manualCategory && _selectedCategoryId != null && notes.isNotEmpty) {
       final targetType = _selectedType == DebtType.owedToMe
           ? TransactionType.income
           : TransactionType.expense;
-      ref
+      await ref
           .read(categorySuggesterProvider)
           .recordFeedback(
             text: notes,
@@ -231,7 +248,26 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
             type: targetType,
             originAccountId: _selectedAccountId ?? '',
             destinationId: _selectedCategoryId!,
-          );
+          )
+          .catchError((Object _) {});
+    }
+
+    for (final item in preparedItems.where(
+      (item) => _manualPurchaseIds.contains(item.id),
+    )) {
+      if (item.categoryId == null) continue;
+      await ref
+          .read(categorySuggesterProvider)
+          .recordFeedback(
+            text: item.name,
+            amount: item.amount,
+            type: _selectedType == DebtType.owedToMe
+                ? TransactionType.income
+                : TransactionType.expense,
+            originAccountId: _selectedAccountId ?? '',
+            destinationId: item.categoryId!,
+          )
+          .catchError((Object _) {});
     }
 
     if (mounted) {
@@ -616,6 +652,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     }
     HapticService.light();
     setState(() {
+      _suggestionRevision++;
+      _debounceTimer?.cancel();
+      _selectedCategoryId = null;
+      _manualCategory = false;
       _bnpl = selected == _DebtFormMode.bnpl;
       _selectedType = selected == _DebtFormMode.owedToMe
           ? DebtType.owedToMe
@@ -740,13 +780,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         context,
       ).textTheme.bodyLarge?.copyWith(color: AppTheme.fieldHintColor(context)),
     ),
-    onChanged: (_) {
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(
-        const Duration(milliseconds: 350),
-        _runAutoCategorization,
-      );
-    },
+    onChanged: (_) => _onNotesChanged(),
   );
 
   Future<void> _openCategoryPicker(
@@ -772,6 +806,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       setState(() {
         _selectedCategoryId = id;
         _manualCategory = true;
+        _suggestionRevision++;
       });
     }
   }
@@ -865,6 +900,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                     monthlyBillingDay: _bnpl ? _startDate.day : null,
                     existingItem: item,
                     suggester: ref.read(categorySuggesterProvider),
+                    onCategoryConfirmed: (item) =>
+                        _manualPurchaseIds.add(item.id),
                   );
                   if (updatedItem != null && mounted) {
                     setState(() {
@@ -904,6 +941,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 defaultDate: _purchaseBillDate,
                 monthlyBillingDay: _bnpl ? _startDate.day : null,
                 suggester: ref.read(categorySuggesterProvider),
+                onCategoryConfirmed: (item) => _manualPurchaseIds.add(item.id),
               );
               if (newItem != null) {
                 setState(() {

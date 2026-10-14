@@ -641,6 +641,18 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             );
       }
       _saved = true;
+      if (_manualCategory && !_transfer) {
+        await ref
+            .read(categorySuggesterProvider)
+            .recordFeedback(
+              text: _note.text,
+              amount: _amount,
+              type: _type,
+              originAccountId: _accountId!,
+              destinationId: _categoryId!,
+            )
+            .catchError((Object _) {});
+      }
       HapticService.success();
       if (mounted) _go(_Step.success);
     } catch (_) {

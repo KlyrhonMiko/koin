@@ -1,3 +1,4 @@
+import 'package:koin/core/database_version.dart';
 import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 
@@ -64,10 +65,20 @@ class DatabaseSnapshot {
         throw const FormatException('Damaged backup');
       }
       final version = await db.getVersion();
-      if (version < 1 || version > 40) {
+      if (version < 1 || version > databaseSchemaVersion) {
         throw const FormatException('Unsupported backup version');
       }
       final requiredColumns = {
+        if (version >= 41)
+          'categorization_rules': [
+            'id',
+            'search_string',
+            'type',
+            'confidence',
+            'canAutoApply',
+          ],
+        if (version >= 41)
+          'categorization_feedback': ['id', 'rawText', 'historySnapshot'],
         if (version >= 39) 'debts': ['id', 'isPurchaseAccount'],
         if (version >= 37) 'savings_logs': ['id', 'transactionId'],
         if (version >= 37)

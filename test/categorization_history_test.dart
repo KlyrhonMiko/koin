@@ -54,6 +54,137 @@ void main() {
     );
   }
 
+  Future<CategorySuggestion?> formSuggestion(
+    String text, {
+    double amount = 1000,
+    TransactionType type = TransactionType.expense,
+    String accountId = 'default_account',
+  }) => HybridMlSuggesterAdapter(engine: engine).suggest(
+    SuggestionContext(
+      text: text,
+      amount: amount,
+      type: type,
+      date: DateTime(2026, 10, 3, 9, 50),
+      currentAccountId: accountId,
+    ),
+  );
+
+  test('exact majority survives one newer outlier', () async {
+    for (var i = 0; i < 9; i++) {
+      await ledger.recordTransaction(
+        transaction('food_$i', date: DateTime(2026, 1, i + 1)),
+      );
+    }
+    await ledger.recordTransaction(
+      transaction(
+        'outlier',
+        categoryId: 'cat_transport',
+        date: DateTime(2026, 2, 1),
+      ),
+    );
+    final result = await formSuggestion('Coffee shop');
+    expect(result?.categoryId, 'cat_food');
+    expect(result?.canAutoApply, isTrue);
+    expect(result?.confidence, closeTo(10 / 12, 0.0001));
+  });
+
+  test('new conflicting ledger labels expire remembered feedback', () async {
+    await engine.processFeedback(
+      rawText: 'Coffee shop',
+      amount: -25,
+      originId: 'default_account',
+      destinationId: 'cat_transport',
+    );
+    for (var i = 0; i < 10; i++) {
+      await ledger.recordTransaction(transaction('food_$i'));
+    }
+    final result = await formSuggestion('Coffee shop');
+    expect(result?.categoryId, 'cat_food');
+    expect(result?.canAutoApply, isTrue);
+    expect(await db.query('categorization_feedback'), isEmpty);
+    expect(await occurrences('coffee'), 10);
+  });
+
+  test(
+    'editing a matching ledger label expires feedback but agreeing additions do not',
+    () async {
+      await ledger.recordTransaction(transaction('original'));
+      await engine.processFeedback(
+        rawText: 'Coffee shop',
+        amount: -25,
+        originId: 'default_account',
+        destinationId: 'cat_transport',
+      );
+      await ledger.recordTransaction(
+        transaction('agree', categoryId: 'cat_transport'),
+      );
+      expect(
+        (await formSuggestion('Coffee shop'))?.categoryId,
+        'cat_transport',
+      );
+      expect(await db.query('categorization_feedback'), hasLength(1));
+      await ledger.updateTransaction(
+        transaction('original', categoryId: 'cat_entertainment'),
+      );
+      await formSuggestion('Coffee shop');
+      expect(await db.query('categorization_feedback'), isEmpty);
+    },
+  );
+
+  test(
+    'legacy feedback cannot silently become an automatic override',
+    () async {
+      await db.insert('categorization_feedback', {
+        'id': '-1|coffee shop',
+        'rawText': 'Coffee shop',
+        'amount': -25,
+        'originId': 'default_account',
+        'destinationId': 'cat_transport',
+      });
+      final sparse = await formSuggestion('Coffee shop');
+      expect(sparse?.canAutoApply, isFalse);
+      for (var i = 0; i < 9; i++) {
+        await ledger.recordTransaction(transaction('food_$i'));
+      }
+      expect((await formSuggestion('Coffee shop'))?.categoryId, 'cat_food');
+    },
+  );
+
+  test(
+    'income, expenses, and transfers with the same title remain separate',
+    () async {
+      await ledger.recordTransaction(transaction('expense'));
+      await ledger.recordTransaction(
+        transaction(
+          'income',
+          type: TransactionType.income,
+          categoryId: 'cat_salary',
+        ),
+      );
+      await ledger.recordTransaction(
+        transaction(
+          'transfer',
+          type: TransactionType.transfer,
+          toAccountId: 'bank_account',
+        ),
+      );
+      expect((await formSuggestion('Coffee shop'))?.categoryId, 'cat_food');
+      expect(
+        (await formSuggestion(
+          'Coffee shop',
+          type: TransactionType.income,
+        ))?.categoryId,
+        'cat_salary',
+      );
+      expect(
+        (await formSuggestion(
+          'Coffee shop',
+          type: TransactionType.transfer,
+        ))?.destinationAccountId,
+        'bank_account',
+      );
+    },
+  );
   setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -115,21 +246,6 @@ void main() {
       type: TransactionType.income,
       date: DateTime(2026, 10, 3, 8, 30),
     ).copyWith(amount: 1000, accountId: 'bank_account'),
-  );
-
-  Future<CategorySuggestion?> formSuggestion(
-    String text, {
-    double amount = 1000,
-    TransactionType type = TransactionType.expense,
-    String accountId = 'default_account',
-  }) => HybridMlSuggesterAdapter(engine: engine).suggest(
-    SuggestionContext(
-      text: text,
-      amount: amount,
-      type: type,
-      date: DateTime(2026, 10, 3, 9, 50),
-      currentAccountId: accountId,
-    ),
   );
 
   test(
@@ -457,7 +573,7 @@ void main() {
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
       await db.update('accounts', {'initialBalance': 1000000});
-      expect(await db.getVersion(), 40);
+      expect(await db.getVersion(), 41);
       expect((await suggest('Restored bakery'))?.destinationId, 'cat_food');
 
       await ledger.recordTransaction(
@@ -481,10 +597,46 @@ void main() {
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
       await db.update('accounts', {'initialBalance': 1000000});
-      expect(await db.getVersion(), 40);
+      expect(await db.getVersion(), 41);
       expect(await db.query('categorization_feedback'), isEmpty);
       expect((await suggest('Repair bakery'))?.destinationId, 'cat_food');
       expect((await ledger.getTransactions()).single.id, 'repair');
+    },
+  );
+  test(
+    'version 40 backup upgrades cached evidence and preserves history',
+    () async {
+      await ledger.recordTransaction(transaction('preserved'));
+      await db.execute('DROP TABLE categorization_rules');
+      await db.execute(
+        'CREATE TABLE categorization_rules (id TEXT PRIMARY KEY, search_string TEXT NOT NULL, originId TEXT NOT NULL, destinationId TEXT NOT NULL)',
+      );
+      await db.execute('DROP TABLE categorization_feedback');
+      await db.execute(
+        'CREATE TABLE categorization_feedback (id TEXT PRIMARY KEY, rawText TEXT NOT NULL, amount REAL NOT NULL, originId TEXT NOT NULL, destinationId TEXT NOT NULL)',
+      );
+      await db.insert('categorization_feedback', {
+        'id': '-1|coffee shop',
+        'rawText': 'Coffee shop',
+        'amount': -25,
+        'originId': 'default_account',
+        'destinationId': 'cat_transport',
+      });
+      await db.setVersion(40);
+      final backup = File('${directory.path}/v40_backup.db');
+      await File(await helper.getDatabaseFilePath()).copy(backup.path);
+      expect(await helper.restoreDatabase(backup.path), isTrue);
+      db = await helper.database;
+      expect(await db.getVersion(), 41);
+      expect((await ledger.getTransactions()).single.id, 'preserved');
+      expect((await formSuggestion('Coffee shop'))?.canAutoApply, isFalse);
+      final indexes = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'index'",
+      );
+      expect(
+        indexes.map((row) => row['name']),
+        containsAll(['categorization_exact_note', 'categorization_token_sign']),
+      );
     },
   );
 }

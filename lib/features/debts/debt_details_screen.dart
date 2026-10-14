@@ -61,6 +61,22 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     }
   }
 
+  Future<void> _rememberPurchase(Debt debt, DebtItem item) async {
+    if (!mounted || item.categoryId == null) return;
+    await ref
+        .read(categorySuggesterProvider)
+        .recordFeedback(
+          text: item.name,
+          amount: item.amount,
+          type: debt.type == DebtType.owedToMe
+              ? TransactionType.income
+              : TransactionType.expense,
+          originAccountId: debt.accountId ?? '',
+          destinationId: item.categoryId!,
+        )
+        .catchError((Object _) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final debtsAsync = ref.watch(debtsProvider);
@@ -537,6 +553,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   onTap: () async {
                     HapticService.light();
                     final categories = ref.read(categoriesProvider).value ?? [];
+                    var categoryConfirmed = false;
                     final updatedItem = await showAddPurchaseSheet(
                       context: context,
                       debtType: debt.type,
@@ -550,12 +567,16 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                           : null,
                       existingItem: item,
                       suggester: ref.read(categorySuggesterProvider),
+                      onCategoryConfirmed: (_) => categoryConfirmed = true,
                     );
 
                     if (updatedItem != null) {
                       await ref
                           .read(debtsProvider.notifier)
                           .saveDebtItem(debt, updatedItem);
+                      if (categoryConfirmed) {
+                        await _rememberPurchase(debt, updatedItem);
+                      }
 
                       if (context.mounted) {
                         KoinSnackBar.success(context, 'Purchase Updated');
@@ -579,6 +600,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             onTap: () async {
               HapticService.light();
               final categories = ref.read(categoriesProvider).value ?? [];
+              var categoryConfirmed = false;
               final newItem = await showAddPurchaseSheet(
                 context: context,
                 debtType: debt.type,
@@ -591,6 +613,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     ? debt.startDate.day
                     : null,
                 suggester: ref.read(categorySuggesterProvider),
+                onCategoryConfirmed: (_) => categoryConfirmed = true,
               );
 
               if (newItem != null) {
@@ -598,6 +621,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 await ref
                     .read(debtsProvider.notifier)
                     .saveDebtItem(debt, newDebtItem);
+                if (categoryConfirmed) {
+                  await _rememberPurchase(debt, newDebtItem);
+                }
 
                 if (context.mounted) {
                   KoinSnackBar.success(context, 'Purchase Added');

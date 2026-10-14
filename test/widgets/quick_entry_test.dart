@@ -1030,6 +1030,7 @@ void main() {
       final entries = await providers.read(transactionProvider.future);
       expect(entries.single.categoryId, 'food');
       expect(entries.single.accountId, 'cash');
+      expect(suggester.recordedFeedback, isEmpty);
     },
   );
 
@@ -1106,6 +1107,9 @@ void main() {
       (await providers.read(transactionProvider.future)).single.categoryId,
       'other',
     );
+    expect(suggester.recordedFeedback, hasLength(1));
+    expect(suggester.recordedFeedback.single['text'], 'Burger');
+    expect(suggester.recordedFeedback.single['destinationId'], 'other');
   });
 
   testWidgets('saving rechecks debit balance after amount entry', (

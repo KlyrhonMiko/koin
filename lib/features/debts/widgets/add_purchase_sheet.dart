@@ -16,6 +16,7 @@ Future<DebtItem?> showAddPurchaseSheet({
   int? monthlyBillingDay,
   DebtItem? existingItem,
   CategorySuggester? suggester,
+  void Function(DebtItem item)? onCategoryConfirmed,
 }) {
   final currency = ProviderScope.containerOf(
     context,
@@ -59,10 +60,12 @@ Future<DebtItem?> showAddPurchaseSheet({
   );
   int autoCatKey = 0;
   bool manualCategory = existingItem != null;
+  bool categoryConfirmed = false;
 
   void runAutoCategorize(void Function(void Function()) setSheetState) {
     coordinator.cancel();
     if (manualCategory) return;
+    if (selectedCategory != null) setSheetState(() => selectedCategory = null);
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
@@ -389,6 +392,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                                             );
                                         if (id != null && ctx.mounted) {
                                           manualCategory = true;
+                                          categoryConfirmed = true;
                                           coordinator.cancel();
                                           setSheetState(
                                             () => selectedCategory = categories
@@ -450,20 +454,6 @@ Future<DebtItem?> showAddPurchaseSheet({
                                 HapticService.light();
                                 coordinator.cancel();
 
-                                if (selectedCategory != null) {
-                                  final targetType =
-                                      debtType == DebtType.owedToMe
-                                      ? TransactionType.income
-                                      : TransactionType.expense;
-                                  effectiveSuggester.recordFeedback(
-                                    text: name.trim(),
-                                    amount: amt,
-                                    type: targetType,
-                                    originAccountId: '',
-                                    destinationId: selectedCategory!.id,
-                                  );
-                                }
-
                                 final newItem = DebtItem(
                                   id: existingItem?.id ?? const Uuid().v4(),
                                   debtId: existingItem?.debtId ?? '',
@@ -473,6 +463,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                                   firstPaymentDate: firstDate,
                                   categoryId: selectedCategory?.id,
                                 );
+                                if (categoryConfirmed) {
+                                  onCategoryConfirmed?.call(newItem);
+                                }
                                 Navigator.pop(ctx, newItem);
                               }
                             },

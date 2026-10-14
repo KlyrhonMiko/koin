@@ -279,6 +279,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   Future<void> _saveTransactionImpl() async {
+    final categorySuggester = ref.read(categorySuggesterProvider);
     final isTransfer = _selectedType == TransactionType.transfer;
 
     if (_amountController.text.isEmpty ||
@@ -483,6 +484,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       }
     }
     _transactionSaved = true;
+    if (_manualCategory && !isTransfer) {
+      await categorySuggester
+          .recordFeedback(
+            text: newTransaction.note,
+            amount: newTransaction.amount,
+            type: newTransaction.type,
+            originAccountId: newTransaction.accountId,
+            destinationId: newTransaction.categoryId,
+          )
+          .catchError((Object _) {});
+    }
     HapticService.success();
     if (mounted) Navigator.pop(context);
   }
@@ -511,7 +523,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedType = result.type;
         if (result.category != null) {
           _selectedCategoryId = result.category!.id;
-          _manualCategory = true;
+          _manualCategory = result.isCategoryExplicit;
+          _categorySuggested = !result.isCategoryExplicit;
         }
         if (result.account != null) {
           _selectedAccountId = result.account!.id;
@@ -707,12 +720,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         key: const ValueKey('transaction-fields-section'),
                         // Reserve the same viewport for every mode so the
                         // amount stays in place when transfer fields are added.
+                        // Give the amount 24 more pixels by reclaiming the
+                        // unused space between the category card and keypad.
                         constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 260).clamp(
+                          minHeight: (constraints.maxHeight - 284).clamp(
                             0.0,
                             constraints.maxHeight * 0.55,
                           ),
-                          maxHeight: (constraints.maxHeight - 260).clamp(
+                          maxHeight: (constraints.maxHeight - 284).clamp(
                             0.0,
                             constraints.maxHeight * 0.55,
                           ),
@@ -1442,9 +1457,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         color: AppTheme.textColor(context),
                       ),
                       decoration: InputDecoration(
-                        hintText: _isTransferFeePercentage
-                            ? 'Percentage Fee (e.g. 0.5)'
-                            : 'Fixed Fee (e.g. 10.00)',
+                        hintText: 'Fee',
                         hintStyle: TextStyle(
                           color: AppTheme.fieldHintColor(
                             context,
@@ -1464,22 +1477,37 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ),
                     ),
                   ),
+                  const Gap(8),
+                  // Keep unit changes inside the fee's tap region so the
+                  // keypad continues editing this field.
+                  TextFieldTapRegion(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          child: VerticalDivider(
+                            width: 1,
+                            color: AppTheme.fieldBorderColor(context),
+                          ),
+                        ),
+                        const Gap(8),
+                        _buildFeeUnitOption(
+                          context,
+                          percentage: false,
+                          color: typeColor,
+                        ),
+                        const Gap(2),
+                        _buildFeeUnitOption(
+                          context,
+                          percentage: true,
+                          color: typeColor,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-          const Gap(8),
-          // Fee controls belong to the fee input's tap region so switching
-          // units keeps the keypad editing the fee instead of the amount.
-          TextFieldTapRegion(
-            child: KoinChoiceControl(
-              segments: const [
-                KoinSegmentItem(label: 'Fixed'),
-                KoinSegmentItem(label: 'Percentage (%)'),
-              ],
-              selectedIndex: _isTransferFeePercentage ? 1 : 0,
-              onChanged: (index) =>
-                  setState(() => _isTransferFeePercentage = index == 1),
             ),
           ),
           const Gap(12),
@@ -1653,6 +1681,45 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFeeUnitOption(
+    BuildContext context, {
+    required bool percentage,
+    required Color color,
+  }) {
+    final selected = _isTransferFeePercentage == percentage;
+    return Semantics(
+      label: percentage ? 'Percentage fee' : 'Fixed fee',
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: TextButton(
+        key: ValueKey(
+          percentage ? 'percentage-fee-option' : 'fixed-fee-option',
+        ),
+        onPressed: () {
+          if (!selected) {
+            HapticService.selection();
+            setState(() => _isTransferFeePercentage = percentage);
+          }
+          _selectNumericInput(fee: true);
+        },
+        style: TextButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          foregroundColor: selected ? color : AppTheme.textLightColor(context),
+          backgroundColor: selected
+              ? color.withValues(alpha: 0.12)
+              : Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(
+            fontSize: KoinTypography.small,
+            fontWeight: KoinTypography.labelWeight,
+          ),
+        ),
+        child: Text(percentage ? '%' : 'Fixed'),
+      ),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
@@ -32,7 +33,7 @@ class CategorizationEngine {
   // Phase 2: Sanitization & Tokenization
 
   List<String> _tokenize(String rawText) {
-    // Strip all non-alphabetical characters and convert to lowercase
+    // Preserve Unicode letters, marks, digits, and word boundaries.
     final sanitized = _sanitize(rawText);
 
     // Split into isolated words
@@ -41,7 +42,7 @@ class CategorizationEngine {
         .where((w) => w.isNotEmpty)
         .toList();
 
-    // Filter out common stop words and short tokens (< 3 characters)
+    // Filter common stop words; keep short merchant names such as SM.
     final stopWords = {
       'the',
       'and',
@@ -127,111 +128,30 @@ class CategorizationEngine {
     TransactionType? requestedType,
   ) async {
     if (sanitizedString.isEmpty) return null;
-
     final db = await _dbHelper.database;
-    final results = await db.query(
+    final rows = await db.query(
       'categorization_rules',
-      where: 'search_string = ?',
-      whereArgs: [sanitizedString],
-    );
-
-    for (var rule in results) {
-      final originId = rule['originId'] as String;
-      final destinationId = rule['destinationId'] as String;
-
-      final isTransferResult = await db.query(
-        'accounts',
-        where: 'id = ?',
-        whereArgs: [destinationId],
-      );
-      final isTransfer = isTransferResult.isNotEmpty;
-      if (requestedType != null &&
-          (isTransfer != (requestedType == TransactionType.transfer))) {
-        continue;
-      }
-      final evidence = await _exactEvidence(
-        db,
+      where: 'search_string = ? AND (type = ? OR type = ?)',
+      whereArgs: [
         sanitizedString,
-        sign,
-        destinationId,
-      );
-
-      if (isTransfer) {
-        return CategorizationResult(
-          originId: originId,
-          destinationId: destinationId,
-          type: TransactionType.transfer,
-          confidence: evidence.score,
-          canAutoApply: false,
-          isExactMatch: true,
-        );
-      }
-
-      // Check category type against the requested sign
-      final catResult = await db.query(
-        'categories',
-        where: 'id = ?',
-        whereArgs: [destinationId],
-        limit: 1,
-      );
-
-      if (catResult.isNotEmpty) {
-        final catType = catResult.first['type'] as String?;
-        final expectedType = sign >= 0
-            ? TransactionType.income.name
-            : TransactionType.expense.name;
-
-        if (catType == expectedType) {
-          return CategorizationResult(
-            originId: originId,
-            destinationId: destinationId,
-            type: sign >= 0 ? TransactionType.income : TransactionType.expense,
-            confidence: evidence.score,
-            canAutoApply: evidence.automatic,
-            isExactMatch: true,
-          );
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<({double score, bool automatic})> _exactEvidence(
-    Database db,
-    String note,
-    int sign,
-    String destinationId,
-  ) async {
-    final feedback = await db.query('categorization_feedback');
-    if (feedback.any(
-      (row) =>
-          _sanitize(row['rawText'] as String) == note &&
-          ((row['amount'] as num) >= 0 ? 1 : -1) == sign &&
-          row['destinationId'] == destinationId,
-    )) {
-      return (score: 0.95, automatic: true);
-    }
-    final samples = await db.query(
-      'transactions',
-      columns: ['title', 'type', 'categoryId', 'toAccountId'],
+        requestedType?.name ??
+            (sign >= 0
+                ? TransactionType.income.name
+                : TransactionType.expense.name),
+        requestedType?.name ?? TransactionType.transfer.name,
+      ],
+      orderBy: 'confidence DESC, id ASC',
+      limit: 1,
     );
-    var total = 0;
-    var supporting = 0;
-    for (final sample in samples) {
-      final type = sample['type'];
-      if ((type == TransactionType.income.name ? 1 : -1) != sign ||
-          _sanitize(sample['title'] as String? ?? '') != note) {
-        continue;
-      }
-      total++;
-      final destination = type == TransactionType.transfer.name
-          ? sample['toAccountId']
-          : sample['categoryId'];
-      if (destination == destinationId) supporting++;
-    }
-    return (
-      score: (supporting + 1) / (total + 2),
-      automatic: supporting >= 3 && supporting / total >= 0.9,
+    if (rows.isEmpty) return null;
+    final rule = rows.first;
+    return CategorizationResult(
+      originId: rule['originId'] as String,
+      destinationId: rule['destinationId'] as String,
+      type: TransactionType.values.byName(rule['type'] as String),
+      confidence: (rule['confidence'] as num).toDouble(),
+      canAutoApply: rule['canAutoApply'] == 1,
+      isExactMatch: true,
     );
   }
 
@@ -492,27 +412,54 @@ SELECT destinationId, COUNT(*) AS count FROM (
     return null; // Leave blank for manual review
   }
 
-  // Phase 4: The Feedback and Memory Loop
+  // Snapshot matching history when remembering a manual choice. Subsequent
+  // conflicting additions/edits expire it; unrelated history does not.
+  Map<String, String> _historySnapshot(
+    List<Map<String, Object?>> transactions,
+    String note,
+    TransactionType type,
+  ) => {
+    for (final tx in transactions)
+      if (tx['type'] == type.name &&
+          _sanitize(tx['title'] as String? ?? '') == note)
+        tx['id'] as String:
+            (type == TransactionType.transfer
+                    ? tx['toAccountId']
+                    : tx['categoryId'])
+                as String? ??
+            '',
+  };
 
-  /// Call this when a user categorizes an empty transaction or corrects an AI prediction.
   Future<void> processFeedback({
     required String rawText,
     required double amount,
     required String originId,
     required String destinationId,
   }) async {
-    final db = await _dbHelper.database;
     final sanitized = _sanitize(rawText);
     if (sanitized.isEmpty) return;
-    // Keep explicit feedback from debt/planned-payment forms separately from
-    // ledger history so a history rebuild doesn't forget those choices.
+    final db = await _dbHelper.database;
     await db.transaction((txn) async {
+      final accounts = await txn.query(
+        'accounts',
+        where: 'id = ?',
+        whereArgs: [destinationId],
+      );
+      final type = accounts.isNotEmpty
+          ? TransactionType.transfer
+          : amount >= 0
+          ? TransactionType.income
+          : TransactionType.expense;
+      final history = await txn.query('transactions');
       await txn.insert('categorization_feedback', {
         'id': '${amount >= 0 ? 1 : -1}|$sanitized',
         'rawText': rawText,
         'amount': amount,
         'originId': originId,
         'destinationId': destinationId,
+        'historySnapshot': jsonEncode(
+          _historySnapshot(history, sanitized, type),
+        ),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       await txn.insert('app_settings', {
         'key': 'categorization_history_dirty',
@@ -522,120 +469,10 @@ SELECT destinationId, COUNT(*) AS count FROM (
     await bootstrapFromHistory();
   }
 
-  Future<void> _processFeedbackInternal({
-    required DatabaseExecutor db,
-    required String rawText,
-    required double amount,
-    required String originId,
-    required String destinationId,
-  }) async {
-    final sanitizedString = _sanitize(rawText);
-    final sign = amount >= 0 ? 1 : -1;
-    final tokens = _tokenize(rawText);
-
-    // 1. Lock in the Rule
-    if (sanitizedString.isNotEmpty) {
-      final ruleExists = await db.query(
-        'categorization_rules',
-        where: 'search_string = ?',
-        whereArgs: [sanitizedString],
-      );
-
-      bool updated = false;
-      for (var existing in ruleExists) {
-        final existingDest = existing['destinationId'] as String;
-        final isExistingTransfer = (await db.query(
-          'accounts',
-          where: 'id = ?',
-          whereArgs: [existingDest],
-        )).isNotEmpty;
-        final isNewTransfer = (await db.query(
-          'accounts',
-          where: 'id = ?',
-          whereArgs: [destinationId],
-        )).isNotEmpty;
-
-        if (isExistingTransfer && isNewTransfer) {
-          await db.update(
-            'categorization_rules',
-            {'originId': originId, 'destinationId': destinationId},
-            where: 'id = ?',
-            whereArgs: [existing['id']],
-          );
-          updated = true;
-          break;
-        } else if (!isExistingTransfer && !isNewTransfer) {
-          final existingCat = await db.query(
-            'categories',
-            where: 'id = ?',
-            whereArgs: [existingDest],
-            limit: 1,
-          );
-          final existingType = existingCat.isNotEmpty
-              ? existingCat.first['type'] as String?
-              : null;
-          final expectedType = sign >= 0
-              ? TransactionType.income.name
-              : TransactionType.expense.name;
-
-          if (existingType == expectedType) {
-            await db.update(
-              'categorization_rules',
-              {'originId': originId, 'destinationId': destinationId},
-              where: 'id = ?',
-              whereArgs: [existing['id']],
-            );
-            updated = true;
-            break;
-          }
-        }
-      }
-
-      if (!updated) {
-        await db.insert('categorization_rules', {
-          'id': _uuid.v4(),
-          'search_string': sanitizedString,
-          'originId': originId,
-          'destinationId': destinationId,
-        });
-      }
-    }
-
-    // 2. Adjust the Weights
-    for (var token in tokens) {
-      final existing = await db.query(
-        'ml_frequency_dictionary',
-        where: 'token = ? AND originId = ? AND destinationId = ? AND sign = ?',
-        whereArgs: [token, originId, destinationId, sign],
-      );
-
-      if (existing.isEmpty) {
-        await db.insert('ml_frequency_dictionary', {
-          'id': _uuid.v4(),
-          'token': token,
-          'originId': originId,
-          'destinationId': destinationId,
-          'sign': sign,
-          'occurrences': 1,
-        });
-      } else {
-        final currentCount = (existing.first['occurrences'] as num).toInt();
-        await db.update(
-          'ml_frequency_dictionary',
-          {'occurrences': currentCount + 1},
-          where: 'id = ?',
-          whereArgs: [existing.first['id']],
-        );
-      }
-    }
-  }
-
-  /// Synchronizes the model with all saved transactions when history changes.
-  /// Version 3 also refreshes normalization and distinct words per example.
+  /// Aggregate in memory and batch writes instead of looking up every token.
+  /// Exact suggestions read cached evidence rather than rescanning history.
   Future<void> bootstrapFromHistory() async {
     final db = await _dbHelper.database;
-    // Read the marker and rebuild in one transaction so concurrent suggestions
-    // cannot train the same history twice or clear a newer dirty marker.
     await db.transaction((txn) async {
       final settings = await txn.query(
         'app_settings',
@@ -646,90 +483,225 @@ SELECT destinationId, COUNT(*) AS count FROM (
         ],
       );
       final values = {for (final row in settings) row['key']: row['value']};
-      if (values['categorization_model_version'] == '3' &&
+      if (values['categorization_model_version'] == '4' &&
           values['categorization_history_dirty'] != 'true') {
         return;
       }
 
-      // Rebuild rather than append: edits/deletions must remove old learning,
-      // and repeated synchronization must not inflate token counts.
-      await txn.delete('categorization_rules');
-      await txn.delete('ml_frequency_dictionary');
-      final accounts = await txn.query('accounts', columns: ['id']);
-      final accountIds = accounts.map((row) => row['id']).toSet();
-      final categories = await txn.query('categories', columns: ['id', 'type']);
+      final accountIds = (await txn.query(
+        'accounts',
+        columns: ['id'],
+      )).map((row) => row['id']).toSet();
       final categoryTypes = {
-        for (final row in categories) row['id']: row['type'],
+        for (final row in await txn.query(
+          'categories',
+          columns: ['id', 'type'],
+        ))
+          row['id']: row['type'],
       };
-      bool validDestination(String destinationId, double amount) =>
-          accountIds.contains(destinationId) ||
-          categoryTypes[destinationId] ==
-              (amount >= 0
-                  ? TransactionType.income.name
-                  : TransactionType.expense.name);
+      TransactionType? destinationType(String id, double amount) {
+        if (accountIds.contains(id)) return TransactionType.transfer;
+        final type = amount >= 0
+            ? TransactionType.income
+            : TransactionType.expense;
+        return categoryTypes[id] == type.name ? type : null;
+      }
 
       final transactions = await txn.query(
         'transactions',
         orderBy: 'date ASC, id ASC',
       );
-      for (var tx in transactions) {
-        final note = tx['title'] as String? ?? '';
-        if (note.trim().isEmpty) continue;
+      final historyByNoteType = <String, Map<String, String>>{};
+      for (final tx in transactions) {
+        final key = jsonEncode([
+          _sanitize(tx['title'] as String? ?? ''),
+          tx['type'],
+        ]);
+        final snapshot = historyByNoteType.putIfAbsent(key, () => {});
+        snapshot[tx['id'] as String] =
+            (tx['type'] == TransactionType.transfer.name
+                    ? tx['toAccountId']
+                    : tx['categoryId'])
+                as String? ??
+            '';
+      }
+      final groups = <String, _ExactGroup>{};
+      final frequencies = <String, Map<String, Object?>>{};
 
-        final amount = (tx['amount'] as num).toDouble();
-        final type = tx['type'] as String;
-        final accountId = tx['accountId'] as String?;
-        if (accountId == null || !accountIds.contains(accountId)) continue;
-
-        // Transfers use the outgoing direction, matching live feedback.
-        final signedAmount = type == TransactionType.income.name
-            ? (amount.abs() == 0 ? 1.0 : amount.abs())
-            : -(amount.abs() == 0 ? 1.0 : amount.abs());
-        final isTransfer = type == TransactionType.transfer.name;
-
-        final destinationId = isTransfer
-            ? (tx['toAccountId'] as String?)
-            : (tx['categoryId'] as String?);
-
-        if (destinationId != null &&
-            validDestination(destinationId, signedAmount)) {
-          await _processFeedbackInternal(
-            db: txn,
-            rawText: note,
-            amount: signedAmount,
-            originId: accountId,
-            destinationId: destinationId,
+      void train(
+        String text,
+        double amount,
+        String originId,
+        String destinationId,
+        TransactionType type, {
+        bool remembered = false,
+      }) {
+        final note = _sanitize(text);
+        if (note.isEmpty) return;
+        final groupKey = jsonEncode([note, type.name]);
+        final group = groups.putIfAbsent(
+          groupKey,
+          () => _ExactGroup(note, type),
+        );
+        group.add(originId, destinationId, remembered: remembered);
+        final sign = amount >= 0 ? 1 : -1;
+        for (final token in _tokenize(text)) {
+          final key = jsonEncode([token, originId, destinationId, sign]);
+          final row = frequencies.putIfAbsent(
+            key,
+            () => {
+              'id': _uuid.v4(),
+              'token': token,
+              'originId': originId,
+              'destinationId': destinationId,
+              'sign': sign,
+              'occurrences': 0,
+            },
           );
+          row['occurrences'] = (row['occurrences'] as int) + 1;
         }
       }
 
-      // Explicit corrections take precedence over conflicting ledger history.
-      final feedback = await txn.query(
-        'categorization_feedback',
-        orderBy: 'id',
-      );
-      for (final sample in feedback) {
-        final destinationId = sample['destinationId'] as String;
-        final amount = (sample['amount'] as num).toDouble();
-        if (!validDestination(destinationId, amount)) continue;
-        await _processFeedbackInternal(
-          db: txn,
-          rawText: sample['rawText'] as String,
-          amount: amount,
-          originId: sample['originId'] as String,
-          destinationId: destinationId,
+      for (final tx in transactions) {
+        final originId = tx['accountId'] as String?;
+        if (!accountIds.contains(originId)) continue;
+        final type = TransactionType.values.byName(tx['type'] as String);
+        final destinationId =
+            (type == TransactionType.transfer
+                    ? tx['toAccountId']
+                    : tx['categoryId'])
+                as String?;
+        if (destinationId == null) continue;
+        final amount = (tx['amount'] as num).toDouble().abs();
+        final signed = type == TransactionType.income
+            ? (amount == 0 ? 1.0 : amount)
+            : -(amount == 0 ? 1.0 : amount);
+        if (destinationType(destinationId, signed) != type) continue;
+        train(
+          tx['title'] as String? ?? '',
+          signed,
+          originId!,
+          destinationId,
+          type,
         );
       }
 
-      // Only commit the clean marker after the complete history was trained.
-      await txn.insert('app_settings', {
+      final expiredFeedback = <String>[];
+      for (final sample in await txn.query(
+        'categorization_feedback',
+        orderBy: 'id',
+      )) {
+        final destinationId = sample['destinationId'] as String;
+        final amount = (sample['amount'] as num).toDouble();
+        final type = destinationType(destinationId, amount);
+        if (type == null) {
+          expiredFeedback.add(sample['id'] as String);
+          continue;
+        }
+        final snapshotJson = sample['historySnapshot'] as String?;
+        final current =
+            historyByNoteType[jsonEncode([
+              _sanitize(sample['rawText'] as String),
+              type.name,
+            ])] ??
+            <String, String>{};
+        var remembered = false;
+        if (snapshotJson != null) {
+          final snapshot = jsonDecode(snapshotJson) as Map<String, dynamic>;
+          final expired =
+              snapshot.keys.any((id) => !current.containsKey(id)) ||
+              current.entries.any(
+                (entry) =>
+                    entry.value != destinationId &&
+                    snapshot[entry.key] != entry.value,
+              );
+          if (expired) {
+            expiredFeedback.add(sample['id'] as String);
+            continue;
+          }
+          remembered = true;
+        }
+        // Legacy feedback has no provenance: retain it as ordinary evidence.
+        train(
+          sample['rawText'] as String,
+          amount,
+          sample['originId'] as String,
+          destinationId,
+          type,
+          remembered: remembered,
+        );
+      }
+
+      final batch = txn.batch();
+      batch.delete('categorization_rules');
+      batch.delete('ml_frequency_dictionary');
+      for (final id in expiredFeedback) {
+        batch.delete(
+          'categorization_feedback',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
+      for (final group in groups.values) {
+        batch.insert('categorization_rules', group.toRow(_uuid.v4()));
+      }
+      for (final row in frequencies.values) {
+        batch.insert('ml_frequency_dictionary', row);
+      }
+      batch.insert('app_settings', {
         'key': 'categorization_model_version',
-        'value': '3',
+        'value': '4',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
-      await txn.insert('app_settings', {
+      batch.insert('app_settings', {
         'key': 'categorization_history_dirty',
         'value': 'false',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await batch.commit(noResult: true);
     });
+  }
+}
+
+class _ExactGroup {
+  final String note;
+  final TransactionType type;
+  final Map<String, int> counts = {};
+  final Map<String, String> origins = {};
+  String? rememberedDestination;
+  final lastSeen = <String, int>{};
+  int _sequence = 0;
+
+  _ExactGroup(this.note, this.type);
+
+  void add(String origin, String destination, {required bool remembered}) {
+    counts[destination] = (counts[destination] ?? 0) + 1;
+    origins[destination] = origin;
+    lastSeen[destination] = _sequence++;
+    if (remembered) rememberedDestination = destination;
+  }
+
+  Map<String, Object?> toRow(String id) {
+    final highest = counts.values.reduce(max);
+    // Recency breaks ties only; one recent outlier cannot hide a majority.
+    final destination =
+        rememberedDestination ??
+        counts.keys
+            .where((key) => counts[key] == highest)
+            .reduce((a, b) => lastSeen[a]! > lastSeen[b]! ? a : b);
+    final total = counts.values.fold<int>(0, (sum, count) => sum + count);
+    final supporting = counts[destination]!;
+    final remembered = rememberedDestination != null;
+    return {
+      'id': id,
+      'search_string': note,
+      'type': type.name,
+      'originId': origins[destination]!,
+      'destinationId': destination,
+      'confidence': remembered ? 0.95 : (supporting + 1) / (total + 2),
+      'canAutoApply':
+          type != TransactionType.transfer &&
+              (remembered || (supporting >= 3 && supporting / total >= 0.9))
+          ? 1
+          : 0,
+    };
   }
 }

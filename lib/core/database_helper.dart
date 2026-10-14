@@ -1,3 +1,4 @@
+import 'package:koin/core/database_version.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:koin/core/models/models.dart';
@@ -26,13 +27,16 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 40,
+      version: databaseSchemaVersion,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion >= 34 && oldVersion < 41) {
+      await _upgradeCategorizationEvidence(db);
+    }
     if (oldVersion < 39) {
       final columns = await db.rawQuery('PRAGMA table_info(debts)');
       if (columns.isNotEmpty &&
@@ -309,6 +313,9 @@ CREATE TABLE debt_items (
         'value': 'true',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    if (oldVersion < 34) {
+      await _upgradeCategorizationEvidence(db);
+    }
     if (oldVersion < 35) {
       try {
         await db.execute(
@@ -432,6 +439,40 @@ END
 ''');
   }
 
+  Future<void> _upgradeCategorizationEvidence(Database db) async {
+    for (final entry in {
+      'categorization_rules': {
+        'type': "TEXT NOT NULL DEFAULT 'expense'",
+        'confidence': 'REAL NOT NULL DEFAULT 0',
+        'canAutoApply': 'INTEGER NOT NULL DEFAULT 0',
+      },
+      'categorization_feedback': {'historySnapshot': 'TEXT'},
+    }.entries) {
+      final columns = await db.rawQuery('PRAGMA table_info(${entry.key})');
+      for (final column in entry.value.entries) {
+        if (!columns.any((row) => row['name'] == column.key)) {
+          await db.execute(
+            'ALTER TABLE ${entry.key} ADD COLUMN ${column.key} ${column.value}',
+          );
+        }
+      }
+    }
+    await _createCategorizationIndexes(db);
+    await db.insert('app_settings', {
+      'key': 'categorization_history_dirty',
+      'value': 'true',
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> _createCategorizationIndexes(Database db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS categorization_exact_note ON categorization_rules(search_string, type)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS categorization_token_sign ON ml_frequency_dictionary(token, sign)',
+    );
+  }
+
   Future<void> _createCategorizationFeedbackTable(Database db) async {
     await db.execute('''
 CREATE TABLE IF NOT EXISTS categorization_feedback (
@@ -439,7 +480,8 @@ CREATE TABLE IF NOT EXISTS categorization_feedback (
   rawText TEXT NOT NULL,
   amount REAL NOT NULL,
   originId TEXT NOT NULL,
-  destinationId TEXT NOT NULL
+  destinationId TEXT NOT NULL,
+  historySnapshot TEXT
 )
 ''');
   }
@@ -471,7 +513,10 @@ CREATE TABLE IF NOT EXISTS categorization_rules (
   id $idType,
   search_string $textType,
   originId $textType,
-  destinationId $textType
+  destinationId $textType,
+  type TEXT NOT NULL,
+  confidence REAL NOT NULL,
+  canAutoApply INTEGER NOT NULL
 )
 ''');
 
@@ -683,6 +728,7 @@ CREATE TABLE transactions (
     await _createCategorizationTables(db);
 
     await _createCategorizationFeedbackTable(db);
+    await _createCategorizationIndexes(db);
     await _createCategorizationHistoryTriggers(db);
 
     // Insert default data

@@ -80,6 +80,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   void _onTitleChanged() {
     _suggestionRevision++;
     if (widget.payment != null) return;
+    if (!_manualCategory) setState(() => _selectedCategoryId = null);
     _debounceTimer?.cancel();
     _debounceTimer = Timer(
       const Duration(milliseconds: 400),
@@ -88,57 +89,47 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   Future<void> _runAutoCategorization() async {
-    if (!mounted || _manualCategory || widget.payment != null) return;
+    if (!mounted || _saving || _manualCategory || widget.payment != null) {
+      return;
+    }
     if (_titleController.text.trim().isEmpty) return;
     final revision = _suggestionRevision;
-
-    double amount =
+    final text = _titleController.text;
+    final amount =
         ref
             .read(settingsProvider)
             .currency
             .tryParseInput(_amountController.text) ??
-        1.0;
-    if (amount == 0.0) amount = 1.0;
-
+        0;
     try {
-      final suggester = ref.read(categorySuggesterProvider);
-      final suggestion = await suggester.suggest(
-        SuggestionContext(
-          text: _titleController.text,
-          amount: amount,
-          type: _selectedType,
-          date: _startDate,
-          currentAccountId: _selectedAccountId ?? '',
-        ),
-      );
-
-      if (suggestion != null &&
-          mounted &&
-          suggestion.canAutoApply &&
-          !_manualCategory &&
-          revision == _suggestionRevision) {
-        if (!suggestion.isTransfer) {
-          final categories = ref.read(categoriesProvider).value ?? [];
-          final matchingCat = categories
-              .where(
-                (c) => c.id == suggestion.categoryId && c.type == _selectedType,
-              )
-              .firstOrNull;
-
-          if (matchingCat != null) {
-            final originId = suggestion.originAccountId ?? '';
-            if (_selectedCategoryId != matchingCat.id ||
-                (_selectedAccountId != originId && originId.isNotEmpty)) {
-              HapticService.light();
-              setState(() {
-                _selectedCategoryId = matchingCat.id;
-                if (originId.isNotEmpty) {
-                  _selectedAccountId = originId;
-                }
-              });
-            }
-          }
-        }
+      final suggestion = await ref
+          .read(categorySuggesterProvider)
+          .suggest(
+            SuggestionContext(
+              text: text,
+              amount: amount,
+              type: _selectedType,
+              date: _startDate,
+              currentAccountId: _selectedAccountId ?? '',
+            ),
+          );
+      if (!mounted ||
+          _saving ||
+          _manualCategory ||
+          revision != _suggestionRevision ||
+          suggestion == null ||
+          !suggestion.canAutoApply ||
+          suggestion.type != _selectedType) {
+        return;
+      }
+      final category = (ref.read(categoriesProvider).value ?? [])
+          .where(
+            (c) => c.id == suggestion.categoryId && c.type == _selectedType,
+          )
+          .firstOrNull;
+      if (category != null && _selectedCategoryId != category.id) {
+        HapticService.light();
+        setState(() => _selectedCategoryId = category.id);
       }
     } catch (_) {}
   }
@@ -288,16 +279,18 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           .updatePlannedPayment(newPayment);
     }
 
-    ref
-        .read(categorySuggesterProvider)
-        .recordFeedback(
-          text: _titleController.text,
-          amount: amount,
-          type: _selectedType,
-          originAccountId: _selectedAccountId!,
-          destinationId: _selectedCategoryId!,
-        );
-
+    if (_manualCategory) {
+      await ref
+          .read(categorySuggesterProvider)
+          .recordFeedback(
+            text: _titleController.text,
+            amount: amount,
+            type: _selectedType,
+            originAccountId: _selectedAccountId!,
+            destinationId: _selectedCategoryId!,
+          )
+          .catchError((Object _) {});
+    }
     if (mounted) {
       Navigator.pop(context);
     }
@@ -415,6 +408,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           : 'Choose payment account',
     );
     if (id != null && mounted) {
+      _suggestionRevision++;
       setState(() => _selectedAccountId = id);
     }
   }

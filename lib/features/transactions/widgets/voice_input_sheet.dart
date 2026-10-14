@@ -39,6 +39,8 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
   int _autoCatKey = 0;
+  int _parseRevision = 0;
+  bool _categorySuggested = false;
 
   @override
   void initState() {
@@ -74,12 +76,15 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   }
 
   Future<void> _parseCurrentWords() async {
+    final revision = ++_parseRevision;
     final state = ref.read(voiceInputProvider);
     final categories = ref.read(categoriesProvider).value ?? [];
     final transactions = ref.read(transactionProvider).value ?? [];
     final accounts = ref.read(accountProvider).value ?? [];
 
     if (state.lastWords.isNotEmpty) {
+      final words = state.lastWords;
+      _categorySuggested = false;
       var parsed = VoiceCommandParser.parse(
         state.lastWords,
         categories,
@@ -107,6 +112,11 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
           ),
         );
 
+        if (!mounted ||
+            revision != _parseRevision ||
+            words != ref.read(voiceInputProvider).lastWords) {
+          return;
+        }
         if (suggestion != null &&
             suggestion.canAutoApply &&
             suggestion.type == parsed.type &&
@@ -139,6 +149,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               );
               if (newCat != cat) {
                 cat = newCat;
+                _categorySuggested = true;
                 _autoCatKey++;
               }
             } catch (_) {}
@@ -156,7 +167,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
         // Suggester enhancement failed, silently fallback to static parsing
       }
 
-      if (mounted) {
+      if (mounted && revision == _parseRevision) {
         setState(() {
           _parsedData = parsed;
         });
@@ -187,6 +198,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   // Selection Helpers
   // ═══════════════════════════════════════════════════════
   Future<void> _editCategory() async {
+    _parseRevision++;
     final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
     FocusManager.instance.primaryFocus?.unfocus();
     if (hadFocus) {
@@ -206,12 +218,17 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
     if (id != null && mounted) {
       final category = categories.firstWhere((c) => c.id == id);
       setState(() {
-        _parsedData = _parsedData!.copyWith(category: category);
+        _categorySuggested = false;
+        _parsedData = _parsedData!.copyWith(
+          category: category,
+          isCategoryExplicit: true,
+        );
       });
     }
   }
 
   Future<void> _editAccount() async {
+    _parseRevision++;
     final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
     FocusManager.instance.primaryFocus?.unfocus();
     if (hadFocus) {
@@ -237,6 +254,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   }
 
   Future<void> _editToAccount() async {
+    _parseRevision++;
     final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
     FocusManager.instance.primaryFocus?.unfocus();
     if (hadFocus) {
@@ -806,10 +824,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                   activeColor: typeColor,
                   onChanged: (val) {
                     if (val != data.type) {
+                      _parseRevision++;
+                      _categorySuggested = false;
                       setState(() {
                         _parsedData = _parsedData!.copyWith(
                           type: val,
                           category: null,
+                          isCategoryExplicit: false,
+                          toAccount: null,
                         );
                       });
                     }
@@ -1055,7 +1077,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                     ),
                     onChanged: (val) {
                       setState(() {
-                        _parsedData = _parsedData!.copyWith(note: val);
+                        _parseRevision++;
+                        _parsedData = _parsedData!.copyWith(
+                          note: val,
+                          category: _categorySuggested
+                              ? null
+                              : _parsedData!.category,
+                        );
+                        _categorySuggested = false;
                       });
                     },
                   ),

@@ -1,6 +1,8 @@
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/categorization/intent_classifier.dart';
 
+const _unsetVoiceField = Object();
+
 class ParsedTransactionData {
   final double? amount;
   final TransactionType type;
@@ -8,6 +10,7 @@ class ParsedTransactionData {
   final Account? account;
   final Account? toAccount;
   final String note;
+  final bool isCategoryExplicit;
 
   ParsedTransactionData({
     this.amount,
@@ -16,23 +19,32 @@ class ParsedTransactionData {
     this.account,
     this.toAccount,
     required this.note,
+    this.isCategoryExplicit = false,
   });
 
   ParsedTransactionData copyWith({
     double? amount,
     TransactionType? type,
-    TransactionCategory? category,
-    Account? account,
-    Account? toAccount,
+    Object? category = _unsetVoiceField,
+    Object? account = _unsetVoiceField,
+    Object? toAccount = _unsetVoiceField,
     String? note,
+    bool? isCategoryExplicit,
   }) {
     return ParsedTransactionData(
       amount: amount ?? this.amount,
       type: type ?? this.type,
-      category: category ?? this.category,
-      account: account ?? this.account,
-      toAccount: toAccount ?? this.toAccount,
+      category: identical(category, _unsetVoiceField)
+          ? this.category
+          : category as TransactionCategory?,
+      account: identical(account, _unsetVoiceField)
+          ? this.account
+          : account as Account?,
+      toAccount: identical(toAccount, _unsetVoiceField)
+          ? this.toAccount
+          : toAccount as Account?,
       note: note ?? this.note,
+      isCategoryExplicit: isCategoryExplicit ?? this.isCategoryExplicit,
     );
   }
 }
@@ -65,55 +77,31 @@ class VoiceCommandParser {
       }
     }
 
-    // Parse Type
-    TransactionType type = TransactionType.expense; // default
-    if (text.contains('got') ||
-        text.contains('received') ||
-        text.contains('earned') ||
-        text.contains('paid') ||
-        text.contains('income')) {
-      type = TransactionType.income;
-    } else if (text.contains('transferred') ||
-        text.contains('transfer') ||
-        text.contains('sent to')) {
+    // Transfer commands take precedence. "Paid for" is spending; only
+    // receiving phrases such as "got paid" establish income.
+    TransactionType type = TransactionType.expense;
+    if (RegExp(r'\b(?:transfer(?:red)?|sent to)\b').hasMatch(text)) {
       type = TransactionType.transfer;
+    } else if (RegExp(
+      r'\b(?:received|earned|income)\b|\b(?:got\s+paid|paid\s+me)\b|\bgot\s+(?:php|usd|\$|₱)?\s*\d',
+    ).hasMatch(text)) {
+      type = TransactionType.income;
     }
 
-    // Parse Category
-    TransactionCategory? matchedCategory;
-
-    // 1. Direct match (e.g. text contains the actual category name)
-    for (var cat in categories) {
-      if (text.contains(cat.name.toLowerCase())) {
-        matchedCategory = cat;
-        break;
-      }
-    }
-
-    // 2. Statistical NLP match & Auto-Learning
-    if (matchedCategory == null) {
-      String? foundCategoryKey = IntentClassifier.classifyIntent(
-        text,
-        categories,
-        pastTransactions,
-      );
-
-      if (foundCategoryKey != null) {
-        // Try to find a category that matches this conceptual intent key by name
-        for (var cat in categories) {
-          if (cat.name.toLowerCase().contains(foundCategoryKey.toLowerCase())) {
-            matchedCategory = cat;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check for "expense/income" explicit keyword that might override
-    if (matchedCategory != null && type == TransactionType.expense) {
-      type = matchedCategory.type; // Fallback to category default type
-    }
-
+    // Only an unambiguous, explicit category name may bypass learned evidence.
+    // Inferred intent is handled by CategorySuggester with its usual safeguards.
+    final namedCategories = categories.where((cat) {
+      if (cat.type != type || cat.name.trim().isEmpty) return false;
+      return RegExp(
+        r'(^|[^\p{L}\p{M}\p{N}])' +
+            RegExp.escape(cat.name.toLowerCase()) +
+            r'($|[^\p{L}\p{M}\p{N}])',
+        unicode: true,
+      ).hasMatch(text);
+    }).toList();
+    final matchedCategory = namedCategories.length == 1
+        ? namedCategories.single
+        : null;
     // Parse Account(s)
     Account? matchedAccount;
     Account? secondMatchedAccount;
@@ -192,6 +180,7 @@ class VoiceCommandParser {
       amount: amount,
       type: type,
       category: matchedCategory,
+      isCategoryExplicit: matchedCategory != null,
       account: matchedAccount,
       toAccount: secondMatchedAccount,
       note: refinedNote,

@@ -252,7 +252,7 @@ void main() {
     expect(tester.widget<TextField>(fee).controller!.text, '0.5');
     expect(find.text('7').first, findsOneWidget);
 
-    await tester.tap(find.text('Percentage (%)'));
+    await tester.tap(find.byKey(const ValueKey('percentage-fee-option')));
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(fee).controller!.text, '0.5');
     expect(tester.testTextInput.isVisible, isFalse);
@@ -318,12 +318,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('amount-stripe')), findsNothing);
-    final summary = find.text('Deducted ${symbol}60.00 · Receives ${symbol}50.00');
+    final summary = find.text(
+      'Deducted ${symbol}60.00 · Receives ${symbol}50.00',
+    );
     expect(tester.getTopLeft(summary).dy, greaterThan(amountRect.bottom));
     expect(tester.getBottomLeft(summary).dy, lessThan(feeRect.top));
     expect(tester.getRect(find.text('50')), amountRect);
     expect(tester.getRect(find.byType(TextField)), feeRect);
-    await tester.tap(find.text('Percentage (%)'));
+    await tester.tap(find.byKey(const ValueKey('percentage-fee-option')));
     await tester.pumpAndSettle();
     expect(
       find.text('Deducted ${symbol}55.00 · Receives ${symbol}50.00'),
