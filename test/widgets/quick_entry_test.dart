@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -456,8 +457,8 @@ void main() {
       expect(find.text('Confirm transaction'), findsNothing);
       expect(await providers.read(transactionProvider.future), isEmpty);
       final save = tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Save transaction'),
+          .widget<KoinPrimaryButton>(
+            find.widgetWithText(KoinPrimaryButton, 'Save transaction'),
           )
           .onPressed!;
       save();
@@ -766,9 +767,8 @@ void main() {
         tester.getTopLeft(find.text('${symbol}50.00').first).dy,
         lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
       );
-      final hidden = (await providers.read(
-        savingsGoalsProvider.future,
-      )).firstWhere((g) => g.id == 'hidden-destination');
+      final hidden = (await providers.read(savingsGoalsProvider.future))
+          .firstWhere((g) => g.id == 'hidden-destination');
       await providers
           .read(savingsGoalsProvider.notifier)
           .updateGoal(hidden.copyWith(includeInDashboardBalance: true));
@@ -781,9 +781,9 @@ void main() {
         50,
       );
       expect(
-        (await providers.read(
-          savingsGoalsProvider.future,
-        )).firstWhere((g) => g.id == 'hidden-source').currentAmount,
+        (await providers.read(savingsGoalsProvider.future))
+            .firstWhere((g) => g.id == 'hidden-source')
+            .currentAmount,
         300,
       );
     },
@@ -817,7 +817,19 @@ void main() {
       'transfer review fits compact windows and records percentage fees, dark=$dark',
       (tester) async {
         await launch(tester, dark: dark, height: 780);
+        if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile('../../.dart_tool/quick_entry_menu_$dark.png'),
+          );
+        }
         await tap(tester, 'Add transaction');
+        if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile('../../.dart_tool/quick_entry_types_$dark.png'),
+          );
+        }
         await tap(tester, 'Transfer');
         await pickAccount(tester, 'Select account', 'Cash');
         await pickAccount(tester, 'Select receiving account', 'Bank');

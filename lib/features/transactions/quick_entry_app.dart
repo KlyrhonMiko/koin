@@ -84,7 +84,7 @@ class QuickEntryApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       theme: _theme(settings.themeColor, false),
       darkTheme: _theme(settings.themeColor, true),
-      home: const QuickEntryFlow(),
+      home: KoinFormTheme(builder: (_) => const QuickEntryFlow()),
     );
   }
 
@@ -230,11 +230,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       final requiredHeight = (_savingsSheetHeight! + header.size.height).ceil();
       if (requiredHeight > height) height = requiredHeight;
     }
-    final color =
-        (_step == _Step.amount
-                ? AppTheme.backgroundColor(context)
-                : AppTheme.surfaceColor(context))
-            .toARGB32();
+    final color = AppTheme.backgroundColor(context).toARGB32();
     if (height == _reportedHeight && color == _reportedColor) return;
     _reportedHeight = height;
     _reportedColor = color;
@@ -715,9 +711,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             top: Radius.circular(KoinShape.sheet),
           ),
           child: Scaffold(
-            backgroundColor: _step == _Step.amount
-                ? AppTheme.backgroundColor(context)
-                : AppTheme.surfaceColor(context),
+            backgroundColor: AppTheme.backgroundColor(context),
             body: SafeArea(
               top: false,
               child: Column(
@@ -765,7 +759,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                             padding: EdgeInsets.only(top: 12, bottom: 4),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: KoinSpacing.screenInset,
+                            ),
                             child: Row(
                               children: [
                                 if (_step != _Step.action &&
@@ -775,17 +771,28 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                     tooltip: 'Back',
                                     icon: const Icon(Icons.arrow_back_rounded),
                                   )
-                                else
+                                else if (_step == _Step.action) ...[
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(
+                                      'assets/logo.png',
+                                      width: 32,
+                                      height: 32,
+                                      excludeFromSemantics: true,
+                                    ),
+                                  ),
                                   const SizedBox(width: 12),
+                                ],
                                 Expanded(
                                   child: Text(
                                     title,
-                                    textAlign: _step == _Step.amount
-                                        ? TextAlign.center
-                                        : TextAlign.start,
-                                    style: const TextStyle(
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      color: AppTheme.textColor(context),
                                       fontSize: KoinTypography.screenTitle,
-                                      fontWeight: KoinTypography.titleWeight,
+                                      fontWeight: KoinTypography.headingWeight,
+                                      letterSpacing:
+                                          KoinTypography.headingTracking,
                                     ),
                                   ),
                                 ),
@@ -832,24 +839,34 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                               child: Padding(
                                 padding: _step == _Step.amount
                                     ? EdgeInsets.zero
-                                    : const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                                    : EdgeInsets.fromLTRB(
+                                        KoinSpacing.screenInset,
+                                        _step == _Step.income ? 8 : 12,
+                                        KoinSpacing.screenInset,
+                                        _step == _Step.income ? 8 : 16,
+                                      ),
                                 child: switch (_step) {
                                   _Step.action => Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
+                                      KoinPrimaryButton(
+                                        label: 'Add transaction',
+                                        icon: Icons.add_rounded,
+                                        onPressed: () => _go(_Step.type),
+                                      ),
+                                      const SizedBox(height: 12),
                                       _option(
                                         'Claim income',
                                         'Collect a saved allowance or recurring income',
                                         Icons.payments_outlined,
                                         () => _go(_Step.income),
                                       ),
-                                      const Divider(height: 24),
-                                      _option(
-                                        'Add transaction',
-                                        'Record income, expense, or transfer',
-                                        Icons.add_rounded,
-                                        () => _go(_Step.type),
+                                      Divider(
+                                        height: 1,
+                                        indent: 64,
+                                        color: AppTheme.dividerColor(context),
                                       ),
-                                      const Divider(height: 24),
                                       _option(
                                         'Open app',
                                         'Continue in Koin',
@@ -858,7 +875,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                       ),
                                     ],
                                   ),
-                                  _Step.type => Column(
+                                  _Step.type => KoinGroupedCard(
                                     children: [
                                       for (final type in TransactionType.values)
                                         _option(
@@ -874,6 +891,20 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                               Icons.swap_horiz_rounded,
                                           },
                                           () => _selectType(type),
+                                          color: switch (type) {
+                                            TransactionType.income =>
+                                              AppTheme.incomeContentColor(
+                                                context,
+                                              ),
+                                            TransactionType.expense =>
+                                              AppTheme.expenseContentColor(
+                                                context,
+                                              ),
+                                            TransactionType.transfer =>
+                                              AppTheme.transferContentColor(
+                                                context,
+                                              ),
+                                          },
                                         ),
                                     ],
                                   ),
@@ -936,18 +967,16 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   20,
                                   20,
                                 ),
-                                child: FilledButton(
-                                  onPressed: _saving || _saved ? null : _save,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Text(
-                                      _saving
-                                          ? 'Saving…'
-                                          : (_transfer
-                                                ? 'Save transfer'
-                                                : 'Save transaction'),
-                                    ),
-                                  ),
+                                child: KoinPrimaryButton(
+                                  label: _saving
+                                      ? 'Saving…'
+                                      : (_transfer
+                                            ? 'Save transfer'
+                                            : 'Save transaction'),
+                                  icon: Icons.check_rounded,
+                                  isLoading: _saving,
+                                  enabled: !_saved,
+                                  onPressed: _save,
                                 ),
                               ),
                           ],
@@ -1432,52 +1461,19 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     String title,
     String subtitle,
     IconData icon,
-    VoidCallback tap,
-  ) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    minVerticalPadding: 4,
-    horizontalTitleGap: 16,
-    leading: ExcludeSemantics(
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(
-            AppTheme.primaryColor(context).withValues(alpha: 0.10),
-            AppTheme.surfaceColor(context),
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: AppTheme.textColor(context), size: 22),
-      ),
+    VoidCallback tap, {
+    Color? color,
+  }) => KoinSettingTile(
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: _step == _Step.type ? 12 : 0,
+      vertical: 4,
     ),
-    title: Text(
-      title,
-      style: const TextStyle(
-        fontSize: KoinTypography.itemTitle,
-        fontWeight: KoinTypography.labelWeight,
-        letterSpacing: KoinTypography.itemTracking,
-      ),
-    ),
-    subtitle: subtitle.isEmpty
-        ? null
-        : Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: KoinTypography.caption,
-                color: AppTheme.textLightColor(context),
-                height: 1.4,
-              ),
-            ),
-          ),
-    trailing: ExcludeSemantics(
-      child: Icon(
-        Icons.chevron_right_rounded,
-        color: AppTheme.textLightColor(context),
-        size: 20,
-      ),
+    title: title,
+    subtitle: subtitle.isEmpty ? null : subtitle,
+    icon: icon,
+    iconColor: color ?? AppTheme.primaryColor(context),
+    iconBackgroundColor: (color ?? AppTheme.primaryColor(context)).withValues(
+      alpha: 0.1,
     ),
     onTap: tap,
   );
