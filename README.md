@@ -115,4 +115,7 @@ Koin uses **Flutter and Dart**, **Riverpod** for state management, and **SQLite*
 
 See the [domain glossary](GLOSSARY.md) for the concepts used throughout the codebase.
 
+The [offline AI handoff](docs/offline-ai-handoff.md) records the AICore investigation,
+local model tests, and proposed next steps for continuing on another device.
+
 </details>
