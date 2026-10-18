@@ -94,9 +94,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                 Text(
                                   dateKey.toUpperCase(),
                                   style: TextStyle(
-                                    color: AppTheme.textLightColor(
-                                      context,
-                                    ).withValues(alpha: 0.8),
+                                    color: AppTheme.textLightColor(context)
+                                        .withValues(alpha: 0.8),
                                     fontSize: KoinTypography.overline,
                                     fontWeight: KoinTypography.titleWeight,
                                     letterSpacing: 0.5,
@@ -158,8 +157,7 @@ class TransactionsListScreen extends ConsumerWidget {
                                   backgroundColor: AppTheme.errorColor(context),
                                   icon: Icons.delete_forever_rounded,
                                   confirmTitle: 'Delete Transaction?',
-                                  confirmDescription:
-                                      'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
+                                  confirmDescription: 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
                                   onDelete: () async {
                                     await ref
                                         .read(transactionProvider.notifier)
@@ -194,9 +192,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                     padding: const EdgeInsets.only(left: 54),
                                     child: Container(
                                       height: 1,
-                                      color: AppTheme.dividerColor(
-                                        context,
-                                      ).withValues(alpha: 0.4),
+                                      color: AppTheme.dividerColor(context)
+                                          .withValues(alpha: 0.4),
                                     ),
                                   ),
                               ],
@@ -274,39 +271,17 @@ class TransactionsListScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(left: 16),
                   child: Icon(
                     Icons.search_rounded,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.5),
+                    color: AppTheme.textLightColor(context)
+                        .withValues(alpha: 0.5),
                     size: 20,
                   ),
                 ),
 
                 // Search field
                 Expanded(
-                  child: TextField(
-                    onChanged: (value) => filterNotifier.setQuery(value),
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.compact,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search transactions...',
-                      hintStyle: TextStyle(
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.4),
-                        fontSize: KoinTypography.compact,
-                        fontWeight: KoinTypography.supportingWeight,
-                      ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
-                    ),
+                  child: KoinSearchField(
+                    hintText: 'Search transactions...',
+                    onChanged: filterNotifier.setQuery,
                   ),
                 ),
 
@@ -342,9 +317,8 @@ class TransactionsListScreen extends ConsumerWidget {
                           Icons.tune_rounded,
                           color: hasFilters
                               ? primary
-                              : AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.5),
+                              : AppTheme.textLightColor(context)
+                                    .withValues(alpha: 0.5),
                           size: 20,
                         ),
                         if (filterCount > 0)
@@ -402,9 +376,8 @@ class TransactionsListScreen extends ConsumerWidget {
                             child: Text(
                               filter.summaryText,
                               style: TextStyle(
-                                color: AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.7),
+                                color: AppTheme.textLightColor(context)
+                                    .withValues(alpha: 0.7),
                                 fontSize: KoinTypography.overline,
                                 fontWeight: KoinTypography.labelWeight,
                               ),

@@ -240,18 +240,7 @@ class AccountsTab extends ConsumerWidget {
     );
 
     if (showEntranceAnimations) {
-      return button
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-          )
-          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-          .scale(
-            begin: const Offset(0.95, 0.95),
-            duration: 250.ms,
-            curve: Curves.easeOutCubic,
-          );
+      return button.koinEntrance(context);
     }
     return button;
   }

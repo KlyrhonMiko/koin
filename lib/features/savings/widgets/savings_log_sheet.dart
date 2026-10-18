@@ -95,8 +95,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     if (_saving) return;
     if (widget.log?.transactionId != null) {
       setState(
-        () => _saveError =
-            'Automatic release: read only. Edit the linked transaction to change it.',
+        () => _saveError = 'Automatic release: read only. Edit the linked transaction to change it.',
       );
       return;
     }
@@ -184,21 +183,16 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         parsedAmount > (widget.log?.amount ?? 0) &&
         (parsedAmount * 100).round() > (editableBalance * 100).round();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(KoinShape.sheet),
+    return KoinSheetSurface(
+      color: AppTheme.surfaceColor(context),
+      shadows: [
+        AppTheme.boxShadow(
+          context,
+          color: Colors.black.withValues(alpha: 0.15),
+          blurRadius: 24,
+          offset: const Offset(0, -4),
         ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -234,45 +228,17 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                   ),
                 ),
                 const Gap(4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '${settings.currency.symbol} ',
-                      style: TextStyle(
-                        fontSize: KoinTypography.screenTitle,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: AppTheme.contentColor(context, primaryColor),
-                      ),
-                    ),
-                    Text(
-                      _currentExpression.isEmpty ? '0' : _currentExpression,
-                      style: KoinTypography.inputAmountStyle.copyWith(
-                        color: isExceeded
-                            ? AppTheme.expenseContentColor(context)
-                            : (hasAmount
-                                  ? AppTheme.contentColor(context, primaryColor)
-                                  : AppTheme.textLightColor(context)),
-                      ),
-                    ),
-                  ],
+                KoinCalculatorAmount(
+                  symbol: settings.currency.symbol,
+                  expression: _currentExpression,
+                  color: AppTheme.contentColor(context, primaryColor),
+                  amountColor: isExceeded
+                      ? AppTheme.expenseContentColor(context)
+                      : (hasAmount
+                            ? AppTheme.contentColor(context, primaryColor)
+                            : AppTheme.textLightColor(context)),
+                  result: _evaluatedResult,
                 ),
-                if (_currentExpression.contains(RegExp(r'[+\-*/]')))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '= ${settings.currency.symbol}$_evaluatedResult',
-                      style: TextStyle(
-                        fontSize: KoinTypography.compact,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: AppTheme.textLightColor(
-                          context,
-                        ).withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ),
                 if (_isRelease || accountId != null || _saveError != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -293,9 +259,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
                           fontWeight: KoinTypography.labelWeight,
                           color: isExceeded || _saveError != null
                               ? AppTheme.expenseColor(context)
-                              : AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.5),
+                              : AppTheme.textLightColor(context)
+                                    .withValues(alpha: 0.5),
                         ),
                       ),
                     ),

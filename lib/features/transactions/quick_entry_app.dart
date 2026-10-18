@@ -1103,27 +1103,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${currency.symbol} ',
-                  style: TextStyle(
-                    fontSize: KoinTypography.screenTitle,
-                    color: color,
-                    fontWeight: KoinTypography.labelWeight,
-                  ),
-                ),
-                Text(
-                  _expression.isEmpty ? '0' : _expression,
-                  style: KoinTypography.inputAmountStyle.copyWith(color: color),
-                ),
-              ],
-            ),
+          child: KoinCalculatorAmount(
+            symbol: currency.symbol,
+            expression: _expression,
+            color: color,
+            amountColor: color,
           ),
         ),
         if (_expression.contains(RegExp(r'[+\-*/]')))

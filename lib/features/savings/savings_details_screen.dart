@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
+
 import 'widgets/savings_routine_card.dart';
 import 'widgets/savings_projection_view.dart' show contributionPhrase;
 
@@ -248,27 +249,14 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   }
 
   Widget _buildLinkedAccount(BuildContext context, Account account) {
-    final fallback = Icon(
-      IconUtils.getIcon(account.iconCodePoint),
-      size: 14,
-      color: account.color,
-    );
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: account.logoAsset != null
-                ? Image.asset(
-                    account.logoAsset!,
-                    fit: BoxFit.cover,
-                    excludeFromSemantics: true,
-                    errorBuilder: (_, _, _) => fallback,
-                  )
-                : fallback,
-          ),
+        KoinAccountAvatar(
+          iconCodePoint: account.iconCodePoint,
+          color: account.color,
+          logoAsset: account.logoAsset,
+          size: 16,
+          iconSize: 14,
         ),
         const Gap(6),
         Expanded(
@@ -301,8 +289,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     final confirmed = await ConfirmationSheet.show(
       context: context,
       title: 'Delete Goal?',
-      description:
-          'Are you sure you want to delete this savings goal? This action cannot be undone.',
+      description: 'Are you sure you want to delete this savings goal? This action cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.expenseColor(context),
       icon: Icons.delete_forever_rounded,
@@ -560,20 +547,10 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         width: constraints.maxWidth / columns,
                         child: Padding(
                           padding: const EdgeInsets.only(right: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(rate.$1, style: secondary),
-                              const Gap(6),
-                              Text(
-                                format.format(rate.$2),
-                                style: TextStyle(
-                                  color: AppTheme.textColor(context),
-                                  fontSize: KoinTypography.itemAmount,
-                                  fontWeight: KoinTypography.titleWeight,
-                                ),
-                              ),
-                            ],
+                          child: KoinMetric(
+                            label: rate.$1,
+                            value: format.format(rate.$2),
+                            labelStyle: secondary,
                           ),
                         ),
                       ),
@@ -603,33 +580,13 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     required Color color,
     required VoidCallback? onPressed,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton.filledTonal(
-          tooltip: tooltip,
-          onPressed: onPressed,
-          style: IconButton.styleFrom(
-            fixedSize: const Size(54, 54),
-            backgroundColor: AppTheme.surfaceColor(context),
-            foregroundColor: color,
-            disabledForegroundColor: AppTheme.textLightColor(
-              context,
-            ).withValues(alpha: 0.4),
-            shape: const CircleBorder(),
-          ),
-          icon: Icon(icon, size: 22),
-        ),
-        const Gap(8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: KoinTypography.small,
-            fontWeight: KoinTypography.labelWeight,
-            color: AppTheme.textLightColor(context),
-          ),
-        ),
-      ],
+    return KoinQuickAction(
+      icon: icon,
+      label: label,
+      color: color,
+      onPressed: onPressed,
+      tooltip: tooltip,
+      tonal: true,
     );
   }
 
@@ -710,9 +667,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               key: Key(logs[index].id),
               margin: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(8),
-              backgroundColor: AppTheme.expenseColor(
-                context,
-              ).withValues(alpha: 0.15),
+              backgroundColor: AppTheme.expenseColor(context)
+                  .withValues(alpha: 0.15),
               iconColor: AppTheme.expenseColor(context),
               icon: Icons.delete_outline_rounded,
               confirmTitle: 'Delete Entry?',
@@ -763,71 +719,18 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color:
-                  (released ? secondary : AppTheme.incomeContentColor(context))
-                      .withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              released ? Icons.south_west_rounded : Icons.north_east_rounded,
-              size: 20,
-              color: released
-                  ? secondary
-                  : AppTheme.incomeContentColor(context),
-            ),
-          ),
-          const Gap(14),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final stacked =
-                    constraints.maxWidth < 220 ||
-                    MediaQuery.textScalerOf(context).scale(15) > 20;
-                final title = Text(
-                  released ? 'Released' : 'Saved',
-                  style: TextStyle(
-                    color: AppTheme.textColor(context),
-                    fontSize: KoinTypography.body,
-                    fontWeight: KoinTypography.titleWeight,
-                  ),
-                );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (stacked) ...[
-                      title,
-                      const Gap(4),
-                      amount,
-                    ] else
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: title),
-                          const Gap(12),
-                          Flexible(fit: FlexFit.tight, child: amount),
-                        ],
-                      ),
-                    const Gap(4),
-                    Text(
-                      '${DateFormat.MMMd().format(log.date)} · ${_formatRelativeTime(log.date)}',
-                      style: TextStyle(
-                        color: secondary,
-                        fontSize: KoinTypography.small,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+      child: KoinActivityRow(
+        leading: KoinIconBadge(
+          icon: released ? Icons.south_west_rounded : Icons.north_east_rounded,
+          color: released ? secondary : AppTheme.incomeContentColor(context),
+        ),
+        title: released ? 'Released' : 'Saved',
+        stackedTitleMaxLines: null,
+        amount: amount,
+        subtitle: Text(
+          '${DateFormat.MMMd().format(log.date)} · ${_formatRelativeTime(log.date)}',
+          style: TextStyle(color: secondary, fontSize: KoinTypography.small),
+        ),
       ),
     );
   }

@@ -136,59 +136,32 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     Widget card = KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.savings,
       padding: const EdgeInsets.all(24),
-      topRightAction: IconButton(
-        tooltip: hideAmount ? 'Show total saved' : 'Hide total saved',
-        onPressed: () {
-          HapticService.selection();
-          ref.read(settingsProvider.notifier).setHideBalance(!hideAmount);
-        },
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-        iconSize: 22,
-        color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
-        icon: Icon(
-          hideAmount ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-        ),
+      topRightAction: KoinVisibilityButton(
+        hidden: hideAmount,
+        subject: 'total saved',
+        onPressed: () =>
+            ref.read(settingsProvider.notifier).setHideBalance(!hideAmount),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 44),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                const Text(
-                  'Total saved',
-                  style: KoinTypography.summaryLabelStyle,
+      child: KoinSummaryContent(
+        label: 'Total saved',
+        currencyCode: settings.currency.code,
+        amount: hideAmount
+            ? const Text(
+                '****',
+                semanticsLabel: 'Total saved hidden',
+                style: KoinTypography.summaryAmountStyle,
+              )
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: AnimatedCounter(
+                  value: summary.totalSaved,
+                  formatter: currencyFormat.format,
+                  duration: const Duration(milliseconds: 1400),
+                  curve: Curves.easeOutCubic,
+                  style: PortfolioCardStyle.summaryAmount,
                 ),
-                Text(
-                  '·  ${settings.currency.code}',
-                  style: KoinTypography.summaryLabelStyle,
-                ),
-              ],
-            ),
-          ),
-          const Gap(16),
-          if (hideAmount)
-            const Text(
-              '****',
-              semanticsLabel: 'Total saved hidden',
-              style: KoinTypography.summaryAmountStyle,
-            )
-          else
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: AnimatedCounter(
-                value: summary.totalSaved,
-                formatter: currencyFormat.format,
-                duration: const Duration(milliseconds: 1400),
-                curve: Curves.easeOutCubic,
-                style: PortfolioCardStyle.summaryAmount,
               ),
-            ),
-        ],
       ),
     );
 
@@ -321,23 +294,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               const Gap(8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: goal.progress),
-                  duration: KoinMotion.duration(
-                    context,
-                    Duration(milliseconds: 800 + (index * 100)),
-                  ),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, animatedProgress, _) {
-                    return LinearProgressIndicator(
-                      value: animatedProgress,
-                      backgroundColor: AppTheme.surfaceLightColor(context),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isCompleted ? successGreen : accentColor,
-                      ),
-                      minHeight: 4,
-                    );
-                  },
+                child: KoinProgressBar(
+                  value: goal.progress,
+                  duration: Duration(milliseconds: 800 + index * 100),
+                  color: isCompleted ? successGreen : accentColor,
                 ),
               ),
             ],

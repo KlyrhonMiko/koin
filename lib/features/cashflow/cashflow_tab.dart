@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gap/gap.dart';
 
 import 'package:koin/core/core.dart';
 import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
@@ -99,18 +97,7 @@ class CashflowScheduleTab extends ConsumerWidget {
               );
 
               if (showEntranceAnimations) {
-                return tile
-                    .koinAnimate(
-                      context,
-                      autoPlay: !MediaQuery.disableAnimationsOf(context),
-                      onInit: KoinMotion.onInit(context),
-                    )
-                    .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                    .scale(
-                      begin: const Offset(0.95, 0.95),
-                      duration: 250.ms,
-                      curve: Curves.easeOutCubic,
-                    );
+                return tile.koinEntrance(context);
               }
               return tile;
             },
@@ -247,9 +234,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryColor(
-                                  context,
-                                ).withValues(alpha: 0.1),
+                                color: AppTheme.primaryColor(context)
+                                    .withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
@@ -368,9 +354,8 @@ class CashflowScheduleTab extends ConsumerWidget {
                       boxShadow: [
                         AppTheme.boxShadow(
                           context,
-                          color: AppTheme.primaryColor(
-                            context,
-                          ).withValues(alpha: 0.3),
+                          color: AppTheme.primaryColor(context)
+                              .withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -400,45 +385,18 @@ class CashflowScheduleTab extends ConsumerWidget {
   }
 
   Widget _buildAddButton(BuildContext context) {
-    return PressableScale(
-      onTap: () {
-        HapticService.medium();
-        Navigator.push(
-          context,
-          SlideUpRoute(page: AddEditCashflowScreen(initialType: type)),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 24),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: AppTheme.textLightColor(context),
-              size: 20,
-            ),
-            const Gap(10),
-            Text(
-              _isIncome ? 'Add New Income' : 'Add New Payment',
-              style: TextStyle(
-                color: AppTheme.textLightColor(context),
-                fontWeight: KoinTypography.labelWeight,
-                fontSize: KoinTypography.compact,
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: KoinAddButton(
+        borderRadius: 20,
+        label: _isIncome ? 'Add New Income' : 'Add New Payment',
+        onPressed: () {
+          HapticService.medium();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: AddEditCashflowScreen(initialType: type)),
+          );
+        },
       ),
     );
   }

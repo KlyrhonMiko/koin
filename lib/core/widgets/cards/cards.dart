@@ -5,3 +5,5 @@ export 'koin_summary_card.dart';
 export 'spending_trend_chart.dart';
 export 'transaction_tile.dart';
 export 'portfolio_card_style.dart';
+export 'koin_activity_row.dart';
+export 'koin_summary_content.dart';

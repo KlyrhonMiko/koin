@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,8 +74,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       KoinSnackBar.error(
         context,
         'Check the amount range',
-        subtitle:
-            'Use non-negative amounts, with the minimum no greater than the maximum.',
+        subtitle: 'Use non-negative amounts, with the minimum no greater than the maximum.',
       );
       return;
     }
@@ -180,9 +180,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.5),
+                            color: AppTheme.dividerColor(context)
+                                .withValues(alpha: 0.5),
                           ),
                         ),
                         child: Text(
@@ -348,9 +347,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               width: 20,
                               height: 1.5,
                               decoration: BoxDecoration(
-                                color: AppTheme.dividerColor(
-                                  context,
-                                ).withValues(alpha: 0.4),
+                                color: AppTheme.dividerColor(context)
+                                    .withValues(alpha: 0.4),
                                 borderRadius: BorderRadius.circular(1),
                               ),
                             ),
@@ -392,14 +390,12 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       MediaQuery.of(context).padding.bottom + 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(
-                        context,
-                      ).withValues(alpha: 0.85),
+                      color: AppTheme.surfaceColor(context)
+                          .withValues(alpha: 0.85),
                       border: Border(
                         top: BorderSide(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.15),
+                          color: AppTheme.dividerColor(context)
+                              .withValues(alpha: 0.15),
                         ),
                       ),
                     ),
@@ -491,7 +487,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final isSelected = _filter.categoryIds.contains(category.id);
     final primary = AppTheme.primaryColor(context);
 
-    return GestureDetector(
+    return KoinSelectableOption(
+      label: category.name,
+      selected: isSelected,
+      compact: true,
+      accentColor: primary,
+      leading: Icon(
+        IconUtils.getIcon(category.iconCodePoint),
+        size: 14,
+        color: category.color,
+      ),
       onTap: () {
         HapticService.selection();
         setState(() {
@@ -504,52 +509,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           _filter = _filter.copyWith(categoryIds: newIds);
         });
       },
-      child: AnimatedContainer(
-        duration: KoinMotion.duration(
-          context,
-          const Duration(milliseconds: 250),
-        ),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primary.withValues(alpha: 0.12)
-              : AppTheme.surfaceLightColor(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? primary.withValues(alpha: 0.4)
-                : AppTheme.dividerColor(context).withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              Icon(Icons.check_circle_rounded, size: 15, color: primary),
-              const Gap(6),
-            ] else ...[
-              Icon(
-                IconUtils.getIcon(category.iconCodePoint),
-                size: 14,
-                color: category.color,
-              ),
-              const Gap(6),
-            ],
-            Text(
-              category.name,
-              style: TextStyle(
-                color: isSelected ? primary : AppTheme.textColor(context),
-                fontWeight: isSelected
-                    ? KoinTypography.titleWeight
-                    : KoinTypography.labelWeight,
-                fontSize: KoinTypography.small,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -558,7 +517,12 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final isSelected = _filter.accountIds.contains(account.id);
     final primary = AppTheme.primaryColor(context);
 
-    return GestureDetector(
+    return KoinSelectableOption(
+      label: account.name,
+      selected: isSelected,
+      compact: true,
+      accentColor: primary,
+      leading: null,
       onTap: () {
         HapticService.selection();
         setState(() {
@@ -571,45 +535,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           _filter = _filter.copyWith(accountIds: newIds);
         });
       },
-      child: AnimatedContainer(
-        duration: KoinMotion.duration(
-          context,
-          const Duration(milliseconds: 250),
-        ),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primary.withValues(alpha: 0.12)
-              : AppTheme.surfaceLightColor(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? primary.withValues(alpha: 0.4)
-                : AppTheme.dividerColor(context).withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              Icon(Icons.check_circle_rounded, size: 15, color: primary),
-              const Gap(6),
-            ],
-            Text(
-              account.name,
-              style: TextStyle(
-                color: isSelected ? primary : AppTheme.textColor(context),
-                fontWeight: isSelected
-                    ? KoinTypography.titleWeight
-                    : KoinTypography.labelWeight,
-                fontSize: KoinTypography.small,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

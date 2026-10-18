@@ -206,37 +206,13 @@ class DashboardScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(24),
       borderRadius: KoinShape.summary,
       shapeStyle: SummaryShapeStyle.dashboard,
-      topRightAction: Tooltip(
-        excludeFromSemantics: true,
-        message: settings.hideBalance
-            ? 'Show total balance'
-            : 'Hide total balance',
-        child: PressableScale(
-          semanticLabel: settings.hideBalance
-              ? 'Show total balance'
-              : 'Hide total balance',
-          enableHaptic: false,
-          onTap: () {
-            HapticService.selection();
-            ref
-                .read(settingsProvider.notifier)
-                .setHideBalance(!settings.hideBalance);
-          },
-          child: SizedBox(
-            key: const ValueKey('dashboard_balance_visibility'),
-            width: 48,
-            height: 48,
-            child: Icon(
-              settings.hideBalance
-                  ? Icons.visibility_off_rounded
-                  : Icons.visibility_rounded,
-              color: Colors.white.withValues(
-                alpha: settings.hideBalance ? 0.6 : 0.9,
-              ),
-              size: 22,
-            ),
-          ),
-        ),
+      topRightAction: KoinVisibilityButton(
+        key: const ValueKey('dashboard_balance_visibility'),
+        hidden: settings.hideBalance,
+        subject: 'total balance',
+        onPressed: () => ref
+            .read(settingsProvider.notifier)
+            .setHideBalance(!settings.hideBalance),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,32 +373,13 @@ class DashboardScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: PressableScale(
-        enableHaptic: false,
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const Gap(6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: KoinTypography.small,
-                fontWeight: KoinTypography.labelWeight,
-                color: AppTheme.textLightColor(context),
-              ),
-            ),
-          ],
-        ),
+      child: KoinQuickAction(
+        icon: icon,
+        label: label,
+        color: color,
+        onPressed: onTap,
+        size: 48,
+        labelGap: 6,
       ),
     );
   }

@@ -13,6 +13,7 @@ class FormSectionTitle extends StatelessWidget {
   final double? fontSize;
   final FontWeight? fontWeight;
   final Color? color;
+  final bool fieldLabel;
 
   const FormSectionTitle({
     super.key,
@@ -24,7 +25,20 @@ class FormSectionTitle extends StatelessWidget {
     this.fontSize,
     this.fontWeight,
     this.color,
-  });
+  }) : fieldLabel = false;
+
+  /// Persistent editor field label, distinct from a section heading.
+  const FormSectionTitle.field({
+    super.key,
+    required this.title,
+    this.padding,
+    this.color,
+  }) : icon = null,
+       trailing = null,
+       uppercase = false,
+       fontSize = null,
+       fontWeight = null,
+       fieldLabel = true;
 
   /// Uppercase subtle section title used in entity forms (11pt bold letter-spaced)
   const FormSectionTitle.subhead({
@@ -36,14 +50,20 @@ class FormSectionTitle extends StatelessWidget {
     this.fontSize = KoinTypography.overline,
     this.fontWeight = KoinTypography.titleWeight,
     this.color,
-  }) : uppercase = true;
+  }) : uppercase = true,
+       fieldLabel = false;
 
   @override
   Widget build(BuildContext context) {
     final effectiveTitle = uppercase ? title.toUpperCase() : title;
 
     TextStyle textStyle;
-    if (uppercase) {
+    if (fieldLabel) {
+      textStyle = Theme.of(context).textTheme.titleSmall!.copyWith(
+        color: color ?? AppTheme.textColor(context),
+        fontWeight: FontWeight.w600,
+      );
+    } else if (uppercase) {
       textStyle = TextStyle(
         fontSize: fontSize ?? KoinTypography.overline,
         fontWeight: fontWeight ?? KoinTypography.titleWeight,

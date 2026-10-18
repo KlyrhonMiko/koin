@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -293,9 +294,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     final hasInstallments =
         (int.tryParse(_installmentsController.text) ?? 0) > 0;
     final currency = ref.watch(settingsProvider).currency;
-    final nameStyle = KoinTypography.entityNameStyle.copyWith(
-      color: AppTheme.textColor(context),
-    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
@@ -308,203 +306,132 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         ),
         centerTitle: false,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextFormField(
-                          controller: _nameController,
-                          textAlign: TextAlign.center,
-                          textCapitalization: TextCapitalization.words,
-                          textInputAction: TextInputAction.next,
-                          style: nameStyle,
-                          decoration: InputDecoration(
-                            hintText: _bnpl
-                                ? 'BNPL provider'
-                                : 'Who is involved?',
-                            hintMaxLines: 2,
-                            hintStyle: nameStyle.copyWith(
-                              color: AppTheme.fieldHintColor(
-                                context,
-                                lightOpacity: 0.4,
-                              ),
-                            ),
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8),
-                          ),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Enter a name'
-                              : null,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const Gap(16),
-                        Text(
-                          _bnpl ? 'Outstanding balance' : 'Total amount',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: AppTheme.textLightColor(context),
-                              ),
-                        ),
-                        if (_bnpl)
-                          _buildBnplAmount(
-                            context,
-                            currency.symbol,
-                            primaryColor,
-                          )
-                        else
-                          HeroAmountField(
-                            controller: _amountController,
-                            currencySymbol: currency.symbol,
-                            currency: currency,
-                            primaryColor: primaryColor,
-                            validator: (value) {
-                              final amount = ref
-                                  .read(settingsProvider)
-                                  .currency
-                                  .tryParseInput((value ?? ''));
-                              return amount == null ||
-                                      !amount.isFinite ||
-                                      amount <= 0
-                                  ? 'Enter an amount greater than zero'
-                                  : null;
-                            },
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        _buildRecordTypeSelector(context, primaryColor),
-                        const Gap(24),
-                        _fieldLabel(
-                          context,
-                          _bnpl ? 'Billing schedule' : 'Timeline',
-                        ),
-                        const Gap(8),
-                        if (_bnpl)
-                          BillingDaySelector(
-                            day: _startDate.day,
-                            primaryColor: primaryColor,
-                            onDaySelected: _setBillingDay,
-                          )
-                        else
-                          DateSelectorTile(
-                            label: hasInstallments
-                                ? 'Start payment date'
-                                : 'Record date',
-                            date: _startDate,
-                            primaryColor: primaryColor,
-                            onDateSelected: (date) => setState(() {
-                              _startDate = date;
-                            }),
-                          ),
-                        const Gap(28),
-                        Divider(
-                          height: 1,
-                          color: AppTheme.dividerColor(context),
-                        ),
-                        const Gap(24),
-                        if (!_bnpl) ...[
-                          _fieldLabel(context, 'Optional details'),
-                          const Gap(12),
-                        ],
-                        if (!_bnpl) ...[
-                          _fieldLabel(context, 'Installment plan'),
-                          const Gap(8),
-                          _buildInstallmentsCard(context, primaryColor),
-                          const Gap(24),
-                        ],
-                        if (_bnpl || _items.isNotEmpty) ...[
-                          _buildPurchasesSection(
-                            context,
-                            primaryColor,
-                            categories,
-                          ),
-                          const Gap(24),
-                        ],
-                        if (_bnpl) ...[
-                          _fieldLabel(context, 'Optional details'),
-                          const Gap(12),
-                        ],
-                        KoinGroupedCard(
-                          borderRadius: 16,
-                          borderColor: AppTheme.fieldBorderColor(context),
-                          children: [
-                            SelectionTile(
-                              asCard: false,
-                              fallbackIcon:
-                                  Icons.account_balance_wallet_rounded,
-                              label: 'Linked account',
-                              selectedName: account?.name,
-                              selectedColor: account?.color,
-                              selectedIconCodePoint: account?.iconCodePoint,
-                              selectedLogoAsset: account?.logoAsset,
-                              placeholder: 'Choose an account',
-                              onTap: () =>
-                                  _openAccountPicker(context, accounts),
-                            ),
-                            SelectionTile(
-                              asCard: false,
-                              fallbackIcon: Icons.category_rounded,
-                              label: 'Linked category',
-                              selectedName: category?.name,
-                              selectedColor: category?.color,
-                              selectedIconCodePoint: category?.iconCodePoint,
-                              placeholder: 'Choose a category',
-                              onTap: () =>
-                                  _openCategoryPicker(context, categories),
-                            ),
-                          ],
-                        ),
-                        const Gap(20),
-                        _fieldLabel(context, 'Notes'),
-                        const Gap(8),
-                        _buildNotesInput(context),
-                      ],
-                    ),
+      body: KoinEntityFormBody(
+        form: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KoinEntityNameField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
+                hintText: _bnpl ? 'BNPL provider' : 'Who is involved?',
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Enter a name'
+                    : null,
+                onChanged: (_) => setState(() {}),
+              ),
+              const Gap(16),
+              Text(
+                _bnpl ? 'Outstanding balance' : 'Total amount',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppTheme.textLightColor(context)),
+              ),
+              if (_bnpl)
+                _buildBnplAmount(context, currency.symbol, primaryColor)
+              else
+                HeroAmountField(
+                  controller: _amountController,
+                  currencySymbol: currency.symbol,
+                  currency: currency,
+                  primaryColor: primaryColor,
+                  validator: (value) {
+                    final amount = ref
+                        .read(settingsProvider)
+                        .currency
+                        .tryParseInput((value ?? ''));
+                    return amount == null || !amount.isFinite || amount <= 0
+                        ? 'Enter an amount greater than zero'
+                        : null;
+                  },
+                  onChanged: (_) => setState(() {}),
+                ),
+              _buildRecordTypeSelector(context, primaryColor),
+              const Gap(24),
+              _fieldLabel(context, _bnpl ? 'Billing schedule' : 'Timeline'),
+              const Gap(8),
+              if (_bnpl)
+                BillingDaySelector(
+                  day: _startDate.day,
+                  primaryColor: primaryColor,
+                  onDaySelected: _setBillingDay,
+                )
+              else
+                DateSelectorTile(
+                  label: hasInstallments ? 'Start payment date' : 'Record date',
+                  date: _startDate,
+                  primaryColor: primaryColor,
+                  onDateSelected: (date) => setState(() {
+                    _startDate = date;
+                  }),
+                ),
+              const Gap(28),
+              Divider(height: 1, color: AppTheme.dividerColor(context)),
+              const Gap(24),
+              if (!_bnpl) ...[
+                _fieldLabel(context, 'Optional details'),
+                const Gap(12),
+              ],
+              if (!_bnpl) ...[
+                _fieldLabel(context, 'Installment plan'),
+                const Gap(8),
+                _buildInstallmentsCard(context, primaryColor),
+                const Gap(24),
+              ],
+              if (_bnpl || _items.isNotEmpty) ...[
+                _buildPurchasesSection(context, primaryColor, categories),
+                const Gap(24),
+              ],
+              if (_bnpl) ...[
+                _fieldLabel(context, 'Optional details'),
+                const Gap(12),
+              ],
+              KoinGroupedCard(
+                borderRadius: 16,
+                borderColor: AppTheme.fieldBorderColor(context),
+                children: [
+                  SelectionTile(
+                    asCard: false,
+                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    label: 'Linked account',
+                    selectedName: account?.name,
+                    selectedColor: account?.color,
+                    selectedIconCodePoint: account?.iconCodePoint,
+                    selectedLogoAsset: account?.logoAsset,
+                    placeholder: 'Choose an account',
+                    onTap: () => _openAccountPicker(context, accounts),
                   ),
-                ),
+                  SelectionTile(
+                    asCard: false,
+                    fallbackIcon: Icons.category_rounded,
+                    label: 'Linked category',
+                    selectedName: category?.name,
+                    selectedColor: category?.color,
+                    selectedIconCodePoint: category?.iconCodePoint,
+                    placeholder: 'Choose a category',
+                    onTap: () => _openCategoryPicker(context, categories),
+                  ),
+                ],
               ),
-            ),
+              const Gap(20),
+              _fieldLabel(context, 'Notes'),
+              const Gap(8),
+              _buildNotesInput(context),
+            ],
           ),
-          SafeArea(
-            top: false,
-            minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: KoinPrimaryButton(
-                  isLoading: _saving,
-                  label: isEdit ? 'Update' : 'Create',
-                  onPressed: _save,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+        action: KoinPrimaryButton(
+          isLoading: _saving,
+          label: isEdit ? 'Update' : 'Create',
+          onPressed: _save,
+        ),
       ),
     );
   }
 
-  Widget _fieldLabel(BuildContext context, String label) => Text(
-    label,
-    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: AppTheme.textColor(context),
-      fontWeight: FontWeight.w600,
-    ),
-  );
+  Widget _fieldLabel(BuildContext context, String label) =>
+      FormSectionTitle.field(title: label);
 
   _DebtFormMode get _recordType => _bnpl
       ? _DebtFormMode.bnpl
@@ -579,61 +506,13 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     BuildContext context,
     Color primaryColor,
   ) async {
-    final selected = await showModalBottomSheet<_DebtFormMode>(
+    final selected = await showRadioSelectionSheet<_DebtFormMode>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppTheme.surfaceColor(context),
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                child: Text(
-                  'Record type',
-                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                    fontSize: 22,
-                    fontWeight: KoinTypography.headingWeight,
-                  ),
-                ),
-              ),
-              for (final mode in _DebtFormMode.values)
-                Semantics(
-                  selected: mode == _recordType,
-                  inMutuallyExclusiveGroup: true,
-                  child: ListTile(
-                    minTileHeight: 64,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    title: Text(
-                      mode.label,
-                      style: Theme.of(sheetContext).textTheme.bodyLarge
-                          ?.copyWith(
-                            fontWeight: mode == _recordType
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                    ),
-                    trailing: Icon(
-                      mode == _recordType
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      color: mode == _recordType
-                          ? primaryColor
-                          : AppTheme.textLightColor(sheetContext),
-                      size: 24,
-                    ),
-                    onTap: () => Navigator.pop(sheetContext, mode),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+      title: 'Record type',
+      options: _DebtFormMode.values,
+      selected: _recordType,
+      label: (mode) => mode.label,
+      accentColor: primaryColor,
     );
     if (!mounted ||
         !context.mounted ||
@@ -703,9 +582,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
           decoration: InputDecoration(
             labelText: 'Installments',
             hintText: 'None',
-            hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.fieldHintColor(context),
-            ),
+            hintStyle: Theme.of(context).textTheme.bodyLarge
+                ?.copyWith(color: AppTheme.fieldHintColor(context)),
           ),
           onChanged: (value) => setState(() {
             if ((int.tryParse(value) ?? 0) > 0 && !_frequencyUserSet) {
@@ -768,18 +646,8 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     );
   }
 
-  Widget _buildNotesInput(BuildContext context) => TextFormField(
+  Widget _buildNotesInput(BuildContext context) => KoinNotesField(
     controller: _notesController,
-    style: Theme.of(context).textTheme.bodyLarge,
-    minLines: 1,
-    maxLines: 4,
-    textCapitalization: TextCapitalization.sentences,
-    decoration: InputDecoration(
-      hintText: 'Notes (Optional)',
-      hintStyle: Theme.of(
-        context,
-      ).textTheme.bodyLarge?.copyWith(color: AppTheme.fieldHintColor(context)),
-    ),
     onChanged: (_) => _onNotesChanged(),
   );
 

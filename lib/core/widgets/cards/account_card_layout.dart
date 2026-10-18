@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../primitives/koin_account_avatar.dart';
+
 import 'package:gap/gap.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
-import 'package:koin/core/utils/icon_utils.dart';
 
 import 'card_background_shapes.dart';
 
@@ -99,22 +101,16 @@ class AccountCardLayout extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: account.logoAsset != null
-                            ? Image.asset(
-                                account.logoAsset!,
-                                fit: BoxFit.cover,
-                                excludeFromSemantics: true,
-                              )
-                            : Icon(
-                                IconUtils.getIcon(account.iconCodePoint),
-                                size: 16,
-                                color: colored
-                                    ? foreground
-                                    : AppTheme.contentColor(
-                                        context,
-                                        account.color,
-                                      ),
-                              ),
+                        child: KoinAccountAvatar(
+                          iconCodePoint: account.iconCodePoint,
+                          logoAsset: account.logoAsset,
+                          size: 24,
+                          iconSize: 16,
+                          radius: 8,
+                          color: colored
+                              ? foreground
+                              : AppTheme.contentColor(context, account.color),
+                        ),
                       ),
                       const Gap(8),
                       Expanded(

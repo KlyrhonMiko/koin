@@ -1,9 +1,13 @@
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
+
+import 'koin_sheet_surface.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+
 import '../primitives/koin_bottom_sheet_handle.dart';
 
 class ConfirmationSheet extends StatelessWidget {
@@ -55,27 +59,22 @@ class ConfirmationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KoinSheetSurface(
       padding: EdgeInsets.fromLTRB(
         KoinSpacing.screenInset,
         12,
         KoinSpacing.screenInset,
         MediaQuery.of(context).padding.bottom + 24,
       ),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(KoinShape.sheet),
+      color: AppTheme.surfaceColor(context),
+      shadows: [
+        AppTheme.boxShadow(
+          context,
+          color: Colors.black.withValues(alpha: 0.2),
+          blurRadius: 40,
+          offset: const Offset(0, -10),
         ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 40,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

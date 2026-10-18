@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'dart:collection';
+
 import 'package:flutter_animate/flutter_animate.dart';
 
 abstract final class KoinMotion {
@@ -16,6 +18,23 @@ abstract final class KoinMotion {
 }
 
 extension KoinWidgetMotion on Widget {
+  /// Standard entrance used by cards, actions and report sections.
+  Animate koinEntrance(BuildContext context) =>
+      koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
+            onInit: KoinMotion.onInit(context),
+          )
+          .fade(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+          )
+          .scale(
+            begin: const Offset(0.95, 0.95),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+          );
+
   Animate koinAnimate(
     BuildContext context, {
     Key? key,

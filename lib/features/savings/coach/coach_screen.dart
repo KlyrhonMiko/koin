@@ -1,5 +1,9 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+
+import 'coach_controls.dart';
+
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -184,9 +188,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                   color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.1),
+                    color: AppTheme.primaryColor(context)
+                        .withValues(alpha: 0.1),
                   ),
                 ),
                 child: Text(
@@ -226,9 +229,8 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                           setState(() => _extraPerWeek = preset);
                         }
                       },
-                      selectedColor: AppTheme.primaryColor(
-                        context,
-                      ).withValues(alpha: 0.2),
+                      selectedColor: AppTheme.primaryColor(context)
+                          .withValues(alpha: 0.2),
                       backgroundColor: AppTheme.surfaceColor(context),
                       labelStyle: TextStyle(
                         color: isSelected
@@ -267,24 +269,10 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                   ),
                 ],
               ),
-              SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: AppTheme.primaryColor(context),
-                  inactiveTrackColor: AppTheme.primaryColor(
-                    context,
-                  ).withValues(alpha: 0.1),
-                  thumbColor: AppTheme.primaryColor(context),
-                  trackHeight: 8,
-                ),
-                child: Slider(
-                  value: _extraPerWeek,
-                  min: 0,
-                  max: _sliderMax > 0 ? _sliderMax : 100,
-                  onChanged: (val) {
-                    setState(() => _extraPerWeek = val);
-                  },
-                  onChangeEnd: (_) => HapticService.selection(),
-                ),
+              CoachAmountSlider(
+                value: _extraPerWeek,
+                max: _sliderMax > 0 ? _sliderMax : 100,
+                onChanged: (value) => setState(() => _extraPerWeek = value),
               ),
               const Gap(32),
 
@@ -298,49 +286,37 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                 ),
               ),
               const Gap(16),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      HapticService.light();
-                      setState(() => _deadlineShiftWeeks--);
-                    },
-                    icon: const Icon(Icons.remove_circle_outline),
-                    color: AppTheme.textLightColor(context),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          DateFormat("MMM d, yyyy").format(sim.newDeadline),
-                          style: const TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.titleWeight,
-                          ),
-                        ),
-                        if (_deadlineShiftWeeks != 0)
-                          Text(
-                            _deadlineShiftWeeks > 0
-                                ? "+$_deadlineShiftWeeks weeks"
-                                : "$_deadlineShiftWeeks weeks",
-                            style: TextStyle(
-                              fontSize: KoinTypography.small,
-                              color: AppTheme.primaryColor(context),
-                              fontWeight: KoinTypography.labelWeight,
-                            ),
-                          ),
-                      ],
+              CoachStepper(
+                onDecrease: () {
+                  HapticService.light();
+                  setState(() => _deadlineShiftWeeks--);
+                },
+                onIncrease: () {
+                  HapticService.light();
+                  setState(() => _deadlineShiftWeeks++);
+                },
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat("MMM d, yyyy").format(sim.newDeadline),
+                      style: const TextStyle(
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.titleWeight,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      HapticService.light();
-                      setState(() => _deadlineShiftWeeks++);
-                    },
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: AppTheme.textLightColor(context),
-                  ),
-                ],
+                    if (_deadlineShiftWeeks != 0)
+                      Text(
+                        _deadlineShiftWeeks > 0
+                            ? "+$_deadlineShiftWeeks weeks"
+                            : "$_deadlineShiftWeeks weeks",
+                        style: TextStyle(
+                          fontSize: KoinTypography.small,
+                          color: AppTheme.primaryColor(context),
+                          fontWeight: KoinTypography.labelWeight,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const Gap(48),
 
@@ -378,9 +354,9 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor(context),
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onPrimary,
+                            foregroundColor: Theme.of(context)
+                                .colorScheme
+                                .onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),

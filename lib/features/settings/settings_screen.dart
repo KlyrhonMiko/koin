@@ -5,11 +5,15 @@ import 'package:gap/gap.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:koin/core/maintenance/recovery_store.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
+
 import 'backup_recovery_panel.dart';
+
 import 'package:koin/core/core.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -465,8 +469,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         KoinSnackBar.error(
           context,
           'Error restoring data',
-          subtitle:
-              'Choose a valid Koin backup and check available storage, then try again.',
+          subtitle: 'Choose a valid Koin backup and check available storage, then try again.',
         );
       }
     }
@@ -479,8 +482,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Delete All Records',
-      message:
-          'Delete all transactions from your current data? Recovery copies and exported backups are kept.',
+      message: 'Delete all transactions from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete',
       icon: Icons.delete_sweep_rounded,
       isDestructive: true,
@@ -505,8 +507,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Delete All Data',
-      message:
-          'Delete all transactions, savings logs, accounts, and categories from your current data? Recovery copies and exported backups are kept.',
+      message: 'Delete all transactions, savings logs, accounts, and categories from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete Data',
       icon: Icons.delete_forever_rounded,
       isDestructive: true,
@@ -531,8 +532,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await _showConfirmationBottomSheet(
       context,
       title: 'Factory Reset',
-      message:
-          'Reset your current database and settings to their initial state? Recovery copies and exported backups are kept.',
+      message: 'Reset your current database and settings to their initial state? Recovery copies and exported backups are kept.',
       confirmText: 'Factory Reset',
       icon: Icons.restore_rounded,
       isDestructive: true,
@@ -584,14 +584,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
+      builder: (context) => KoinSheetSurface(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(KoinShape.sheet),
-          ),
-        ),
+        color: AppTheme.surfaceColor(context),
+
         child: Column(
           children: [
             const KoinBottomSheetHandle(
@@ -629,9 +625,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     child: Material(
                       color: isSelected
-                          ? AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.08)
+                          ? AppTheme.primaryColor(context)
+                                .withValues(alpha: 0.08)
                           : AppTheme.surfaceLightColor(context),
                       borderRadius: BorderRadius.circular(16),
                       clipBehavior: Clip.antiAlias,
@@ -715,27 +710,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
+      builder: (context) => KoinSheetSurface(
         padding: const EdgeInsets.only(
           bottom: 32,
           left: KoinSpacing.screenInset,
           right: KoinSpacing.screenInset,
           top: 12,
         ),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(KoinShape.sheet),
+        color: AppTheme.surfaceColor(context),
+        shadows: [
+          AppTheme.boxShadow(
+            context,
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 40,
+            offset: const Offset(0, -10),
           ),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 40,
-              offset: const Offset(0, -10),
-            ),
-          ],
-        ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -877,9 +867,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.5),
+                        color: AppTheme.dividerColor(context)
+                            .withValues(alpha: 0.5),
                         width: 1.5,
                       ),
               ),

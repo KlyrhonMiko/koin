@@ -118,100 +118,59 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
-          padding: const EdgeInsets.all(24),
-          topRightAction: IconButton(
-            tooltip: hideAmount ? 'Show net balance' : 'Hide net balance',
-            onPressed: () {
-              HapticService.selection();
-              ref.read(settingsProvider.notifier).setHideBalance(!hideAmount);
-            },
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            iconSize: 22,
-            color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
-            icon: Icon(
-              hideAmount
-                  ? Icons.visibility_off_rounded
-                  : Icons.visibility_rounded,
-            ),
-          ),
-          shapeStyle: SummaryShapeStyle.defaultStyle,
-          margin: const EdgeInsets.only(bottom: 24),
-          glowColor: cardColor,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cardColor.withValues(alpha: 0.95),
-              cardColor.withValues(alpha: 0.85),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 44),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    const Text(
-                      'Net Balance',
-                      style: KoinTypography.summaryLabelStyle,
-                    ),
-                    Text(
-                      '·  ${settings.currency.code}',
-                      style: KoinTypography.summaryLabelStyle,
-                    ),
-                  ],
+      padding: const EdgeInsets.all(24),
+      topRightAction: KoinVisibilityButton(
+        hidden: hideAmount,
+        subject: 'net balance',
+        onPressed: () =>
+            ref.read(settingsProvider.notifier).setHideBalance(!hideAmount),
+      ),
+      shapeStyle: SummaryShapeStyle.defaultStyle,
+      margin: const EdgeInsets.only(bottom: 24),
+      glowColor: cardColor,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          cardColor.withValues(alpha: 0.95),
+          cardColor.withValues(alpha: 0.85),
+        ],
+      ),
+      child: KoinSummaryContent(
+        label: 'Net Balance',
+        currencyCode: settings.currency.code,
+        amount: hideAmount
+            ? const Text(
+                '****',
+                semanticsLabel: 'Net balance hidden',
+                style: KoinTypography.summaryAmountStyle,
+              )
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: AnimatedCounter(
+                  value: netBalance,
+                  lastValueToken: animationSessionKey != null
+                      ? 'debts_hero_total_$animationSessionKey'
+                      : null,
+                  formatter: (v) => currencyFormat.format(v),
+                  duration: const Duration(milliseconds: 1400),
+                  curve: Curves.easeOutCubic,
+                  style: PortfolioCardStyle.summaryAmount,
                 ),
               ),
-              const Gap(16),
-              if (hideAmount)
-                const Text(
-                  '****',
-                  semanticsLabel: 'Net balance hidden',
-                  style: KoinTypography.summaryAmountStyle,
-                )
-              else
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedCounter(
-                    value: netBalance,
-                    lastValueToken: animationSessionKey != null
-                        ? 'debts_hero_total_$animationSessionKey'
-                        : null,
-                    formatter: (v) => currencyFormat.format(v),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeOutCubic,
-                    style: PortfolioCardStyle.summaryAmount,
-                  ),
-                ),
-              const Gap(16),
-              Text(
-                hideAmount
-                    ? 'Repayment total hidden · ${summary.activeCount} active'
-                    : 'Paid ${currencyFormat.format(totalRepaid)} · ${summary.activeCount} active',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontWeight: KoinTypography.labelWeight,
-                  fontSize: KoinTypography.small,
-                ),
-              ),
-            ],
+        footer: Text(
+          hideAmount
+              ? 'Repayment total hidden · ${summary.activeCount} active'
+              : 'Paid ${currencyFormat.format(totalRepaid)} · ${summary.activeCount} active',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontWeight: KoinTypography.labelWeight,
+            fontSize: KoinTypography.small,
           ),
-        )
-        .koinAnimate(
-          context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
+        ),
+      ),
+    ).koinEntrance(context);
   }
 
   Widget _buildAddDebtButton(BuildContext context) {
