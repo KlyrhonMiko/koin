@@ -426,7 +426,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         account.initialBalance;
     if (_type != TransactionType.income &&
         !account.isCredit &&
-        _amount > balance) {
+        TransactionRules.exceedsBalance(
+          _transfer ? _transferDraft.calculateTotalDebit(account) : _amount,
+          balance,
+        )) {
       _showError('Insufficient balance in ${account.name}');
       return;
     }
@@ -519,8 +522,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   TransferDraft get _transferDraft => TransferDraft(
-    sourceAccountId: _accountId!,
-    destinationAccountId: _destinationId!,
+    sourceAccountId: _accountId ?? '',
+    destinationAccountId: _destinationId ?? '',
     rawAmount: _amount,
     enteredFee:
         ref
@@ -560,7 +563,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           accounts: accounts,
           transactions: transactions,
         ).accountBalances;
-        if ((balances[account.id] ?? account.initialBalance) < debitAmount) {
+        if (TransactionRules.exceedsBalance(
+          debitAmount,
+          balances[account.id] ?? account.initialBalance,
+        )) {
           if (mounted) {
             _showError('Insufficient balance in ${account.name}');
           }
@@ -1231,11 +1237,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             placeholder: 'Select account',
             onTap: _openAccountPicker,
           ),
-          if (account != null &&
+          if (!_saving &&
+              !_saved &&
+              account != null &&
               balance != null &&
               _type != TransactionType.income &&
               !account.isCredit &&
-              _amount > balance) ...[
+              TransactionRules.exceedsBalance(_amount, balance)) ...[
             const SizedBox(height: 8),
             Text(
               'Amount exceeds available balance',
@@ -1648,7 +1656,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             ],
           ),
         ),
-        if (balance != null && !source!.isCredit && _amount > balance) ...[
+        if (!_saving &&
+            !_saved &&
+            balance != null &&
+            !source!.isCredit &&
+            TransactionRules.exceedsBalance(
+              _transferDraft.calculateTotalDebit(source),
+              balance,
+            )) ...[
           const SizedBox(height: 8),
           Text(
             'Amount exceeds available balance',

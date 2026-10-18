@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -258,7 +259,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   void _saveTransaction() async {
-    if (_savingTransaction) return;
+    if (_savingTransaction || _transactionSaved) return;
     setState(() => _savingTransaction = true);
     final savings = ref.read(savingsGoalsProvider.notifier);
     try {
@@ -274,7 +275,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       if (!_transactionSaved) {
         await savings.rollbackDraftRelease(_transactionId);
       }
-      if (mounted) setState(() => _savingTransaction = false);
+      if (mounted && !_transactionSaved) {
+        setState(() => _savingTransaction = false);
+      }
     }
   }
 
@@ -333,7 +336,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         debitAccount != null &&
         !debitAccount.isCredit) {
       final balance = _availableBalance(debitAccount);
-      if (debitAmount > balance) {
+      if (TransactionRules.exceedsBalance(debitAmount, balance)) {
         HapticService.error();
         _showErrorSnackbar(
           'Insufficient balance',
@@ -382,7 +385,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               widget.editingTransaction!.amount + (_existingFee?.amount ?? 0);
         }
 
-        if (currentBalance + previousDeduction - (amount + feeAmount) < 0) {
+        if (TransactionRules.exceedsBalance(
+          amount + feeAmount,
+          currentBalance + previousDeduction,
+        )) {
           HapticService.error();
           _showErrorSnackbar(
             'Insufficient balance',
@@ -855,9 +861,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(
-                            context,
-                          ).withValues(alpha: 0.85),
+                          color: AppTheme.surfaceColor(context)
+                              .withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
                             color: AppTheme.fieldBorderColor(
@@ -898,9 +903,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(
-                            context,
-                          ).withValues(alpha: 0.85),
+                          color: AppTheme.surfaceColor(context)
+                              .withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
                             color: AppTheme.fieldBorderColor(
@@ -1053,7 +1057,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         : null;
     final savingsUsage = _savingsUsageText(currency);
     final hasSummary = transferSummary != null || savingsUsage != null;
-    final exceedsBalance = _exceedsAvailableBalance();
+    final exceedsBalance =
+        !_savingTransaction && !_transactionSaved && _exceedsAvailableBalance();
     final currencySymbol = Text(
       '${currency.symbol} ',
       style: TextStyle(
@@ -1268,7 +1273,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       return null;
     }
     final balance = _availableBalance(account);
-    if (!balance.isFinite || amount > balance) return null;
+    if (TransactionRules.exceedsBalance(amount, balance)) return null;
     // Match the savings release confirmation's cent-based calculation.
     final reservedCents = goals
         .where((g) => g.linkedAccountId == account.id && g.currentAmount > 0)
@@ -1310,7 +1315,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final debit = _selectedType == TransactionType.transfer
         ? amount + (_isTransferFeePercentage ? amount * (fee / 100) : fee)
         : amount;
-    return debit > _availableBalance(account);
+    return TransactionRules.exceedsBalance(debit, _availableBalance(account));
   }
 
   Widget _buildFormSection(
@@ -1626,9 +1631,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                   )
                                   .shimmer(
                                     duration: 400.ms,
-                                    color: AppTheme.primaryColor(
-                                      context,
-                                    ).withValues(alpha: 0.2),
+                                    color: AppTheme.primaryColor(context)
+                                        .withValues(alpha: 0.2),
                                   )
                                   .scale(
                                     duration: 150.ms,

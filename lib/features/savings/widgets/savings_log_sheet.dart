@@ -59,6 +59,8 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
   late String _currentExpression;
   late String _evaluatedResult;
   bool _saving = false;
+  bool _saved = false;
+  double? _balanceWhileSaving;
   String? _saveError;
 
   bool get _isRelease => widget.release || (widget.log?.amount ?? 0) < 0;
@@ -92,7 +94,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
   }
 
   void _submit() async {
-    if (_saving) return;
+    if (_saving || _saved) return;
     if (widget.log?.transactionId != null) {
       setState(
         () => _saveError = 'Automatic release: read only. Edit the linked transaction to change it.',
@@ -126,6 +128,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     }
     setState(() {
       _saving = true;
+      _balanceWhileSaving = available;
       _saveError = null;
     });
     try {
@@ -144,6 +147,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         if (confirmed != true || !mounted) return;
       }
       await widget.onSave(_isRelease ? -amount! : amount!);
+      _saved = true;
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
@@ -155,7 +159,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         HapticService.error();
       }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted && !_saved) setState(() => _saving = false);
     }
   }
 
@@ -172,12 +176,16 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     final available = accountId == null
         ? null
         : ref.watch(savingsAvailableBalanceProvider(accountId));
-    final editableBalance = _isRelease
+    final editableBalance = _saving
+        ? _balanceWhileSaving
+        : _isRelease
         ? _availableBalance()
         : available == null
         ? null
         : available + (widget.log?.amount ?? 0);
     final isExceeded =
+        !_saving &&
+        !_saved &&
         (_isRelease || accountId != null) &&
         editableBalance != null &&
         parsedAmount > (widget.log?.amount ?? 0) &&
