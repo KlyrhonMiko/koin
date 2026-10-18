@@ -74,7 +74,8 @@ class ColorPaletteGrid extends StatelessWidget {
       onTap: () => _handleTap(index, color),
       child: AnimatedScale(
         scale: isSelected ? 1.08 : 1.0,
-        duration: const Duration(milliseconds: 200),
+        duration: KoinMotion.duration(context, KoinMotion.feedback),
+        curve: KoinMotion.curve,
         child: AnimatedContainer(
           duration: KoinMotion.duration(
             context,

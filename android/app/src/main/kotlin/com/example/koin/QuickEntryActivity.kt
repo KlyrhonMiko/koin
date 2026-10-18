@@ -1,6 +1,8 @@
 package com.example.koin
 
 import android.content.res.Configuration
+import android.animation.ValueAnimator
+import android.view.animation.PathInterpolator
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
@@ -18,6 +20,7 @@ import io.flutter.plugin.common.MethodChannel
 class QuickEntryActivity : FlutterActivity() {
     private var channel: MethodChannel? = null
     private var contentHeightDp = 280.0
+    private var heightAnimator: ValueAnimator? = null
 
     override fun getDartEntrypointFunctionName() = "quickEntry"
     override fun getBackgroundMode() = BackgroundMode.transparent
@@ -33,12 +36,27 @@ class QuickEntryActivity : FlutterActivity() {
         resizeWindow()
     }
 
-    private fun resizeWindow() {
+    private fun resizeWindow(animate: Boolean = false) {
         val metrics = resources.displayMetrics
+        heightAnimator?.cancel()
+        heightAnimator = null
+        val previousHeight = window.attributes.height
+        val targetHeight = (contentHeightDp * metrics.density).toInt().coerceIn(
+            (180 * metrics.density).toInt(), (metrics.heightPixels * 0.9).toInt())
         window.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
-            (contentHeightDp * metrics.density).toInt().coerceIn(
-                (180 * metrics.density).toInt(), (metrics.heightPixels * 0.9).toInt()))
+        if (animate && previousHeight > 0 && previousHeight != targetHeight) {
+            heightAnimator = ValueAnimator.ofInt(previousHeight, targetHeight).apply {
+                duration = 250L
+                interpolator = PathInterpolator(0.215f, 0.61f, 0.355f, 1f)
+                addUpdateListener { animation ->
+                    window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                        animation.animatedValue as Int)
+                }
+                start()
+            }
+        } else {
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, targetHeight)
+        }
         window.attributes = window.attributes.apply {
             dimAmount = 0.35f
             y = 0
@@ -74,7 +92,7 @@ class QuickEntryActivity : FlutterActivity() {
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         window.isNavigationBarContrastEnforced = false
                     }
-                    resizeWindow()
+                    resizeWindow(call.argument<Boolean>("animate") == true)
                     result.success(null)
                 }
                 "openApp" -> {
@@ -99,6 +117,8 @@ class QuickEntryActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        heightAnimator?.cancel()
+        heightAnimator = null
         channel?.setMethodCallHandler(null)
         channel = null
         super.cleanUpFlutterEngine(flutterEngine)

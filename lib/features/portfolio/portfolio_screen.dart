@@ -19,7 +19,7 @@ class PortfolioScreen extends ConsumerStatefulWidget {
 class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _showEntranceAnimations = true;
+  static const _showEntranceAnimations = true;
   late final String _animationSessionKey;
   final GlobalKey _headerKey = GlobalKey();
   final Set<int> _cardSwipePointers = {};
@@ -52,9 +52,6 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
         ref.read(portfolioTabProvider.notifier).setIndex(_tabController.index);
       }
     });
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _showEntranceAnimations = false);
-    });
   }
 
   @override
@@ -67,7 +64,11 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   Widget build(BuildContext context) {
     ref.listen<int>(portfolioTabProvider, (previous, next) {
       if (next >= 0 && next < _tabs.length && _tabController.index != next) {
-        _tabController.animateTo(next);
+        _tabController.animateTo(
+          next,
+          duration: KoinMotion.duration(context, KoinMotion.entrance),
+          curve: KoinMotion.curve,
+        );
       }
     });
 
@@ -242,7 +243,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: Colors.black.withValues(alpha: 0.1),
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: KoinMotion.duration(context, KoinMotion.entrance),
       transitionBuilder: (context, anim, secondaryAnim, child) {
         return Stack(
           clipBehavior: Clip.none,
@@ -250,19 +251,23 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
             Positioned(
               left: left,
               top: top,
-              child: FadeTransition(
-                opacity: anim,
-                child: AnimatedBuilder(
-                  animation: anim,
-                  builder: (context, child) {
-                    return Align(
-                      alignment: const Alignment(0, -1),
-                      heightFactor: Curves.easeOutCubic.transform(anim.value),
+              child: AnimatedBuilder(
+                animation: anim,
+                child: child,
+                builder: (context, child) {
+                  final reduced = MediaQuery.disableAnimationsOf(context);
+                  final progress = reduced
+                      ? 1.0
+                      : KoinMotion.curve.transform(anim.value);
+                  return Opacity(
+                    opacity: progress,
+                    child: Transform.scale(
+                      alignment: Alignment.topLeft,
+                      scale: 0.95 + 0.05 * progress,
                       child: child,
-                    );
-                  },
-                  child: child,
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -323,7 +328,11 @@ class _DropdownMenu extends StatelessWidget {
               return InkWell(
                 onTap: () {
                   HapticService.selection();
-                  controller.animateTo(index);
+                  controller.animateTo(
+                    index,
+                    duration: KoinMotion.duration(context, KoinMotion.entrance),
+                    curve: KoinMotion.curve,
+                  );
                   Navigator.pop(context);
                 },
                 child: Container(

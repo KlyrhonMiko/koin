@@ -96,10 +96,11 @@ class CashflowScheduleTab extends ConsumerWidget {
                 ),
               );
 
-              if (showEntranceAnimations) {
-                return tile.koinEntrance(context);
-              }
-              return tile;
+              return tile.koinEntrance(
+                context,
+                enabled: showEntranceAnimations,
+                token: 'cashflow_${payment.id}',
+              );
             },
           ),
         );

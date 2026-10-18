@@ -104,9 +104,9 @@ class ConfirmationSheet extends StatelessWidget {
                 onInit: KoinMotion.onInit(context),
               )
               .scale(
-                begin: const Offset(0.5, 0.5),
-                duration: 400.ms,
-                curve: Curves.easeOutBack,
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: KoinMotion.curve,
               )
               .fadeIn(duration: 300.ms),
           const Gap(24),
@@ -162,78 +162,71 @@ class ConfirmationSheet extends StatelessWidget {
 
           // Actions
           Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        HapticService.light();
-                        Navigator.pop(context, false);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      child: Text(
-                        cancelLabel,
-                        style: TextStyle(
-                          fontSize: KoinTypography.itemTitle,
-                          fontWeight: KoinTypography.titleWeight,
-                          color: AppTheme.textLightColor(context),
-                        ),
-                      ),
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    HapticService.light();
+                    Navigator.pop(context, false);
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
-                  const Gap(12),
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
+                  child: Text(
+                    cancelLabel,
+                    style: TextStyle(
+                      fontSize: KoinTypography.itemTitle,
+                      fontWeight: KoinTypography.titleWeight,
+                      color: AppTheme.textLightColor(context),
+                    ),
+                  ),
+                ),
+              ),
+              const Gap(12),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      AppTheme.boxShadow(
+                        context,
+                        color: confirmColor.withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticService.medium();
+                      Navigator.pop(context, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: confirmColor,
+                      foregroundColor: AppTheme.foregroundFor(confirmColor),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          AppTheme.boxShadow(
-                            context,
-                            color: confirmColor.withValues(alpha: 0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
                       ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticService.medium();
-                          Navigator.pop(context, true);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: confirmColor,
-                          foregroundColor: AppTheme.foregroundFor(confirmColor),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: Text(
-                          confirmLabel,
-                          style: const TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      confirmLabel,
+                      style: const TextStyle(
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
-                ],
-              )
-              .koinAnimate(
-                context,
-                autoPlay: !MediaQuery.disableAnimationsOf(context),
-                onInit: KoinMotion.onInit(context),
-              )
-              .fadeIn(delay: 260.ms, duration: 300.ms)
-              .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

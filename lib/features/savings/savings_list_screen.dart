@@ -172,10 +172,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             autoPlay: !MediaQuery.disableAnimationsOf(context),
             onInit: KoinMotion.onInit(context),
           )
-          .fade(duration: 400.ms, curve: Curves.easeOutCubic)
+          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
           .scale(
             begin: const Offset(0.96, 0.96),
-            duration: 400.ms,
+            duration: 250.ms,
             curve: Curves.easeOutCubic,
           );
     }
@@ -296,7 +296,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 borderRadius: BorderRadius.circular(2),
                 child: KoinProgressBar(
                   value: goal.progress,
-                  duration: Duration(milliseconds: 800 + index * 100),
+                  duration: KoinMotion.entrance,
                   color: isCompleted ? successGreen : accentColor,
                 ),
               ),
@@ -306,17 +306,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
       ),
     );
 
-    if (widget.showEntranceAnimations) {
-      card = card
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-            key: ValueKey('goal_${goal.id}_entrance'),
-          )
-          .fade(delay: (index * 40).ms, duration: 400.ms)
-          .slideX(begin: 0.05, curve: Curves.easeOutCubic);
-    }
+    card = card.koinEntrance(
+      context,
+      enabled: widget.showEntranceAnimations,
+      token: 'savings_goal_${goal.id}',
+    );
     return card;
   }
 
@@ -391,7 +385,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             autoPlay: !MediaQuery.disableAnimationsOf(context),
             onInit: KoinMotion.onInit(context),
           )
-          .fade(delay: 50.ms, duration: 400.ms, curve: Curves.easeOutCubic)
+          .fade(delay: 50.ms, duration: 250.ms, curve: Curves.easeOutCubic)
           .slideY(begin: 0.1, curve: Curves.easeOutCubic);
     }
     return state;

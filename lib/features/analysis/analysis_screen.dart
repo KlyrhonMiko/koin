@@ -1032,8 +1032,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                   )
                                   .scaleX(
                                     alignment: Alignment.centerLeft,
-                                    duration: 800.ms,
-                                    curve: Curves.easeOutCirc,
+                                    duration: 250.ms,
+                                    curve: KoinMotion.curve,
                                   ),
                         ),
                       ),

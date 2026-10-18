@@ -299,7 +299,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           autoPlay: !MediaQuery.disableAnimationsOf(context),
           onInit: KoinMotion.onInit(context),
         )
-        .fadeIn(duration: 400.ms)
+        .fadeIn(duration: 250.ms)
         .slideY(begin: 0.05, curve: Curves.easeOutCubic);
   }
 

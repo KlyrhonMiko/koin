@@ -79,7 +79,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _amountController.addListener(_onAmountChanged);
     _colorAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: KoinMotion.feedback,
     );
     _pulseController = AnimationController(
       vsync: this,
@@ -632,7 +632,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   ) {
     _suggesterCoordinator.cancel();
     _pendingCategorySuggestion = null;
-    final oldColor = _getTypeColor(context);
+    final oldColor = Color.lerp(
+      _prevColor,
+      _currentColor,
+      _colorAnimController.value,
+    )!;
     HapticService.selection();
     setState(() {
       _selectedType = newType;
@@ -658,7 +662,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     });
     _prevColor = oldColor;
     _currentColor = _getTypeColor(context);
-    _colorAnimController.forward(from: 0);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _colorAnimController.value = 1;
+    } else {
+      _colorAnimController.forward(from: 0);
+    }
   }
 
   TransactionCategory? _categoryById(
@@ -1104,22 +1112,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   currencySymbol,
-                  AnimatedSwitcher(
-                    duration: KoinMotion.duration(
-                      context,
-                      const Duration(milliseconds: 150),
-                    ),
-                    transitionBuilder: (child, anim) =>
-                        FadeTransition(opacity: anim, child: child),
-                    child: Text(
-                      _currentExpression.isEmpty ? '0' : _currentExpression,
-                      key: ValueKey(_currentExpression),
-                      style: KoinTypography.inputAmountStyle.copyWith(
-                        fontSize: fontSize,
-                        color: hasAmount
-                            ? typeColor
-                            : AppTheme.textLightColor(context),
-                      ),
+                  Text(
+                    _currentExpression.isEmpty ? '0' : _currentExpression,
+                    key: ValueKey(_currentExpression),
+                    style: KoinTypography.inputAmountStyle.copyWith(
+                      fontSize: fontSize,
+                      color: hasAmount
+                          ? typeColor
+                          : AppTheme.textLightColor(context),
                     ),
                   ),
                   // Balance the leading symbol so the digits sit on the centerline.

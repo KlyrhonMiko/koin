@@ -679,8 +679,8 @@ class DashboardScreen extends ConsumerWidget {
                   .where((c) => c.id == entry.categoryId)
                   .firstOrNull;
 
-              final trackId = 'dash_entry_${entry.id}';
-              Widget child = UpcomingEntryTile(
+              final child = UpcomingEntryTile(
+                key: ValueKey(entry.id),
                 entry: entry,
                 currency: currency,
                 category: category,
@@ -692,38 +692,11 @@ class DashboardScreen extends ConsumerWidget {
                     ),
               );
 
-              if (!AnimationTracker.hasSeen(trackId)) {
-                child = child
-                    .koinAnimate(
-                      context,
-                      autoPlay: !MediaQuery.disableAnimationsOf(context),
-                      onInit: KoinMotion.onInit(context),
-                    )
-                    .fadeIn()
-                    .slideY(begin: 0.1);
-              }
-
               return child;
             }).toList(),
           ),
       ],
     );
-
-    if (!AnimationTracker.hasSeen('dash_upcoming_section')) {
-      content = content
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-          )
-          .fade(delay: 550.ms, duration: 500.ms)
-          .slideY(
-            begin: 0.1,
-            delay: 550.ms,
-            duration: 500.ms,
-            curve: Curves.easeOutCubic,
-          );
-    }
 
     return content;
   }

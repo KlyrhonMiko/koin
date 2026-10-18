@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/core/widgets/cards/account_card_layout.dart';
@@ -169,22 +168,11 @@ class AccountsTab extends ConsumerWidget {
                           },
                         );
 
-                        if (showEntranceAnimations) {
-                          accountItem = accountItem
-                              .koinAnimate(
-                                context,
-                                autoPlay: !MediaQuery.disableAnimationsOf(
-                                  context,
-                                ),
-                                onInit: KoinMotion.onInit(context),
-                              )
-                              .fade(delay: (index * 60).ms, duration: 400.ms)
-                              .slideY(
-                                begin: 0.1,
-                                duration: 400.ms,
-                                curve: Curves.easeOutCubic,
-                              );
-                        }
+                        accountItem = accountItem.koinEntrance(
+                          context,
+                          enabled: showEntranceAnimations,
+                          token: 'account_${animationSessionKey}_${account.id}',
+                        );
 
                         return (
                           id: account.id,

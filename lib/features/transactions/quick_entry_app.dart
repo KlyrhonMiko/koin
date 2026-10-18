@@ -165,6 +165,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   final _contentKey = GlobalKey();
   int? _reportedHeight;
   int? _reportedColor;
+  bool? _reportedReducedMotion;
 
   bool get _transfer => _type == TransactionType.transfer;
   String get _typeLabel => switch (_type) {
@@ -233,10 +234,22 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       if (requiredHeight > height) height = requiredHeight;
     }
     final color = AppTheme.backgroundColor(context).toARGB32();
-    if (height == _reportedHeight && color == _reportedColor) return;
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    if (height == _reportedHeight &&
+        color == _reportedColor &&
+        reducedMotion == _reportedReducedMotion) {
+      return;
+    }
+    final animate =
+        _reportedHeight != null && !reducedMotion && !_showingSavingsSheet;
     _reportedHeight = height;
     _reportedColor = color;
-    _windowCall('resize', {'height': height, 'backgroundColor': color});
+    _reportedReducedMotion = reducedMotion;
+    _windowCall('resize', {
+      'height': height,
+      'backgroundColor': color,
+      'animate': animate,
+    });
   }
 
   void _go(_Step step) {

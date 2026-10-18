@@ -9,7 +9,7 @@ class KoinProgressBar extends StatelessWidget {
     required this.value,
     required this.color,
     this.backgroundColor,
-    this.duration = const Duration(milliseconds: 600),
+    this.duration = KoinMotion.entrance,
     this.curve = Curves.easeOutCubic,
     this.height = 4,
     this.semanticsLabel,

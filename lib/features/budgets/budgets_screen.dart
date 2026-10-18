@@ -570,40 +570,29 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   ),
                 ),
                 Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isOver
-                            ? AppTheme.errorContentColor(context)
-                                  .withValues(alpha: 0.1)
-                            : AppTheme.surfaceLightColor(context),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: AnimatedCounter(
-                        value: double.tryParse(percent) ?? 0,
-                        formatter: (v) => '${v.toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          color: isOver
-                              ? AppTheme.errorContentColor(context)
-                              : AppTheme.textLightColor(context),
-                          fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.caption,
-                        ),
-                      ),
-                    )
-                    .koinAnimate(
-                      context,
-                      autoPlay: !MediaQuery.disableAnimationsOf(context),
-                      onInit: KoinMotion.onInit(context),
-                    )
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.05, 1.05),
-                      duration: 800.ms,
-                      curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isOver
+                        ? AppTheme.errorContentColor(context)
+                              .withValues(alpha: 0.1)
+                        : AppTheme.surfaceLightColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: AnimatedCounter(
+                    value: double.tryParse(percent) ?? 0,
+                    formatter: (v) => '${v.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      color: isOver
+                          ? AppTheme.errorContentColor(context)
+                          : AppTheme.textLightColor(context),
+                      fontWeight: KoinTypography.titleWeight,
+                      fontSize: KoinTypography.caption,
                     ),
+                  ),
+                ),
               ],
             ),
             const Gap(8),
@@ -613,7 +602,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 borderRadius: BorderRadius.circular(2),
                 child: KoinProgressBar(
                   value: progress,
-                  duration: Duration(milliseconds: 700 + index * 100),
+                  duration: KoinMotion.entrance,
                   color: isOver
                       ? AppTheme.errorContentColor(context)
                       : category.color,

@@ -408,43 +408,18 @@ class _TimelineView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return TweenAnimationBuilder<double>(
-          // Use a simple tween over a timeline parameter (0 to 1) to animate position
-          // We will animate the 'sim' projected finish and deadline shift smoothly.
-          // For simplicity, we just rebuild the CustomPaint with the exact dates,
-          // but we can animate the dates by converting to milliseconds!
-          tween: Tween<double>(
-            begin:
-                sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ??
-                latestDate.millisecondsSinceEpoch.toDouble(),
-            end:
-                sim.projectedFinish?.millisecondsSinceEpoch.toDouble() ??
-                latestDate.millisecondsSinceEpoch.toDouble(),
+        return CustomPaint(
+          size: Size(constraints.maxWidth, constraints.maxHeight),
+          painter: _TimelinePainter(
+            today: today,
+            latestDate: latestDate,
+            baselineTarget: baseline.newDeadline,
+            baselineProjected: baseline.projectedFinish,
+            simTarget: sim.newDeadline,
+            simProjected: sim.projectedFinish,
+            simStatus: sim.status,
+            theme: Theme.of(context),
           ),
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 400),
-          ),
-          curve: Curves.easeOutCubic,
-          builder: (context, animatedProjMs, child) {
-            final animProjFinish = sim.projectedFinish != null
-                ? DateTime.fromMillisecondsSinceEpoch(animatedProjMs.toInt())
-                : null;
-
-            return CustomPaint(
-              size: Size(constraints.maxWidth, constraints.maxHeight),
-              painter: _TimelinePainter(
-                today: today,
-                latestDate: latestDate,
-                baselineTarget: baseline.newDeadline,
-                baselineProjected: baseline.projectedFinish,
-                simTarget: sim.newDeadline,
-                simProjected: animProjFinish,
-                simStatus: sim.status,
-                theme: Theme.of(context),
-              ),
-            );
-          },
         );
       },
     );

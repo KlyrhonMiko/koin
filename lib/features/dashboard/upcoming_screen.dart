@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/cashflow/cashflow.dart';
 import 'package:koin/features/dashboard/widgets/upcoming_entry_tile.dart';
@@ -58,23 +57,17 @@ class UpcomingScreen extends ConsumerWidget {
                           .firstOrNull;
 
                       return UpcomingEntryTile(
-                            entry: entry,
-                            currency: currency,
-                            category: category,
-                            onPayPayment: (payment) =>
-                                PaymentConfirmationSheet.confirmAndProcess(
-                                  context: context,
-                                  ref: ref,
-                                  payment: payment,
-                                ),
-                          )
-                          .koinAnimate(
-                            context,
-                            autoPlay: !MediaQuery.disableAnimationsOf(context),
-                            onInit: KoinMotion.onInit(context),
-                          )
-                          .fade(delay: (index * 40).ms)
-                          .slideY(begin: 0.08);
+                        key: ValueKey(entry.id),
+                        entry: entry,
+                        currency: currency,
+                        category: category,
+                        onPayPayment: (payment) =>
+                            PaymentConfirmationSheet.confirmAndProcess(
+                              context: context,
+                              ref: ref,
+                              payment: payment,
+                            ),
+                      );
                     },
                   ),
           ),

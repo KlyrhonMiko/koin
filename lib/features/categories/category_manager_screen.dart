@@ -165,7 +165,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                 autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
-              .fade(duration: 400.ms)
+              .fade(duration: 250.ms)
               .slideY(begin: -0.2),
           const SizedBox(height: 16),
           Padding(

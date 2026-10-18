@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/debts.dart';
 
@@ -300,22 +299,11 @@ class DebtCard extends StatelessWidget {
       ),
     );
 
-    if (showEntranceAnimations) {
-      final delay = Duration(milliseconds: 40 * index);
-      content = content
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-          )
-          .slideY(
-            begin: 0.07,
-            delay: delay,
-            duration: 240.ms,
-            curve: const Cubic(0.23, 1, 0.32, 1),
-          )
-          .fadeIn(delay: delay, duration: 200.ms);
-    }
+    content = content.koinEntrance(
+      context,
+      enabled: showEntranceAnimations,
+      token: 'debt_${debt.id}',
+    );
 
     return content;
   }

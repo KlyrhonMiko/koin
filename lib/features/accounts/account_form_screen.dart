@@ -113,6 +113,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
     // Auto-scroll to selected icon and color
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _scrollToSelectedIcon();
       _scrollToSelectedColor();
       _scrollToSelectedCardColor();
@@ -159,11 +160,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final offset = index * 60.0;
       final targetOffset = (offset - MediaQuery.of(context).size.width / 2 + 30)
           .clamp(0.0, _iconScrollController.position.maxScrollExtent);
-      _iconScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _iconScrollController.jumpTo(targetOffset);
+      } else {
+        _iconScrollController.animateTo(
+          targetOffset,
+          duration: KoinMotion.entrance,
+          curve: KoinMotion.curve,
+        );
+      }
     }
   }
 
@@ -175,11 +180,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final offset = index * 56.0;
       final targetOffset = (offset - MediaQuery.of(context).size.width / 2 + 28)
           .clamp(0.0, _colorScrollController.position.maxScrollExtent);
-      _colorScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _colorScrollController.jumpTo(targetOffset);
+      } else {
+        _colorScrollController.animateTo(
+          targetOffset,
+          duration: KoinMotion.entrance,
+          curve: KoinMotion.curve,
+        );
+      }
     }
   }
 
@@ -194,11 +203,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final offset = (templateIndex + 1) * 88.0; // +1 for "Custom" item
       final targetOffset = (offset - MediaQuery.of(context).size.width / 2 + 44)
           .clamp(0.0, _templateScrollController.position.maxScrollExtent);
-      _templateScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _templateScrollController.jumpTo(targetOffset);
+      } else {
+        _templateScrollController.animateTo(
+          targetOffset,
+          duration: KoinMotion.entrance,
+          curve: KoinMotion.curve,
+        );
+      }
     }
   }
 
@@ -213,11 +226,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final offset = 80.0 + index * 56.0;
       final targetOffset = (offset - MediaQuery.of(context).size.width / 2 + 28)
           .clamp(0.0, _cardColorScrollController.position.maxScrollExtent);
-      _cardColorScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _cardColorScrollController.jumpTo(targetOffset);
+      } else {
+        _cardColorScrollController.animateTo(
+          targetOffset,
+          duration: KoinMotion.entrance,
+          curve: KoinMotion.curve,
+        );
+      }
     }
   }
 

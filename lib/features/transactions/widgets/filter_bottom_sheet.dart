@@ -380,40 +380,32 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
           // ── Frosted Apply Button ──
           ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(
-                      KoinSpacing.screenInset,
-                      16,
-                      KoinSpacing.screenInset,
-                      MediaQuery.of(context).padding.bottom + 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context)
-                          .withValues(alpha: 0.85),
-                      border: Border(
-                        top: BorderSide(
-                          color: AppTheme.dividerColor(context)
-                              .withValues(alpha: 0.15),
-                        ),
-                      ),
-                    ),
-                    child: KoinPrimaryButton(
-                      label: 'Apply Filters',
-                      icon: Icons.check_rounded,
-                      onPressed: _apply,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  KoinSpacing.screenInset,
+                  16,
+                  KoinSpacing.screenInset,
+                  MediaQuery.of(context).padding.bottom + 16,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context).withValues(alpha: 0.85),
+                  border: Border(
+                    top: BorderSide(
+                      color: AppTheme.dividerColor(context)
+                          .withValues(alpha: 0.15),
                     ),
                   ),
                 ),
-              )
-              .koinAnimate(
-                context,
-                autoPlay: !MediaQuery.disableAnimationsOf(context),
-                onInit: KoinMotion.onInit(context),
-              )
-              .fadeIn(delay: 400.ms, duration: 300.ms)
-              .slideY(begin: 0.2, duration: 400.ms, curve: Curves.easeOutCubic),
+                child: KoinPrimaryButton(
+                  label: 'Apply Filters',
+                  icon: Icons.check_rounded,
+                  onPressed: _apply,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

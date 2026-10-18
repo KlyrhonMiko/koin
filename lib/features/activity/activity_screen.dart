@@ -45,7 +45,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   Widget build(BuildContext context) {
     ref.listen<int>(activityTabProvider, (previous, next) {
       if (_tabController.index != next) {
-        _tabController.animateTo(next);
+        _tabController.animateTo(
+          next,
+          duration: KoinMotion.duration(context, KoinMotion.entrance),
+          curve: KoinMotion.curve,
+        );
       }
     });
 

@@ -150,36 +150,20 @@ class TransactionsListScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             );
 
-                            Widget txAnimated =
-                                SwipeToDeleteTile(
-                                  key: Key(tx.id),
-                                  borderRadius: BorderRadius.zero,
-                                  backgroundColor: AppTheme.errorColor(context),
-                                  icon: Icons.delete_forever_rounded,
-                                  confirmTitle: 'Delete Transaction?',
-                                  confirmDescription: 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
-                                  onDelete: () async {
-                                    await ref
-                                        .read(transactionProvider.notifier)
-                                        .deleteTransaction(
-                                          tx.transferId ?? tx.id,
-                                        );
-                                  },
-                                  child: listItem,
-                                ).koinAnimate(
-                                  context,
-                                  autoPlay: !MediaQuery.disableAnimationsOf(
-                                    context,
-                                  ),
-                                  onInit: KoinMotion.onInit(context),
-                                  key: ValueKey('tx_item_${tx.id}'),
-                                );
-
-                            if (!AnimationTracker.hasSeen('tx_${tx.id}')) {
-                              txAnimated = (txAnimated as Animate)
-                                  .fade()
-                                  .slideX(begin: 0.05);
-                            }
+                            Widget txAnimated = SwipeToDeleteTile(
+                              key: Key(tx.id),
+                              borderRadius: BorderRadius.zero,
+                              backgroundColor: AppTheme.errorColor(context),
+                              icon: Icons.delete_forever_rounded,
+                              confirmTitle: 'Delete Transaction?',
+                              confirmDescription: 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
+                              onDelete: () async {
+                                await ref
+                                    .read(transactionProvider.notifier)
+                                    .deleteTransaction(tx.transferId ?? tx.id);
+                              },
+                              child: listItem,
+                            ).koinEntrance(context, token: 'tx_${tx.id}');
 
                             return Column(
                               key: ValueKey('group_item_${tx.id}'),
@@ -203,22 +187,10 @@ class TransactionsListScreen extends ConsumerWidget {
                       ),
                     );
 
-                    Widget dayGroupAnimated = dayGroup.koinAnimate(
+                    final dayGroupAnimated = dayGroup.koinEntrance(
                       context,
-                      autoPlay: !MediaQuery.disableAnimationsOf(context),
-                      onInit: KoinMotion.onInit(context),
-                      key: GlobalObjectKey('day_group_$dateKey'),
+                      token: 'day_$dateKey',
                     );
-
-                    if (!AnimationTracker.hasSeen('day_$dateKey')) {
-                      dayGroupAnimated = (dayGroupAnimated as Animate)
-                          .fadeIn(duration: 350.ms)
-                          .slideY(
-                            begin: 0.04,
-                            duration: 350.ms,
-                            curve: Curves.easeOutCubic,
-                          );
-                    }
 
                     return dayGroupAnimated;
                   },
