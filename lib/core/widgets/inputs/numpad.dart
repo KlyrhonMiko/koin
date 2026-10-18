@@ -58,9 +58,7 @@ class _NumPadState extends State<NumPad> {
 
   void _onPress(String value, NumPadAction action) {
     if (!widget.enabled) return;
-    if (action != NumPadAction.done) {
-      HapticService.light();
-    }
+    HapticService.light();
     setState(() {
       if (_replaceOnNextDigit &&
           (action == NumPadAction.digit || action == NumPadAction.decimal)) {
@@ -135,9 +133,10 @@ class _NumPadState extends State<NumPad> {
         return;
       }
 
-      final tokens = RegExp(
-        r'(\d+\.?\d*)|([+\-*/])',
-      ).allMatches(_expression).map((m) => m.group(0)!).toList();
+      final tokens = RegExp(r'(\d+\.?\d*)|([+\-*/])')
+          .allMatches(_expression)
+          .map((m) => m.group(0)!)
+          .toList();
 
       if (tokens.isEmpty) {
         _result = '0';
@@ -348,7 +347,6 @@ class _NumPadState extends State<NumPad> {
       child: _AnimatedKeyWrapper(
         label: widget.doneLabel,
         onTap: () {
-          HapticService.success();
           _onPress('Done', NumPadAction.done);
         },
         child: Padding(
@@ -468,9 +466,8 @@ class _NumPadState extends State<NumPad> {
                   action: NumPadAction.clear,
                   text: 'C',
                   color: AppTheme.errorContentColor(context),
-                  bgColor: AppTheme.errorContentColor(
-                    context,
-                  ).withValues(alpha: 0.08),
+                  bgColor: AppTheme.errorContentColor(context)
+                      .withValues(alpha: 0.08),
                 ),
                 _buildOperatorKey(context, '+', '+'),
               ],

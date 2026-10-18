@@ -147,6 +147,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           'Could not save schedule',
           subtitle: 'Your changes are kept. Try again.',
         );
+        HapticService.error();
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -154,7 +155,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   Future<void> _savePaymentImpl() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      HapticService.error();
+      return;
+    }
     if (_endDate != null &&
         DateTime(_endDate!.year, _endDate!.month, _endDate!.day).isBefore(
           DateTime(_startDate.year, _startDate.month, _startDate.day),
@@ -164,6 +168,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         'Check the end date',
         subtitle: 'The end date must be on or after the start date.',
       );
+      HapticService.error();
       return;
     }
     if (_titleController.text.trim().isEmpty) {
@@ -293,6 +298,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           .catchError((Object _) {});
     }
     if (mounted) {
+      HapticService.success();
       Navigator.pop(context);
     }
   }

@@ -50,19 +50,8 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         note: amount < 0 ? 'Released for spending' : null,
       );
 
-      final wasCompleted = goal.isCompleted;
       await ref.read(savingsGoalsProvider.notifier).addLog(log);
-      final isNowCompleted = goal.willComplete(amount);
-
-      if (!wasCompleted && isNowCompleted) {
-        HapticService.success();
-        await Future.delayed(const Duration(milliseconds: 150));
-        HapticService.medium();
-        await Future.delayed(const Duration(milliseconds: 100));
-        HapticService.heavy();
-      } else {
-        HapticService.success();
-      }
+      HapticService.success();
     }
   }
 

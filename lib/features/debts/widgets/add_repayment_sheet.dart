@@ -387,6 +387,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       await _submitImpl();
     } catch (error) {
       if (mounted) {
+        HapticService.error();
         KoinSnackBar.error(
           context,
           error is FinancialValidationException
@@ -402,12 +403,12 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   }
 
   Future<void> _submitImpl() async {
-    HapticService.medium();
     final amtStr = _amountController.text;
     if (amtStr.isEmpty) return;
     final amt =
         ref.read(settingsProvider).currency.tryParseInput(amtStr) ?? 0.0;
     if (!amt.isFinite || amt <= 0) {
+      HapticService.error();
       KoinSnackBar.error(context, 'Enter an amount greater than zero');
       return;
     }
@@ -503,6 +504,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
         );
 
     _saved = true;
+    HapticService.success();
     if (!mounted) return;
 
     KoinSnackBar.success(

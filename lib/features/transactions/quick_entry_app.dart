@@ -260,6 +260,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   void _showError(String error) {
+    HapticService.error();
     setState(() => _error = error);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

@@ -304,6 +304,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: () =>
                         _showCurrencyPicker(context, ref, settings.currency),
                   ),
+                  KoinSettingTile(
+                    title: 'Haptic feedback',
+                    subtitle: 'Vibrations for selections and action results',
+                    icon: Icons.vibration_rounded,
+                    trailing: Switch(
+                      value: settings.hapticsEnabled,
+                      onChanged: (enabled) => ref
+                          .read(settingsProvider.notifier)
+                          .setHapticsEnabled(enabled),
+                    ),
+                  ),
                 ],
               ),
               const Gap(KoinSpacing.sectionGap),

@@ -165,6 +165,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       await _saveImpl();
     } catch (_) {
       if (mounted) {
+        HapticService.error();
         KoinSnackBar.error(
           context,
           'Could not save debt',
@@ -177,8 +178,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   }
 
   Future<void> _saveImpl() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      HapticService.error();
+      return;
+    }
     if (_bnpl && _items.isEmpty) {
+      HapticService.error();
       KoinSnackBar.error(context, 'Add at least one purchase');
       return;
     }
@@ -228,6 +233,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     final preparedDebt = debt.copyWith(items: preparedItems);
 
     await ref.read(debtsProvider.notifier).saveDebt(preparedDebt);
+    HapticService.success();
 
     if (mounted) {
       KoinSnackBar.success(

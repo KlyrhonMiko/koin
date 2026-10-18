@@ -272,6 +272,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
           borderData: FlBorderData(show: false),
           barTouchData: BarTouchData(
             touchCallback: (FlTouchEvent event, barTouchResponse) {
+              final previousIndex = _touchedGroupIndex;
               setState(() {
                 if (!event.isInterestedForInteractions ||
                     barTouchResponse == null ||
@@ -283,8 +284,16 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                     barTouchResponse.spot!.touchedBarGroupIndex;
               });
 
-              if (event is FlTapDownEvent || event is FlPanStartEvent) {
-                HapticService.light();
+              final isTouch =
+                  event is FlTapDownEvent ||
+                  event is FlPanStartEvent ||
+                  event is FlPanUpdateEvent ||
+                  event is FlLongPressStart ||
+                  event is FlLongPressMoveUpdate;
+              if (isTouch &&
+                  _touchedGroupIndex >= 0 &&
+                  _touchedGroupIndex != previousIndex) {
+                HapticService.selection();
               }
             },
             touchTooltipData: BarTouchTooltipData(

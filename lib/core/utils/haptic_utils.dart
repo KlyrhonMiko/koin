@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 
 enum HapticLevel { light, medium, heavy, selection, success, error }
@@ -6,9 +7,10 @@ enum HapticLevel { light, medium, heavy, selection, success, error }
 /// Centralized service for haptic feedback across the application.
 /// Provides different levels of feedback for various user interactions.
 class HapticService {
+  static bool enabled = true;
   static bool _ordinaryFeedbackSent = false;
   static Future<void> _ordinary(Future<void> Function() send) {
-    if (_ordinaryFeedbackSent) return Future.value();
+    if (!enabled || _ordinaryFeedbackSent) return Future.value();
     _ordinaryFeedbackSent = true;
     scheduleMicrotask(() => _ordinaryFeedbackSent = false);
     return send();
@@ -36,13 +38,15 @@ class HapticService {
 
   /// Feedback for successful completion of an action.
   static Future<void> success() async {
-    // Combination of impacts to simulate success if needed,
-    // but selectionClick is often used for positive confirmation.
+    if (!enabled) return;
+    // Distinct from light tap acknowledgement; only after a committed write.
     await HapticFeedback.mediumImpact();
   }
 
   /// Feedback for failed actions, errors, or warnings.
   static Future<void> error() async {
-    await HapticFeedback.vibrate();
+    if (!enabled) return;
+    // A bounded impact instead of the platform's general-purpose vibration.
+    await HapticFeedback.heavyImpact();
   }
 }
