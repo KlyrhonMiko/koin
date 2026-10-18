@@ -135,9 +135,8 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 dateStr.toUpperCase(),
                 style: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.7),
+                  color: AppTheme.textLightColor(context)
+                      .withValues(alpha: 0.7),
                   fontSize: KoinTypography.overline,
                   fontWeight: KoinTypography.titleWeight,
                   letterSpacing: KoinTypography.overlineTracking,
@@ -204,96 +203,95 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.all(24),
       borderRadius: KoinShape.summary,
       shapeStyle: SummaryShapeStyle.dashboard,
+      topRightAction: Tooltip(
+        excludeFromSemantics: true,
+        message: settings.hideBalance
+            ? 'Show total balance'
+            : 'Hide total balance',
+        child: PressableScale(
+          semanticLabel: settings.hideBalance
+              ? 'Show total balance'
+              : 'Hide total balance',
+          enableHaptic: false,
+          onTap: () {
+            HapticService.selection();
+            ref
+                .read(settingsProvider.notifier)
+                .setHideBalance(!settings.hideBalance);
+          },
+          child: SizedBox(
+            key: const ValueKey('dashboard_balance_visibility'),
+            width: 48,
+            height: 48,
+            child: Icon(
+              settings.hideBalance
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+              color: Colors.white.withValues(
+                alpha: settings.hideBalance ? 0.6 : 0.9,
+              ),
+              size: 22,
+            ),
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
-                style: KoinTypography.summaryLabelStyle,
-              ),
-              ExcludeSemantics(
-                child: Text(
-                  '·',
-                  style: KoinTypography.summaryLabelStyle.copyWith(
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
+          Padding(
+            padding: const EdgeInsets.only(right: 44),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  excludedSavings > 0 ? 'Available Balance' : 'Total Balance',
+                  style: KoinTypography.summaryLabelStyle,
                 ),
-              ),
-              Text(currency.code, style: KoinTypography.summaryLabelStyle),
-            ],
-          ),
-          const Gap(6),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: settings.hideBalance
-                      ? const _HiddenBalanceMask(
-                          color: Colors.white,
-                          height:
-                              KoinTypography.summaryAmount *
-                              KoinTypography.amountHeight,
-                          prominent: true,
-                        )
-                      : FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedCounter(
-                            value: stats.currentBalance - excludedSavings,
-                            lastValueToken: 'dashboard_total_balance',
-                            formatter: currency.formatter.format,
-                            duration: const Duration(milliseconds: 1400),
-                            curve: Curves.easeOutCubic,
-                            style: KoinTypography.summaryAmountStyle,
-                          ),
-                        ),
-                ),
-              ),
-              const Gap(12),
-              Tooltip(
-                excludeFromSemantics: true,
-                message: settings.hideBalance
-                    ? 'Show balances'
-                    : 'Hide balances',
-                child: PressableScale(
-                  semanticLabel: settings.hideBalance
-                      ? 'Show balances'
-                      : 'Hide balances',
-                  enableHaptic: false,
-                  onTap: () {
-                    HapticService.selection();
-                    ref
-                        .read(settingsProvider.notifier)
-                        .setHideBalance(!settings.hideBalance);
-                  },
-                  child: SizedBox(
-                    key: const ValueKey('dashboard_balance_visibility'),
-                    width: 56,
-                    height: 56,
-                    child: Icon(
-                      settings.hideBalance
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: Colors.white.withValues(
-                        alpha: settings.hideBalance ? 0.6 : 0.9,
-                      ),
-                      size: 26,
+                ExcludeSemantics(
+                  child: Text(
+                    '·',
+                    style: KoinTypography.summaryLabelStyle.copyWith(
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Text(currency.code, style: KoinTypography.summaryLabelStyle),
+              ],
+            ),
           ),
-          const Gap(8),
+          const Gap(16),
+          SizedBox(
+            width: double.infinity,
+            child: SizedBox(
+              width: double.infinity,
+              child: settings.hideBalance
+                  ? const _HiddenBalanceMask(
+                      color: Colors.white,
+                      height:
+                          KoinTypography.summaryAmount *
+                          KoinTypography.amountHeight,
+                      prominent: true,
+                    )
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedCounter(
+                        value: stats.currentBalance - excludedSavings,
+                        lastValueToken: 'dashboard_total_balance',
+                        formatter: currency.formatter.format,
+                        duration: const Duration(milliseconds: 1400),
+                        curve: Curves.easeOutCubic,
+                        style: KoinTypography.summaryAmountStyle,
+                      ),
+                    ),
+            ),
+          ),
+          const Gap(16),
           Text(
             monthlySummary,
             style: TextStyle(
@@ -438,9 +436,6 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     if (stats.accounts.isEmpty) return const SizedBox.shrink();
     final displayedBalances = ref.watch(dashboardAccountBalancesProvider);
-    final hideBalance = ref.watch(
-      settingsProvider.select((s) => s.hideBalance),
-    );
     final visibleAccounts = stats.accounts.take(4).toList();
 
     return Column(
@@ -469,8 +464,12 @@ class DashboardScreen extends ConsumerWidget {
                 for (final account in visibleAccounts)
                   SizedBox(
                     width: cardWidth,
-                    child: PressableScale(
-                      pressedScale: 0.98,
+                    child: AccountItem(
+                      compact: true,
+                      account: account,
+                      balance: displayedBalances[account.id] ?? 0,
+                      currencySymbol: currency.symbol,
+                      currency: currency,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -479,13 +478,26 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         );
                       },
-                      child: _buildAccountCard(
-                        context,
-                        account,
-                        displayedBalances[account.id] ?? 0,
-                        currency,
-                        hideBalance: hideBalance,
-                      ),
+                      onPrivateToggle: () async {
+                        try {
+                          await ref
+                              .read(accountProvider.notifier)
+                              .updateAccount(
+                                account.copyWith(
+                                  excludeFromTotal: !account.excludeFromTotal,
+                                ),
+                              );
+                          HapticService.selection();
+                        } catch (_) {
+                          if (context.mounted) {
+                            KoinSnackBar.error(
+                              context,
+                              'Could not update account inclusion',
+                              subtitle: 'Try again.',
+                            );
+                          }
+                        }
+                      },
                     ),
                   ),
               ],
@@ -493,136 +505,6 @@ class DashboardScreen extends ConsumerWidget {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildAccountCard(
-    BuildContext context,
-    Account account,
-    double balance,
-    Currency currency, {
-    required bool hideBalance,
-  }) {
-    final colored = account.cardColor != null || account.logoAsset != null;
-    final baseColor = account.cardColor ?? account.color;
-    final textColor = colored
-        ? (account.cardForeground ?? Colors.white)
-        : AppTheme.textColor(context);
-    final iconColor = colored
-        ? textColor
-        : AppTheme.contentColor(context, account.color);
-    return Container(
-      decoration: BoxDecoration(
-        color: colored ? null : AppTheme.surfaceColor(context),
-        gradient: colored
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  baseColor.withValues(alpha: 0.95),
-                  baseColor.withValues(alpha: 0.8),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(KoinShape.field),
-        border: Border.all(
-          color: colored
-              ? Colors.white.withValues(alpha: 0.15)
-              : AppTheme.dividerColor(context).withValues(alpha: 0.6),
-          width: colored ? 0.5 : 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          if (colored)
-            Positioned.fill(
-              child: CardBackgroundShapes(
-                shapeType:
-                    account.cardShapeType ?? (account.id.hashCode.abs() % 8),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: account.logoAsset == null
-                            ? (colored ? textColor : account.color).withValues(
-                                alpha: 0.12,
-                              )
-                            : null,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: account.logoAsset != null
-                          ? Image.asset(
-                              account.logoAsset!,
-                              fit: BoxFit.cover,
-                              excludeFromSemantics: true,
-                            )
-                          : Icon(
-                              IconUtils.getIcon(account.iconCodePoint),
-                              color: iconColor,
-                              size: 16,
-                            ),
-                    ),
-                    const Gap(8),
-                    Expanded(
-                      child: Text(
-                        account.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colored
-                              ? textColor.withValues(alpha: 0.9)
-                              : AppTheme.textLightColor(context),
-                          fontSize: KoinTypography.caption,
-                          fontWeight: KoinTypography.labelWeight,
-                          height: 1.25,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(12),
-                SizedBox(
-                  height:
-                      MediaQuery.textScalerOf(
-                        context,
-                      ).scale(KoinTypography.sectionTitle) *
-                      1.25,
-                  child: hideBalance || account.excludeFromTotal
-                      ? _HiddenBalanceMask(color: textColor, height: 0)
-                      : FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedCounter(
-                            value: balance,
-                            lastValueToken: 'account_card_${account.id}',
-                            formatter: currency.formatter.format,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: KoinTypography.sectionTitle,
-                              fontWeight: KoinTypography.titleWeight,
-                              letterSpacing: 0,
-                              height: 1.25,
-                            ),
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -739,9 +621,8 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   label.toUpperCase(),
                   style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.6),
+                    color: AppTheme.textLightColor(context)
+                        .withValues(alpha: 0.6),
                     fontSize: KoinTypography.overline,
                     fontWeight: KoinTypography.titleWeight,
                     letterSpacing: KoinTypography.overlineTracking,
@@ -770,9 +651,8 @@ class DashboardScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(left: 64, right: 20),
                   child: Container(
                     height: 1,
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.5),
+                    color: AppTheme.dividerColor(context)
+                        .withValues(alpha: 0.5),
                   ),
                 ),
               );

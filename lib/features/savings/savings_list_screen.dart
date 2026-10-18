@@ -131,25 +131,63 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     NumberFormat currencyFormat,
     bool isDark,
   ) {
+    final settings = ref.watch(settingsProvider);
+    final hideAmount = settings.hideBalance;
     Widget card = KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.savings,
       padding: const EdgeInsets.all(24),
+      topRightAction: IconButton(
+        tooltip: hideAmount ? 'Show total saved' : 'Hide total saved',
+        onPressed: () {
+          HapticService.selection();
+          ref.read(settingsProvider.notifier).setHideBalance(!hideAmount);
+        },
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        iconSize: 22,
+        color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
+        icon: Icon(
+          hideAmount ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Total saved', style: PortfolioCardStyle.summaryLabel),
-          const Gap(12),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: AnimatedCounter(
-              value: summary.totalSaved,
-              formatter: currencyFormat.format,
-              duration: const Duration(milliseconds: 1400),
-              curve: Curves.easeOutCubic,
-              style: PortfolioCardStyle.summaryAmount,
+          Padding(
+            padding: const EdgeInsets.only(right: 44),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                const Text(
+                  'Total saved',
+                  style: KoinTypography.summaryLabelStyle,
+                ),
+                Text(
+                  '·  ${settings.currency.code}',
+                  style: KoinTypography.summaryLabelStyle,
+                ),
+              ],
             ),
           ),
+          const Gap(16),
+          if (hideAmount)
+            const Text(
+              '****',
+              semanticsLabel: 'Total saved hidden',
+              style: KoinTypography.summaryAmountStyle,
+            )
+          else
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: AnimatedCounter(
+                value: summary.totalSaved,
+                formatter: currencyFormat.format,
+                duration: const Duration(milliseconds: 1400),
+                curve: Curves.easeOutCubic,
+                style: PortfolioCardStyle.summaryAmount,
+              ),
+            ),
         ],
       ),
     );
@@ -328,8 +366,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     Widget state = KoinEmptyState.sliver(
       icon: Icons.savings_outlined,
       title: 'Start saving for what matters',
-      subtitle:
-          'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
+      subtitle: 'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
       action: Column(
         children: [
           PressableScale(
@@ -347,9 +384,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 boxShadow: [
                   AppTheme.boxShadow(
                     context,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.3),
+                    color: AppTheme.primaryColor(context)
+                        .withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),

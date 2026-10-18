@@ -7,7 +7,10 @@ import 'package:koin/core/utils/icon_utils.dart';
 import 'package:koin/core/widgets/primitives/animated_counter.dart';
 import 'package:koin/core/widgets/cards/card_background_shapes.dart';
 import 'package:koin/core/widgets/primitives/pressable_scale.dart';
+
 import 'portfolio_card_style.dart';
+import 'account_card_layout.dart';
+import 'account_card_amount.dart';
 
 class AccountItem extends StatelessWidget {
   final Account account;
@@ -22,6 +25,7 @@ class AccountItem extends StatelessWidget {
   final bool isSelected;
   final String? animationSessionKey;
   final bool animateBalance;
+  final bool compact;
 
   const AccountItem({
     super.key,
@@ -37,6 +41,7 @@ class AccountItem extends StatelessWidget {
     this.isSelected = false,
     this.animationSessionKey,
     this.animateBalance = true,
+    this.compact = false,
   });
 
   /// Whether the card has a coloured (non-default) background.
@@ -112,10 +117,10 @@ class AccountItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final money =
-        (currency ??
-                Currency(code: 'USD', symbol: currencySymbol, name: 'Currency'))
-            .formatter;
+    final accountCurrency =
+        currency ??
+        Currency(code: 'USD', symbol: currencySymbol, name: 'Currency');
+    final money = accountCurrency.formatter;
     final isPrivate = account.excludeFromTotal;
     if (isPrivate && animationSessionKey != null) {
       AnimationTracker.updateValue(
@@ -125,6 +130,90 @@ class AccountItem extends StatelessWidget {
     }
     final colored = _hasColoredBackground;
     final foreground = account.cardForeground;
+
+    if (compact && !isPreview) {
+      final textColor = colored
+          ? (foreground ?? Colors.white)
+          : AppTheme.textColor(context);
+      final amountStyle = TextStyle(
+        color: textColor,
+        fontSize: KoinTypography.sectionTitle,
+        fontWeight: KoinTypography.titleWeight,
+        height: 1.25,
+      );
+      return PressableScale(
+        onTap: onTap,
+        pressedScale: 0.98,
+        child: AccountCardLayout(
+          account: account,
+          selected: isSelected,
+          name: Text(
+            account.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colored
+                  ? textColor.withValues(alpha: 0.9)
+                  : AppTheme.textLightColor(context),
+              fontSize: KoinTypography.caption,
+              fontWeight: KoinTypography.labelWeight,
+              height: 1.25,
+            ),
+          ),
+          amount: SizedBox(
+            height:
+                MediaQuery.textScalerOf(context)
+                    .scale(KoinTypography.sectionTitle) *
+                1.25,
+            child: isPrivate
+                ? Text(
+                    '••••••',
+                    semanticsLabel: 'Balance hidden',
+                    style: amountStyle,
+                  )
+                : AccountCardAmount(
+                    value: balance,
+                    currency: accountCurrency,
+                    style: amountStyle,
+                  ),
+          ),
+          action: onPrivateToggle == null
+              ? null
+              : IconButton(
+                  tooltip: isPrivate
+                      ? 'Show balance and include in totals'
+                      : 'Hide balance and exclude from totals',
+                  onPressed: onPrivateToggle,
+                  icon: Icon(
+                    isPrivate
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
+                    size: 18,
+                    color: textColor.withValues(alpha: 0.8),
+                  ),
+                ),
+          footer: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (savingsAmount > 0 && !isPrivate) ...[
+                const Gap(2),
+                Text(
+                  '${money.format(savingsAmount)} in savings',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: KoinTypography.small,
+                    color: colored
+                        ? textColor.withValues(alpha: 0.7)
+                        : AppTheme.textLightColor(context),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
     return PressableScale(
       onTap: onTap,
@@ -282,12 +371,10 @@ class AccountItem extends StatelessWidget {
                                       alpha: isPrivate ? 0.5 : 0.8,
                                     )
                                   : (isPrivate
-                                        ? AppTheme.textLightColor(
-                                            context,
-                                          ).withValues(alpha: 0.4)
-                                        : AppTheme.primaryColor(
-                                            context,
-                                          ).withValues(alpha: 0.6)),
+                                        ? AppTheme.textLightColor(context)
+                                              .withValues(alpha: 0.4)
+                                        : AppTheme.primaryColor(context)
+                                              .withValues(alpha: 0.6)),
                             ),
                           ),
                         ),
@@ -304,9 +391,8 @@ class AccountItem extends StatelessWidget {
                                 ? (foreground ?? Colors.white).withValues(
                                     alpha: 0.5,
                                   )
-                                : AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.3),
+                                : AppTheme.textLightColor(context)
+                                      .withValues(alpha: 0.3),
                           ),
                         ),
                         child: trailing!,

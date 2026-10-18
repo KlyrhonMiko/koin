@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/widgets/cards/account_card_layout.dart';
+import 'package:koin/core/widgets/cards/account_card_amount.dart';
+import 'package:koin/core/widgets/inputs/grouped_amount_formatter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class AccountFormScreen extends ConsumerStatefulWidget {
@@ -77,8 +80,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           : currentBalance.toString();
     }
 
-    balanceController = TextEditingController(text: amountText)
-      ..addListener(_onInputChanged);
+    balanceController = TextEditingController(
+      text: GroupedAmountFormatter.formatText(amountText),
+    )..addListener(_onInputChanged);
 
     transferFeeController = TextEditingController(
       text:
@@ -283,8 +287,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     final confirmed = await ConfirmationSheet.show(
       context: context,
       title: 'Delete Account?',
-      description:
-          'All transactions associated with this account will be unlinked. This cannot be undone.',
+      description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.errorColor(context),
       icon: Icons.delete_forever_rounded,
@@ -418,282 +421,185 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   bool get _previewHasColoredBackground =>
       selectedCardColor != null || selectedLogoAsset != null;
 
-  BoxDecoration _previewCardDecoration(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (_previewHasColoredBackground) {
-      final baseColor = selectedCardColor ?? selectedColor;
-      return BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            baseColor.withValues(alpha: 0.95),
-            baseColor.withValues(alpha: 0.8),
-          ],
-          stops: const [0.2, 1.0],
+  Widget _buildAccountPreview(BuildContext context, Currency currency) {
+    String hex(Color color) =>
+        '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+    final account = Account(
+      id: widget.account?.id ?? 'account_preview',
+      name: nameController.text.trim(),
+      iconCodePoint: selectedIcon,
+      colorHex: hex(selectedColor),
+      logoAsset: selectedLogoAsset,
+      cardColorHex: selectedCardColor == null ? null : hex(selectedCardColor!),
+      cardShapeType: selectedCardShape,
+    );
+    final foreground = account.cardForeground ?? Colors.white;
+    final primary = _previewHasColoredBackground
+        ? foreground
+        : AppTheme.textColor(context);
+    final secondary = _previewHasColoredBackground
+        ? foreground.withValues(alpha: 0.9)
+        : AppTheme.textLightColor(context);
+    final balance = currency.tryParseInput(balanceController.text) ?? 0;
+    return AccountCardLayout(
+      account: account,
+      name: Text(
+        account.name.isEmpty ? 'Account name' : account.name,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: secondary,
+          fontWeight: KoinTypography.labelWeight,
+          fontSize: KoinTypography.caption,
+          height: 1.25,
         ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: baseColor.withValues(alpha: 0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          AppTheme.boxShadow(
-            context,
-            color: baseColor.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 0.5,
-        ),
-      );
-    }
-
-    final surfaceColor = AppTheme.surfaceColor(context);
-    return BoxDecoration(
-      color: surfaceColor,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : AppTheme.fieldBorderColor(context, lightOpacity: 0.6),
-        width: 1.2,
       ),
-      boxShadow: [
-        AppTheme.boxShadow(
-          context,
-          color: isDark
-              ? Colors.black.withValues(alpha: 0.3)
-              : Colors.black.withValues(alpha: 0.03),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
+      amount: SizedBox(
+        height:
+            MediaQuery.textScalerOf(context)
+                .scale(KoinTypography.sectionTitle) *
+            1.25,
+        child: AccountCardAmount(
+          value: balance,
+          currency: currency,
+          style: TextStyle(
+            color: primary,
+            fontWeight: KoinTypography.titleWeight,
+            fontSize: KoinTypography.sectionTitle,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountFields(BuildContext context, Currency currency) {
+    final style = TextStyle(
+      fontSize: KoinTypography.itemTitle,
+      fontWeight: KoinTypography.labelWeight,
+      color: AppTheme.textColor(context),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel(context, 'Account name'),
+        TextField(
+          key: const ValueKey('account_name_field'),
+          controller: nameController,
+          minLines: 1,
+          maxLines: null,
+          keyboardType: TextInputType.text,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          style: style.copyWith(fontSize: KoinTypography.cardAmount),
+          decoration: InputDecoration(
+            filled: false,
+            border: const UnderlineInputBorder(),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.fieldBorderColor(context)),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: AppTheme.primaryColor(context),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            hintText: 'e.g. Everyday account',
+          ),
+        ),
+        const Gap(24),
+        _fieldLabel(context, 'Balance'),
+        TextField(
+          key: const ValueKey('account_balance_field'),
+          controller: balanceController,
+          inputFormatters: const [GroupedAmountFormatter()],
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+            signed: true,
+          ),
+          textInputAction: TextInputAction.done,
+          style: style.copyWith(fontSize: KoinTypography.formTitle),
+          decoration: InputDecoration(
+            filled: false,
+            border: const UnderlineInputBorder(),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.fieldBorderColor(context)),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: AppTheme.primaryColor(context),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            hintText: '0.00',
+            prefixText: '${currency.symbol} ',
+          ),
         ),
       ],
     );
   }
 
-  List<Widget> _previewBackgroundShapes() {
-    if (!_previewHasColoredBackground) return const [];
+  Widget _fieldLabel(BuildContext context, String label) => Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      label,
+      style: TextStyle(
+        color: AppTheme.textLightColor(context),
+        fontSize: KoinTypography.caption,
+        fontWeight: KoinTypography.labelWeight,
+      ),
+    ),
+  );
 
-    final shapeType =
-        selectedCardShape ?? (widget.account?.id.hashCode.abs() ?? 0) % 8;
-    // AccountItem uses multiplier 3.0 for isPreview = true
-    const opacityMultiplier = 3.0;
+  Widget _sectionLabel(BuildContext context, String label) => Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      label,
+      style: TextStyle(
+        color: AppTheme.textColor(context),
+        fontSize: KoinTypography.sectionTitle,
+        fontWeight: KoinTypography.titleWeight,
+      ),
+    ),
+  );
 
-    return [
-      Positioned.fill(
-        child: CardBackgroundShapes(
-          shapeType: shapeType,
-          opacityMultiplier: opacityMultiplier,
+  Widget _settingRow(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) => SwitchListTile.adaptive(
+    title: Text(
+      title,
+      style: TextStyle(
+        fontSize: KoinTypography.body,
+        fontWeight: KoinTypography.labelWeight,
+        color: AppTheme.textColor(context),
+      ),
+    ),
+    subtitle: Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: KoinTypography.caption,
+          height: 1.4,
+          color: AppTheme.textLightColor(context),
         ),
       ),
-    ];
-  }
-
-  Widget _buildInteractivePreview(
-    BuildContext context,
-    List<Color> colors,
-    Currency currency,
-  ) {
-    final colored = _previewHasColoredBackground;
-    final foregroundHex = selectedCardColor == null
-        ? BankTemplate.foregroundHexFor(selectedLogoAsset)
-        : null;
-    final foreground = foregroundHex == null
-        ? Colors.white
-        : Color(int.parse(foregroundHex.replaceFirst('#', '0xFF')));
-
-    // Adaptive colors based on card background
-    final primaryTextColor = colored ? foreground : AppTheme.textColor(context);
-    final secondaryTextColor = colored
-        ? (foregroundHex == null
-              ? foreground.withValues(alpha: 0.85)
-              : foreground)
-        : AppTheme.textLightColor(context);
-    final hintColor = colored
-        ? foreground.withValues(alpha: 0.5)
-        : AppTheme.fieldHintColor(context, lightOpacity: 0.5);
-    final cursorColor = colored ? foreground : AppTheme.primaryColor(context);
-
-    return AnimatedContainer(
-      duration: KoinMotion.duration(context, const Duration(milliseconds: 300)),
-      curve: Curves.easeOutCubic,
-      decoration: _previewCardDecoration(context),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          ..._previewBackgroundShapes(),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KoinSpacing.screenInset,
-              vertical: 16,
-            ),
-            child: Row(
-              children: [
-                // Account Icon / Logo
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: selectedLogoAsset == null
-                        ? (colored
-                              ? foreground.withValues(alpha: 0.15)
-                              : selectedColor.withValues(alpha: 0.1))
-                        : null,
-                    border: selectedLogoAsset == null
-                        ? Border.all(
-                            color: colored
-                                ? foreground.withValues(alpha: 0.25)
-                                : selectedColor.withValues(alpha: 0.15),
-                            width: 1,
-                          )
-                        : null,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: selectedLogoAsset != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            selectedLogoAsset!,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Center(
-                          child: Icon(
-                            IconUtils.getIcon(selectedIcon),
-                            color: colored ? foreground : selectedColor,
-                            size: 24,
-                          ),
-                        ),
-                ),
-                const Gap(16),
-
-                // Name + Balance column
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Inline name field
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          inputDecorationTheme: const InputDecorationTheme(
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                            isDense: true,
-                            isCollapsed: true,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: nameController,
-                          enabled: true,
-                          textCapitalization: TextCapitalization.words,
-                          style: TextStyle(
-                            color: secondaryTextColor,
-                            fontWeight: KoinTypography.labelWeight,
-                            fontSize: KoinTypography.caption,
-                            letterSpacing: -0.1,
-                          ),
-                          cursorColor: cursorColor,
-                          cursorHeight: 14,
-                          decoration: InputDecoration(
-                            hintText: 'Account Name',
-                            hintStyle: TextStyle(
-                              color: hintColor,
-                              fontWeight: KoinTypography.labelWeight,
-                              fontSize: KoinTypography.caption,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                            isDense: true,
-                            isCollapsed: true,
-                          ),
-                        ),
-                      ),
-                      const Gap(2),
-                      // Inline balance field
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            currency.symbol,
-                            style: TextStyle(
-                              color: primaryTextColor,
-                              fontWeight: KoinTypography.headingWeight,
-                              fontSize: KoinTypography.sectionTitle,
-                              letterSpacing: KoinTypography.headingTracking,
-                            ),
-                          ),
-                          Flexible(
-                            child: Theme(
-                              data: Theme.of(context).copyWith(
-                                inputDecorationTheme:
-                                    const InputDecorationTheme(
-                                      border: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      contentPadding: EdgeInsets.zero,
-                                      isDense: true,
-                                      isCollapsed: true,
-                                    ),
-                              ),
-                              child: TextField(
-                                controller: balanceController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                style: TextStyle(
-                                  color: primaryTextColor,
-                                  fontWeight: KoinTypography.headingWeight,
-                                  fontSize: KoinTypography.sectionTitle,
-                                  letterSpacing: KoinTypography.headingTracking,
-                                ),
-                                cursorColor: cursorColor,
-                                cursorHeight: 18,
-                                decoration: InputDecoration(
-                                  hintText: '0.00',
-                                  hintStyle: TextStyle(
-                                    color: hintColor,
-                                    fontWeight: KoinTypography.headingWeight,
-                                    fontSize: KoinTypography.sectionTitle,
-                                    letterSpacing:
-                                        KoinTypography.headingTracking,
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                  isDense: true,
-                                  isCollapsed: true,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+    value: value,
+    onChanged: onChanged,
+    activeThumbColor: Theme.of(context).colorScheme.onPrimary,
+    activeTrackColor: AppTheme.primaryColor(context),
+    inactiveThumbColor: AppTheme.textLightColor(context),
+    inactiveTrackColor: AppTheme.fieldBorderColor(context),
+    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  );
 
   @override
   Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
@@ -730,8 +636,26 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         ),
         child: Column(
           children: [
-            // ── Interactive Preview Card ──
-            _buildInteractivePreview(context, colors, currency),
+            // Account preview
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final largeText =
+                    MediaQuery.textScalerOf(context).scale(13) > 19.5;
+                final columns = constraints.maxWidth < 280 || largeText ? 1 : 2;
+                final cardWidth =
+                    (constraints.maxWidth -
+                        KoinSpacing.cardGap * (columns - 1)) /
+                    columns;
+                return Center(
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: _buildAccountPreview(context, currency),
+                  ),
+                );
+              },
+            ),
+            const Gap(24),
+            _buildAccountFields(context, currency),
             const Gap(32),
 
             // ── Templates Section ──
@@ -746,9 +670,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 Text(
                   'Templates',
                   style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
+                    color: AppTheme.textLightColor(context)
+                        .withValues(alpha: 0.7),
                     fontSize: KoinTypography.caption,
                     fontWeight: KoinTypography.labelWeight,
                     letterSpacing: 0.3,
@@ -758,7 +681,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             ),
             const Gap(12),
             SizedBox(
-              height: 80,
+              height:
+                  60 +
+                  MediaQuery.textScalerOf(context)
+                          .scale(KoinTypography.overline) *
+                      1.5,
               child: ListView.builder(
                 controller: _templateScrollController,
                 scrollDirection: Axis.horizontal,
@@ -924,17 +851,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     Icon(
                                       Icons.image_rounded,
                                       size: 16,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.7),
+                                      color: AppTheme.primaryColor(context)
+                                          .withValues(alpha: 0.7),
                                     ),
                                     const Gap(6),
                                     Text(
                                       'Icon',
                                       style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.7),
+                                        color: AppTheme.textLightColor(context)
+                                            .withValues(alpha: 0.7),
                                         fontSize: KoinTypography.caption,
                                         fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
@@ -960,17 +885,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     Icon(
                                       Icons.color_lens_rounded,
                                       size: 16,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.7),
+                                      color: AppTheme.primaryColor(context)
+                                          .withValues(alpha: 0.7),
                                     ),
                                     const Gap(6),
                                     Text(
                                       'Color',
                                       style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.7),
+                                        color: AppTheme.textLightColor(context)
+                                            .withValues(alpha: 0.7),
                                         fontSize: KoinTypography.caption,
                                         fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
@@ -995,17 +918,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     Icon(
                                       Icons.wallpaper_rounded,
                                       size: 16,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.7),
+                                      color: AppTheme.primaryColor(context)
+                                          .withValues(alpha: 0.7),
                                     ),
                                     const Gap(6),
                                     Text(
                                       'Card Background',
                                       style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.7),
+                                        color: AppTheme.textLightColor(context)
+                                            .withValues(alpha: 0.7),
                                         fontSize: KoinTypography.caption,
                                         fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
@@ -1217,17 +1138,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     Icon(
                                       Icons.auto_awesome_motion_rounded,
                                       size: 16,
-                                      color: AppTheme.primaryColor(
-                                        context,
-                                      ).withValues(alpha: 0.7),
+                                      color: AppTheme.primaryColor(context)
+                                          .withValues(alpha: 0.7),
                                     ),
                                     const Gap(6),
                                     Text(
                                       'Card Decoration',
                                       style: TextStyle(
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.7),
+                                        color: AppTheme.textLightColor(context)
+                                            .withValues(alpha: 0.7),
                                         fontSize: KoinTypography.caption,
                                         fontWeight: KoinTypography.labelWeight,
                                         letterSpacing: 0.3,
@@ -1433,190 +1352,110 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   : const SizedBox.shrink(),
             ),
 
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
-                ),
-              ),
-              child: Material(
-                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: SwitchListTile(
-                  title: const Text(
-                    'Make Account Private',
-                    style: TextStyle(
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.labelWeight,
+            _sectionLabel(context, 'Account settings'),
+            const Gap(12),
+            Material(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(KoinShape.field),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  _settingRow(
+                    context,
+                    title: 'Private account',
+                    subtitle:
+                        'Hide the balance and leave it out of your total.',
+                    value: excludeFromTotal,
+                    onChanged: (value) {
+                      HapticService.light();
+                      setState(() => excludeFromTotal = value);
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      height: 1,
+                      color: AppTheme.fieldBorderColor(context),
                     ),
                   ),
-                  subtitle: const Text(
-                    'This will obfuscate the balance and exclude it from the total balance amount',
-                    style: TextStyle(fontSize: 12),
+                  _settingRow(
+                    context,
+                    title: 'Credit account',
+                    subtitle: 'Use this account for credit transactions.',
+                    value: isCredit,
+                    onChanged: _setCredit,
                   ),
-                  value: excludeFromTotal,
-                  onChanged: (value) {
-                    HapticService.light();
-                    setState(() => excludeFromTotal = value);
-                  },
-                  activeThumbColor: AppTheme.primaryColor(context),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                ],
+              ),
+            ),
+            const Gap(32),
+            _sectionLabel(context, 'Transfer fee'),
+            const Gap(6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Applied when transferring from this account.',
+                style: TextStyle(
+                  fontSize: KoinTypography.caption,
+                  color: AppTheme.textLightColor(context),
                 ),
               ),
             ),
             const Gap(16),
-
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
-                ),
-              ),
-              child: Material(
-                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: SwitchListTile(
-                  title: const Text(
-                    'Credit Account',
-                    style: TextStyle(
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Mark this account as a credit account',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  value: isCredit,
-                  onChanged: _setCredit,
-                  activeThumbColor: AppTheme.primaryColor(context),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
+            KoinChoiceControl(
+              segments: const [
+                KoinSegmentItem(label: 'Fixed amount'),
+                KoinSegmentItem(label: 'Percentage'),
+              ],
+              selectedIndex: isTransferFeePercentage ? 1 : 0,
+              onChanged: (index) =>
+                  setState(() => isTransferFeePercentage = index == 1),
             ),
-            const Gap(16),
-
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.fieldBorderColor(context, lightOpacity: 0.1),
-                ),
-              ),
-              child: Material(
-                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: SwitchListTile(
-                  title: const Text(
-                    'Use Percentage Fee',
-                    style: TextStyle(
-                      fontSize: KoinTypography.compact,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Calculate fee as a % of the transfer amount',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  value: isTransferFeePercentage,
-                  onChanged: (value) {
-                    HapticService.light();
-                    setState(() => isTransferFeePercentage = value);
-                  },
-                  activeThumbColor: AppTheme.primaryColor(context),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
+            const Gap(20),
+            _fieldLabel(
+              context,
+              isTransferFeePercentage ? 'Fee rate' : 'Fee amount',
             ),
-            const Gap(16),
-            TextFormField(
+            TextField(
+              key: const ValueKey('account_transfer_fee_field'),
               controller: transferFeeController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              textInputAction: TextInputAction.done,
               style: TextStyle(
-                fontSize: KoinTypography.itemTitle,
-                fontWeight: KoinTypography.labelWeight,
+                fontSize: KoinTypography.cardAmount,
+                fontWeight: KoinTypography.titleWeight,
                 color: AppTheme.textColor(context),
               ),
               decoration: InputDecoration(
-                filled: true,
-                fillColor: AppTheme.surfaceColor(context),
-                prefixIcon: Icon(
-                  isTransferFeePercentage
-                      ? Icons.percent_rounded
-                      : Icons.payments_rounded,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.8),
-                ),
-                labelText: isTransferFeePercentage
-                    ? 'Percentage Fee (e.g. 0.5)'
-                    : 'Fixed Fee (e.g. 10.00)',
-                labelStyle: TextStyle(
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.7),
-                  fontSize: KoinTypography.compact,
-                  fontWeight: KoinTypography.supportingWeight,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                hintText: '0.00',
+                prefixText: isTransferFeePercentage
+                    ? null
+                    : '${currency.symbol} ',
+                suffixText: isTransferFeePercentage ? '%' : null,
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                border: const UnderlineInputBorder(),
+                enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(
-                    color: AppTheme.hasEditorAppearance(context)
-                        ? AppTheme.fieldBorderColor(context)
-                        : AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                    width: AppTheme.hasEditorAppearance(context) ? 1 : 1.5,
+                    color: AppTheme.fieldBorderColor(context),
                   ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: AppTheme.hasEditorAppearance(context)
-                        ? AppTheme.fieldBorderColor(context)
-                        : AppTheme.textLightColor(
-                            context,
-                          ).withValues(alpha: 0.3),
-                    width: AppTheme.hasEditorAppearance(context) ? 1 : 1.5,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                focusedBorder: UnderlineInputBorder(
                   borderSide: BorderSide(
                     color: AppTheme.primaryColor(context),
                     width: 2,
                   ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: KoinSpacing.screenInset,
-                  vertical: 20,
-                ),
               ),
+            ),
+            const Gap(8),
+            _fieldLabel(
+              context,
+              isTransferFeePercentage
+                  ? 'Percentage of the transfer amount. Set to 0 for no fee.'
+                  : 'A flat fee per transfer. Set to 0 for no fee.',
             ),
             const Gap(40),
 

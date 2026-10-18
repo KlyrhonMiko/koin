@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/widgets/cards/account_card_layout.dart';
 import 'package:koin/features/accounts/account_form_screen.dart';
+import 'package:koin/features/accounts/account_reorder_grid.dart';
 
 /// Modular Accounts Tab: Encapsulates account listing, balance rendering,
 /// swipe-to-delete, drag-and-drop reordering, and empty state.
@@ -29,126 +31,186 @@ class AccountsTab extends ConsumerWidget {
         if (accounts.isEmpty) {
           return _buildEmptyState(context);
         }
-        return ReorderableListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            KoinSpacing.screenInset,
-            12,
-            KoinSpacing.screenInset,
-            100,
-          ),
-          itemCount: accounts.length,
-          footer: _buildAddAccountButton(context, ref),
-          onReorderItem: (oldIndex, newIndex) {
-            HapticService.medium();
-            ref
-                .read(accountProvider.notifier)
-                .reorderAccounts(oldIndex, newIndex);
-          },
-          proxyDecorator: koinReorderProxyDecorator,
-          itemBuilder: (context, index) {
-            final account = accounts[index];
-            final balance = stats.accountBalances[account.id] ?? 0;
-            final excludedSavings = goals
-                .where(
-                  (g) =>
-                      g.linkedAccountId == account.id &&
-                      !g.includeInDashboardBalance &&
-                      g.currentAmount > 0,
-                )
-                .fold<double>(0, (sum, g) => sum + g.currentAmount);
-            final displayBalance =
-                balance -
-                excludedSavings.clamp(0, balance.clamp(0, double.infinity));
-
-            Widget accountItem = AccountItem(
-              account: account,
-              balance: displayBalance,
-              savingsAmount: goals
-                  .where(
-                    (g) =>
-                        g.linkedAccountId == account.id &&
-                        g.includeInDashboardBalance &&
-                        g.currentAmount > 0,
-                  )
-                  .fold<double>(0, (sum, g) => sum + g.currentAmount),
-              currencySymbol: currency.symbol,
-              currency: currency,
-              animationSessionKey: animationSessionKey,
-              onTap: () {
-                HapticService.light();
-                Navigator.push(
-                  context,
-                  SlideUpRoute(page: AccountFormScreen(account: account)),
-                );
-              },
-              onPrivateToggle: () async {
-                final updatedAccount = account.copyWith(
-                  excludeFromTotal: !account.excludeFromTotal,
-                );
-                try {
-                  await ref
-                      .read(accountProvider.notifier)
-                      .updateAccount(updatedAccount);
-                  HapticService.selection();
-                } catch (_) {
-                  if (context.mounted) {
-                    KoinSnackBar.error(
-                      context,
-                      'Could not update account inclusion',
-                      subtitle: 'Try again.',
-                    );
-                  }
-                }
-              },
-              trailing: Listener(
-                onPointerDown: (_) => HapticService.light(),
-                child: ReorderableDragStartListener(
-                  index: index,
-                  child: Icon(
-                    Icons.drag_indicator_rounded,
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.2),
-                    size: 22,
-                  ),
-                ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
+            final width = constraints.maxWidth - KoinSpacing.screenInset * 2;
+            final columns = width < 280 || largeText ? 1 : 2;
+            final cardWidth =
+                (width - KoinSpacing.cardGap * (columns - 1)) / columns;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                KoinSpacing.screenInset,
+                12,
+                KoinSpacing.screenInset,
+                100,
               ),
-            );
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (accounts.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.drag_indicator_rounded,
+                            size: 16,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Hold and drag to rearrange',
+                              style: TextStyle(
+                                fontSize: KoinTypography.small,
+                                color: AppTheme.textLightColor(context),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  AccountReorderGrid(
+                    columns: columns,
+                    cardWidth: cardWidth,
+                    cardHeight:
+                        AccountCardLayout.minimumHeight(context) +
+                        (accounts.any(
+                              (a) =>
+                                  !a.excludeFromTotal &&
+                                  goals.any(
+                                    (g) =>
+                                        g.linkedAccountId == a.id &&
+                                        g.includeInDashboardBalance &&
+                                        g.currentAmount > 0,
+                                  ),
+                            )
+                            ? 2 +
+                                  MediaQuery.textScalerOf(context)
+                                          .scale(KoinTypography.small) *
+                                      1.5
+                            : 0),
+                    onReorder: (id, to) {
+                      final current = ref.read(accountProvider).value ?? [];
+                      final from = current.indexWhere((a) => a.id == id);
+                      if (from >= 0 && from != to) {
+                        HapticService.selection();
+                        ref
+                            .read(accountProvider.notifier)
+                            .reorderAccounts(from, to);
+                      }
+                    },
+                    addButton: _buildAddAccountButton(context),
+                    items: [
+                      ...List.generate(accounts.length, (index) {
+                        final account = accounts[index];
+                        final balance = stats.accountBalances[account.id] ?? 0;
+                        final excludedSavings = goals
+                            .where(
+                              (g) =>
+                                  g.linkedAccountId == account.id &&
+                                  !g.includeInDashboardBalance &&
+                                  g.currentAmount > 0,
+                            )
+                            .fold<double>(0, (sum, g) => sum + g.currentAmount);
+                        final displayBalance =
+                            balance -
+                            excludedSavings.clamp(
+                              0,
+                              balance.clamp(0, double.infinity),
+                            );
 
-            if (showEntranceAnimations) {
-              accountItem = accountItem
-                  .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
-                    onInit: KoinMotion.onInit(context),
-                  )
-                  .fade(delay: (index * 60).ms, duration: 400.ms)
-                  .slideY(
-                    begin: 0.1,
-                    duration: 400.ms,
-                    curve: Curves.easeOutCubic,
-                  );
-            }
+                        Widget accountItem = AccountItem(
+                          compact: true,
+                          account: account,
+                          balance: displayBalance,
+                          savingsAmount: goals
+                              .where(
+                                (g) =>
+                                    g.linkedAccountId == account.id &&
+                                    g.includeInDashboardBalance &&
+                                    g.currentAmount > 0,
+                              )
+                              .fold<double>(
+                                0,
+                                (sum, g) => sum + g.currentAmount,
+                              ),
+                          currencySymbol: currency.symbol,
+                          currency: currency,
+                          animationSessionKey: animationSessionKey,
+                          onTap: () {
+                            HapticService.light();
+                            Navigator.push(
+                              context,
+                              SlideUpRoute(
+                                page: AccountFormScreen(account: account),
+                              ),
+                            );
+                          },
+                          onPrivateToggle: () async {
+                            final updatedAccount = account.copyWith(
+                              excludeFromTotal: !account.excludeFromTotal,
+                            );
+                            try {
+                              await ref
+                                  .read(accountProvider.notifier)
+                                  .updateAccount(updatedAccount);
+                              HapticService.selection();
+                            } catch (_) {
+                              if (context.mounted) {
+                                KoinSnackBar.error(
+                                  context,
+                                  'Could not update account inclusion',
+                                  subtitle: 'Try again.',
+                                );
+                              }
+                            }
+                          },
+                        );
 
-            return KeyedSubtree(
-              key: ValueKey(account.id),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SwipeToDeleteTile(
-                  key: Key('dismiss_${account.id}'),
-                  borderRadius: BorderRadius.circular(24),
-                  fillRoundedCorners: true,
-                  backgroundColor: AppTheme.errorColor(context),
-                  icon: Icons.delete_rounded,
-                  confirmTitle: 'Delete Account?',
-                  confirmDescription:
-                      'All transactions associated with this account will be unlinked. This cannot be undone.',
-                  onDelete: () async {
-                    HapticService.heavy();
-                    await ref
-                        .read(accountProvider.notifier)
-                        .deleteAccount(account.id);
-                  },
-                  child: accountItem,
-                ),
+                        if (showEntranceAnimations) {
+                          accountItem = accountItem
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                              )
+                              .fade(delay: (index * 60).ms, duration: 400.ms)
+                              .slideY(
+                                begin: 0.1,
+                                duration: 400.ms,
+                                curve: Curves.easeOutCubic,
+                              );
+                        }
+
+                        return (
+                          id: account.id,
+                          child: SwipeToDeleteTile(
+                            key: Key('dismiss_${account.id}'),
+                            borderRadius: BorderRadius.circular(
+                              KoinShape.field,
+                            ),
+                            fillRoundedCorners: true,
+                            backgroundColor: AppTheme.errorColor(context),
+                            icon: Icons.delete_rounded,
+                            confirmTitle: 'Delete Account?',
+                            confirmDescription: 'All transactions associated with this account will be unlinked. This cannot be undone.',
+                            onDelete: () async {
+                              HapticService.heavy();
+                              await ref
+                                  .read(accountProvider.notifier)
+                                  .deleteAccount(account.id);
+                            },
+                            child: accountItem,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ],
               ),
             );
           },
@@ -160,13 +222,15 @@ class AccountsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddAccountButton(BuildContext context, WidgetRef ref) {
-    final button = Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+  Widget _buildAddAccountButton(BuildContext context) {
+    final button = Tooltip(
+      message: 'Add new account',
+      excludeFromSemantics: true,
       child: KoinAddButton(
-        label: 'Add new account',
+        label: 'Add account',
+        stacked: true,
+        borderRadius: KoinShape.field,
         onPressed: () {
-          HapticService.medium();
           Navigator.push(
             context,
             SlideUpRoute(page: const AccountFormScreen()),
@@ -177,7 +241,9 @@ class AccountsTab extends ConsumerWidget {
 
     if (showEntranceAnimations) {
       return button
-          .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+          .koinAnimate(
+            context,
+            autoPlay: !MediaQuery.disableAnimationsOf(context),
             onInit: KoinMotion.onInit(context),
           )
           .fade(duration: 250.ms, curve: Curves.easeOutCubic)

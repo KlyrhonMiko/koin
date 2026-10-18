@@ -196,20 +196,20 @@ void main() {
         .descendant(of: card, matching: find.byType(AnimatedCounter))
         .first;
     final summary = find.descendant(of: card, matching: find.byType(Text)).last;
-    final balanceToggle = find.byTooltip('Hide balances');
+    final balanceToggle = find.byTooltip('Hide total balance');
     expect(
-      tester.getCenter(amount).dy,
+      tester.getCenter(find.text('Total Balance')).dy,
       closeTo(tester.getCenter(balanceToggle).dy, 1),
     );
     expect(
-      tester.getTopLeft(summary).dy - tester.getBottomLeft(balanceToggle).dy,
-      closeTo(8, 1),
+      tester.getTopLeft(summary).dy - tester.getBottomLeft(amount).dy,
+      closeTo(16, 1),
     );
     expect(
       tester.getTopLeft(amount).dx,
       closeTo(tester.getTopLeft(find.text('Total Balance')).dx, 1),
     );
-    expect(tester.getSize(balanceToggle), const Size(56, 56));
+    expect(tester.getSize(balanceToggle), const Size(48, 48));
     expect(tester.takeException(), isNull);
   });
 

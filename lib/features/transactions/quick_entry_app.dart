@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/widgets/inputs/app_input_focus.dart';
 
 const quickWindowChannel = MethodChannel('koin/quick_window');
 
@@ -84,6 +85,7 @@ class QuickEntryApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       theme: _theme(settings.themeColor, false),
       darkTheme: _theme(settings.themeColor, true),
+      builder: (context, child) => AppInputFocus(child: child!),
       home: KoinFormTheme(builder: (_) => const QuickEntryFlow()),
     );
   }

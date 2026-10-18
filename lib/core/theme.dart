@@ -258,6 +258,24 @@ class AppTheme {
               onError: foregroundFor(errorColor),
             ),
       scaffoldBackgroundColor: backgroundColor,
+      tooltipTheme: TooltipThemeData(
+        preferBelow: false,
+        verticalOffset: 12,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        textAlign: TextAlign.center,
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: dividerColor.withValues(alpha: 0.7)),
+        ),
+        textStyle: TextStyle(
+          color: textColor,
+          fontFamily: KoinTypography.fontFamily,
+          fontSize: KoinTypography.compact,
+          fontWeight: KoinTypography.labelWeight,
+        ),
+      ),
       textTheme: baseTheme.textTheme
           .apply(fontFamily: KoinTypography.fontFamily)
           .copyWith(

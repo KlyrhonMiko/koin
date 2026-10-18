@@ -195,85 +195,78 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           children: [
             KoinSummaryCard(
               shapeStyle: SummaryShapeStyle.analysis,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.all(24),
+              topRightAction: IconButton(
+                tooltip: hideAmount ? 'Show spending' : 'Hide spending',
+                onPressed: () {
+                  HapticService.selection();
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setHideBalance(!hideAmount);
+                },
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                iconSize: 22,
+                color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
+                icon: Icon(
+                  hideAmount
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      const Text(
-                        'Total Spent',
-                        style: KoinTypography.summaryLabelStyle,
-                      ),
-                      Text(
-                        '·  ${currency.code}',
-                        style: KoinTypography.summaryLabelStyle,
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 44),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        const Text(
+                          'Total Spent',
+                          style: KoinTypography.summaryLabelStyle,
+                        ),
+                        Text(
+                          '·  ${currency.code}',
+                          style: KoinTypography.summaryLabelStyle,
+                        ),
+                      ],
+                    ),
                   ),
-                  const Gap(6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: hideAmount
-                            ? const SizedBox(
-                                height: 42,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    '****',
-                                    semanticsLabel: 'Spending hidden',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 30,
-                                      fontWeight:
-                                          KoinTypography.supportingWeight,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: AnimatedCounter(
-                                  value: analysis.totalExpense,
-                                  formatter: currency.formatter.format,
-                                  duration: const Duration(milliseconds: 1000),
-                                  style: KoinTypography.summaryAmountStyle,
+                  const Gap(16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: hideAmount
+                        ? const SizedBox(
+                            height: 42,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '****',
+                                semanticsLabel: 'Spending hidden',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: KoinTypography.supportingWeight,
+                                  letterSpacing: 1.5,
                                 ),
                               ),
-                      ),
-                      const Gap(12),
-                      IconButton(
-                        tooltip: hideAmount ? 'Show spending' : 'Hide spending',
-                        onPressed: () {
-                          HapticService.selection();
-                          ref
-                              .read(settingsProvider.notifier)
-                              .setHideBalance(!hideAmount);
-                        },
-                        constraints: const BoxConstraints(
-                          minWidth: 56,
-                          minHeight: 56,
-                        ),
-                        iconSize: 26,
-                        color: Colors.white.withValues(
-                          alpha: hideAmount ? 0.6 : 0.9,
-                        ),
-                        icon: Icon(
-                          hideAmount
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
-                        ),
-                      ),
-                    ],
+                            ),
+                          )
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: AnimatedCounter(
+                              value: analysis.totalExpense,
+                              formatter: currency.formatter.format,
+                              duration: const Duration(milliseconds: 1000),
+                              style: KoinTypography.summaryAmountStyle,
+                            ),
+                          ),
                   ),
                   if (analysis.previousExpense != null &&
                       analysis.previousExpense != 0) ...[
-                    const Gap(8),
+                    const Gap(16),
                     if (hideAmount)
                       const Text(
                         'Spending comparison hidden',

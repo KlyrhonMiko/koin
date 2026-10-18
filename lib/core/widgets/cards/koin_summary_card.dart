@@ -15,6 +15,7 @@ enum SummaryShapeStyle {
 /// Hero summary surface with a primary gradient and translucent account-style shapes.
 class KoinSummaryCard extends StatelessWidget {
   final Widget child;
+  final Widget? topRightAction;
   final Gradient? gradient;
   final Color? glowColor;
   final double borderRadius;
@@ -25,6 +26,7 @@ class KoinSummaryCard extends StatelessWidget {
   const KoinSummaryCard({
     super.key,
     required this.child,
+    this.topRightAction,
     this.gradient,
     this.glowColor,
     this.borderRadius = KoinShape.summary,
@@ -106,6 +108,9 @@ class KoinSummaryCard extends StatelessWidget {
           // The eclipse pattern already decorates opposite corners.
           if (shapeStyle != SummaryShapeStyle.debtDetails) _buildCornerAccent(),
           Padding(padding: padding, child: child),
+          if (topRightAction != null)
+            // Center the 48px tap target on the label's first text line.
+            Positioned(top: 10, right: 20, child: topRightAction!),
         ],
       ),
     );

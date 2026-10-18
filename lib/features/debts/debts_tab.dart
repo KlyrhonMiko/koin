@@ -53,7 +53,7 @@ class DebtsTab extends ConsumerWidget {
           header: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeroSummaryCard(context, summary, debts.length, fmt),
+              _buildHeroSummaryCard(context, ref, summary, fmt),
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: KoinSectionHeader(title: 'Your balances'),
@@ -105,10 +105,12 @@ class DebtsTab extends ConsumerWidget {
   // ── Hero Summary Card ──
   Widget _buildHeroSummaryCard(
     BuildContext context,
+    WidgetRef ref,
     DebtSummary summary,
-    int activeCount,
     NumberFormat currencyFormat,
   ) {
+    final settings = ref.watch(settingsProvider);
+    final hideAmount = settings.hideBalance;
     final netBalance = summary.netBalance;
     final totalRepaid = summary.totalRepaid;
     final cardColor = summary.isNegative
@@ -116,11 +118,21 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
-          padding: const EdgeInsets.fromLTRB(
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            16,
+          padding: const EdgeInsets.all(24),
+          topRightAction: IconButton(
+            tooltip: hideAmount ? 'Show net balance' : 'Hide net balance',
+            onPressed: () {
+              HapticService.selection();
+              ref.read(settingsProvider.notifier).setHideBalance(!hideAmount);
+            },
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            iconSize: 22,
+            color: Colors.white.withValues(alpha: hideAmount ? 0.6 : 0.9),
+            icon: Icon(
+              hideAmount
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+            ),
           ),
           shapeStyle: SummaryShapeStyle.defaultStyle,
           margin: const EdgeInsets.only(bottom: 24),
@@ -136,53 +148,55 @@ class DebtsTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Net Balance', style: PortfolioCardStyle.summaryLabel),
-                  Text(
-                    '${summary.activeCount} active',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: KoinTypography.caption,
-                      fontWeight: KoinTypography.labelWeight,
+              Padding(
+                padding: const EdgeInsets.only(right: 44),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    const Text(
+                      'Net Balance',
+                      style: KoinTypography.summaryLabelStyle,
                     ),
-                  ),
-                ],
-              ),
-              const Gap(16),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: AnimatedCounter(
-                  value: netBalance,
-                  lastValueToken: animationSessionKey != null
-                      ? 'debts_hero_total_$animationSessionKey'
-                      : null,
-                  formatter: (v) => currencyFormat.format(v),
-                  duration: const Duration(milliseconds: 1400),
-                  curve: Curves.easeOutCubic,
-                  style: PortfolioCardStyle.summaryAmount,
+                    Text(
+                      '·  ${settings.currency.code}',
+                      style: KoinTypography.summaryLabelStyle,
+                    ),
+                  ],
                 ),
               ),
               const Gap(16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Paid ${currencyFormat.format(totalRepaid)}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.small,
-                    ),
+              if (hideAmount)
+                const Text(
+                  '****',
+                  semanticsLabel: 'Net balance hidden',
+                  style: KoinTypography.summaryAmountStyle,
+                )
+              else
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedCounter(
+                    value: netBalance,
+                    lastValueToken: animationSessionKey != null
+                        ? 'debts_hero_total_$animationSessionKey'
+                        : null,
+                    formatter: (v) => currencyFormat.format(v),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOutCubic,
+                    style: PortfolioCardStyle.summaryAmount,
                   ),
-                  Icon(
-                    Icons.history_rounded,
-                    color: Colors.white.withValues(alpha: 0.4),
-                    size: 24,
-                  ),
-                ],
+                ),
+              const Gap(16),
+              Text(
+                hideAmount
+                    ? 'Repayment total hidden · ${summary.activeCount} active'
+                    : 'Paid ${currencyFormat.format(totalRepaid)} · ${summary.activeCount} active',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontWeight: KoinTypography.labelWeight,
+                  fontSize: KoinTypography.small,
+                ),
               ),
             ],
           ),
