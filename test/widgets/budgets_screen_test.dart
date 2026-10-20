@@ -118,7 +118,7 @@ void main() {
     'month navigation updates spending and returns to current month',
     (tester) async {
       await launch(tester);
-      expect(find.textContaining('spent · 89% used ·'), findsOneWidget);
+      expect(find.textContaining('spent · 89% used'), findsOneWidget);
       expect(
         tester
             .widget<IconButton>(
@@ -132,7 +132,7 @@ void main() {
       );
       await tester.tap(find.byTooltip('Previous month'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('spent · 11% used ·'), findsOneWidget);
+      expect(find.textContaining('spent · 11% used'), findsOneWidget);
       final now = DateTime.now();
       await tester.tap(
         find.text(
@@ -140,7 +140,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('spent · 89% used ·'), findsOneWidget);
+      expect(find.textContaining('spent · 89% used'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -161,7 +161,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('Show budget'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('spent · 89% used ·'), findsOneWidget);
+    expect(find.textContaining('spent · 89% used'), findsOneWidget);
     expect(
       tester
           .widget<AnimatedCounter>(
@@ -179,7 +179,7 @@ void main() {
     tester,
   ) async {
     await launch(tester, width: 320, scale: 1.6, dark: false, spent: 1000);
-    expect(find.textContaining('spent · 110% used ·'), findsOneWidget);
+    expect(find.textContaining('spent · 110% used'), findsOneWidget);
     expect(find.text('Over Budget'), findsOneWidget);
     expect(
       tester

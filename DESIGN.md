@@ -52,7 +52,7 @@ Match Activity & Flow's plain screen header, shared 20px screen inset, and compa
 
 Place month navigation as plain text with previous/next arrows beneath the card, without a pill background or border. Keep the controls accessible, prevent navigation beyond the current month, and let the month label return to the current month. Keep navigation available when no budgets are configured.
 
-Make Remaining the main teal card's label and large amount, using the shared summary typography. When overspent, show Over Budget and the amount exceeded. Combine the spent amount, percentage used, and remaining (or over-budget) amount into one wrapping sentence beneath the main amount, using the shared privacy preference. Omit separate Spent and Monthly Budget footer metrics. Do not add a separate totals section, progress bar, or metric cards beneath the month switcher. Use flat active-budget rows with small tinted category icons, progress bars, and separators only between items, preserving editing and setup actions.
+Make Remaining the main teal card's label and large amount, using the shared summary typography. When overspent, show Over Budget and the amount exceeded. Show only the spent amount and percentage used in the wrapping sentence beneath the main amount, using the shared privacy preference. Keep the remaining or over-budget amount in the main figure only. Omit separate Spent and Monthly Budget footer metrics. Do not add a separate totals section, progress bar, or metric cards beneath the month switcher. Use flat active-budget rows with small tinted category icons, progress bars, and separators only between items, preserving editing and setup actions.
 
 ## Native quick entry
 

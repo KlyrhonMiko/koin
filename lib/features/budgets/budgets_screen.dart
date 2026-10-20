@@ -502,9 +502,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 : totalBudget <= 0
                 ? 'No income allocated this month'
                 : '${currency.formatter.format(totalSpent)} spent · '
-                      '$percent% used · '
-                      '${currency.formatter.format((totalBudget - totalSpent).abs())} '
-                      '${isOver ? 'over budget' : 'remaining'}',
+                      '$percent% used',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: KoinTypography.small,
