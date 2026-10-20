@@ -26,6 +26,7 @@ Koin brings accounts, transactions, budgets, debts, and savings into one place. 
 | Feature | What you can do |
 | :--- | :--- |
 | **Everyday tracking** | Manage multiple accounts, record income and expenses, and transfer money with fixed or percentage fees. Search and filter your transaction history. |
+| **Bank interest** | Set an annual rate, optional tax deduction, and daily, monthly, or yearly payouts per account. Automatically record interest income and catch up when reopened. [How it works](docs/daily-interest.md). |
 | **Budgets & insights** | Set category budgets, follow spending trends, compare periods, and export reports as CSV or PDF. |
 | **Cashflow planning** | Organize recurring income and payments, see upcoming commitments, and project balances over the next week, month, or year. |
 | **Debts & credit** | Track money owed in either direction, itemized purchases, installment plans, and repayment history. |

@@ -7,6 +7,7 @@ import 'package:koin/core/widgets/cards/account_card_layout.dart';
 import 'package:koin/core/widgets/cards/account_card_amount.dart';
 import 'package:koin/core/widgets/inputs/grouped_amount_formatter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 
 class AccountFormScreen extends ConsumerStatefulWidget {
   final Account? account;
@@ -22,6 +23,12 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late final TextEditingController nameController;
   late final TextEditingController balanceController;
   late final TextEditingController transferFeeController;
+  late final TextEditingController interestRateController;
+  late final TextEditingController interestTaxController;
+  late final String _openingBalanceText;
+  late bool _dailyInterestEnabled;
+  late InterestPayoutFrequency _interestFrequency;
+  bool _showInterestDetails = false;
   late int selectedIcon;
   late Color selectedColor;
   late bool excludeFromTotal;
@@ -82,6 +89,20 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
     balanceController = TextEditingController(
       text: GroupedAmountFormatter.formatText(amountText),
+    )..addListener(_onInputChanged);
+    _openingBalanceText = balanceController.text;
+    _dailyInterestEnabled = widget.account?.hasInterest ?? false;
+    _interestFrequency =
+        widget.account?.interestFrequency ?? InterestPayoutFrequency.daily;
+    interestRateController = TextEditingController(
+      text: _dailyInterestEnabled
+          ? widget.account!.annualInterestRate.toString()
+          : '',
+    )..addListener(_onInputChanged);
+    interestTaxController = TextEditingController(
+      text: _dailyInterestEnabled && widget.account!.interestTaxRate > 0
+          ? widget.account!.interestTaxRate.toString()
+          : '',
     )..addListener(_onInputChanged);
 
     transferFeeController = TextEditingController(
@@ -283,6 +304,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     nameController.dispose();
     balanceController.dispose();
     transferFeeController.dispose();
+    interestRateController.dispose();
+    interestTaxController.dispose();
     _iconScrollController.dispose();
     _colorScrollController.dispose();
     _cardColorScrollController.dispose();
@@ -354,6 +377,19 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       );
       return;
     }
+    if (_dailyInterestEnabled &&
+        !isCredit &&
+        !DailyInterest.validRates(
+          _interestRate ?? double.nan,
+          _interestTax ?? double.nan,
+        )) {
+      KoinSnackBar.error(
+        context,
+        'Check interest rates',
+        subtitle: 'Enter an annual rate above 0% up to 100%, and tax from 0% to 100%.',
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       await _saveAccountImpl();
@@ -372,6 +408,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
   Future<void> _saveAccountImpl() async {
     if (nameController.text.isNotEmpty) {
+      // Finish outstanding days with the old rate before changing or disabling it.
+      if (widget.account?.hasInterest ?? false) {
+        await ref.read(dailyInterestProvider.notifier).processDue();
+        await ref.read(transactionProvider.future);
+      }
       HapticService.success();
       final isEditing = widget.account != null;
       final cardHex = selectedCardColor == null
@@ -384,7 +425,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               .currency
               .tryParseInput(balanceController.text) ??
           0.0;
-      if (isEditing) {
+      if (isEditing && balanceController.text == _openingBalanceText) {
+        // Automatic interest received while editing must not be erased by an
+        // unchanged balance field that still shows the opening value.
+        newInitialBalance = widget.account!.initialBalance;
+      } else if (isEditing) {
         final dashboardStats = ref.read(dashboardStatsProvider);
         final currentBalance =
             dashboardStats.accountBalances[widget.account!.id] ??
@@ -404,6 +449,16 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
         excludeFromTotal: excludeFromTotal,
         isCredit: isCredit,
+        annualInterestRate: _dailyInterestEnabled && !isCredit
+            ? _interestRate!
+            : 0,
+        interestTaxRate: _dailyInterestEnabled && !isCredit ? _interestTax! : 0,
+        interestFrequency: _interestFrequency,
+        interestStartDate: _dailyInterestEnabled && !isCredit
+            ? widget.account?.hasInterest == true
+                  ? widget.account!.interestStartDate
+                  : DailyInterest.day(DateTime.now())
+            : null,
         transferFeeAmount:
             ref
                 .read(settingsProvider)
@@ -585,41 +640,414 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   Widget _settingRow(
     BuildContext context, {
     required String title,
-    required String subtitle,
+    String? hint,
     required bool value,
-    required ValueChanged<bool> onChanged,
-  }) => SwitchListTile.adaptive(
-    title: Text(
-      title,
-      style: TextStyle(
-        fontSize: KoinTypography.body,
-        fontWeight: KoinTypography.labelWeight,
-        color: AppTheme.textColor(context),
+    required ValueChanged<bool>? onChanged,
+  }) {
+    final enabled = onChanged != null;
+    final disabledColor = AppTheme.textLightColor(context)
+        .withValues(alpha: 0.45);
+    final tile = SwitchListTile.adaptive(
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: KoinTypography.body,
+                fontWeight: KoinTypography.labelWeight,
+                color: enabled ? AppTheme.textColor(context) : disabledColor,
+              ),
+            ),
+          ),
+          if (!enabled) ...[
+            const Gap(8),
+            Icon(Icons.lock_outline_rounded, size: 16, color: disabledColor),
+          ],
+        ],
       ),
-    ),
-    subtitle: Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: KoinTypography.caption,
-          height: 1.4,
-          color: AppTheme.textLightColor(context),
-        ),
-      ),
-    ),
-    value: value,
-    onChanged: onChanged,
-    activeThumbColor: Theme.of(context).colorScheme.onPrimary,
-    activeTrackColor: AppTheme.primaryColor(context),
-    inactiveThumbColor: AppTheme.textLightColor(context),
-    inactiveTrackColor: AppTheme.fieldBorderColor(context),
-    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  );
+      value: value,
+      onChanged: onChanged,
+      activeThumbColor: Theme.of(context).colorScheme.onPrimary,
+      activeTrackColor: AppTheme.primaryColor(context),
+      inactiveThumbColor: enabled
+          ? AppTheme.textLightColor(context)
+          : disabledColor,
+      inactiveTrackColor: enabled
+          ? AppTheme.fieldBorderColor(context)
+          : AppTheme.fieldBorderColor(context).withValues(alpha: 0.25),
+      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    );
+    return hint == null ? tile : Tooltip(message: hint, child: tile);
+  }
 
   @override
   Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+
+  double? get _interestRate => ref
+      .read(settingsProvider)
+      .currency
+      .tryParseInput(interestRateController.text, precision: 6);
+
+  double? get _interestTax => ref
+      .read(settingsProvider)
+      .currency
+      .tryParseInput(
+        interestTaxController.text.isEmpty ? '0' : interestTaxController.text,
+        precision: 6,
+      );
+
+  Future<void> _selectInterestFrequency() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final selected = await showRadioSelectionSheet<InterestPayoutFrequency>(
+      context: context,
+      title: 'Interest paid',
+      options: InterestPayoutFrequency.values,
+      selected: _interestFrequency,
+      label: (frequency) => frequency.label,
+      showCheckmark: true,
+      compact: true,
+      itemKey: (frequency) => ValueKey('interest_frequency_${frequency.name}'),
+    );
+    if (selected != null && mounted) {
+      setState(() => _interestFrequency = selected);
+    }
+  }
+
+  Widget _interestPercentageField(
+    BuildContext context, {
+    required String label,
+    required String semanticLabel,
+    required String fieldKey,
+    required TextEditingController controller,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ExcludeSemantics(child: _fieldLabel(context, label)),
+      Semantics(
+        label: semanticLabel,
+        child: TextField(
+          key: ValueKey(fieldKey),
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.next,
+          style: TextStyle(
+            fontSize: KoinTypography.cardAmount,
+            fontWeight: KoinTypography.titleWeight,
+            color: AppTheme.textColor(context),
+          ),
+          decoration: InputDecoration(
+            hintText: '0',
+            suffixIcon: Center(
+              widthFactor: 1,
+              child: Text(
+                '%',
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: KoinTypography.body,
+                ),
+              ),
+            ),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 24,
+              minHeight: 48,
+            ),
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: const UnderlineInputBorder(),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.fieldBorderColor(context)),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: AppTheme.primaryColor(context),
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildInterestFields(BuildContext context, Currency currency) {
+    final estimate = DailyInterest.estimatePayout(
+      balance: currency.tryParseInput(balanceController.text) ?? 0,
+      annualRate: _interestRate ?? 0,
+      taxRate: _interestTax ?? 0,
+      decimalDigits: currency.decimalDigits,
+      frequency: _interestFrequency,
+      at: DateTime.now(),
+    );
+    final start = widget.account?.hasInterest == true
+        ? widget.account!.interestStartDate!
+        : DailyInterest.day(DateTime.now());
+    final processing = ref.watch(dailyInterestProvider);
+    final earned = widget.account == null
+        ? 0.0
+        : (ref.watch(transactionProvider).value ?? <AppTransaction>[])
+              .where(
+                (t) =>
+                    t.accountId == widget.account!.id &&
+                    t.type == TransactionType.income &&
+                    t.id.startsWith('interest:${widget.account!.id}:'),
+              )
+              .fold<double>(0, (sum, t) => sum + t.amount);
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children:
+            [
+                  TextButton(
+                    key: const ValueKey('account_interest_frequency_field'),
+                    onPressed: _selectInterestFrequency,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 48),
+                      foregroundColor: AppTheme.textColor(context),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Interest paid',
+                            style: TextStyle(
+                              fontSize: KoinTypography.caption,
+                              color: AppTheme.textLightColor(context),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _interestFrequency.label,
+                          style: const TextStyle(fontSize: KoinTypography.body),
+                        ),
+                        const Gap(6),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppTheme.textLightColor(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final rate = _interestPercentageField(
+                        context,
+                        label: 'Annual rate',
+                        semanticLabel: 'Annual interest rate (p.a.)',
+                        fieldKey: 'account_interest_rate_field',
+                        controller: interestRateController,
+                      );
+                      final tax = _interestPercentageField(
+                        context,
+                        label: 'Tax (optional)',
+                        semanticLabel: 'Tax on interest (optional)',
+                        fieldKey: 'account_interest_tax_field',
+                        controller: interestTaxController,
+                      );
+                      if (constraints.maxWidth < 320 ||
+                          MediaQuery.textScalerOf(context).scale(13) > 17) {
+                        return Column(children: [rate, const Gap(16), tax]);
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: rate),
+                          const Gap(24),
+                          Expanded(child: tax),
+                        ],
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text(
+                      'Est. ${currency.formatter.format(estimate)} / ${_interestFrequency.periodLabel} after tax',
+                      style: TextStyle(
+                        fontSize: KoinTypography.caption,
+                        color: AppTheme.textLightColor(context),
+                      ),
+                    ),
+                  ),
+                  Column(
+                    key: const ValueKey('account_interest_details'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(
+                        expanded: _showInterestDetails,
+                        child: TextButton(
+                          style:
+                              TextButton.styleFrom(
+                                foregroundColor: AppTheme.textLightColor(
+                                  context,
+                                ),
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 48),
+                                alignment: Alignment.centerLeft,
+                                splashFactory: NoSplash.splashFactory,
+                              ).copyWith(
+                                overlayColor: WidgetStateProperty.resolveWith(
+                                  (states) =>
+                                      states.contains(WidgetState.focused)
+                                      ? null
+                                      : Colors.transparent,
+                                ),
+                              ),
+                          onPressed: () {
+                            HapticService.light();
+                            setState(
+                              () =>
+                                  _showInterestDetails = !_showInterestDetails,
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'How it works',
+                                  style: TextStyle(
+                                    fontSize: KoinTypography.caption,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                _showInterestDetails
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _buildInterestReveal(
+                        context,
+                        key: const ValueKey('account_interest_help_reveal'),
+                        visible: _showInterestDetails,
+                        builder: (context) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:
+                                [
+                                      Text(
+                                        'Tracking from ${DateFormat.yMMMd().format(start)}.',
+                                        style: TextStyle(
+                                          fontSize: KoinTypography.caption,
+                                          color: AppTheme.textLightColor(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
+                                      if (earned > 0)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 8,
+                                          ),
+                                          child: Text(
+                                            'Interest recorded: ${currency.formatter.format(earned)}',
+                                            style: TextStyle(
+                                              fontSize: KoinTypography.caption,
+                                              color: AppTheme.textLightColor(
+                                                context,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          'Uses your closing balance and a 365-day year. Tax is deducted from interest; leave it blank for none. '
+                                          'Interest is added ${_interestFrequency == InterestPayoutFrequency.daily
+                                              ? 'after each day'
+                                              : _interestFrequency == InterestPayoutFrequency.monthly
+                                              ? 'at month-end'
+                                              : 'at year-end'}. '
+                                          'Koin catches up when open. Unpaid interest carries forward if you change the payout schedule. '
+                                          'This estimate assumes the current balance for a full period. '
+                                          'Rate changes start today. Edit entries to match your bank.',
+                                          style: TextStyle(
+                                            fontSize: KoinTypography.caption,
+                                            height: 1.4,
+                                            color: AppTheme.textLightColor(
+                                              context,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ]
+                                    .koinAnimate(
+                                      context,
+                                      autoPlay: !MediaQuery.disableAnimationsOf(
+                                        context,
+                                      ),
+                                      onInit: KoinMotion.onInit(context),
+                                      interval: KoinMotion.duration(
+                                        context,
+                                        40.ms,
+                                      ),
+                                    )
+                                    .fade(
+                                      duration: KoinMotion.entrance,
+                                      curve: KoinMotion.curve,
+                                    )
+                                    .scale(
+                                      begin: const Offset(0.95, 0.95),
+                                      duration: KoinMotion.entrance,
+                                      curve: KoinMotion.curve,
+                                    ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (processing.hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Could not update interest. Koin will retry automatically.',
+                        style: TextStyle(
+                          fontSize: KoinTypography.caption,
+                          color: AppTheme.errorColor(context),
+                        ),
+                      ),
+                    ),
+                ]
+                .koinAnimate(
+                  context,
+                  autoPlay: !MediaQuery.disableAnimationsOf(context),
+                  onInit: KoinMotion.onInit(context),
+                  interval: KoinMotion.duration(context, 40.ms),
+                )
+                .fade(duration: KoinMotion.entrance, curve: KoinMotion.curve)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  duration: KoinMotion.entrance,
+                  curve: KoinMotion.curve,
+                ),
+      ),
+    );
+  }
+
+  /// Match the app reveal guide: smooth top-anchored size change around the
+  /// staggered fade/scale children. Reduced motion renders the final state.
+  Widget _buildInterestReveal(
+    BuildContext context, {
+    required bool visible,
+    required WidgetBuilder builder,
+    Key? key,
+  }) {
+    final child = visible ? builder(context) : const SizedBox.shrink();
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return AnimatedSize(
+      key: key,
+      duration: KoinMotion.entrance,
+      curve: KoinMotion.curve,
+      alignment: Alignment.topCenter,
+      child: child,
+    );
+  }
 
   Widget _buildContent(BuildContext context) {
     final isEditing = widget.account != null;
@@ -1380,8 +1808,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   _settingRow(
                     context,
                     title: 'Private account',
-                    subtitle:
-                        'Hide the balance and leave it out of your total.',
+                    hint: 'Hide balance and exclude from totals.',
                     value: excludeFromTotal,
                     onChanged: (value) {
                       HapticService.light();
@@ -1398,26 +1825,39 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   _settingRow(
                     context,
                     title: 'Credit account',
-                    subtitle: 'Use this account for credit transactions.',
                     value: isCredit,
                     onChanged: _setCredit,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      height: 1,
+                      color: AppTheme.fieldBorderColor(context),
+                    ),
+                  ),
+                  _settingRow(
+                    context,
+                    title: 'Interest',
+                    hint: isCredit ? 'Available for deposit accounts.' : null,
+                    value: _dailyInterestEnabled && !isCredit,
+                    onChanged: isCredit
+                        ? null
+                        : (value) {
+                            HapticService.light();
+                            setState(() => _dailyInterestEnabled = value);
+                          },
                   ),
                 ],
               ),
             ),
+            _buildInterestReveal(
+              context,
+              key: const ValueKey('account_interest_reveal'),
+              visible: _dailyInterestEnabled && !isCredit,
+              builder: (context) => _buildInterestFields(context, currency),
+            ),
             const Gap(32),
             _sectionLabel(context, 'Transfer fee'),
-            const Gap(6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Applied when transferring from this account.',
-                style: TextStyle(
-                  fontSize: KoinTypography.caption,
-                  color: AppTheme.textLightColor(context),
-                ),
-              ),
-            ),
             const Gap(16),
             KoinChoiceControl(
               segments: const [
@@ -1468,12 +1908,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               ),
             ),
             const Gap(8),
-            _fieldLabel(
-              context,
-              isTransferFeePercentage
-                  ? 'Percentage of the transfer amount. Set to 0 for no fee.'
-                  : 'A flat fee per transfer. Set to 0 for no fee.',
-            ),
+            _fieldLabel(context, 'Set to 0 for no fee.'),
             const Gap(40),
 
             KoinPrimaryButton(

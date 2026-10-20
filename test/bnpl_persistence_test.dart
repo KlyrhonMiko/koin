@@ -33,7 +33,7 @@ void main() {
     await db.setVersion(38);
     await helper.close();
     db = await helper.database;
-    expect(await db.getVersion(), 41);
+    expect(await db.getVersion(), 43);
     final migrated = (await helper.getDebts()).single;
     expect(migrated.isPurchaseAccount, isFalse);
     expect(migrated.currentAmount, 100);

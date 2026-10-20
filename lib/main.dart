@@ -43,17 +43,20 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   final _quickTransactions = QuickTransactionService();
   late AutomaticPaymentsNotifier _automaticPayments;
+  late DailyInterestNotifier _dailyInterest;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _automaticPayments = ref.read(automaticPaymentsProvider.notifier);
+    _dailyInterest = ref.read(dailyInterestProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _quickTransactions.initialize(_openQuickTransaction);
         ref.read(recoveryServiceProvider).start();
         _automaticPayments.start();
+        _dailyInterest.start();
       }
     });
   }
@@ -66,6 +69,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       ref.read(automaticPaymentsProvider.notifier).start();
+      ref.read(dailyInterestProvider.notifier).start();
       // The standalone window has its own engine and provider container.
       ref.invalidate(transactionProvider);
       ref.invalidate(plannedPaymentProvider);
@@ -73,6 +77,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       ref.invalidate(categoriesProvider);
     } else if (mounted) {
       ref.read(automaticPaymentsProvider.notifier).stop();
+      ref.read(dailyInterestProvider.notifier).stop();
     }
   }
 
@@ -81,6 +86,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _quickTransactions.dispose();
     _automaticPayments.stop();
+    _dailyInterest.stop();
     super.dispose();
   }
 

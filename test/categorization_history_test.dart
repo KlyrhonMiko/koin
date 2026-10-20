@@ -573,7 +573,7 @@ void main() {
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
       await db.update('accounts', {'initialBalance': 1000000});
-      expect(await db.getVersion(), 41);
+      expect(await db.getVersion(), 43);
       expect((await suggest('Restored bakery'))?.destinationId, 'cat_food');
 
       await ledger.recordTransaction(
@@ -597,7 +597,7 @@ void main() {
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
       await db.update('accounts', {'initialBalance': 1000000});
-      expect(await db.getVersion(), 41);
+      expect(await db.getVersion(), 43);
       expect(await db.query('categorization_feedback'), isEmpty);
       expect((await suggest('Repair bakery'))?.destinationId, 'cat_food');
       expect((await ledger.getTransactions()).single.id, 'repair');
@@ -627,7 +627,7 @@ void main() {
       await File(await helper.getDatabaseFilePath()).copy(backup.path);
       expect(await helper.restoreDatabase(backup.path), isTrue);
       db = await helper.database;
-      expect(await db.getVersion(), 41);
+      expect(await db.getVersion(), 43);
       expect((await ledger.getTransactions()).single.id, 'preserved');
       expect((await formSuggestion('Coffee shop'))?.canAutoApply, isFalse);
       final indexes = await db.rawQuery(

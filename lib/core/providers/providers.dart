@@ -3,6 +3,7 @@ export 'automatic_payments_provider.dart';
 export 'category_provider.dart';
 export 'dashboard_provider.dart';
 export 'debt_provider.dart';
+export 'daily_interest_provider.dart';
 export 'forecast_provider.dart';
 export 'navigation_provider.dart';
 export 'planned_payment_provider.dart';

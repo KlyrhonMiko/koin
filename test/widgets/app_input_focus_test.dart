@@ -66,6 +66,9 @@ void main() {
       await tester.pump();
       expect(focus.hasFocus, isTrue);
       tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.pumpAndSettle();
       expect(focus.hasFocus, isFalse);
       // The field remains usable after dismissal.
@@ -152,4 +155,76 @@ void main() {
     await tester.pump();
     expect(focus.hasFocus, isTrue);
   });
+
+  testWidgets(
+    'transient zero insets while keyboard opens do not dismiss the field',
+    (tester) async {
+      addTearDown(tester.view.resetViewInsets);
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await launch(tester, TextField(focusNode: focus));
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 100);
+      await tester.pump(const Duration(milliseconds: 16));
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pump(const Duration(milliseconds: 16));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(focus.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+    },
+  );
+
+  testWidgets('reopening the same field cancels a pending keyboard dismissal', (
+    tester,
+  ) async {
+    addTearDown(tester.view.resetViewInsets);
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    await launch(tester, TextField(focusNode: focus));
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.tap(find.byType(TextField));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(focus.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+  });
+
+  testWidgets(
+    'switching fields while keyboard resizes keeps the new field focused',
+    (tester) async {
+      addTearDown(tester.view.resetViewInsets);
+      final first = FocusNode();
+      final second = FocusNode();
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+      await launch(
+        tester,
+        Column(
+          children: [
+            TextField(focusNode: first),
+            TextField(focusNode: second),
+          ],
+        ),
+      );
+      await tester.tap(find.byType(TextField).first);
+      await tester.pump();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.tap(find.byType(TextField).last);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(first.hasFocus, isFalse);
+      expect(second.hasFocus, isTrue);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pumpAndSettle();
+      expect(second.hasFocus, isTrue);
+    },
+  );
 }

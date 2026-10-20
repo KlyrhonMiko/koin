@@ -275,7 +275,7 @@ void main() {
       await db.setVersion(37);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 41);
+      expect(await db.getVersion(), 43);
       final legacy = (await helper.getSavingsGoals()).firstWhere(
         (g) => g.id == 'goal',
       );
@@ -322,7 +322,7 @@ void main() {
       await db.setVersion(36);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 41);
+      expect(await db.getVersion(), 43);
       expect(await saved('goal'), 63);
       expect((await helper.getSavingsLogs('goal')).length, 2);
       expect(

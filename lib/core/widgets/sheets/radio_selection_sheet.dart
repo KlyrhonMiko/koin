@@ -13,6 +13,7 @@ Future<T?> showRadioSelectionSheet<T>({
   Key? contentKey,
   Key Function(T)? itemKey,
   bool showCheckmark = false,
+  bool compact = false,
 }) => showModalBottomSheet<T>(
   context: context,
   isScrollControlled: true,
@@ -35,13 +36,15 @@ Future<T?> showRadioSelectionSheet<T>({
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                  padding: EdgeInsets.fromLTRB(4, 0, 4, compact ? 8 : 12),
                   child: Text(
                     title,
                     style: Theme.of(sheetContext).textTheme.titleLarge
                         ?.copyWith(
-                          fontSize: 22,
-                          fontWeight: KoinTypography.headingWeight,
+                          fontSize: compact ? KoinTypography.sectionTitle : 22,
+                          fontWeight: compact
+                              ? KoinTypography.titleWeight
+                              : KoinTypography.headingWeight,
                         ),
                   ),
                 ),
@@ -53,7 +56,7 @@ Future<T?> showRadioSelectionSheet<T>({
                       key: itemKey?.call(option),
                       selected: option == selected,
                       selectedColor: AppTheme.textColor(sheetContext),
-                      selectedTileColor: showCheckmark
+                      selectedTileColor: showCheckmark && !compact
                           ? AppTheme.primaryColor(sheetContext)
                                 .withValues(alpha: 0.08)
                           : null,
@@ -62,18 +65,43 @@ Future<T?> showRadioSelectionSheet<T>({
                               borderRadius: BorderRadius.circular(12),
                             )
                           : null,
-                      minTileHeight: 64,
+                      minTileHeight: compact ? 48 : 64,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      title: Text(
-                        label(option),
-                        style: Theme.of(sheetContext).textTheme.bodyLarge
-                            ?.copyWith(
-                              fontWeight: option == selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              label(option),
+                              style: Theme.of(sheetContext).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    fontSize: compact
+                                        ? KoinTypography.body
+                                        : null,
+                                    fontWeight: option == selected
+                                        ? compact
+                                              ? KoinTypography.titleWeight
+                                              : FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
                             ),
+                          ),
+                          if (compact && showCheckmark && option == selected)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                                color:
+                                    accentColor ??
+                                    AppTheme.primaryColor(sheetContext),
+                              ),
+                            ),
+                        ],
                       ),
-                      trailing: showCheckmark
+                      trailing: compact && showCheckmark
+                          ? null
+                          : showCheckmark
                           ? option == selected
                                 ? Icon(
                                     Icons.check_rounded,

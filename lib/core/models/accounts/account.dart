@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'bank_templates.dart';
+import 'daily_interest.dart';
 
 class Account {
   final String id;
@@ -16,6 +18,18 @@ class Account {
   final double transferFeeAmount;
   final bool isTransferFeePercentage;
   final bool isCredit;
+  final double annualInterestRate;
+  final double interestTaxRate;
+  final DateTime? interestStartDate;
+  final InterestPayoutFrequency interestFrequency;
+
+  bool get hasInterest =>
+      !isCredit &&
+      interestStartDate != null &&
+      DailyInterest.validRates(annualInterestRate, interestTaxRate);
+
+  bool get hasDailyInterest =>
+      hasInterest && interestFrequency == InterestPayoutFrequency.daily;
 
   Account({
     required this.id,
@@ -31,6 +45,10 @@ class Account {
     this.cardColorHex,
     this.cardShapeType,
     this.isCredit = false,
+    this.annualInterestRate = 0,
+    this.interestTaxRate = 0,
+    this.interestStartDate,
+    this.interestFrequency = InterestPayoutFrequency.daily,
   });
 
   Account copyWith({
@@ -47,6 +65,10 @@ class Account {
     String? Function()? cardColorHex,
     int? Function()? cardShapeType,
     bool? isCredit,
+    double? annualInterestRate,
+    double? interestTaxRate,
+    DateTime? Function()? interestStartDate,
+    InterestPayoutFrequency? interestFrequency,
   }) {
     return Account(
       id: id ?? this.id,
@@ -65,6 +87,12 @@ class Account {
           ? cardShapeType()
           : this.cardShapeType,
       isCredit: isCredit ?? this.isCredit,
+      annualInterestRate: annualInterestRate ?? this.annualInterestRate,
+      interestTaxRate: interestTaxRate ?? this.interestTaxRate,
+      interestStartDate: interestStartDate != null
+          ? interestStartDate()
+          : this.interestStartDate,
+      interestFrequency: interestFrequency ?? this.interestFrequency,
     );
   }
 
@@ -83,6 +111,10 @@ class Account {
       'cardColorHex': cardColorHex,
       'cardShapeType': cardShapeType,
       'isCredit': isCredit ? 1 : 0,
+      'annualInterestRate': annualInterestRate,
+      'interestTaxRate': interestTaxRate,
+      'interestStartDate': interestStartDate?.toIso8601String(),
+      'interestFrequency': interestFrequency.name,
     };
   }
 
@@ -101,6 +133,14 @@ class Account {
       cardColorHex: map['cardColorHex'],
       cardShapeType: map['cardShapeType'],
       isCredit: map['isCredit'] == 1,
+      annualInterestRate: (map['annualInterestRate'] as num?)?.toDouble() ?? 0,
+      interestTaxRate: (map['interestTaxRate'] as num?)?.toDouble() ?? 0,
+      interestStartDate: DateTime.tryParse(map['interestStartDate'] ?? ''),
+      interestFrequency:
+          InterestPayoutFrequency.values
+              .where((f) => f.name == map['interestFrequency'])
+              .firstOrNull ??
+          InterestPayoutFrequency.daily,
     );
   }
 

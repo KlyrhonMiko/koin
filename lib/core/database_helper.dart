@@ -4,8 +4,10 @@ import 'package:path/path.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/forecasting/forecast_history.dart';
 import 'package:flutter/material.dart';
+
 import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
 
@@ -34,6 +36,39 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 43) {
+      final columns = await db.rawQuery('PRAGMA table_info(accounts)');
+      if (columns.isNotEmpty) {
+        for (final entry in {
+          'interestFrequency': "TEXT NOT NULL DEFAULT 'daily'",
+          'interestAccrued': 'REAL NOT NULL DEFAULT 0',
+        }.entries) {
+          if (!columns.any((column) => column['name'] == entry.key)) {
+            await db.execute(
+              'ALTER TABLE accounts ADD COLUMN ${entry.key} ${entry.value}',
+            );
+          }
+        }
+      }
+    }
+    if (oldVersion < 42) {
+      final columns = await db.rawQuery('PRAGMA table_info(accounts)');
+      // Version 1 did not have accounts yet; its creation below uses the new schema.
+      if (columns.isNotEmpty) {
+        for (final entry in {
+          'annualInterestRate': 'REAL NOT NULL DEFAULT 0',
+          'interestTaxRate': 'REAL NOT NULL DEFAULT 0',
+          'interestStartDate': 'TEXT',
+          'interestNextDate': 'TEXT',
+        }.entries) {
+          if (!columns.any((column) => column['name'] == entry.key)) {
+            await db.execute(
+              'ALTER TABLE accounts ADD COLUMN ${entry.key} ${entry.value}',
+            );
+          }
+        }
+      }
+    }
     if (oldVersion >= 34 && oldVersion < 41) {
       await _upgradeCategorizationEvidence(db);
     }
@@ -666,7 +701,13 @@ CREATE TABLE accounts (
   logoAsset TEXT,
   cardColorHex TEXT,
   cardShapeType INTEGER,
-  isCredit INTEGER DEFAULT 0
+  isCredit INTEGER DEFAULT 0,
+  annualInterestRate REAL NOT NULL DEFAULT 0,
+  interestTaxRate REAL NOT NULL DEFAULT 0,
+  interestStartDate TEXT,
+  interestNextDate TEXT,
+  interestFrequency TEXT NOT NULL DEFAULT 'daily',
+  interestAccrued REAL NOT NULL DEFAULT 0
 )
 ''');
   }
@@ -1147,16 +1188,17 @@ CREATE TABLE transactions (
     var spendable =
         (links.single['spendableAmount'] as num?)?.toDouble() ??
         previous.amount + logs.fold<double>(0, (sum, l) => sum + l.amount);
-    final goals = (await txn.query(
-      'savings_goals',
-    )).map(SavingsGoal.fromMap).toList();
+    final goals = (await txn.query('savings_goals'))
+        .map(SavingsGoal.fromMap)
+        .toList();
     if (previous.accountId != updated.accountId) {
-      final accounts = (await txn.query(
-        'accounts',
-      )).map(Account.fromMap).toList();
-      final transactions = (await txn.query(
-        'transactions',
-      )).map(AppTransaction.fromMap).where((t) => t.id != previous.id).toList();
+      final accounts = (await txn.query('accounts'))
+          .map(Account.fromMap)
+          .toList();
+      final transactions = (await txn.query('transactions'))
+          .map(AppTransaction.fromMap)
+          .where((t) => t.id != previous.id)
+          .toList();
       final account = accounts
           .where((a) => a.id == updated.accountId)
           .firstOrNull;

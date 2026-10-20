@@ -1,5 +1,7 @@
 import 'package:koin/core/database_version.dart';
+
 import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 
 /// Produces a consistent snapshot without copying an open database file.
@@ -111,12 +113,19 @@ class DatabaseSnapshot {
             'iconCodePoint',
             'colorHex',
             'initialBalance',
+            if (version >= 42) ...[
+              'annualInterestRate',
+              'interestTaxRate',
+              'interestStartDate',
+              'interestNextDate',
+            ],
+            if (version >= 43) ...['interestFrequency', 'interestAccrued'],
           ],
       };
       for (final entry in requiredColumns.entries) {
-        final columns = (await db.rawQuery(
-          'PRAGMA table_info(${entry.key})',
-        )).map((row) => row['name']).toSet();
+        final columns = (await db.rawQuery('PRAGMA table_info(${entry.key})'))
+            .map((row) => row['name'])
+            .toSet();
         if (!columns.containsAll(entry.value)) {
           throw const FormatException('Not a Koin backup');
         }
