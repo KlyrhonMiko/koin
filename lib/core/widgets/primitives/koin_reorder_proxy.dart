@@ -12,8 +12,12 @@ Widget koinReorderProxyDecorator(
   return AnimatedBuilder(
     animation: animation,
     builder: (context, child) {
-      final elevation = Curves.easeOut.transform(animation.value) * 16;
-      final scale = 1.0 + (Curves.easeOut.transform(animation.value) * 0.03);
+      final reducedMotion = MediaQuery.disableAnimationsOf(context);
+      final progress = reducedMotion
+          ? 1.0
+          : Curves.easeOut.transform(animation.value);
+      final elevation = progress * 16;
+      final scale = reducedMotion ? 1.0 : 1.0 + progress * 0.03;
       return Transform.scale(
         scale: scale,
         child: Material(

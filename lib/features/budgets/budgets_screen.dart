@@ -176,8 +176,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                                   if (item.isManage) {
                                                     return _buildManageChip(
                                                       context,
-                                                      budgeted.isEmpty,
-                                                      item.originalIndex,
                                                     );
                                                   } else {
                                                     return _buildUnbudgetedChip(
@@ -675,68 +673,55 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     );
   }
 
-  Widget _buildManageChip(
-    BuildContext context,
-    bool isBudgetedEmpty,
-    int unbudgetedLength,
-  ) {
+  Widget _buildManageChip(BuildContext context) {
     return GestureDetector(
-          onTap: () {
-            HapticService.light();
-            Navigator.push(
-              context,
-              SlideUpRoute(page: const CategoryManagerScreen()),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.dividerColor(context)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor(context)
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.settings_outlined,
-                    size: 16,
-                    color: AppTheme.primaryColor(context),
-                  ),
-                ),
-                const Gap(10),
-                const Flexible(
-                  child: Text(
-                    'Manage',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Gap(8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: AppTheme.textLightColor(context)
-                      .withValues(alpha: 0.5),
-                ),
-              ],
-            ),
-          ),
-        )
-        .koinAnimate(
+      onTap: () {
+        HapticService.light();
+        Navigator.push(
           context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(delay: ((isBudgetedEmpty ? 200 : 350) + unbudgetedLength * 50).ms)
-        .scale(begin: const Offset(0.92, 0.92));
+          SlideUpRoute(page: const CategoryManagerScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.dividerColor(context)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor(context).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                size: 16,
+                color: AppTheme.primaryColor(context),
+              ),
+            ),
+            const Gap(10),
+            const Flexible(
+              child: Text(
+                'Manage',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Gap(8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

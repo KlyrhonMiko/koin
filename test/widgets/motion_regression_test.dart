@@ -199,6 +199,49 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
   });
 
+  testWidgets('reorder feedback drops zoom when reduced motion changes', (
+    tester,
+  ) async {
+    var reduced = false;
+    var progress = 0.5;
+    late StateSetter redraw;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            redraw = setState;
+            return MediaQuery(
+              data: MediaQueryData(disableAnimations: reduced),
+              child: koinReorderProxyDecorator(
+                const Text('Dragged item'),
+                0,
+                AlwaysStoppedAnimation(progress),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    final transform = find
+        .ancestor(
+          of: find.text('Dragged item'),
+          matching: find.byType(Transform),
+        )
+        .first;
+    expect(
+      tester.widget<Transform>(transform).transform.entry(0, 0),
+      greaterThan(1),
+    );
+
+    redraw(() => reduced = true);
+    await tester.pump();
+    expect(tester.widget<Transform>(transform).transform.entry(0, 0), 1);
+    redraw(() => progress = 0.9);
+    await tester.pump();
+    expect(tester.widget<Transform>(transform).transform.entry(0, 0), 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('confirmation actions are visible from the first frame', (
     tester,
   ) async {

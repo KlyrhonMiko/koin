@@ -238,16 +238,6 @@ class CategoryList extends ConsumerStatefulWidget {
 
 class _CategoryListState extends ConsumerState<CategoryList>
     with AutomaticKeepAliveClientMixin {
-  bool _showEntranceAnimations = true;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) setState(() => _showEntranceAnimations = false);
-    });
-  }
-
   @override
   bool get wantKeepAlive => true;
 
@@ -279,256 +269,215 @@ class _CategoryListState extends ConsumerState<CategoryList>
             .reorderCategories(oldIndex, newIndex, widget.type);
       },
       proxyDecorator: koinReorderProxyDecorator,
-      header:
-          Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    Text(
-                      '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
-                      style: TextStyle(
-                        fontSize: KoinTypography.compact,
-                        fontWeight: KoinTypography.labelWeight,
-                        color: AppTheme.textLightColor(context),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .koinAnimate(
-                context,
-                onInit: KoinMotion.onInit(context),
-                key: ValueKey('header_${widget.type.name}'),
-                autoPlay:
-                    _showEntranceAnimations &&
-                    !MediaQuery.disableAnimationsOf(context),
-                target: _showEntranceAnimations ? null : 1,
-              )
-              .fade(duration: 300.ms),
+      header: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          children: [
+            Text(
+              '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
+              style: TextStyle(
+                fontSize: KoinTypography.compact,
+                fontWeight: KoinTypography.labelWeight,
+                color: AppTheme.textLightColor(context),
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ).koinEntrance(context, token: 'category_header_${widget.type.name}'),
       footer: Column(
         children: [
           const Gap(6),
           PressableScale(
-                onTap: () {
-                  HapticService.medium();
-                  Navigator.push(
-                    context,
-                    SlideUpRoute(
-                      page: CategoryDetailScreen(initialType: widget.type),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context)
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.dividerColor(context)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color:
-                              (widget.type == TransactionType.expense
-                                      ? AppTheme.expenseColor(context)
-                                      : AppTheme.incomeColor(context))
-                                  .withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add_rounded,
-                          size: 18,
-                          color: widget.type == TransactionType.expense
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.incomeColor(context),
-                        ),
-                      ),
-                      const Gap(10),
-                      Text(
-                        'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
-                        style: TextStyle(
-                          fontWeight: KoinTypography.labelWeight,
-                          fontSize: KoinTypography.compact,
-                          color: widget.type == TransactionType.expense
-                              ? AppTheme.expenseColor(context)
-                              : AppTheme.incomeColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .koinAnimate(
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
                 context,
-                onInit: KoinMotion.onInit(context),
-                key: ValueKey('footer_${widget.type.name}'),
-                autoPlay:
-                    _showEntranceAnimations &&
-                    !MediaQuery.disableAnimationsOf(context),
-                target: _showEntranceAnimations ? null : 1,
-              )
-              .fade(delay: 100.ms),
+                SlideUpRoute(
+                  page: CategoryDetailScreen(initialType: widget.type),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.dividerColor(context)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color:
+                          (widget.type == TransactionType.expense
+                                  ? AppTheme.expenseColor(context)
+                                  : AppTheme.incomeColor(context))
+                              .withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: 18,
+                      color: widget.type == TransactionType.expense
+                          ? AppTheme.expenseColor(context)
+                          : AppTheme.incomeColor(context),
+                    ),
+                  ),
+                  const Gap(10),
+                  Text(
+                    'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
+                    style: TextStyle(
+                      fontWeight: KoinTypography.labelWeight,
+                      fontSize: KoinTypography.compact,
+                      color: widget.type == TransactionType.expense
+                          ? AppTheme.expenseColor(context)
+                          : AppTheme.incomeColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ).koinEntrance(context, token: 'category_footer_${widget.type.name}'),
         ],
       ),
       itemBuilder: (context, index) {
         final category = widget.categories[index];
 
         return SwipeToDeleteTile(
-              key: Key('dismiss_${category.id}'),
+          key: Key('dismiss_${category.id}'),
+          margin: const EdgeInsets.only(bottom: 10),
+          borderRadius: BorderRadius.circular(20),
+          confirmTitle: 'Delete Category?',
+          confirmDescription:
+              'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
+          icon: Icons.delete_forever_rounded,
+          onDelete: () async {
+            HapticService.heavy();
+            await ref
+                .read(categoriesProvider.notifier)
+                .deleteCategory(category.id);
+          },
+          child: PressableScale(
+            onTap: () {
+              HapticService.light();
+              Navigator.push(
+                context,
+                SlideUpRoute(page: CategoryDetailScreen(category: category)),
+              );
+            },
+            child: Container(
               margin: const EdgeInsets.only(bottom: 10),
-              borderRadius: BorderRadius.circular(20),
-              confirmTitle: 'Delete Category?',
-              confirmDescription:
-                  'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
-              icon: Icons.delete_forever_rounded,
-              onDelete: () async {
-                HapticService.heavy();
-                await ref
-                    .read(categoriesProvider.notifier)
-                    .deleteCategory(category.id);
-              },
-              child: PressableScale(
-                onTap: () {
-                  HapticService.light();
-                  Navigator.push(
-                    context,
-                    SlideUpRoute(
-                      page: CategoryDetailScreen(category: category),
-                    ),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(context),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.dividerColor(context)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-                            child: Row(
-                              children: [
-                                // Drag handle
-                                Listener(
-                                  onPointerDown: (_) => HapticService.light(),
-                                  child: ReorderableDragStartListener(
-                                    index: index,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.drag_indicator_rounded,
-                                        color: AppTheme.textLightColor(context)
-                                            .withValues(alpha: 0.25),
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const Gap(8),
-                                // Glowing icon
-                                Container(
-                                  padding: const EdgeInsets.all(11),
-                                  decoration: BoxDecoration(
-                                    color: category.color.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      AppTheme.boxShadow(
-                                        context,
-                                        color: category.color.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        blurRadius: 12,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor(context),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.dividerColor(context)),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                        child: Row(
+                          children: [
+                            // Drag handle
+                            Listener(
+                              onPointerDown: (_) => HapticService.light(),
+                              child: ReorderableDragStartListener(
+                                index: index,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
                                   child: Icon(
-                                    IconUtils.getIcon(category.iconCodePoint),
-                                    color: category.color,
-                                    size: 22,
+                                    Icons.drag_indicator_rounded,
+                                    color: AppTheme.textLightColor(context)
+                                        .withValues(alpha: 0.25),
+                                    size: 20,
                                   ),
                                 ),
-                                const Gap(14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        category.name,
-                                        style: const TextStyle(
-                                          fontWeight:
-                                              KoinTypography.titleWeight,
-                                          fontSize: KoinTypography.body,
-                                          letterSpacing:
-                                              KoinTypography.itemTracking,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      if (category.type ==
-                                              TransactionType.expense &&
-                                          category.hasBudget) ...[
-                                        const Gap(4),
-                                        Text(
-                                          category.isPercentBudget
-                                              ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
-                                              : 'Budget: ${fmt.format(category.budget)}',
-                                          style: TextStyle(
-                                            color: AppTheme.textLightColor(
-                                              context,
-                                            ),
-                                            fontSize: KoinTypography.small,
-                                            fontWeight:
-                                                KoinTypography.supportingWeight,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                const Gap(8),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 20,
-                                  color: AppTheme.textLightColor(context)
-                                      .withValues(alpha: 0.4),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                            const Gap(8),
+                            // Glowing icon
+                            Container(
+                              padding: const EdgeInsets.all(11),
+                              decoration: BoxDecoration(
+                                color: category.color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  AppTheme.boxShadow(
+                                    context,
+                                    color: category.color.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                IconUtils.getIcon(category.iconCodePoint),
+                                color: category.color,
+                                size: 22,
+                              ),
+                            ),
+                            const Gap(14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: const TextStyle(
+                                      fontWeight: KoinTypography.titleWeight,
+                                      fontSize: KoinTypography.body,
+                                      letterSpacing:
+                                          KoinTypography.itemTracking,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (category.type ==
+                                          TransactionType.expense &&
+                                      category.hasBudget) ...[
+                                    const Gap(4),
+                                    Text(
+                                      category.isPercentBudget
+                                          ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
+                                          : 'Budget: ${fmt.format(category.budget)}',
+                                      style: TextStyle(
+                                        color: AppTheme.textLightColor(context),
+                                        fontSize: KoinTypography.small,
+                                        fontWeight:
+                                            KoinTypography.supportingWeight,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const Gap(8),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 20,
+                              color: AppTheme.textLightColor(context)
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            )
-            .koinAnimate(
-              context,
-              onInit: KoinMotion.onInit(context),
-              key: ValueKey('${category.id}_entrance'),
-              autoPlay:
-                  _showEntranceAnimations &&
-                  !MediaQuery.disableAnimationsOf(context),
-              target: _showEntranceAnimations ? null : 1,
-            )
-            .fade(delay: (index * 50).ms)
-            .slideX(begin: 0.04);
+            ),
+          ),
+        ).koinEntrance(context, token: 'category_row_${category.id}');
       },
     );
   }

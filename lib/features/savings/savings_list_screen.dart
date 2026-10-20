@@ -296,6 +296,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 borderRadius: BorderRadius.circular(2),
                 child: KoinProgressBar(
                   value: goal.progress,
+                  initialValue:
+                      AnimationTracker.isSeen('savings_goal_${goal.id}')
+                      ? goal.progress
+                      : 0,
                   duration: KoinMotion.entrance,
                   color: isCompleted ? successGreen : accentColor,
                 ),

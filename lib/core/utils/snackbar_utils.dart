@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
@@ -6,6 +7,10 @@ import 'package:koin/core/theme.dart';
 enum SnackBarType { success, error, info }
 
 class KoinSnackBar {
+  // Weak overlay keys keep independent navigators isolated without retaining
+  // navigators after they have been disposed.
+  static final Expando<VoidCallback> _activeDismissals = Expando();
+
   static void show(
     BuildContext context, {
     required String message,
@@ -15,8 +20,20 @@ class KoinSnackBar {
   }) {
     final overlay = Overlay.of(context);
     final themes = InheritedTheme.capture(from: context, to: overlay.context);
+    _activeDismissals[overlay]?.call();
     late OverlayEntry overlayEntry;
+    late final VoidCallback dismiss;
     var dismissed = false;
+
+    dismiss = () {
+      if (dismissed) return;
+      dismissed = true;
+      if (identical(_activeDismissals[overlay], dismiss)) {
+        _activeDismissals[overlay] = null;
+      }
+      overlayEntry.remove();
+      overlayEntry.dispose();
+    };
 
     overlayEntry = OverlayEntry(
       builder: (context) => themes.wrap(
@@ -24,17 +41,13 @@ class KoinSnackBar {
           message: message,
           subtitle: subtitle,
           type: type,
-          onDismiss: () {
-            if (dismissed) return;
-            dismissed = true;
-            overlayEntry.remove();
-            overlayEntry.dispose();
-          },
+          onDismiss: dismiss,
           duration: duration,
         ),
       ),
     );
 
+    _activeDismissals[overlay] = dismiss;
     overlay.insert(overlayEntry);
   }
 
@@ -124,7 +137,9 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
     super.didChangeDependencies();
     _reduceMotion = MediaQuery.disableAnimationsOf(context);
     if (_reduceMotion) {
-      _controller.value = 1;
+      // Finish in the direction already requested. Reviving an exiting toast
+      // would also cancel the future that is responsible for removing it.
+      _controller.value = _isDismissing ? 0 : 1;
     } else if (!_isDismissing) {
       _controller.forward();
     }
@@ -135,7 +150,12 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
     _isDismissing = true;
     _dismissTimer?.cancel();
     if (!_reduceMotion) {
-      await _controller.reverse();
+      try {
+        await _controller.reverse().orCancel;
+      } on TickerCanceled {
+        // Replacement/disposal and reduced-motion changes may cancel the
+        // ticker. Neither may leave a live toast waiting forever.
+      }
     }
     if (mounted) widget.onDismiss();
   }

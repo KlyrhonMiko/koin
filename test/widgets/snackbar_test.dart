@@ -7,6 +7,37 @@ import 'package:koin/core/utils/snackbar_utils.dart';
 void main() {
   setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
 
+  Future<BuildContext> mountToastHost(
+    WidgetTester tester, {
+    ValueNotifier<bool>? reducedMotion,
+  }) async {
+    late BuildContext source;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.getTheme(const Color(0xFF00D09E), false),
+        builder: reducedMotion == null
+            ? null
+            : (context, child) => ValueListenableBuilder<bool>(
+                valueListenable: reducedMotion,
+                builder: (context, reduced, _) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(disableAnimations: reduced),
+                  child: child!,
+                ),
+              ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              source = context;
+              return const Text('Dashboard');
+            },
+          ),
+        ),
+      ),
+    );
+    return source;
+  }
+
   Future<void> showToast(
     WidgetTester tester, {
     bool dark = true,
@@ -96,6 +127,79 @@ void main() {
     expect(semantics.properties.onDismiss, isNotNull);
     await tester.pump(const Duration(seconds: 3));
     expect(find.text('Income processed'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final replacingDuringExit in [false, true]) {
+    testWidgets(
+      'new toast replaces a toast during ${replacingDuringExit ? 'exit' : 'entry'}',
+      (tester) async {
+        final source = await mountToastHost(tester);
+        KoinSnackBar.show(
+          source,
+          message: 'First message',
+          duration: const Duration(seconds: 1),
+        );
+        await tester.pump();
+        if (replacingDuringExit) {
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(seconds: 1));
+        }
+        await tester.pump(const Duration(milliseconds: 40));
+
+        KoinSnackBar.info(source, 'Replacement message');
+        await tester.pump();
+        expect(find.text('First message'), findsNothing);
+        expect(find.text('Replacement message'), findsOneWidget);
+        expect(find.byType(Dismissible), findsOneWidget);
+
+        // The old timer or canceled exit must never remove the replacement.
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text('Replacement message'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+        expect(find.text('Replacement message'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('enabling reduced motion during exit completes dismissal', (
+    tester,
+  ) async {
+    final reducedMotion = ValueNotifier(false);
+    addTearDown(reducedMotion.dispose);
+    final source = await mountToastHost(tester, reducedMotion: reducedMotion);
+    KoinSnackBar.show(
+      source,
+      message: 'Finishing message',
+      duration: const Duration(seconds: 1),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 40));
+    final fadingToast = tester.widget<FadeTransition>(
+      find
+          .ancestor(
+            of: find.text('Finishing message'),
+            matching: find.byType(FadeTransition),
+          )
+          .first,
+    );
+    expect(fadingToast.opacity.value, inExclusiveRange(0, 1));
+
+    reducedMotion.value = true;
+    await tester.pumpAndSettle();
+    expect(find.text('Finishing message'), findsNothing);
+    await tester.pump(const Duration(seconds: 4));
+    expect(tester.takeException(), isNull);
+
+    KoinSnackBar.info(source, 'Next message');
+    await tester.pump();
+    expect(find.text('Next message'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('Next message'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

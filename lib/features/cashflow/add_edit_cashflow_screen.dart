@@ -484,37 +484,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                         ),
                       ),
               ),
-              if (_endDate != null) ...[
-                const Gap(12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DateSelectorTile(
-                        label: 'Ends on',
-                        date: _endDate!,
-                        primaryColor: primaryColor,
-                        onDateSelected: (date) =>
-                            setState(() => _endDate = date),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Remove end date',
-                      onPressed: () => setState(() => _endDate = null),
-                      icon: const Icon(Icons.clear_rounded),
-                    ),
-                  ],
-                ),
-              ] else if (!_isIncome)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => setState(
-                      () => _endDate = _startDate.add(const Duration(days: 30)),
-                    ),
-                    icon: const Icon(Icons.event_available_outlined),
-                    label: const Text('Add end date'),
-                  ),
-                ),
+              _buildEndDateSection(context, primaryColor),
               const Gap(24),
               _fieldLabel(context, 'Details'),
               const Gap(12),
@@ -591,6 +561,53 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         HapticService.light();
         setState(() => _isAutoProcess = value);
       },
+    );
+  }
+
+  Widget _buildEndDateSection(BuildContext context, Color primaryColor) {
+    final child = _endDate != null
+        ? Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DateSelectorTile(
+                    label: 'Ends on',
+                    date: _endDate!,
+                    primaryColor: primaryColor,
+                    onDateSelected: (date) => setState(() => _endDate = date),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Remove end date',
+                  onPressed: () => setState(() => _endDate = null),
+                  icon: const Icon(Icons.clear_rounded),
+                ),
+              ],
+            ),
+          ).koinEntrance(context)
+        : !_isIncome
+        ? Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(
+                () => _endDate = _startDate.add(const Duration(days: 30)),
+              ),
+              icon: const Icon(Icons.event_available_outlined),
+              label: const Text('Add end date'),
+            ),
+          )
+        : const SizedBox.shrink();
+    return KeyedSubtree(
+      key: const ValueKey('cashflow-end-date'),
+      child: MediaQuery.disableAnimationsOf(context)
+          ? child
+          : AnimatedSize(
+              duration: KoinMotion.entrance,
+              curve: KoinMotion.curve,
+              alignment: Alignment.topCenter,
+              child: child,
+            ),
     );
   }
 

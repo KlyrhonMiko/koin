@@ -37,7 +37,9 @@ check a narrow screen or increased system font size for clipped controls.
    screens. Wait at least two seconds: savings bars must not reset and fill a
    second time. Later bars should settle as quickly as earlier bars. Scroll away
    and return, refresh, and update a balance. Percent badges should remain at a
-   fixed size. Analysis bars should settle promptly.
+   fixed size. Analysis bars should settle promptly. With many unbudgeted
+   categories, Manage should appear alongside the other chips without waiting
+   longer as the category count grows.
 9. **Account editor and palettes:** Edit an existing account with a selected bank,
    color, and icon near the end of each picker. The correct choice should scroll
    into view promptly. Select colors/icons quickly, apply bank templates, and
@@ -61,6 +63,18 @@ check a narrow screen or increased system font size for clipped controls.
     settles without a persistent decorative loop. Also enable reduced motion
     during an entrance or quick-entry resize: content must remain visible and
     controls usable.
+13. **Categories and transaction history:** Open a long category list, scroll
+    quickly to later rows, then back. Rows must appear promptly and remain visible
+    when revisited. Open transaction history: rows should have one subtle entrance,
+    without a second zoom or heavier fade inside each day group.
+14. **Notifications:** Trigger two different validation messages quickly, including
+    while the first enters or exits. Only the latest message should remain visible,
+    and an earlier timeout must not dismiss it. Enable Remove animations during a
+    toast's exit: it must finish disappearing and allow the next message normally.
+15. **Form and activity expansion:** Add and remove an end date in a planned
+    payment, then expand and collapse an automatic savings-release explanation.
+    Content below should resize smoothly without clipping. Repeat rapidly and
+    with Remove animations enabled; the final state must remain immediately usable.
 
 For any failure, record the screen, theme, font size, reduced-motion setting,
 steps taken, and a short screen recording. A successful checklist checks the

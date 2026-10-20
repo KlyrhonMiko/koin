@@ -187,12 +187,7 @@ class TransactionsListScreen extends ConsumerWidget {
                       ),
                     );
 
-                    final dayGroupAnimated = dayGroup.koinEntrance(
-                      context,
-                      token: 'day_$dateKey',
-                    );
-
-                    return dayGroupAnimated;
+                    return dayGroup;
                   },
                 );
               },

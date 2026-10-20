@@ -192,10 +192,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                         animation: _tabController.animation!,
                         builder: (context, child) {
                           return Text(
-                            _tabs[_tabController.animation!.value.round().clamp(
-                              0,
-                              _tabs.length - 1,
-                            )],
+                            _tabs[_tabController.indexIsChanging
+                                ? _tabController.index
+                                : _tabController.animation!.value.round().clamp(
+                                    0,
+                                    _tabs.length - 1,
+                                  )],
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

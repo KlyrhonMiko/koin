@@ -731,6 +731,15 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   ) {
     final textColor = AppTheme.textLightColor(context);
     final showExplanation = _expandedReleaseExplanations.contains(log.id);
+    final explanation = showExplanation
+        ? Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Managed by its transaction. Edit or delete that transaction to update this release.',
+              style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
+            ),
+          ).koinEntrance(context)
+        : const SizedBox.shrink();
     return Column(
       key: Key(log.id),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -781,13 +790,17 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   ),
                 ),
               ),
-              if (showExplanation) ...[
-                const Gap(8),
-                Text(
-                  'Managed by its transaction. Edit or delete that transaction to update this release.',
-                  style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
-                ),
-              ],
+              KeyedSubtree(
+                key: ValueKey('savings-release-explanation-${log.id}'),
+                child: MediaQuery.disableAnimationsOf(context)
+                    ? explanation
+                    : AnimatedSize(
+                        duration: KoinMotion.entrance,
+                        curve: KoinMotion.curve,
+                        alignment: Alignment.topLeft,
+                        child: explanation,
+                      ),
+              ),
             ],
           ),
         ),
