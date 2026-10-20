@@ -201,12 +201,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       children: [
                         // Live preview card
                         _buildPreviewCard(context, selectedColor, previewName)
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
                             )
-                            .fade(duration: 400.ms)
+                            .fade(duration: 250.ms)
                             .slideY(begin: 0.05),
 
                         const Gap(KoinSpacing.sectionGap),
@@ -222,7 +224,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                 prefixIcon: Icon(Icons.label_outline),
                               ),
                             )
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
@@ -235,7 +239,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         _buildSectionLabel(context, 'Category Type'),
                         const Gap(10),
                         _buildTypeSelector(context)
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
@@ -248,7 +254,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         _buildSectionLabel(context, 'Icon'),
                         const Gap(12),
                         _buildIconGrid(context, selectedColor)
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
@@ -261,7 +269,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         _buildSectionLabel(context, 'Color'),
                         const Gap(12),
                         _buildColorGrid(context)
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
@@ -278,7 +288,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               onPressed: () => _save(ref),
                             )
-                            .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(
+                            .koinAnimate(
+                              context,
+                              autoPlay: !MediaQuery.disableAnimationsOf(
                                 context,
                               ),
                               onInit: KoinMotion.onInit(context),
@@ -359,21 +371,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                 ),
                 const Gap(4),
-                AnimatedSwitcher(
-                  duration: KoinMotion.duration(
-                    context,
-                    const Duration(milliseconds: 200),
+                Text(
+                  previewName,
+                  key: ValueKey(previewName),
+                  style: const TextStyle(
+                    fontWeight: KoinTypography.titleWeight,
+                    fontSize: KoinTypography.itemAmount,
+                    letterSpacing: -0.3,
                   ),
-                  child: Text(
-                    previewName,
-                    key: ValueKey(previewName),
-                    style: const TextStyle(
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.itemAmount,
-                      letterSpacing: -0.3,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (widget.category?.budget != null &&
                     widget.category!.budget! > 0) ...[

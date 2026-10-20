@@ -97,18 +97,11 @@ class BudgetProgressCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: category.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                IconUtils.getIcon(category.iconCodePoint),
-                size: 20,
-                color: category.color,
-              ),
+            KoinIconBadge(
+              icon: IconUtils.getIcon(category.iconCodePoint),
+              color: category.color,
+              size: 44,
+              radius: 12,
             ),
             const Gap(14),
             Expanded(
@@ -146,26 +139,12 @@ class BudgetProgressCard extends StatelessWidget {
                     },
                   ),
                   const Gap(8),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(
-                      begin: 0,
-                      end: metrics.progress.clamp(0.0, 1.0),
-                    ),
-                    duration: KoinMotion.duration(
-                      context,
-                      const Duration(milliseconds: 600),
-                    ),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, progress, _) => LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 4,
-                      borderRadius: BorderRadius.circular(2),
-                      backgroundColor: AppTheme.surfaceLightColor(context),
-                      color: color,
-                      semanticsLabel: '${category.name}, $status',
-                      semanticsValue:
-                          '${(metrics.progress.clamp(0.0, 1.0) * 100).round()}%',
-                    ),
+                  KoinProgressBar(
+                    value: metrics.progress,
+                    color: color,
+                    semanticsLabel: '${category.name}, $status',
+                    semanticsValue:
+                        '${(metrics.progress.clamp(0.0, 1.0) * 100).round()}%',
                   ),
                 ],
               ),

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
+
 import 'savings_plan_editor.dart';
+
 import 'package:koin/core/models/savings/savings_projection.dart';
+
 import 'savings_projection_view.dart' show contributionPhrase;
 
 class SavingsRoutineCard extends ConsumerWidget {
@@ -143,39 +146,7 @@ class SavingsRoutineCard extends ConsumerWidget {
     required String value,
     required String detail,
     Key? key,
-  }) => Column(
-    key: key,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: TextStyle(
-          color: AppTheme.textLightColor(context),
-          fontSize: KoinTypography.caption,
-          fontWeight: KoinTypography.labelWeight,
-          letterSpacing: KoinTypography.itemTracking,
-        ),
-      ),
-      const SizedBox(height: 6),
-      Text(
-        value,
-        style: TextStyle(
-          color: AppTheme.textColor(context),
-          fontSize: KoinTypography.itemAmount,
-          fontWeight: KoinTypography.titleWeight,
-          letterSpacing: KoinTypography.itemTracking,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        detail,
-        style: TextStyle(
-          color: AppTheme.textLightColor(context),
-          fontSize: KoinTypography.small,
-        ),
-      ),
-    ],
-  );
+  }) => KoinMetric(key: key, label: label, value: value, detail: detail);
   static Future<void> editPlan(
     BuildContext context,
     WidgetRef ref,

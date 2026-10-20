@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -146,6 +147,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           'Could not save schedule',
           subtitle: 'Your changes are kept. Try again.',
         );
+        HapticService.error();
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -153,7 +155,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   Future<void> _savePaymentImpl() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      HapticService.error();
+      return;
+    }
     if (_endDate != null &&
         DateTime(_endDate!.year, _endDate!.month, _endDate!.day).isBefore(
           DateTime(_startDate.year, _startDate.month, _startDate.day),
@@ -163,6 +168,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         'Check the end date',
         subtitle: 'The end date must be on or after the start date.',
       );
+      HapticService.error();
       return;
     }
     if (_titleController.text.trim().isEmpty) {
@@ -292,6 +298,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           .catchError((Object _) {});
     }
     if (mounted) {
+      HapticService.success();
       Navigator.pop(context);
     }
   }
@@ -328,30 +335,13 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
 
   Widget _buildHeader(BuildContext context, Color primaryColor) {
     final currency = ref.watch(settingsProvider).currency;
-    final nameStyle = KoinTypography.entityNameStyle.copyWith(
-      color: AppTheme.textColor(context),
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextFormField(
+        KoinEntityNameField(
           controller: _titleController,
-          textAlign: TextAlign.center,
           textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.next,
-          style: nameStyle,
-          decoration: InputDecoration(
-            hintText: _isIncome ? 'Name your income' : 'Name your payment',
-            hintMaxLines: 2,
-            hintStyle: nameStyle.copyWith(
-              color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
-            ),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            filled: false,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          ),
+          hintText: _isIncome ? 'Name your income' : 'Name your payment',
           onChanged: (_) {
             setState(() {});
             _onTitleChanged();
@@ -361,9 +351,8 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         Text(
           'Amount',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppTheme.textLightColor(context),
-          ),
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AppTheme.textLightColor(context)),
         ),
         HeroAmountField(
           controller: _amountController,
@@ -448,164 +437,132 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeader(context, primaryColor),
-                        _fieldLabel(context, 'Schedule'),
-                        const Gap(8),
-                        SelectionTile(
-                          fallbackIcon: Icons.repeat_rounded,
-                          label: 'Repeats',
-                          selectedName: _selectedFrequency.label,
-                          selectedColor: primaryColor,
-                          selectedIconCodePoint: Icons.repeat_rounded.codePoint,
-                          placeholder: 'Choose frequency',
-                          onTap: () async {
-                            final frequency = await _selectFrequency(
-                              context,
-                              primaryColor,
-                            );
-                            if (frequency != null && mounted) {
-                              setState(() => _selectedFrequency = frequency);
-                            }
-                          },
+      body: KoinEntityFormBody(
+        form: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context, primaryColor),
+              _fieldLabel(context, 'Schedule'),
+              const Gap(8),
+              SelectionTile(
+                fallbackIcon: Icons.repeat_rounded,
+                label: 'Repeats',
+                selectedName: _selectedFrequency.label,
+                selectedColor: primaryColor,
+                selectedIconCodePoint: Icons.repeat_rounded.codePoint,
+                placeholder: 'Choose frequency',
+                onTap: () async {
+                  final frequency = await _selectFrequency(
+                    context,
+                    primaryColor,
+                  );
+                  if (frequency != null && mounted) {
+                    setState(() => _selectedFrequency = frequency);
+                  }
+                },
+              ),
+              AnimatedSize(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: _selectedFrequency == PaymentFrequency.flexible
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: DateSelectorTile(
+                          label: _isIncome
+                              ? 'Next expected date'
+                              : 'Next payment date',
+                          date: _startDate,
+                          primaryColor: primaryColor,
+                          onDateSelected: (date) =>
+                              setState(() => _startDate = date),
                         ),
-                        AnimatedSize(
-                          duration: MediaQuery.disableAnimationsOf(context)
-                              ? Duration.zero
-                              : const Duration(milliseconds: 250),
-                          curve: Curves.easeOutCubic,
-                          alignment: Alignment.topCenter,
-                          child: _selectedFrequency == PaymentFrequency.flexible
-                              ? const SizedBox.shrink()
-                              : Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: DateSelectorTile(
-                                    label: _isIncome
-                                        ? 'Next expected date'
-                                        : 'Next payment date',
-                                    date: _startDate,
-                                    primaryColor: primaryColor,
-                                    onDateSelected: (date) =>
-                                        setState(() => _startDate = date),
-                                  ),
-                                ),
-                        ),
-                        if (_endDate != null) ...[
-                          const Gap(12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DateSelectorTile(
-                                  label: 'Ends on',
-                                  date: _endDate!,
-                                  primaryColor: primaryColor,
-                                  onDateSelected: (date) =>
-                                      setState(() => _endDate = date),
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Remove end date',
-                                onPressed: () =>
-                                    setState(() => _endDate = null),
-                                icon: const Icon(Icons.clear_rounded),
-                              ),
-                            ],
-                          ),
-                        ] else if (!_isIncome)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () => setState(
-                                () => _endDate = _startDate.add(
-                                  const Duration(days: 30),
-                                ),
-                              ),
-                              icon: const Icon(Icons.event_available_outlined),
-                              label: const Text('Add end date'),
-                            ),
-                          ),
-                        const Gap(24),
-                        _fieldLabel(context, 'Details'),
-                        const Gap(12),
-                        KoinGroupedCard(
-                          borderRadius: 16,
-                          borderColor: AppTheme.fieldBorderColor(context),
-                          children: [
-                            SelectionTile(
-                              asCard: false,
-                              fallbackIcon: Icons.category_rounded,
-                              label: 'Category',
-                              selectedName: category?.name,
-                              selectedColor: category?.color,
-                              selectedIconCodePoint: category?.iconCodePoint,
-                              placeholder: 'Choose a category',
-                              onTap: () => _openCategoryPicker(context),
-                            ),
-                            SelectionTile(
-                              asCard: false,
-                              fallbackIcon:
-                                  Icons.account_balance_wallet_rounded,
-                              label: _isIncome
-                                  ? 'Receiving account'
-                                  : 'Payment account',
-                              selectedName: account?.name,
-                              selectedColor: account?.color,
-                              selectedIconCodePoint: account?.iconCodePoint,
-                              selectedLogoAsset: account?.logoAsset,
-                              placeholder: 'Choose an account',
-                              onTap: () => _openAccountPicker(context),
-                            ),
-                          ],
-                        ),
-                        const Gap(28),
-                        Divider(
-                          height: 1,
-                          color: AppTheme.dividerColor(context),
-                        ),
-                        const Gap(24),
-                        _fieldLabel(context, 'Optional details'),
-                        const Gap(12),
-                        _buildAutoProcessRow(context, primaryColor),
-                        const Gap(20),
-                        _fieldLabel(context, 'Notes'),
-                        const Gap(8),
-                        _buildNotesInput(context),
-                      ],
+                      ),
+              ),
+              if (_endDate != null) ...[
+                const Gap(12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DateSelectorTile(
+                        label: 'Ends on',
+                        date: _endDate!,
+                        primaryColor: primaryColor,
+                        onDateSelected: (date) =>
+                            setState(() => _endDate = date),
+                      ),
                     ),
+                    IconButton(
+                      tooltip: 'Remove end date',
+                      onPressed: () => setState(() => _endDate = null),
+                      icon: const Icon(Icons.clear_rounded),
+                    ),
+                  ],
+                ),
+              ] else if (!_isIncome)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(
+                      () => _endDate = _startDate.add(const Duration(days: 30)),
+                    ),
+                    icon: const Icon(Icons.event_available_outlined),
+                    label: const Text('Add end date'),
                   ),
                 ),
+              const Gap(24),
+              _fieldLabel(context, 'Details'),
+              const Gap(12),
+              KoinGroupedCard(
+                borderRadius: 16,
+                borderColor: AppTheme.fieldBorderColor(context),
+                children: [
+                  SelectionTile(
+                    asCard: false,
+                    fallbackIcon: Icons.category_rounded,
+                    label: 'Category',
+                    selectedName: category?.name,
+                    selectedColor: category?.color,
+                    selectedIconCodePoint: category?.iconCodePoint,
+                    placeholder: 'Choose a category',
+                    onTap: () => _openCategoryPicker(context),
+                  ),
+                  SelectionTile(
+                    asCard: false,
+                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    label: _isIncome ? 'Receiving account' : 'Payment account',
+                    selectedName: account?.name,
+                    selectedColor: account?.color,
+                    selectedIconCodePoint: account?.iconCodePoint,
+                    selectedLogoAsset: account?.logoAsset,
+                    placeholder: 'Choose an account',
+                    onTap: () => _openAccountPicker(context),
+                  ),
+                ],
               ),
-            ),
+              const Gap(28),
+              Divider(height: 1, color: AppTheme.dividerColor(context)),
+              const Gap(24),
+              _fieldLabel(context, 'Optional details'),
+              const Gap(12),
+              _buildAutoProcessRow(context, primaryColor),
+              const Gap(20),
+              _fieldLabel(context, 'Notes'),
+              const Gap(8),
+              _buildNotesInput(context),
+            ],
           ),
-          SafeArea(
-            top: false,
-            minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: KoinPrimaryButton(
-                  isLoading: _saving,
-                  label: isEditing ? 'Save Changes' : 'Create $_domainNoun',
-                  onPressed: _savePayment,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+        action: KoinPrimaryButton(
+          isLoading: _saving,
+          label: isEditing ? 'Save Changes' : 'Create $_domainNoun',
+          onPressed: _savePayment,
+        ),
       ),
     );
   }
@@ -613,71 +570,16 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   Future<PaymentFrequency?> _selectFrequency(
     BuildContext context,
     Color primaryColor,
-  ) => showModalBottomSheet<PaymentFrequency>(
+  ) => showRadioSelectionSheet<PaymentFrequency>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: AppTheme.surfaceColor(context),
-    showDragHandle: true,
-    builder: (sheetContext) => SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: Text(
-                'Repeats',
-                style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                  fontSize: 22,
-                  fontWeight: KoinTypography.headingWeight,
-                ),
-              ),
-            ),
-            for (final frequency in PaymentFrequency.values)
-              Semantics(
-                selected: frequency == _selectedFrequency,
-                inMutuallyExclusiveGroup: true,
-                child: ListTile(
-                  minTileHeight: 64,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  title: Text(
-                    frequency.label,
-                    style: Theme.of(sheetContext).textTheme.bodyLarge?.copyWith(
-                      fontWeight: frequency == _selectedFrequency
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
-                  ),
-                  trailing: Icon(
-                    frequency == _selectedFrequency
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: frequency == _selectedFrequency
-                        ? primaryColor
-                        : AppTheme.textLightColor(sheetContext),
-                    size: 24,
-                  ),
-                  onTap: () {
-                    HapticService.selection();
-                    Navigator.pop(sheetContext, frequency);
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    ),
+    title: 'Repeats',
+    options: PaymentFrequency.values,
+    selected: _selectedFrequency,
+    label: (frequency) => frequency.label,
+    accentColor: primaryColor,
   );
-  Widget _fieldLabel(BuildContext context, String label) => Text(
-    label,
-    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: AppTheme.textColor(context),
-      fontWeight: FontWeight.w600,
-    ),
-  );
+  Widget _fieldLabel(BuildContext context, String label) =>
+      FormSectionTitle.field(title: label);
 
   Widget _buildAutoProcessRow(BuildContext context, Color primaryColor) {
     return SwitchListTile.adaptive(
@@ -692,17 +594,6 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     );
   }
 
-  Widget _buildNotesInput(BuildContext context) => TextFormField(
-    controller: _notesController,
-    style: Theme.of(context).textTheme.bodyLarge,
-    minLines: 1,
-    maxLines: 4,
-    textCapitalization: TextCapitalization.sentences,
-    decoration: InputDecoration(
-      hintText: 'Notes (Optional)',
-      hintStyle: Theme.of(
-        context,
-      ).textTheme.bodyLarge?.copyWith(color: AppTheme.fieldHintColor(context)),
-    ),
-  );
+  Widget _buildNotesInput(BuildContext context) =>
+      KoinNotesField(controller: _notesController);
 }

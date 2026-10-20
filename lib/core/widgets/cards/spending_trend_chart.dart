@@ -39,6 +39,18 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
   @override
   Widget build(BuildContext context) {
     if (widget.expenses.isEmpty) return const SizedBox.shrink();
+    final tooltipTheme = TooltipTheme.of(context);
+    final tooltipDecoration = tooltipTheme.decoration is BoxDecoration
+        ? tooltipTheme.decoration! as BoxDecoration
+        : const BoxDecoration();
+    final direction = Directionality.of(context);
+    final tooltipTextStyle =
+        tooltipTheme.textStyle ??
+        TextStyle(
+          color: AppTheme.textColor(context),
+          fontSize: KoinTypography.compact,
+          fontWeight: KoinTypography.labelWeight,
+        );
 
     Map<String, double> dailyTotals = {};
     for (var tx in widget.expenses) {
@@ -260,6 +272,7 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
           borderData: FlBorderData(show: false),
           barTouchData: BarTouchData(
             touchCallback: (FlTouchEvent event, barTouchResponse) {
+              final previousIndex = _touchedGroupIndex;
               setState(() {
                 if (!event.isInterestedForInteractions ||
                     barTouchResponse == null ||
@@ -271,16 +284,30 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                     barTouchResponse.spot!.touchedBarGroupIndex;
               });
 
-              if (event is FlTapDownEvent || event is FlPanStartEvent) {
-                HapticService.light();
+              final isTouch =
+                  event is FlTapDownEvent ||
+                  event is FlPanStartEvent ||
+                  event is FlPanUpdateEvent ||
+                  event is FlLongPressStart ||
+                  event is FlLongPressMoveUpdate;
+              if (isTouch &&
+                  _touchedGroupIndex >= 0 &&
+                  _touchedGroupIndex != previousIndex) {
+                HapticService.selection();
               }
             },
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => AppTheme.surfaceColor(context),
-              tooltipBorder: BorderSide(
-                color: AppTheme.dividerColor(context).withValues(alpha: 0.2),
-                width: 1,
-              ),
+              getTooltipColor: (_) =>
+                  tooltipDecoration.color ?? AppTheme.surfaceColor(context),
+              tooltipBorder:
+                  tooltipDecoration.border?.top ??
+                  BorderSide(color: AppTheme.dividerColor(context)),
+              tooltipBorderRadius:
+                  tooltipDecoration.borderRadius?.resolve(direction) ??
+                  BorderRadius.circular(12),
+              tooltipPadding:
+                  tooltipTheme.padding?.resolve(direction) ??
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               tooltipMargin: 8,
               fitInsideHorizontally: true,
               fitInsideVertically: true,
@@ -289,19 +316,11 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                 final originalY = barGroups[groupIndex].barRods[rodIndex].toY;
                 return BarTooltipItem(
                   '${bottomLabels[group.x.toInt()]}\n',
-                  TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontSize: KoinTypography.chartLabel,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  tooltipTextStyle,
                   children: [
                     TextSpan(
                       text: widget.currency.formatter.format(originalY),
-                      style: TextStyle(
-                        color: AppTheme.textColor(context),
-                        fontSize: KoinTypography.compact,
-                        fontWeight: KoinTypography.headingWeight,
-                      ),
+                      style: tooltipTextStyle,
                     ),
                   ],
                 );

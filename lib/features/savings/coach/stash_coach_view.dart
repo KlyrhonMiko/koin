@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'coach_controls.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:gap/gap.dart';
@@ -82,167 +85,126 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Mode Toggle
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(
-                      context,
-                    ).withValues(alpha: 0.5),
-                  ),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildToggleOption(
-                        context,
-                        title: 'Target Date',
-                        isSelected: _mode == StashSimMode.balance,
-                        onTap: () {
-                          HapticService.light();
-                          setState(() => _mode = StashSimMode.balance);
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildToggleOption(
-                        context,
-                        title: 'Target Amount',
-                        isSelected: _mode == StashSimMode.time,
-                        onTap: () {
-                          HapticService.light();
-                          setState(() => _mode = StashSimMode.time);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+              KoinChoiceControl(
+                segments: const [
+                  KoinSegmentItem(label: 'Target Date'),
+                  KoinSegmentItem(label: 'Target Amount'),
+                ],
+                selectedIndex: _mode.index,
+                onChanged: (index) =>
+                    setState(() => _mode = StashSimMode.values[index]),
               ),
               const Gap(40),
 
-              // 2. Big Result Headline
-              AnimatedSwitcher(
-                duration: KoinMotion.duration(
-                  context,
-                  const Duration(milliseconds: 300),
-                ),
-                child: _mode == StashSimMode.balance
-                    ? _buildBalanceHeadline(currencyFmt)
-                    : _buildTimeHeadline(currencyFmt),
-              ),
+              AnimatedSize(
+                duration: KoinMotion.duration(context, KoinMotion.entrance),
+                curve: KoinMotion.curve,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: KoinMotion.duration(context, KoinMotion.entrance),
+                  switchInCurve: KoinMotion.curve,
+                  layoutBuilder: (currentChild, _) =>
+                      currentChild ?? const SizedBox.shrink(),
+                  child: Column(
+                    key: ValueKey(_mode),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 2. Big Result Headline
+                      _mode == StashSimMode.balance
+                          ? _buildBalanceHeadline(currencyFmt)
+                          : _buildTimeHeadline(currencyFmt),
 
-              const Gap(40),
+                      const Gap(40),
 
-              // 3. Mode Specific Inputs
-              if (_mode == StashSimMode.balance) ...[
-                Text(
-                  "Adjust Target Date",
-                  style: TextStyle(
-                    fontSize: KoinTypography.caption,
-                    fontWeight: KoinTypography.titleWeight,
-                    color: AppTheme.textLightColor(context),
-                  ),
-                ),
-                const Gap(16),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        HapticService.light();
-                        setState(
-                          () => _targetDate = _targetDate.subtract(
-                            const Duration(days: 30),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.remove_circle_outline),
-                      color: AppTheme.textLightColor(context),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            DateFormat("MMM d, yyyy").format(_targetDate),
-                            style: const TextStyle(
-                              fontSize: KoinTypography.itemTitle,
-                              fontWeight: KoinTypography.titleWeight,
-                            ),
-                          ),
-                          Text(
-                            "in ${_weeksToTargetDate > 4 ? '${(_weeksToTargetDate / 4).floor()} months' : '$_weeksToTargetDate weeks'}",
-                            style: TextStyle(
-                              fontSize: KoinTypography.small,
-                              color: AppTheme.primaryColor(context),
-                              fontWeight: KoinTypography.labelWeight,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        HapticService.light();
-                        setState(
-                          () => _targetDate = _targetDate.add(
-                            const Duration(days: 30),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_circle_outline),
-                      color: AppTheme.textLightColor(context),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Text(
-                  "Adjust Target Amount",
-                  style: TextStyle(
-                    fontSize: KoinTypography.caption,
-                    fontWeight: KoinTypography.titleWeight,
-                    color: AppTheme.textLightColor(context),
-                  ),
-                ),
-                const Gap(16),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (_targetAmount <= widget.goal.currentAmount + 100) {
-                          return;
-                        }
-                        HapticService.light();
-                        setState(() => _targetAmount -= 100);
-                      },
-                      icon: const Icon(Icons.remove_circle_outline),
-                      color: AppTheme.textLightColor(context),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          currencyFmt.format(_targetAmount),
-                          style: const TextStyle(
-                            fontSize: KoinTypography.sectionTitle,
-                            letterSpacing: KoinTypography.headingTracking,
-                            fontWeight: KoinTypography.headingWeight,
+                      // 3. Mode Specific Inputs
+                      if (_mode == StashSimMode.balance) ...[
+                        Text(
+                          "Adjust Target Date",
+                          style: TextStyle(
+                            fontSize: KoinTypography.caption,
+                            fontWeight: KoinTypography.titleWeight,
+                            color: AppTheme.textLightColor(context),
                           ),
                         ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        HapticService.light();
-                        setState(() => _targetAmount += 100);
-                      },
-                      icon: const Icon(Icons.add_circle_outline),
-                      color: AppTheme.textLightColor(context),
-                    ),
-                  ],
-                ),
-              ],
+                        const Gap(16),
+                        CoachStepper(
+                          onDecrease: () {
+                            HapticService.light();
+                            setState(
+                              () => _targetDate = _targetDate.subtract(
+                                const Duration(days: 30),
+                              ),
+                            );
+                          },
+                          onIncrease: () {
+                            HapticService.light();
+                            setState(
+                              () => _targetDate = _targetDate.add(
+                                const Duration(days: 30),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              Text(
+                                DateFormat("MMM d, yyyy").format(_targetDate),
+                                style: const TextStyle(
+                                  fontSize: KoinTypography.itemTitle,
+                                  fontWeight: KoinTypography.titleWeight,
+                                ),
+                              ),
+                              Text(
+                                "in ${_weeksToTargetDate > 4 ? '${(_weeksToTargetDate / 4).floor()} months' : '$_weeksToTargetDate weeks'}",
+                                style: TextStyle(
+                                  fontSize: KoinTypography.small,
+                                  color: AppTheme.primaryColor(context),
+                                  fontWeight: KoinTypography.labelWeight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          "Adjust Target Amount",
+                          style: TextStyle(
+                            fontSize: KoinTypography.caption,
+                            fontWeight: KoinTypography.titleWeight,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                        const Gap(16),
+                        CoachStepper(
+                          onDecrease: () {
+                            if (_targetAmount <=
+                                widget.goal.currentAmount + 100) {
+                              return;
+                            }
+                            HapticService.light();
+                            setState(() => _targetAmount -= 100);
+                          },
+                          onIncrease: () {
+                            HapticService.light();
+                            setState(() => _targetAmount += 100);
+                          },
+                          child: Center(
+                            child: Text(
+                              currencyFmt.format(_targetAmount),
+                              style: const TextStyle(
+                                fontSize: KoinTypography.sectionTitle,
+                                letterSpacing: KoinTypography.headingTracking,
+                                fontWeight: KoinTypography.headingWeight,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
 
-              const Gap(32),
+                      const Gap(32),
+                    ],
+                  ),
+                ),
+              ),
 
               // 4. Slider
               Text(
@@ -267,25 +229,11 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
                   ),
                 ],
               ),
-              SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: AppTheme.primaryColor(context),
-                  inactiveTrackColor: AppTheme.primaryColor(
-                    context,
-                  ).withValues(alpha: 0.1),
-                  thumbColor: AppTheme.primaryColor(context),
-                  trackHeight: 8,
-                ),
-                child: Slider(
-                  value: _weeklySaved,
-                  min: 0,
-                  max: _sliderMax,
-                  divisions: 100,
-                  onChanged: (val) {
-                    setState(() => _weeklySaved = val);
-                  },
-                  onChangeEnd: (_) => HapticService.selection(),
-                ),
+              CoachAmountSlider(
+                value: _weeklySaved,
+                max: _sliderMax,
+                divisions: 100,
+                onChanged: (value) => setState(() => _weeklySaved = value),
               ),
 
               const Gap(48),
@@ -341,38 +289,6 @@ class _StashCoachViewState extends ConsumerState<StashCoachView> {
               ),
               const Gap(40),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggleOption(
-    BuildContext context, {
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryColor(context)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.textLightColor(context),
-            fontWeight: isSelected
-                ? KoinTypography.titleWeight
-                : KoinTypography.labelWeight,
-            fontSize: KoinTypography.caption,
           ),
         ),
       ),

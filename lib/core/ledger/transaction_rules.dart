@@ -9,6 +9,12 @@ class FinancialValidationException implements Exception {
 
 /// One authority for money direction, validity, and available account funds.
 abstract final class TransactionRules {
+  /// Compare the same rounded cents in previews and persisted validation.
+  static bool exceedsBalance(double value, double available) =>
+      !value.isFinite ||
+      !available.isFinite ||
+      (value * 100).round() > (available * 100).round();
+
   static void amount(double value) {
     if (!value.isFinite || value <= 0) {
       throw const FinancialValidationException(
@@ -54,8 +60,7 @@ abstract final class TransactionRules {
     }
     if (isExpense &&
         !selected.isCredit &&
-        (value * 100).round() >
-            (balance(selected, transactions, at: at) * 100).round()) {
+        exceedsBalance(value, balance(selected, transactions, at: at))) {
       throw FinancialValidationException(
         'Insufficient balance in ${selected.name}',
       );

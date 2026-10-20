@@ -130,14 +130,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                     icon: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(
-                          context,
-                        ).withValues(alpha: 0.85),
+                        color: AppTheme.surfaceColor(context)
+                            .withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
+                          color: AppTheme.dividerColor(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       child: Icon(
@@ -162,10 +160,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   ),
                 ],
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
-              .fade(duration: 400.ms)
+              .fade(duration: 250.ms)
               .slideY(begin: -0.2),
           const SizedBox(height: 16),
           Padding(
@@ -176,7 +176,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   rightLabel: 'Income',
                 ),
               )
-              .koinAnimate(context, autoPlay: !MediaQuery.disableAnimationsOf(context),
+              .koinAnimate(
+                context,
+                autoPlay: !MediaQuery.disableAnimationsOf(context),
                 onInit: KoinMotion.onInit(context),
               )
               .fade(delay: 100.ms)
@@ -187,27 +189,11 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
   }
 
   Widget _buildSearchField(BuildContext context) {
-    return TextField(
+    return KoinSearchField(
+      hintText: 'Search categories...',
+      inline: true,
       autofocus: true,
-      style: TextStyle(
-        color: AppTheme.textColor(context),
-        fontSize: KoinTypography.itemTitle,
-        fontWeight: KoinTypography.supportingWeight,
-      ),
-      decoration: InputDecoration(
-        hintText: 'Search categories...',
-        hintStyle: TextStyle(
-          color: AppTheme.textLightColor(context),
-          fontSize: KoinTypography.itemTitle,
-          fontWeight: FontWeight.w400,
-        ),
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        filled: false,
-        contentPadding: EdgeInsets.zero,
-      ),
-      onChanged: (v) => setState(() => _searchQuery = v),
+      onChanged: (value) => setState(() => _searchQuery = value),
     );
   }
 
@@ -310,7 +296,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ],
                 ),
               )
-              .koinAnimate(context, onInit: KoinMotion.onInit(context),
+              .koinAnimate(
+                context,
+                onInit: KoinMotion.onInit(context),
                 key: ValueKey('header_${widget.type.name}'),
                 autoPlay:
                     _showEntranceAnimations &&
@@ -334,9 +322,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor(
-                      context,
-                    ).withValues(alpha: 0.5),
+                    color: AppTheme.surfaceColor(context)
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppTheme.dividerColor(context)),
                   ),
@@ -376,7 +363,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
                   ),
                 ),
               )
-              .koinAnimate(context, onInit: KoinMotion.onInit(context),
+              .koinAnimate(
+                context,
+                onInit: KoinMotion.onInit(context),
                 key: ValueKey('footer_${widget.type.name}'),
                 autoPlay:
                     _showEntranceAnimations &&
@@ -438,9 +427,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                       padding: const EdgeInsets.all(4),
                                       child: Icon(
                                         Icons.drag_indicator_rounded,
-                                        color: AppTheme.textLightColor(
-                                          context,
-                                        ).withValues(alpha: 0.25),
+                                        color: AppTheme.textLightColor(context)
+                                            .withValues(alpha: 0.25),
                                         size: 20,
                                       ),
                                     ),
@@ -517,9 +505,8 @@ class _CategoryListState extends ConsumerState<CategoryList>
                                 Icon(
                                   Icons.chevron_right_rounded,
                                   size: 20,
-                                  color: AppTheme.textLightColor(
-                                    context,
-                                  ).withValues(alpha: 0.4),
+                                  color: AppTheme.textLightColor(context)
+                                      .withValues(alpha: 0.4),
                                 ),
                               ],
                             ),
@@ -531,7 +518,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 ),
               ),
             )
-            .koinAnimate(context, onInit: KoinMotion.onInit(context),
+            .koinAnimate(
+              context,
+              onInit: KoinMotion.onInit(context),
               key: ValueKey('${category.id}_entrance'),
               autoPlay:
                   _showEntranceAnimations &&

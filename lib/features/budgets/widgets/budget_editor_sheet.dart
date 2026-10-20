@@ -54,9 +54,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     if (_isPercentMode &&
         widget.category.budgetPercent != null &&
         widget.category.budgetPercent! > 0) {
-      _currentExpression = NumberFormat(
-        '0.##',
-      ).format(widget.category.budgetPercent!);
+      _currentExpression = NumberFormat('0.##')
+          .format(widget.category.budgetPercent!);
     } else if (!_isPercentMode &&
         widget.category.budget != null &&
         widget.category.budget! > 0) {
@@ -133,13 +132,9 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(KoinShape.sheet),
-          ),
-        ),
+      child: KoinSheetSurface(
+        color: AppTheme.surfaceColor(context),
+
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -273,9 +268,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                         fontWeight: KoinTypography.headingWeight,
                         letterSpacing: KoinTypography.amountTracking,
                         color: _currentExpression.isEmpty
-                            ? AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.3)
+                            ? AppTheme.textLightColor(context)
+                                  .withValues(alpha: 0.3)
                             : AppTheme.textColor(context),
                       ),
                     ),
@@ -287,9 +281,8 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                           fontWeight: KoinTypography.headingWeight,
                           letterSpacing: KoinTypography.amountTracking,
                           color: _currentExpression.isEmpty
-                              ? AppTheme.textLightColor(
-                                  context,
-                                ).withValues(alpha: 0.3)
+                              ? AppTheme.textLightColor(context)
+                                    .withValues(alpha: 0.3)
                               : AppTheme.textLightColor(context),
                         ),
                       ),

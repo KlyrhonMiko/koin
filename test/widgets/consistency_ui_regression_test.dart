@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -196,20 +197,20 @@ void main() {
         .descendant(of: card, matching: find.byType(AnimatedCounter))
         .first;
     final summary = find.descendant(of: card, matching: find.byType(Text)).last;
-    final balanceToggle = find.byTooltip('Hide balances');
+    final balanceToggle = find.byTooltip('Hide total balance');
     expect(
-      tester.getCenter(amount).dy,
+      tester.getCenter(find.text('Total Balance')).dy,
       closeTo(tester.getCenter(balanceToggle).dy, 1),
     );
     expect(
-      tester.getTopLeft(summary).dy - tester.getBottomLeft(balanceToggle).dy,
-      closeTo(8, 1),
+      tester.getTopLeft(summary).dy - tester.getBottomLeft(amount).dy,
+      closeTo(16, 1),
     );
     expect(
       tester.getTopLeft(amount).dx,
       closeTo(tester.getTopLeft(find.text('Total Balance')).dx, 1),
     );
-    expect(tester.getSize(balanceToggle), const Size(56, 56));
+    expect(tester.getSize(balanceToggle), const Size(48, 48));
     expect(tester.takeException(), isNull);
   });
 
@@ -348,9 +349,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.chevron_left_rounded).first);
       await tester.pumpAndSettle();
       final now = DateTime.now();
-      final previous = DateFormat(
-        'MMMM yyyy',
-      ).format(DateTime(now.year, now.month - 1));
+      final previous = DateFormat('MMMM yyyy')
+          .format(DateTime(now.year, now.month - 1));
       expect(find.text(previous), findsOneWidget);
       await tester.tap(find.byTooltip('Home'));
       await tester.pumpAndSettle();
@@ -564,47 +564,30 @@ void main() {
     },
   );
 
-  testWidgets(
-    'reduced motion immediately finishes an active main-tab transition',
-    (tester) async {
-      final container = await providers();
-      addTearDown(container.dispose);
-      var reduced = false;
-      late StateSetter redraw;
-      await launch(
-        tester,
-        StatefulBuilder(
-          builder: (context, setState) {
-            redraw = setState;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
-              child: const MainLayout(),
-            );
-          },
-        ),
-        container,
+  testWidgets('rapid main-tab changes keep the page fully visible', (
+    tester,
+  ) async {
+    final container = await providers();
+    addTearDown(container.dispose);
+    await launch(tester, const MainLayout(), container);
+    for (final index in [1, 2, 3, 0, 1]) {
+      container.read(navigationProvider.notifier).setIndex(index);
+      await tester.pump();
+      final scaffold = tester.widget<Scaffold>(
+        find
+            .descendant(
+              of: find.byType(MainLayout),
+              matching: find.byType(Scaffold),
+            )
+            .first,
       );
-      container.read(navigationProvider.notifier).setIndex(1);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-      final transition = find
-          .descendant(
-            of: find.byType(MainLayout),
-            matching: find.byType(FadeTransition),
-          )
-          .first;
-      expect(
-        tester.widget<FadeTransition>(transition).opacity.value,
-        lessThan(1),
-      );
-      redraw(() => reduced = true);
-      await tester.pump();
-      expect(tester.widget<FadeTransition>(transition).opacity.value, 1);
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-    },
-  );
+      expect(scaffold.body, isA<IndexedStack>());
+      expect((scaffold.body! as IndexedStack).index, index);
+      await tester.pump(const Duration(milliseconds: 30));
+    }
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('reduced motion interrupts active widget and list entrances', (
     tester,
@@ -684,9 +667,8 @@ void main() {
         final data = await image.toByteData(format: ui.ImageByteFormat.png);
         image.dispose();
         await Directory('build/consistency-review').create(recursive: true);
-        await File(
-          'build/consistency-review/$name.png',
-        ).writeAsBytes(data!.buffer.asUint8List());
+        await File('build/consistency-review/$name.png')
+            .writeAsBytes(data!.buffer.asUint8List());
       });
     }
 

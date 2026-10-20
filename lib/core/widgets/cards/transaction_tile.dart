@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'koin_activity_row.dart';
+import '../primitives/koin_icon_badge.dart';
+
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/models/accounts/account.dart';
@@ -219,9 +223,8 @@ class TransactionTile extends StatelessWidget {
                         Text(
                           DateFormat.jm().format(transaction.date),
                           style: TextStyle(
-                            color: AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.6),
+                            color: AppTheme.textLightColor(context)
+                                .withValues(alpha: 0.6),
                             fontSize: KoinTypography.overline,
                             fontWeight: KoinTypography.labelWeight,
                           ),
@@ -243,74 +246,26 @@ class TransactionTile extends StatelessWidget {
     required String subtitle,
     required String amount,
     required Color amountColor,
-  }) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: color, size: 20),
+  }) => KoinActivityRow(
+    leading: KoinIconBadge(icon: icon, color: color),
+    title: title,
+    amount: Text(
+      amount,
+      textAlign: TextAlign.end,
+      style: TextStyle(
+        color: amountColor,
+        fontSize: KoinTypography.itemAmount,
+        fontWeight: KoinTypography.titleWeight,
+        letterSpacing: KoinTypography.itemTracking,
       ),
-      const Gap(14),
-      Expanded(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final stacked =
-                constraints.maxWidth < 220 ||
-                MediaQuery.textScalerOf(context).scale(15) > 20;
-            final titleText = Text(
-              title,
-              maxLines: stacked ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: KoinTypography.body,
-                fontWeight: KoinTypography.titleWeight,
-              ),
-            );
-            final amountText = Text(
-              amount,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                color: amountColor,
-                fontSize: KoinTypography.itemAmount,
-                fontWeight: KoinTypography.titleWeight,
-                letterSpacing: KoinTypography.itemTracking,
-              ),
-            );
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (stacked) ...[
-                  titleText,
-                  const Gap(4),
-                  amountText,
-                ] else
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: titleText),
-                      const Gap(12),
-                      Flexible(fit: FlexFit.tight, child: amountText),
-                    ],
-                  ),
-                const Gap(4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(context),
-                    fontSize: KoinTypography.small,
-                    fontWeight: KoinTypography.supportingWeight,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+    ),
+    subtitle: Text(
+      subtitle,
+      style: TextStyle(
+        color: AppTheme.textLightColor(context),
+        fontSize: KoinTypography.small,
+        fontWeight: KoinTypography.supportingWeight,
       ),
-    ],
+    ),
   );
 }

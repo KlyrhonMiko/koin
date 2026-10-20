@@ -68,7 +68,7 @@ class KoinPrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isInteractive
             ? () {
-                HapticService.medium();
+                HapticService.light();
                 onPressed!();
               }
             : null,

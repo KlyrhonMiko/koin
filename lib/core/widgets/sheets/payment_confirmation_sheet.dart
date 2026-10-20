@@ -1,5 +1,8 @@
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
+
+import 'koin_sheet_surface.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -10,11 +13,13 @@ import 'package:koin/core/providers/category_provider.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+
 import 'account_picker_sheet.dart';
 import 'category_picker_sheet.dart';
 import 'savings_spending_confirmation.dart';
 import '../inputs/selection_tile.dart';
 import '../inputs/numpad.dart';
+
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/ledger/transaction_rules.dart';
@@ -217,22 +222,17 @@ class _PaymentConfirmationSheetState
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
+      child: KoinSheetSurface(
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-        decoration: BoxDecoration(
-          color: AppTheme.backgroundColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(KoinShape.sheet),
+        color: AppTheme.backgroundColor(context),
+        shadows: [
+          AppTheme.boxShadow(
+            context,
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
           ),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -310,9 +310,8 @@ class _PaymentConfirmationSheetState
                             style: TextStyle(
                               fontSize: KoinTypography.compact,
                               fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
+                              color: AppTheme.textLightColor(context)
+                                  .withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -348,9 +347,8 @@ class _PaymentConfirmationSheetState
                       color: AppTheme.surfaceColor(context),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.7),
+                        color: AppTheme.dividerColor(context)
+                            .withValues(alpha: 0.7),
                       ),
                       boxShadow: [
                         AppTheme.boxShadow(
@@ -380,9 +378,8 @@ class _PaymentConfirmationSheetState
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Divider(
                             height: 1,
-                            color: AppTheme.dividerColor(
-                              context,
-                            ).withValues(alpha: 0.5),
+                            color: AppTheme.dividerColor(context)
+                                .withValues(alpha: 0.5),
                           ),
                         ),
                         // Account row

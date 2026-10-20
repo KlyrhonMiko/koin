@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
+
 import 'widgets/savings_plan_editor.dart';
+
 import 'package:koin/core/core.dart';
 
 class AddSavingsGoalScreen extends ConsumerStatefulWidget {
@@ -197,402 +199,304 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
         ),
         centerTitle: false,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: KoinEntityFormBody(
+        form: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KoinEntityNameField(
+                fieldKey: const Key('goal_name'),
+                controller: _nameController,
+                textCapitalization: TextCapitalization.sentences,
+                hintText: _isStash ? 'Name your savings' : 'Name your goal',
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? (_isStash
+                          ? 'Enter a name for your savings'
+                          : 'Enter a name for your goal')
+                    : null,
+              ),
+              const Gap(16),
+              Text(
+                _isStash ? 'Target amount (optional)' : 'Target amount',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppTheme.textLightColor(context)),
+              ),
+              HeroAmountField(
+                fieldKey: const Key('goal_amount'),
+                controller: _amountController,
+                currencySymbol: currency.symbol,
+                currency: currency,
+                primaryColor: primaryColor,
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  if (_isStash && (value == null || value.trim().isEmpty)) {
+                    return null;
+                  }
+                  final target = ref
+                      .read(settingsProvider)
+                      .currency
+                      .tryParseInput(value ?? '');
+                  return target == null || !target.isFinite || target <= 0
+                      ? 'Enter an amount greater than zero'
+                      : null;
+                },
+              ),
+              const Gap(12),
+              _fieldLabel(context, 'Savings type'),
+              const Gap(8),
+              KoinChoiceControl(
+                key: const ValueKey('savings_type_selector'),
+                segments: const [
+                  KoinSegmentItem(label: 'Goal', icon: Icons.flag_rounded),
+                  KoinSegmentItem(
+                    label: 'Savings',
+                    icon: Icons.savings_rounded,
+                  ),
+                ],
+                selectedIndex: _isStash ? 1 : 0,
+                onChanged: (index) => setState(() => _isStash = index == 1),
+              ),
+              const Gap(8),
+              Text(
+                _isStash
+                    ? 'Save at your own pace. Amount is optional; no deadline.'
+                    : 'Target amount with an optional deadline.',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppTheme.textLightColor(context)),
+              ),
+              const Gap(24),
+              _fieldLabel(context, _isStash ? 'Start date' : 'Timeline'),
+              if (!_isStash)
+                SwitchListTile.adaptive(
+                  key: const ValueKey('has_deadline'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Set a deadline'),
+                  value: _hasDeadline,
+                  onChanged: (value) => setState(() => _hasDeadline = value),
+                ),
+              const Gap(8),
+              _revealFields(
+                context,
+                child: LayoutBuilder(
+                  key: ValueKey(_isStash),
+                  builder: (context, constraints) {
+                    final start = DateSelectorTile(
+                      label: 'Start date',
+                      date: _startDate,
+                      onTap: () => _selectDate(context, true),
+                    );
+                    if (isStash || !_hasDeadline) return start;
+                    final end = DateSelectorTile(
+                      label: 'Target date',
+                      date: _endDate,
+                      icon: Icons.flag_rounded,
+                      onTap: () => _selectDate(context, false),
+                    );
+                    if (constraints.maxWidth < 340 ||
+                        MediaQuery.textScalerOf(context).scale(16) > 20) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [start, const Gap(12), end],
+                      );
+                    }
+                    return Row(
                       children: [
-                        TextFormField(
-                          key: const Key('goal_name'),
-                          controller: _nameController,
-                          textAlign: TextAlign.center,
-                          textCapitalization: TextCapitalization.sentences,
-                          textInputAction: TextInputAction.next,
-                          style: KoinTypography.entityNameStyle.copyWith(
-                            color: AppTheme.textColor(context),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: _isStash
-                                ? 'Name your savings'
-                                : 'Name your goal',
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                            filled: false,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ),
-                            hintStyle: TextStyle(
-                              color: AppTheme.fieldHintColor(
-                                context,
-                                lightOpacity: 0.4,
-                              ),
-                            ),
-                          ),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? (_isStash
-                                    ? 'Enter a name for your savings'
-                                    : 'Enter a name for your goal')
-                              : null,
-                        ),
-                        const Gap(16),
-                        Text(
-                          _isStash
-                              ? 'Target amount (optional)'
-                              : 'Target amount',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: AppTheme.textLightColor(context),
-                              ),
-                        ),
-                        HeroAmountField(
-                          fieldKey: const Key('goal_amount'),
-                          controller: _amountController,
-                          currencySymbol: currency.symbol,
-                          currency: currency,
-                          primaryColor: primaryColor,
-                          onChanged: (_) => setState(() {}),
-                          validator: (value) {
-                            if (_isStash &&
-                                (value == null || value.trim().isEmpty)) {
-                              return null;
-                            }
-                            final target = ref
-                                .read(settingsProvider)
-                                .currency
-                                .tryParseInput(value ?? '');
-                            return target == null ||
-                                    !target.isFinite ||
-                                    target <= 0
-                                ? 'Enter an amount greater than zero'
-                                : null;
-                          },
-                        ),
+                        Expanded(child: start),
                         const Gap(12),
-                        _fieldLabel(context, 'Savings type'),
-                        const Gap(8),
-                        KoinChoiceControl(
-                          key: const ValueKey('savings_type_selector'),
-                          segments: const [
-                            KoinSegmentItem(
-                              label: 'Goal',
-                              icon: Icons.flag_rounded,
-                            ),
-                            KoinSegmentItem(
-                              label: 'Savings',
-                              icon: Icons.savings_rounded,
-                            ),
-                          ],
-                          selectedIndex: _isStash ? 1 : 0,
-                          onChanged: (index) =>
-                              setState(() => _isStash = index == 1),
-                        ),
-                        const Gap(8),
-                        Text(
-                          _isStash
-                              ? 'Save at your own pace. Amount is optional; no deadline.'
-                              : 'Target amount with an optional deadline.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: AppTheme.textLightColor(context),
-                              ),
-                        ),
-                        const Gap(24),
-                        _fieldLabel(
-                          context,
-                          _isStash ? 'Start date' : 'Timeline',
-                        ),
-                        if (!_isStash)
-                          SwitchListTile.adaptive(
-                            key: const ValueKey('has_deadline'),
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Set a deadline'),
-                            value: _hasDeadline,
-                            onChanged: (value) =>
-                                setState(() => _hasDeadline = value),
-                          ),
-                        const Gap(8),
-                        _revealFields(
-                          context,
-                          child: LayoutBuilder(
-                            key: ValueKey(_isStash),
-                            builder: (context, constraints) {
-                              final start = DateSelectorTile(
-                                label: 'Start date',
-                                date: _startDate,
-                                onTap: () => _selectDate(context, true),
-                              );
-                              if (isStash || !_hasDeadline) return start;
-                              final end = DateSelectorTile(
-                                label: 'Target date',
-                                date: _endDate,
-                                icon: Icons.flag_rounded,
-                                onTap: () => _selectDate(context, false),
-                              );
-                              if (constraints.maxWidth < 340 ||
-                                  MediaQuery.textScalerOf(context).scale(16) >
-                                      20) {
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [start, const Gap(12), end],
-                                );
-                              }
-                              return Row(
-                                children: [
-                                  Expanded(child: start),
-                                  const Gap(12),
-                                  Expanded(child: end),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        _revealFields(
-                          context,
-                          delay: const Duration(milliseconds: 40),
-                          child: showEstimate
-                              ? Column(
-                                  key: const ValueKey('daily_estimate'),
-                                  children: [
-                                    const Gap(12),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          Icons.insights_rounded,
-                                          size: 18,
-                                          color: primaryColor,
-                                        ),
-                                        const Gap(8),
-                                        Expanded(
-                                          child: Text(
-                                            'About ${_getDailyEstimate()} a day over $_totalDays days.',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color:
-                                                      AppTheme.textLightColor(
-                                                        context,
-                                                      ),
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                )
-                              : const SizedBox.shrink(
-                                  key: ValueKey('no_estimate'),
-                                ),
-                        ),
-                        if (_saveError != null)
-                          Text(
-                            _saveError!,
-                            style: TextStyle(
-                              color: AppTheme.errorColor(context),
-                            ),
-                          ),
-                        const Gap(28),
-                        Divider(
-                          color: AppTheme.dividerColor(context),
-                          height: 1,
-                        ),
-                        const Gap(24),
-                        _fieldLabel(context, 'Optional details'),
-                        const Gap(12),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.tips_and_updates_outlined),
-                          title: const Text('Savings Helper'),
-                          subtitle: Text(
-                            _plan == null
-                                ? 'See how much you could save and when'
-                                : '${_plan!.frequency.label} · ${currency.formatter.format(_plan!.amount)}',
-                          ),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () async {
-                            final result = await SavingsPlanEditor.open(
-                              context,
-                              initial: _plan,
-                              goal: SavingsGoal(
-                                id: widget.goal?.id ?? 'new-savings',
-                                name: _nameController.text.trim(),
-                                targetAmount: ref
-                                    .read(settingsProvider)
-                                    .currency
-                                    .tryParseInput(_amountController.text),
-                                currentAmount: widget.goal?.currentAmount ?? 0,
-                                startDate: _startDate,
-                                endDate: _isStash || !_hasDeadline
-                                    ? null
-                                    : _endDate,
-                                isStash: _isStash,
-                                savingsPlan: _plan,
-                              ),
-                            );
-                            if (result != null && mounted) {
-                              setState(() {
-                                _plan = result.plan;
-                                if (result.deadline != null) {
-                                  _endDate = result.deadline!;
-                                }
-                                if (result.targetAmount != null) {
-                                  _amountController.text = result.targetAmount!
-                                      .toStringAsFixed(2);
-                                }
-                              });
-                            }
-                          },
-                        ),
-                        const Gap(12),
-                        KoinGroupedCard(
-                          autoDivide: false,
-                          borderRadius: 16,
-                          borderColor: AppTheme.fieldBorderColor(context),
-                          children: [
-                            SelectionTile(
-                              asCard: false,
-                              fallbackIcon:
-                                  Icons.account_balance_wallet_rounded,
-                              label: 'Linked account',
-                              selectedName: linkedAccount?.name,
-                              selectedColor: linkedAccount?.color,
-                              selectedIconCodePoint:
-                                  linkedAccount?.iconCodePoint,
-                              selectedLogoAsset: linkedAccount?.logoAsset,
-                              placeholder: 'Choose an account',
-                              onTap: () => _openAccountPicker(
-                                context,
-                                availableAccounts,
-                                title: 'Linked Account',
-                                subtitle: 'Link an account to fund this goal',
-                                selectedId: _selectedAccountId,
-                                onSelected: (id) =>
-                                    setState(() => _selectedAccountId = id),
-                              ),
-                            ),
-                            _revealFields(
-                              context,
-                              child: _selectedAccountId == null
-                                  ? const SizedBox.shrink(
-                                      key: ValueKey('no_dashboard_option'),
-                                    )
-                                  : Column(
-                                      key: const ValueKey('dashboard_option'),
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Divider(
-                                          height: 1,
-                                          indent: 16,
-                                          endIndent: 16,
-                                          color: AppTheme.fieldBorderColor(
-                                            context,
-                                          ),
-                                        ),
-                                        SwitchListTile.adaptive(
-                                          key: const ValueKey(
-                                            'include_in_dashboard',
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 4,
-                                              ),
-                                          title: const Text(
-                                            'Include in balances',
-                                            style: TextStyle(
-                                              fontSize: KoinTypography.compact,
-                                              fontWeight:
-                                                  KoinTypography.labelWeight,
-                                            ),
-                                          ),
-                                          subtitle: Text(
-                                            'Show in dashboard and account balances',
-                                            style: TextStyle(
-                                              fontSize: KoinTypography.caption,
-                                              color: AppTheme.textLightColor(
-                                                context,
-                                              ),
-                                            ),
-                                          ),
-                                          value: _includeInDashboardBalance,
-                                          onChanged: (value) => setState(
-                                            () => _includeInDashboardBalance =
-                                                value,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ],
-                        ),
-                        const Gap(20),
-                        _fieldLabel(context, 'Notes'),
-                        const Gap(8),
-                        TextFormField(
-                          key: const Key('goal_notes'),
-                          controller: _notesController,
-                          minLines: 1,
-                          maxLines: 4,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration: const InputDecoration(
-                            hintText: 'What are you saving for?',
-                          ),
-                        ),
+                        Expanded(child: end),
                       ],
+                    );
+                  },
+                ),
+              ),
+              _revealFields(
+                context,
+                delay: const Duration(milliseconds: 40),
+                child: showEstimate
+                    ? Column(
+                        key: const ValueKey('daily_estimate'),
+                        children: [
+                          const Gap(12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.insights_rounded,
+                                size: 18,
+                                color: primaryColor,
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  'About ${_getDailyEstimate()} a day over $_totalDays days.',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: AppTheme.textLightColor(context),
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(key: ValueKey('no_estimate')),
+              ),
+              if (_saveError != null)
+                Text(
+                  _saveError!,
+                  style: TextStyle(color: AppTheme.errorColor(context)),
+                ),
+              const Gap(28),
+              Divider(color: AppTheme.dividerColor(context), height: 1),
+              const Gap(24),
+              _fieldLabel(context, 'Optional details'),
+              const Gap(12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.tips_and_updates_outlined),
+                title: const Text('Savings Helper'),
+                subtitle: Text(
+                  _plan == null
+                      ? 'See how much you could save and when'
+                      : '${_plan!.frequency.label} · ${currency.formatter.format(_plan!.amount)}',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () async {
+                  final result = await SavingsPlanEditor.open(
+                    context,
+                    initial: _plan,
+                    goal: SavingsGoal(
+                      id: widget.goal?.id ?? 'new-savings',
+                      name: _nameController.text.trim(),
+                      targetAmount: ref
+                          .read(settingsProvider)
+                          .currency
+                          .tryParseInput(_amountController.text),
+                      currentAmount: widget.goal?.currentAmount ?? 0,
+                      startDate: _startDate,
+                      endDate: _isStash || !_hasDeadline ? null : _endDate,
+                      isStash: _isStash,
+                      savingsPlan: _plan,
+                    ),
+                  );
+                  if (result != null && mounted) {
+                    setState(() {
+                      _plan = result.plan;
+                      if (result.deadline != null) {
+                        _endDate = result.deadline!;
+                      }
+                      if (result.targetAmount != null) {
+                        _amountController.text = result.targetAmount!
+                            .toStringAsFixed(2);
+                      }
+                    });
+                  }
+                },
+              ),
+              const Gap(12),
+              KoinGroupedCard(
+                autoDivide: false,
+                borderRadius: 16,
+                borderColor: AppTheme.fieldBorderColor(context),
+                children: [
+                  SelectionTile(
+                    asCard: false,
+                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    label: 'Linked account',
+                    selectedName: linkedAccount?.name,
+                    selectedColor: linkedAccount?.color,
+                    selectedIconCodePoint: linkedAccount?.iconCodePoint,
+                    selectedLogoAsset: linkedAccount?.logoAsset,
+                    placeholder: 'Choose an account',
+                    onTap: () => _openAccountPicker(
+                      context,
+                      availableAccounts,
+                      title: 'Linked Account',
+                      subtitle: 'Link an account to fund this goal',
+                      selectedId: _selectedAccountId,
+                      onSelected: (id) =>
+                          setState(() => _selectedAccountId = id),
                     ),
                   ),
+                  _revealFields(
+                    context,
+                    child: _selectedAccountId == null
+                        ? const SizedBox.shrink(
+                            key: ValueKey('no_dashboard_option'),
+                          )
+                        : Column(
+                            key: const ValueKey('dashboard_option'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Divider(
+                                height: 1,
+                                indent: 16,
+                                endIndent: 16,
+                                color: AppTheme.fieldBorderColor(context),
+                              ),
+                              SwitchListTile.adaptive(
+                                key: const ValueKey('include_in_dashboard'),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 4,
+                                ),
+                                title: const Text(
+                                  'Include in balances',
+                                  style: TextStyle(
+                                    fontSize: KoinTypography.compact,
+                                    fontWeight: KoinTypography.labelWeight,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Show in dashboard and account balances',
+                                  style: TextStyle(
+                                    fontSize: KoinTypography.caption,
+                                    color: AppTheme.textLightColor(context),
+                                  ),
+                                ),
+                                value: _includeInDashboardBalance,
+                                onChanged: (value) => setState(
+                                  () => _includeInDashboardBalance = value,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+              const Gap(20),
+              _fieldLabel(context, 'Notes'),
+              const Gap(8),
+              TextFormField(
+                key: const Key('goal_notes'),
+                controller: _notesController,
+                minLines: 1,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  hintText: 'What are you saving for?',
                 ),
               ),
-            ),
+            ],
           ),
-          SafeArea(
-            top: false,
-            minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: KoinPrimaryButton(
-                  label: _saving
-                      ? 'Saving…'
-                      : isEditing
-                      ? (_isStash ? 'Update Savings' : 'Update Goal')
-                      : (_isStash ? 'Create Savings' : 'Create Goal'),
-                  onPressed: _saving ? null : _save,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+        action: KoinPrimaryButton(
+          label: _saving
+              ? 'Saving…'
+              : isEditing
+              ? (_isStash ? 'Update Savings' : 'Update Goal')
+              : (_isStash ? 'Create Savings' : 'Create Goal'),
+          onPressed: _saving ? null : _save,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
       ),
     );
   }
 
-  Widget _fieldLabel(BuildContext context, String label) => Text(
-    label,
-    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: AppTheme.textColor(context),
-      fontWeight: FontWeight.w600,
-    ),
-  );
+  Widget _fieldLabel(BuildContext context, String label) =>
+      FormSectionTitle.field(title: label);
 
   Widget _revealFields(
     BuildContext context, {

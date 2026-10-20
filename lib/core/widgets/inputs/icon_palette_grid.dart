@@ -81,7 +81,8 @@ class IconPaletteGrid extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: isSelected ? 1.1 : 1.0,
-        duration: const Duration(milliseconds: 200),
+        duration: KoinMotion.duration(context, KoinMotion.feedback),
+        curve: KoinMotion.curve,
         child: AnimatedContainer(
           duration: KoinMotion.duration(
             context,

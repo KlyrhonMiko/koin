@@ -44,8 +44,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     final confirmed = await ConfirmationSheet.show(
       context: context,
       title: 'Delete Credit/IOU?',
-      description:
-          'Are you sure you want to delete this credit/IOU? This action cannot be undone and will delete all associated payment history.',
+      description: 'Are you sure you want to delete this credit/IOU? This action cannot be undone and will delete all associated payment history.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.errorColor(context),
       icon: Icons.delete_outline_rounded,
@@ -109,26 +108,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     horizontal: KoinSpacing.screenInset,
                     vertical: 8,
                   ),
-                  child: Row(
-                    children: [
-                      const KoinBackButton(),
-                      const Gap(16),
-                      Expanded(
-                        child: Text(
-                          'Credit Details',
-                          style: TextStyle(
-                            fontSize: KoinTypography.screenTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.headingTracking,
-                            color: AppTheme.textColor(context),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // Removed Edit and Delete from AppBar to put them in Quick Actions
-                    ],
-                  ),
+                  child: const KoinPageHeader(title: 'Credit Details'),
                 ),
                 // ── Body ──
                 Expanded(
@@ -319,62 +299,51 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           autoPlay: !MediaQuery.disableAnimationsOf(context),
           onInit: KoinMotion.onInit(context),
         )
-        .fadeIn(duration: 400.ms)
+        .fadeIn(duration: 250.ms)
         .slideY(begin: 0.05, curve: Curves.easeOutCubic);
   }
 
   // ── Quick Actions ──
   Widget _buildQuickActions(BuildContext context, Debt debt, Color color) {
     return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildActionItem(
-              context,
-              icon: Icons.add_rounded,
-              label: 'Payment',
-              color: color,
-              onTap: () => _addRepayment(context, debt),
-            ),
-            _buildActionItem(
-              context,
-              icon: Icons.arrow_upward_rounded,
-              label: 'Increase',
-              color: color,
-              onTap: () => _addRepayment(context, debt, isIncrease: true),
-            ),
-            _buildActionItem(
-              context,
-              icon: Icons.edit_rounded,
-              label: 'Edit',
-              color: AppTheme.textLightColor(context),
-              onTap: () {
-                HapticService.light();
-                Navigator.push(
-                  context,
-                  SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
-                );
-              },
-            ),
-            _buildActionItem(
-              context,
-              icon: Icons.delete_outline_rounded,
-              label: 'Delete',
-              color: AppTheme.expenseColor(context),
-              onTap: () => _showDeleteConfirmation(debt),
-            ),
-          ],
-        )
-        .koinAnimate(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildActionItem(
           context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
+          icon: Icons.add_rounded,
+          label: 'Payment',
+          color: color,
+          onTap: () => _addRepayment(context, debt),
+        ),
+        _buildActionItem(
+          context,
+          icon: Icons.arrow_upward_rounded,
+          label: 'Increase',
+          color: color,
+          onTap: () => _addRepayment(context, debt, isIncrease: true),
+        ),
+        _buildActionItem(
+          context,
+          icon: Icons.edit_rounded,
+          label: 'Edit',
+          color: AppTheme.textLightColor(context),
+          onTap: () {
+            HapticService.light();
+            Navigator.push(
+              context,
+              SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
+            );
+          },
+        ),
+        _buildActionItem(
+          context,
+          icon: Icons.delete_outline_rounded,
+          label: 'Delete',
+          color: AppTheme.expenseColor(context),
+          onTap: () => _showDeleteConfirmation(debt),
+        ),
+      ],
+    ).koinEntrance(context);
   }
 
   Widget _buildActionItem(
@@ -384,39 +353,12 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return PressableScale(
-      enableHaptic: false,
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor(context),
-              shape: BoxShape.circle,
-              boxShadow: [
-                AppTheme.boxShadow(
-                  context,
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const Gap(8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: KoinTypography.small,
-              fontWeight: KoinTypography.labelWeight,
-              color: AppTheme.textLightColor(context),
-            ),
-          ),
-        ],
-      ),
+    return KoinQuickAction(
+      icon: icon,
+      label: label,
+      color: color,
+      onPressed: onTap,
+      elevated: true,
     );
   }
 
@@ -763,77 +705,27 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           failureTitle: 'Could not delete payment',
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    repayment.isIncrease
-                        ? Icons.north_east_rounded
-                        : Icons.south_west_rounded,
-                    size: 20,
-                    color: color,
-                  ),
+            child: KoinActivityRow(
+              leading: KoinIconBadge(
+                icon: repayment.isIncrease
+                    ? Icons.north_east_rounded
+                    : Icons.south_west_rounded,
+                color: color,
+              ),
+              title: repayment.note?.isNotEmpty == true
+                  ? repayment.note!
+                  : repayment.isIncrease
+                  ? 'Increased Credit'
+                  : 'Payment',
+              stackedTitleMaxLines: null,
+              amount: amount,
+              subtitle: Text(
+                _formatActivityDate(repayment.date),
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: KoinTypography.small,
                 ),
-                const Gap(14),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final stacked =
-                          constraints.maxWidth < 220 ||
-                          MediaQuery.textScalerOf(context).scale(15) > 20;
-                      final title = Text(
-                        repayment.note?.isNotEmpty == true
-                            ? repayment.note!
-                            : repayment.isIncrease
-                            ? 'Increased Credit'
-                            : 'Payment',
-                        maxLines: stacked ? null : 1,
-                        overflow: stacked
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppTheme.textColor(context),
-                          fontSize: KoinTypography.body,
-                          fontWeight: KoinTypography.titleWeight,
-                        ),
-                      );
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (stacked) ...[
-                            title,
-                            const Gap(4),
-                            amount,
-                          ] else
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: title),
-                                const Gap(12),
-                                amount,
-                              ],
-                            ),
-                          const Gap(4),
-                          Text(
-                            _formatActivityDate(repayment.date),
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontSize: KoinTypography.small,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

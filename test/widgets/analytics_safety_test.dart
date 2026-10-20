@@ -507,6 +507,11 @@ void main() {
             ),
           );
       await launch(tester, const AnalysisScreen());
+      await tester.scrollUntilVisible(
+        find.text('Top Categories'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       final drilldown = find.ancestor(
         of: find.text('Uncategorized'),
         matching: find.byType(PressableScale),
@@ -726,9 +731,7 @@ void main() {
             expect(amountRect.left, greaterThanOrEqualTo(cardRect.left + 23));
             expect(
               amountRect.right,
-              lessThanOrEqualTo(
-                tester.getTopLeft(find.byTooltip('Hide spending')).dx - 11,
-              ),
+              lessThanOrEqualTo(cardRect.right - 23),
             );
             expect(amountRect.bottom, lessThan(cardRect.bottom));
             expect(tester.takeException(), isNull);

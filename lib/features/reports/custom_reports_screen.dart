@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +9,7 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/reports/report_service.dart';
 
 import 'package:file_picker/file_picker.dart';
+
 import 'dart:io';
 
 class CustomReportsScreen extends ConsumerStatefulWidget {
@@ -106,18 +109,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                         ),
               ),
             ),
-            _buildExportActions(context, categories, accounts, currencySymbol)
-                .koinAnimate(
-                  context,
-                  autoPlay: !MediaQuery.disableAnimationsOf(context),
-                  onInit: KoinMotion.onInit(context),
-                )
-                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                .scale(
-                  begin: const Offset(0.95, 0.95),
-                  duration: 250.ms,
-                  curve: Curves.easeOutCubic,
-                ),
+            _buildExportActions(
+              context,
+              categories,
+              accounts,
+              currencySymbol,
+            ).koinEntrance(context),
             if (_isExporting)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -205,41 +202,20 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
+    return KoinPageHeader(
+      title: 'Custom Reports',
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const KoinBackButton(),
-          const Gap(16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'REPORT BUILDER',
-                  style: TextStyle(
-                    color: AppTheme.textLightColor(
-                      context,
-                    ).withValues(alpha: 0.7),
-                    fontSize: KoinTypography.overline,
-                    fontWeight: KoinTypography.titleWeight,
-                    letterSpacing: KoinTypography.overlineTracking,
-                  ),
-                ),
-                const Gap(2),
-                Text(
-                  'Custom Reports',
-                  style: TextStyle(
-                    color: AppTheme.textColor(context),
-                    fontSize: KoinTypography.screenTitle,
-                    fontWeight: KoinTypography.headingWeight,
-                    letterSpacing: KoinTypography.headingTracking,
-                  ),
-                ),
-              ],
-            ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text(
+          'REPORT BUILDER',
+          style: TextStyle(
+            color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
+            fontSize: KoinTypography.overline,
+            fontWeight: KoinTypography.titleWeight,
+            letterSpacing: KoinTypography.overlineTracking,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -328,7 +304,16 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       itemBuilder: (context, index) {
         final cat = categories[index];
         final isSelected = _selectedCategoryIds.contains(cat.id);
-        return PressableScale(
+        return KoinSelectableOption(
+          label: cat.name,
+          selected: isSelected,
+          accentColor: AppTheme.primaryColor(context),
+          leading: KoinIconBadge(
+            icon: IconUtils.getIcon(cat.iconCodePoint),
+            color: cat.color,
+            size: 26,
+            iconSize: 14,
+          ),
           onTap: () {
             HapticService.light();
             setState(() {
@@ -339,62 +324,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               }
             });
           },
-          child: AnimatedContainer(
-            duration: KoinMotion.duration(
-              context,
-              const Duration(milliseconds: 200),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primaryColor(context).withValues(alpha: 0.1)
-                  : AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? AppTheme.primaryColor(context)
-                    : AppTheme.dividerColor(context).withValues(alpha: 0.5),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: cat.color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    IconUtils.getIcon(cat.iconCodePoint),
-                    color: cat.color,
-                    size: 14,
-                  ),
-                ),
-                const Gap(10),
-                Expanded(
-                  child: Text(
-                    cat.name,
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontWeight: isSelected
-                          ? KoinTypography.titleWeight
-                          : KoinTypography.labelWeight,
-                      fontSize: KoinTypography.caption,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: AppTheme.primaryColor(context),
-                    size: 14,
-                  ),
-              ],
-            ),
-          ),
         );
       },
     );
@@ -415,7 +344,23 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       itemBuilder: (context, index) {
         final acc = accounts[index];
         final isSelected = _selectedAccountIds.contains(acc.id);
-        return PressableScale(
+        return KoinSelectableOption(
+          label: acc.name,
+          selected: isSelected,
+          accentColor: AppTheme.secondaryColor(context),
+          leading: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: acc.color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: KoinAccountAvatar(
+              iconCodePoint: acc.iconCodePoint,
+              logoAsset: acc.logoAsset,
+              color: acc.color,
+              size: 14,
+            ),
+          ),
           onTap: () {
             HapticService.light();
             setState(() {
@@ -426,72 +371,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               }
             });
           },
-          child: AnimatedContainer(
-            duration: KoinMotion.duration(
-              context,
-              const Duration(milliseconds: 200),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.secondaryColor(context).withValues(alpha: 0.1)
-                  : AppTheme.surfaceColor(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? AppTheme.secondaryColor(context)
-                    : AppTheme.dividerColor(context).withValues(alpha: 0.5),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: acc.color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: acc.logoAsset != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset(
-                            acc.logoAsset!,
-                            width: 14,
-                            height: 14,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Icon(
-                          IconUtils.getIcon(acc.iconCodePoint),
-                          color: acc.color,
-                          size: 14,
-                        ),
-                ),
-                const Gap(10),
-                Expanded(
-                  child: Text(
-                    acc.name,
-                    style: TextStyle(
-                      color: AppTheme.textColor(context),
-                      fontWeight: isSelected
-                          ? KoinTypography.titleWeight
-                          : KoinTypography.labelWeight,
-                      fontSize: KoinTypography.caption,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: AppTheme.secondaryColor(context),
-                    size: 14,
-                  ),
-              ],
-            ),
-          ),
         );
       },
     );

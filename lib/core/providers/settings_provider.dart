@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/models/models.dart';
+import 'package:koin/core/utils/haptic_utils.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError();
@@ -12,6 +13,7 @@ class SettingsState {
   final Color themeColor;
   final ThemeMode themeMode;
   final int analysisFilterIndex;
+  final bool hapticsEnabled;
   final bool? _hideBalance;
   bool get hideBalance => _hideBalance ?? false;
 
@@ -21,6 +23,7 @@ class SettingsState {
     required this.themeMode,
     required this.analysisFilterIndex,
     this._hideBalance,
+    this.hapticsEnabled = true,
   });
 
   SettingsState copyWith({
@@ -29,6 +32,7 @@ class SettingsState {
     ThemeMode? themeMode,
     int? analysisFilterIndex,
     bool? hideBalance,
+    bool? hapticsEnabled,
   }) {
     return SettingsState(
       currency: currency ?? this.currency,
@@ -36,6 +40,7 @@ class SettingsState {
       themeMode: themeMode ?? this.themeMode,
       analysisFilterIndex: analysisFilterIndex ?? this.analysisFilterIndex,
       hideBalance: hideBalance ?? this.hideBalance,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
     );
   }
 }
@@ -46,6 +51,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const String _themeModeKey = 'theme_mode';
   static const String _analysisFilterIndexKey = 'analysis_filter_index';
   static const String _hideBalanceKey = 'hide_balance';
+  static const String _hapticsEnabledKey = 'haptics_enabled';
 
   @override
   SettingsState build() {
@@ -56,6 +62,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final themeModeIndex = prefs.getInt(_themeModeKey);
     final analysisFilterIndex = prefs.getInt(_analysisFilterIndexKey) ?? 0;
     final hideBalance = prefs.getBool(_hideBalanceKey) ?? false;
+    final hapticsEnabled = prefs.getBool(_hapticsEnabledKey) ?? true;
+    HapticService.enabled = hapticsEnabled;
 
     final currency = Currency.supportedCurrencies.firstWhere(
       (c) => c.code == currencyCode,
@@ -76,6 +84,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       themeMode: themeMode,
       analysisFilterIndex: analysisFilterIndex,
       hideBalance: hideBalance,
+      hapticsEnabled: hapticsEnabled,
     );
   }
 
@@ -109,6 +118,14 @@ class SettingsNotifier extends Notifier<SettingsState> {
     ref.invalidateSelf();
   }
 
+  Future<void> setHapticsEnabled(bool enabled) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_hapticsEnabledKey, enabled);
+    HapticService.enabled = enabled;
+    state = state.copyWith(hapticsEnabled: enabled);
+    if (enabled) HapticService.selection();
+  }
+
   Future<void> resetSettings() async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove(_currencyCodeKey);
@@ -116,6 +133,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.remove(_themeModeKey);
     await prefs.remove(_analysisFilterIndexKey);
     await prefs.remove(_hideBalanceKey);
+    await prefs.remove(_hapticsEnabledKey);
+    HapticService.enabled = true;
     ref.invalidateSelf();
   }
 }

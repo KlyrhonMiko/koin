@@ -234,9 +234,8 @@ class _ScheduleDialog extends StatelessWidget {
         titlePadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         actionsPadding: const EdgeInsets.all(16),
-        titleTextStyle: Theme.of(
-          context,
-        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+        titleTextStyle: Theme.of(context).textTheme.titleLarge
+            ?.copyWith(fontWeight: FontWeight.w600),
         title: Text(title),
         content: SizedBox(width: 360, child: child),
         actions: [
@@ -331,7 +330,11 @@ class _SelectionGrid extends StatelessWidget {
                         : FontWeight.w400,
                   ),
                 ),
-                onPressed: () => onSelected(index),
+                onPressed: () {
+                  if (index == selected) return;
+                  HapticService.selection();
+                  onSelected(index);
+                },
                 child: Semantics(
                   label: semanticLabel(index),
                   excludeSemantics: true,

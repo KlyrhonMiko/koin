@@ -131,26 +131,37 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     NumberFormat currencyFormat,
     bool isDark,
   ) {
+    final settings = ref.watch(settingsProvider);
+    final hideAmount = settings.hideBalance;
     Widget card = KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.savings,
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Total saved', style: PortfolioCardStyle.summaryLabel),
-          const Gap(12),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: AnimatedCounter(
-              value: summary.totalSaved,
-              formatter: currencyFormat.format,
-              duration: const Duration(milliseconds: 1400),
-              curve: Curves.easeOutCubic,
-              style: PortfolioCardStyle.summaryAmount,
-            ),
-          ),
-        ],
+      topRightAction: KoinVisibilityButton(
+        hidden: hideAmount,
+        subject: 'total saved',
+        onPressed: () =>
+            ref.read(settingsProvider.notifier).setHideBalance(!hideAmount),
+      ),
+      child: KoinSummaryContent(
+        label: 'Total saved',
+        currencyCode: settings.currency.code,
+        amount: hideAmount
+            ? const Text(
+                '****',
+                semanticsLabel: 'Total saved hidden',
+                style: KoinTypography.summaryAmountStyle,
+              )
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: AnimatedCounter(
+                  value: summary.totalSaved,
+                  formatter: currencyFormat.format,
+                  duration: const Duration(milliseconds: 1400),
+                  curve: Curves.easeOutCubic,
+                  style: PortfolioCardStyle.summaryAmount,
+                ),
+              ),
       ),
     );
 
@@ -161,10 +172,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             autoPlay: !MediaQuery.disableAnimationsOf(context),
             onInit: KoinMotion.onInit(context),
           )
-          .fade(duration: 400.ms, curve: Curves.easeOutCubic)
+          .fade(duration: 250.ms, curve: Curves.easeOutCubic)
           .scale(
             begin: const Offset(0.96, 0.96),
-            duration: 400.ms,
+            duration: 250.ms,
             curve: Curves.easeOutCubic,
           );
     }
@@ -283,23 +294,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               const Gap(8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: goal.progress),
-                  duration: KoinMotion.duration(
-                    context,
-                    Duration(milliseconds: 800 + (index * 100)),
-                  ),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, animatedProgress, _) {
-                    return LinearProgressIndicator(
-                      value: animatedProgress,
-                      backgroundColor: AppTheme.surfaceLightColor(context),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isCompleted ? successGreen : accentColor,
-                      ),
-                      minHeight: 4,
-                    );
-                  },
+                child: KoinProgressBar(
+                  value: goal.progress,
+                  duration: KoinMotion.entrance,
+                  color: isCompleted ? successGreen : accentColor,
                 ),
               ),
             ],
@@ -308,17 +306,11 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
       ),
     );
 
-    if (widget.showEntranceAnimations) {
-      card = card
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-            key: ValueKey('goal_${goal.id}_entrance'),
-          )
-          .fade(delay: (index * 40).ms, duration: 400.ms)
-          .slideX(begin: 0.05, curve: Curves.easeOutCubic);
-    }
+    card = card.koinEntrance(
+      context,
+      enabled: widget.showEntranceAnimations,
+      token: 'savings_goal_${goal.id}',
+    );
     return card;
   }
 
@@ -328,8 +320,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     Widget state = KoinEmptyState.sliver(
       icon: Icons.savings_outlined,
       title: 'Start saving for what matters',
-      subtitle:
-          'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
+      subtitle: 'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
       action: Column(
         children: [
           PressableScale(
@@ -347,9 +338,8 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 boxShadow: [
                   AppTheme.boxShadow(
                     context,
-                    color: AppTheme.primaryColor(
-                      context,
-                    ).withValues(alpha: 0.3),
+                    color: AppTheme.primaryColor(context)
+                        .withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -395,7 +385,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
             autoPlay: !MediaQuery.disableAnimationsOf(context),
             onInit: KoinMotion.onInit(context),
           )
-          .fade(delay: 50.ms, duration: 400.ms, curve: Curves.easeOutCubic)
+          .fade(delay: 50.ms, duration: 250.ms, curve: Curves.easeOutCubic)
           .slideY(begin: 0.1, curve: Curves.easeOutCubic);
     }
     return state;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/core/models/savings/savings_projection.dart';
+
 import 'savings_projection_view.dart';
 
 class SavingsPlanEditResult {
@@ -60,73 +61,15 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
 
   Future<void> _pickFrequency() async {
     FocusManager.instance.primaryFocus?.unfocus();
-    final selected = await showModalBottomSheet<SavingsFrequency>(
+    final selected = await showRadioSelectionSheet<SavingsFrequency>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppTheme.surfaceColor(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(KoinShape.sheet),
-        ),
-      ),
-      builder: (context) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
-          ),
-          child: SingleChildScrollView(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                  child: Column(
-                    key: const ValueKey('frequency_picker'),
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const KoinBottomSheetHandle(),
-                      const SizedBox(height: 12),
-                      Text(
-                        'How often?',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      for (final frequency in SavingsFrequency.values)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: ListTile(
-                            key: ValueKey('frequency_${frequency.name}'),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            selected: frequency == _frequency,
-                            selectedTileColor: AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.08),
-                            textColor: AppTheme.textColor(context),
-                            selectedColor: AppTheme.textColor(context),
-                            title: Text(frequency.label),
-                            trailing: frequency == _frequency
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    color: AppTheme.primaryColor(context),
-                                  )
-                                : null,
-                            onTap: () {
-                              HapticService.selection();
-                              Navigator.pop(context, frequency);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      title: 'How often?',
+      showCheckmark: true,
+      options: SavingsFrequency.values,
+      selected: _frequency,
+      label: (frequency) => frequency.label,
+      contentKey: const ValueKey('frequency_picker'),
+      itemKey: (frequency) => ValueKey('frequency_${frequency.name}'),
     );
     if (selected != null && mounted) setState(() => _frequency = selected);
   }
@@ -297,9 +240,9 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                                 Expanded(
                                   child: Text(
                                     _frequency.label,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyLarge,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge,
                                   ),
                                 ),
                                 const SizedBox(width: 8),

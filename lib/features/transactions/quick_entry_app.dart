@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/widgets/inputs/app_input_focus.dart';
 
 const quickWindowChannel = MethodChannel('koin/quick_window');
 
@@ -84,6 +85,7 @@ class QuickEntryApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       theme: _theme(settings.themeColor, false),
       darkTheme: _theme(settings.themeColor, true),
+      builder: (context, child) => AppInputFocus(child: child!),
       home: KoinFormTheme(builder: (_) => const QuickEntryFlow()),
     );
   }
@@ -163,6 +165,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   final _contentKey = GlobalKey();
   int? _reportedHeight;
   int? _reportedColor;
+  bool? _reportedReducedMotion;
 
   bool get _transfer => _type == TransactionType.transfer;
   String get _typeLabel => switch (_type) {
@@ -231,10 +234,22 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       if (requiredHeight > height) height = requiredHeight;
     }
     final color = AppTheme.backgroundColor(context).toARGB32();
-    if (height == _reportedHeight && color == _reportedColor) return;
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    if (height == _reportedHeight &&
+        color == _reportedColor &&
+        reducedMotion == _reportedReducedMotion) {
+      return;
+    }
+    final animate =
+        _reportedHeight != null && !reducedMotion && !_showingSavingsSheet;
     _reportedHeight = height;
     _reportedColor = color;
-    _windowCall('resize', {'height': height, 'backgroundColor': color});
+    _reportedReducedMotion = reducedMotion;
+    _windowCall('resize', {
+      'height': height,
+      'backgroundColor': color,
+      'animate': animate,
+    });
   }
 
   void _go(_Step step) {
@@ -258,6 +273,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   void _showError(String error) {
+    HapticService.error();
     setState(() => _error = error);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -424,7 +440,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         account.initialBalance;
     if (_type != TransactionType.income &&
         !account.isCredit &&
-        _amount > balance) {
+        TransactionRules.exceedsBalance(
+          _transfer ? _transferDraft.calculateTotalDebit(account) : _amount,
+          balance,
+        )) {
       _showError('Insufficient balance in ${account.name}');
       return;
     }
@@ -517,8 +536,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   TransferDraft get _transferDraft => TransferDraft(
-    sourceAccountId: _accountId!,
-    destinationAccountId: _destinationId!,
+    sourceAccountId: _accountId ?? '',
+    destinationAccountId: _destinationId ?? '',
     rawAmount: _amount,
     enteredFee:
         ref
@@ -558,7 +577,10 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           accounts: accounts,
           transactions: transactions,
         ).accountBalances;
-        if ((balances[account.id] ?? account.initialBalance) < debitAmount) {
+        if (TransactionRules.exceedsBalance(
+          debitAmount,
+          balances[account.id] ?? account.initialBalance,
+        )) {
           if (mounted) {
             _showError('Insufficient balance in ${account.name}');
           }
@@ -1101,27 +1123,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${currency.symbol} ',
-                  style: TextStyle(
-                    fontSize: KoinTypography.screenTitle,
-                    color: color,
-                    fontWeight: KoinTypography.labelWeight,
-                  ),
-                ),
-                Text(
-                  _expression.isEmpty ? '0' : _expression,
-                  style: KoinTypography.inputAmountStyle.copyWith(color: color),
-                ),
-              ],
-            ),
+          child: KoinCalculatorAmount(
+            symbol: currency.symbol,
+            expression: _expression,
+            color: color,
+            amountColor: color,
           ),
         ),
         if (_expression.contains(RegExp(r'[+\-*/]')))
@@ -1245,11 +1251,13 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             placeholder: 'Select account',
             onTap: _openAccountPicker,
           ),
-          if (account != null &&
+          if (!_saving &&
+              !_saved &&
+              account != null &&
               balance != null &&
               _type != TransactionType.income &&
               !account.isCredit &&
-              _amount > balance) ...[
+              TransactionRules.exceedsBalance(_amount, balance)) ...[
             const SizedBox(height: 8),
             Text(
               'Amount exceeds available balance',
@@ -1662,7 +1670,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             ],
           ),
         ),
-        if (balance != null && !source!.isCredit && _amount > balance) ...[
+        if (!_saving &&
+            !_saved &&
+            balance != null &&
+            !source!.isCredit &&
+            TransactionRules.exceedsBalance(
+              _transferDraft.calculateTotalDebit(source),
+              balance,
+            )) ...[
           const SizedBox(height: 8),
           Text(
             'Amount exceeds available balance',

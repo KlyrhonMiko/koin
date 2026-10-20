@@ -907,6 +907,123 @@ void main() {
       20,
     );
   });
+  testWidgets('transfer warning includes fixed and percentage fees', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await amount(tester, '4900');
+    final fee = find.byKey(const ValueKey('quick-transfer-fee'));
+    await tester.enterText(fee, '101');
+    await tester.pumpAndSettle();
+    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    await tester.enterText(fee, '100');
+    await tester.pumpAndSettle();
+    expect(find.text('Amount exceeds available balance'), findsNothing);
+    await tap(tester, 'Percentage (%)');
+    await tester.enterText(fee, '3');
+    await tester.pumpAndSettle();
+    expect(find.text('Amount exceeds available balance'), findsOneWidget);
+    await tester.enterText(fee, '2');
+    await tester.pumpAndSettle();
+    expect(find.text('Amount exceeds available balance'), findsNothing);
+  });
+
+  testWidgets('saved expense has no warning while feedback finishes', (
+    tester,
+  ) async {
+    final completion = Completer<void>();
+    suggester.feedbackCompletion = completion;
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '3000');
+    await tap(tester, 'Select category');
+    await tap(tester, 'Food');
+    await tester.ensureVisible(find.text('Save transaction'));
+    await tester.tap(find.text('Save transaction'));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.text('Amount exceeds available balance'), findsNothing);
+    }
+    expect(
+      (await providers.read(transactionProvider.future)).single.amount,
+      3000,
+    );
+    expect(find.text('Expense details'), findsOneWidget);
+    expect(find.text('Amount exceeds available balance'), findsNothing);
+    completion.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Transaction saved'), findsOneWidget);
+    expect(find.text('Amount exceeds available balance'), findsNothing);
+  });
+
+  testWidgets('saved transfer has no warning while switching to success', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await amount(tester, '3000');
+    await tester.ensureVisible(find.text('Save transfer'));
+    await tester.tap(find.text('Save transfer'));
+    // Inspect each frame, including the outgoing review screen.
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.text('Amount exceeds available balance'), findsNothing);
+    }
+    expect(
+      (await providers.read(transactionProvider.future)).single.amount,
+      3000,
+    );
+    expect(find.text('Transaction saved'), findsOneWidget);
+  });
+
+  testWidgets('exact remaining cents can be transferred including the fee', (
+    tester,
+  ) async {
+    await launch(tester);
+    final cash = (await providers.read(accountProvider.future))
+        .firstWhere((a) => a.id == 'cash');
+    await providers
+        .read(accountProvider.notifier)
+        .updateAccount(cash.copyWith(initialBalance: 0.4));
+    await providers
+        .read(transactionProvider.notifier)
+        .addTransaction(
+          AppTransaction(
+            id: 'earlier',
+            note: '',
+            amount: 0.1,
+            date: DateTime(2026),
+            type: TransactionType.expense,
+            categoryId: 'food',
+            accountId: 'cash',
+          ),
+        );
+    await tester.pumpAndSettle();
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await amount(tester, '0.2');
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-transfer-fee')),
+      '0.1',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Amount exceeds available balance'), findsNothing);
+    await tap(tester, 'Save transfer');
+    expect(find.text('Transaction saved'), findsOneWidget);
+    expect((await providers.read(transactionProvider.future)).length, 3);
+  });
+
   testWidgets('transfer balance check includes the sending account fee', (
     tester,
   ) async {
@@ -1149,6 +1266,27 @@ void main() {
 class _QuickEntrySuggester extends TestStubSuggesterAdapter {
   final requests = <SuggestionContext>[];
   Completer<CategorySuggestion?>? pending;
+  Completer<void>? feedbackCompletion;
+
+  @override
+  Future<void> recordFeedback({
+    required String text,
+    required double amount,
+    required TransactionType type,
+    required String originAccountId,
+    required String destinationId,
+    bool isTransfer = false,
+  }) async {
+    await super.recordFeedback(
+      text: text,
+      amount: amount,
+      type: type,
+      originAccountId: originAccountId,
+      destinationId: destinationId,
+      isTransfer: isTransfer,
+    );
+    await feedbackCompletion?.future;
+  }
 
   @override
   Future<CategorySuggestion?> suggest(SuggestionContext context) {

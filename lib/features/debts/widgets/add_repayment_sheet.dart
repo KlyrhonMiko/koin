@@ -129,7 +129,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
+      child: KoinSheetSurface(
         padding: EdgeInsets.fromLTRB(
           0,
           16,
@@ -138,20 +138,15 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
               ? (MediaQuery.of(context).padding.bottom + 24)
               : 0,
         ),
-        decoration: BoxDecoration(
-          color: AppTheme.backgroundColor(context),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(KoinShape.sheet),
+        color: AppTheme.backgroundColor(context),
+        shadows: [
+          AppTheme.boxShadow(
+            context,
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
           ),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -189,45 +184,15 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                         ),
                       ),
                       const Gap(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${settings.currency.symbol} ',
-                            style: TextStyle(
-                              fontSize: KoinTypography.screenTitle,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.contentColor(context, color),
-                            ),
-                          ),
-                          Text(
-                            _currentExpression.isEmpty
-                                ? '0'
-                                : _currentExpression,
-                            style: KoinTypography.inputAmountStyle.copyWith(
-                              color: hasAmount
-                                  ? AppTheme.contentColor(context, color)
-                                  : AppTheme.textLightColor(context),
-                            ),
-                          ),
-                        ],
+                      KoinCalculatorAmount(
+                        symbol: settings.currency.symbol,
+                        expression: _currentExpression,
+                        color: AppTheme.contentColor(context, color),
+                        amountColor: hasAmount
+                            ? AppTheme.contentColor(context, color)
+                            : AppTheme.textLightColor(context),
+                        result: _amountController.text,
                       ),
-                      if (_currentExpression.contains(RegExp(r'[+\-*/]')))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '= ${settings.currency.symbol}${_amountController.text}',
-                            style: TextStyle(
-                              fontSize: KoinTypography.compact,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.textLightColor(
-                                context,
-                              ).withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
                       if (!widget.isIncrease) ...[
                         const Gap(12),
                         Text(
@@ -235,9 +200,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                           style: TextStyle(
                             fontSize: KoinTypography.compact,
                             fontWeight: KoinTypography.supportingWeight,
-                            color: AppTheme.textLightColor(
-                              context,
-                            ).withValues(alpha: 0.5),
+                            color: AppTheme.textLightColor(context)
+                                .withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -264,115 +228,99 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
 
             // ── Account & Note Fields ──
             Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KoinSpacing.screenInset,
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.dividerColor(context)
+                        .withValues(alpha: 0.5),
+                    width: 1,
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor(context),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppTheme.dividerColor(
-                          context,
-                        ).withValues(alpha: 0.5),
-                        width: 1,
+                ),
+                child: Column(
+                  children: [
+                    SelectionTile(
+                      asCard: false,
+                      fallbackIcon: Icons.account_balance_wallet_rounded,
+                      label: isAccountRequired
+                          ? 'Account'
+                          : 'Account (Optional)',
+                      selectedName: displayAccountName,
+                      selectedColor: selectedAccount?.color,
+                      selectedIconCodePoint: selectedAccount?.iconCodePoint,
+                      selectedLogoAsset: selectedAccount?.logoAsset,
+                      placeholder: isAccountRequired
+                          ? 'Select Account'
+                          : 'None (Balance only)',
+                      onTap: () => _openAccountPicker(context, accounts),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppTheme.dividerColor(context)
+                          .withValues(alpha: 0.5),
+                      indent: 64,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceLightColor(context),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.sticky_note_2_rounded,
+                              size: 18,
+                              color: AppTheme.textLightColor(context),
+                            ),
+                          ),
+                          const Gap(12),
+                          Expanded(
+                            child: TextField(
+                              controller: _noteController,
+                              focusNode: _noteFocusNode,
+                              onTap: () => HapticService.light(),
+                              onTapOutside: (_) =>
+                                  FocusManager.instance.primaryFocus?.unfocus(),
+                              style: TextStyle(
+                                fontWeight: KoinTypography.supportingWeight,
+                                fontSize: KoinTypography.body,
+                                color: AppTheme.textColor(context),
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Add a note...',
+                                hintStyle: TextStyle(
+                                  color: AppTheme.textLightColor(context)
+                                      .withValues(alpha: 0.4),
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: KoinTypography.body,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        SelectionTile(
-                          asCard: false,
-                          fallbackIcon: Icons.account_balance_wallet_rounded,
-                          label: isAccountRequired
-                              ? 'Account'
-                              : 'Account (Optional)',
-                          selectedName: displayAccountName,
-                          selectedColor: selectedAccount?.color,
-                          selectedIconCodePoint: selectedAccount?.iconCodePoint,
-                          selectedLogoAsset: selectedAccount?.logoAsset,
-                          placeholder: isAccountRequired
-                              ? 'Select Account'
-                              : 'None (Balance only)',
-                          onTap: () => _openAccountPicker(context, accounts),
-                        ),
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
-                          indent: 64,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceLightColor(context),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.sticky_note_2_rounded,
-                                  size: 18,
-                                  color: AppTheme.textLightColor(context),
-                                ),
-                              ),
-                              const Gap(12),
-                              Expanded(
-                                child: TextField(
-                                  controller: _noteController,
-                                  focusNode: _noteFocusNode,
-                                  onTap: () => HapticService.light(),
-                                  onTapOutside: (_) => FocusManager
-                                      .instance
-                                      .primaryFocus
-                                      ?.unfocus(),
-                                  style: TextStyle(
-                                    fontWeight: KoinTypography.supportingWeight,
-                                    fontSize: KoinTypography.body,
-                                    color: AppTheme.textColor(context),
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Add a note...',
-                                    hintStyle: TextStyle(
-                                      color: AppTheme.textLightColor(
-                                        context,
-                                      ).withValues(alpha: 0.4),
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: KoinTypography.body,
-                                    ),
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    filled: false,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .koinAnimate(
-                  context,
-                  autoPlay: !MediaQuery.disableAnimationsOf(context),
-                  onInit: KoinMotion.onInit(context),
-                )
-                .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                .scale(
-                  begin: const Offset(0.95, 0.95),
-                  duration: 250.ms,
-                  curve: Curves.easeOutCubic,
+                  ],
                 ),
+              ),
+            ).koinEntrance(context),
 
             if (!_noteFocusNode.hasFocus) ...[
               const Gap(16),
@@ -397,44 +345,32 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: KoinSpacing.screenInset,
                 ),
-                child:
-                    SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _saving ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color,
-                              foregroundColor: AppTheme.foregroundFor(color),
-                              elevation: 0,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Text(
-                              widget.isIncrease
-                                  ? 'Confirm Increase'
-                                  : 'Confirm Payment',
-                              style: const TextStyle(
-                                fontSize: KoinTypography.itemTitle,
-                                fontWeight: KoinTypography.titleWeight,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                          ),
-                        )
-                        .koinAnimate(
-                          context,
-                          autoPlay: !MediaQuery.disableAnimationsOf(context),
-                          onInit: KoinMotion.onInit(context),
-                        )
-                        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          duration: 250.ms,
-                          curve: Curves.easeOutCubic,
-                        ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: AppTheme.foregroundFor(color),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      widget.isIncrease
+                          ? 'Confirm Increase'
+                          : 'Confirm Payment',
+                      style: const TextStyle(
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.titleWeight,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                ).koinEntrance(context),
               ),
             ],
           ],
@@ -451,6 +387,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       await _submitImpl();
     } catch (error) {
       if (mounted) {
+        HapticService.error();
         KoinSnackBar.error(
           context,
           error is FinancialValidationException
@@ -466,12 +403,12 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   }
 
   Future<void> _submitImpl() async {
-    HapticService.medium();
     final amtStr = _amountController.text;
     if (amtStr.isEmpty) return;
     final amt =
         ref.read(settingsProvider).currency.tryParseInput(amtStr) ?? 0.0;
     if (!amt.isFinite || amt <= 0) {
+      HapticService.error();
       KoinSnackBar.error(context, 'Enter an amount greater than zero');
       return;
     }
@@ -567,6 +504,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
         );
 
     _saved = true;
+    HapticService.success();
     if (!mounted) return;
 
     KoinSnackBar.success(

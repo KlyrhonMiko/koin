@@ -1,9 +1,13 @@
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
+
+import 'koin_sheet_surface.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+
 import '../primitives/koin_bottom_sheet_handle.dart';
 
 class ConfirmationSheet extends StatelessWidget {
@@ -55,27 +59,22 @@ class ConfirmationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KoinSheetSurface(
       padding: EdgeInsets.fromLTRB(
         KoinSpacing.screenInset,
         12,
         KoinSpacing.screenInset,
         MediaQuery.of(context).padding.bottom + 24,
       ),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(KoinShape.sheet),
+      color: AppTheme.surfaceColor(context),
+      shadows: [
+        AppTheme.boxShadow(
+          context,
+          color: Colors.black.withValues(alpha: 0.2),
+          blurRadius: 40,
+          offset: const Offset(0, -10),
         ),
-        boxShadow: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 40,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -105,9 +104,9 @@ class ConfirmationSheet extends StatelessWidget {
                 onInit: KoinMotion.onInit(context),
               )
               .scale(
-                begin: const Offset(0.5, 0.5),
-                duration: 400.ms,
-                curve: Curves.easeOutBack,
+                begin: const Offset(0.95, 0.95),
+                duration: 250.ms,
+                curve: KoinMotion.curve,
               )
               .fadeIn(duration: 300.ms),
           const Gap(24),
@@ -163,78 +162,71 @@ class ConfirmationSheet extends StatelessWidget {
 
           // Actions
           Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        HapticService.light();
-                        Navigator.pop(context, false);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      child: Text(
-                        cancelLabel,
-                        style: TextStyle(
-                          fontSize: KoinTypography.itemTitle,
-                          fontWeight: KoinTypography.titleWeight,
-                          color: AppTheme.textLightColor(context),
-                        ),
-                      ),
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    HapticService.light();
+                    Navigator.pop(context, false);
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
-                  const Gap(12),
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
+                  child: Text(
+                    cancelLabel,
+                    style: TextStyle(
+                      fontSize: KoinTypography.itemTitle,
+                      fontWeight: KoinTypography.titleWeight,
+                      color: AppTheme.textLightColor(context),
+                    ),
+                  ),
+                ),
+              ),
+              const Gap(12),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      AppTheme.boxShadow(
+                        context,
+                        color: confirmColor.withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticService.medium();
+                      Navigator.pop(context, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: confirmColor,
+                      foregroundColor: AppTheme.foregroundFor(confirmColor),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          AppTheme.boxShadow(
-                            context,
-                            color: confirmColor.withValues(alpha: 0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
                       ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticService.medium();
-                          Navigator.pop(context, true);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: confirmColor,
-                          foregroundColor: AppTheme.foregroundFor(confirmColor),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: Text(
-                          confirmLabel,
-                          style: const TextStyle(
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      confirmLabel,
+                      style: const TextStyle(
+                        fontSize: KoinTypography.itemTitle,
+                        fontWeight: KoinTypography.headingWeight,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
-                ],
-              )
-              .koinAnimate(
-                context,
-                autoPlay: !MediaQuery.disableAnimationsOf(context),
-                onInit: KoinMotion.onInit(context),
-              )
-              .fadeIn(delay: 260.ms, duration: 300.ms)
-              .slideY(begin: 0.2, duration: 300.ms, curve: Curves.easeOutCubic),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

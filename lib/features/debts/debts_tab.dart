@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/debts.dart';
 
@@ -53,7 +52,7 @@ class DebtsTab extends ConsumerWidget {
           header: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeroSummaryCard(context, summary, debts.length, fmt),
+              _buildHeroSummaryCard(context, ref, summary, fmt),
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: KoinSectionHeader(title: 'Your balances'),
@@ -105,10 +104,12 @@ class DebtsTab extends ConsumerWidget {
   // ── Hero Summary Card ──
   Widget _buildHeroSummaryCard(
     BuildContext context,
+    WidgetRef ref,
     DebtSummary summary,
-    int activeCount,
     NumberFormat currencyFormat,
   ) {
+    final settings = ref.watch(settingsProvider);
+    final hideAmount = settings.hideBalance;
     final netBalance = summary.netBalance;
     final totalRepaid = summary.totalRepaid;
     final cardColor = summary.isNegative
@@ -116,42 +117,34 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
-          padding: const EdgeInsets.fromLTRB(
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            KoinSpacing.summaryInset,
-            16,
-          ),
-          shapeStyle: SummaryShapeStyle.defaultStyle,
-          margin: const EdgeInsets.only(bottom: 24),
-          glowColor: cardColor,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cardColor.withValues(alpha: 0.95),
-              cardColor.withValues(alpha: 0.85),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Net Balance', style: PortfolioCardStyle.summaryLabel),
-                  Text(
-                    '${summary.activeCount} active',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: KoinTypography.caption,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(16),
-              FittedBox(
+      padding: const EdgeInsets.all(24),
+      topRightAction: KoinVisibilityButton(
+        hidden: hideAmount,
+        subject: 'net balance',
+        onPressed: () =>
+            ref.read(settingsProvider.notifier).setHideBalance(!hideAmount),
+      ),
+      shapeStyle: SummaryShapeStyle.defaultStyle,
+      margin: const EdgeInsets.only(bottom: 24),
+      glowColor: cardColor,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          cardColor.withValues(alpha: 0.95),
+          cardColor.withValues(alpha: 0.85),
+        ],
+      ),
+      child: KoinSummaryContent(
+        label: 'Net Balance',
+        currencyCode: settings.currency.code,
+        amount: hideAmount
+            ? const Text(
+                '****',
+                semanticsLabel: 'Net balance hidden',
+                style: KoinTypography.summaryAmountStyle,
+              )
+            : FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: AnimatedCounter(
@@ -165,39 +158,18 @@ class DebtsTab extends ConsumerWidget {
                   style: PortfolioCardStyle.summaryAmount,
                 ),
               ),
-              const Gap(16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Paid ${currencyFormat.format(totalRepaid)}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.small,
-                    ),
-                  ),
-                  Icon(
-                    Icons.history_rounded,
-                    color: Colors.white.withValues(alpha: 0.4),
-                    size: 24,
-                  ),
-                ],
-              ),
-            ],
+        footer: Text(
+          hideAmount
+              ? 'Repayment total hidden · ${summary.activeCount} active'
+              : 'Paid ${currencyFormat.format(totalRepaid)} · ${summary.activeCount} active',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontWeight: KoinTypography.labelWeight,
+            fontSize: KoinTypography.small,
           ),
-        )
-        .koinAnimate(
-          context,
-          autoPlay: !MediaQuery.disableAnimationsOf(context),
-          onInit: KoinMotion.onInit(context),
-        )
-        .fade(duration: 250.ms, curve: Curves.easeOutCubic)
-        .scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
+        ),
+      ),
+    ).koinEntrance(context);
   }
 
   Widget _buildAddDebtButton(BuildContext context) {
@@ -327,22 +299,11 @@ class DebtCard extends StatelessWidget {
       ),
     );
 
-    if (showEntranceAnimations) {
-      final delay = Duration(milliseconds: 40 * index);
-      content = content
-          .koinAnimate(
-            context,
-            autoPlay: !MediaQuery.disableAnimationsOf(context),
-            onInit: KoinMotion.onInit(context),
-          )
-          .slideY(
-            begin: 0.07,
-            delay: delay,
-            duration: 240.ms,
-            curve: const Cubic(0.23, 1, 0.32, 1),
-          )
-          .fadeIn(delay: delay, duration: 200.ms);
-    }
+    content = content.koinEntrance(
+      context,
+      enabled: showEntranceAnimations,
+      token: 'debt_${debt.id}',
+    );
 
     return content;
   }

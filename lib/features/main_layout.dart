@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,49 +17,13 @@ class MainLayout extends ConsumerStatefulWidget {
   ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends ConsumerState<MainLayout>
-    with SingleTickerProviderStateMixin {
+class _MainLayoutState extends ConsumerState<MainLayout> {
   final List<Widget?> _pages = List.filled(4, null);
-  late final AnimationController _transition;
-
-  @override
-  void initState() {
-    super.initState();
-    _transition = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-      value: 1,
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _transition.stop();
-      _transition.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _transition.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
     _pages[currentIndex] ??= _getPage(currentIndex);
-    ref.listen<int>(navigationProvider, (previous, next) {
-      if (previous != next) {
-        if (MediaQuery.disableAnimationsOf(context)) {
-          _transition.value = 1;
-        } else {
-          _transition.forward(from: 0);
-        }
-      }
-    });
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     void onItemTapped(int index) {
@@ -90,29 +55,18 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         ),
         child: Scaffold(
           extendBody: true,
-          body: FadeTransition(
-            opacity: _transition,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.97, end: 1).animate(
-                CurvedAnimation(
-                  parent: _transition,
-                  curve: Curves.easeOutCubic,
+          body: IndexedStack(
+            index: currentIndex,
+            children: [
+              for (var i = 0; i < 4; i++)
+                ExcludeFocus(
+                  excluding: i != currentIndex,
+                  child: TickerMode(
+                    enabled: i == currentIndex,
+                    child: _pages[i] ?? const SizedBox.shrink(),
+                  ),
                 ),
-              ),
-              child: IndexedStack(
-                index: currentIndex,
-                children: [
-                  for (var i = 0; i < 4; i++)
-                    ExcludeFocus(
-                      excluding: i != currentIndex,
-                      child: TickerMode(
-                        enabled: i == currentIndex,
-                        child: _pages[i] ?? const SizedBox.shrink(),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            ],
           ),
           bottomNavigationBar: SafeArea(
             child: Padding(
@@ -124,9 +78,8 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                     child: Container(
                       height: 58,
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(
-                          context,
-                        ).withValues(alpha: isDarkMode ? 0.7 : 0.85),
+                        color: AppTheme.surfaceColor(context)
+                            .withValues(alpha: isDarkMode ? 0.7 : 0.85),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           AppTheme.boxShadow(
@@ -223,9 +176,9 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                           },
                           elevation: 0,
                           backgroundColor: AppTheme.primaryColor(context),
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
+                          foregroundColor: Theme.of(context)
+                              .colorScheme
+                              .onPrimary,
                           shape: const CircleBorder(),
                           child: const Icon(Icons.add_rounded, size: 38),
                         ),
@@ -276,10 +229,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         enableHaptic: false,
         onTap: () => onTap(targetIndex),
         child: AnimatedContainer(
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 350),
-          ),
+          duration: KoinMotion.duration(context, KoinMotion.feedback),
           curve: Curves.easeOutCubic,
           width: double.infinity,
           height: 48,
@@ -287,11 +237,8 @@ class _MainLayoutState extends ConsumerState<MainLayout>
           decoration: const BoxDecoration(color: Colors.transparent),
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
-            duration: KoinMotion.duration(
-              context,
-              const Duration(milliseconds: 400),
-            ),
-            curve: Curves.elasticOut,
+            duration: KoinMotion.duration(context, KoinMotion.feedback),
+            curve: KoinMotion.curve,
             builder: (context, value, child) {
               return Transform.scale(
                 scale: 0.9 + (value * 0.1),

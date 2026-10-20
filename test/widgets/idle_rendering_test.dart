@@ -466,9 +466,8 @@ void main() {
   ) async {
     final providers = container();
     addTearDown(providers.dispose);
-    final transaction = (await providers.read(
-      transactionProvider.future,
-    )).single;
+    final transaction = (await providers.read(transactionProvider.future))
+        .single;
     await pumpScreen(
       tester,
       providers,
@@ -501,6 +500,33 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
+
+  testWidgets(
+    'voice motion stops when reduced motion changes during recording',
+    (tester) async {
+      final providers = container();
+      addTearDown(providers.dispose);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await pumpScreen(
+        tester,
+        providers,
+        const Scaffold(body: VoiceInputSheet()),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(providers.read(voiceInputProvider).isListening, isTrue);
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      await tester.pumpAndSettle();
+      expect(providers.read(voiceInputProvider).isListening, isTrue);
+      expect(tester.binding.transientCallbackCount, 0);
+      await tester.pump(const Duration(seconds: 3));
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      await providers.read(voiceInputProvider.notifier).stopListening();
+    },
+  );
 
   testWidgets('voice animations stop when listening ends', (tester) async {
     final providers = container();
