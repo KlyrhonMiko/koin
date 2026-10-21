@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
@@ -79,7 +80,7 @@ class KoinSectionHeader extends StatelessWidget {
               ),
               const Gap(4),
               Icon(
-                Icons.arrow_forward_ios_rounded,
+                KoinIcons.caretRight,
                 size: 10,
                 color: AppTheme.textLightColor(context),
               ),

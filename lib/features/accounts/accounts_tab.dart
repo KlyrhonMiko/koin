@@ -54,7 +54,7 @@ class AccountsTab extends ConsumerWidget {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.drag_indicator_rounded,
+                            KoinIcons.dotsSixVertical,
                             size: 16,
                             color: AppTheme.textLightColor(context),
                           ),
@@ -197,7 +197,7 @@ class AccountsTab extends ConsumerWidget {
                             ),
                             fillRoundedCorners: true,
                             backgroundColor: AppTheme.errorColor(context),
-                            icon: Icons.delete_rounded,
+                            icon: KoinIcons.trash,
                             confirmTitle: 'Delete Account?',
                             confirmDescription: 'All transactions associated with this account will be unlinked. This cannot be undone.',
                             onDelete: () async {
@@ -248,7 +248,7 @@ class AccountsTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) => KoinEmptyState.sliver(
-    icon: Icons.account_balance_wallet_rounded,
+    icon: KoinIcons.wallet,
     title: 'No accounts yet',
     subtitle: 'Add your first account to start tracking your money',
     action: KoinPrimaryButton(

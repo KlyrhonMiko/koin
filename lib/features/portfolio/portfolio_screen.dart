@@ -216,7 +216,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                     ),
                     const Gap(6),
                     Icon(
-                      Icons.keyboard_arrow_down_rounded,
+                      KoinIcons.caretDown,
                       size: 28,
                       color: AppTheme.primaryColor(context),
                     ),
@@ -282,7 +282,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                   const Gap(12),
                   if (_tabController.index == index)
                     Icon(
-                      Icons.check_rounded,
+                      KoinIcons.check,
                       size: 20,
                       color: AppTheme.primaryColor(context),
                     ),

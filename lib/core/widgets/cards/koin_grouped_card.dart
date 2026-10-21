@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -135,7 +136,7 @@ class KoinSettingTile extends StatelessWidget {
     Widget? effectiveTrailing = trailing;
     if (effectiveTrailing == null && onTap != null) {
       effectiveTrailing = Icon(
-        Icons.chevron_right_rounded,
+        KoinIcons.caretRight,
         color: AppTheme.textLightColor(context),
         size: 20,
       );

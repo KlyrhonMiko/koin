@@ -253,7 +253,7 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Icon(Icons.keyboard_arrow_down_rounded),
+                                const Icon(KoinIcons.caretDown),
                               ],
                             ),
                           ),
@@ -372,7 +372,7 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                                     ? Duration.zero
                                     : const Duration(milliseconds: 180),
                                 child: const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
+                                  KoinIcons.caretDown,
                                 ),
                               ),
                             ],

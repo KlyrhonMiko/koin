@@ -1,3 +1,4 @@
+export 'icons.dart';
 export 'database_helper.dart';
 export 'theme.dart';
 export 'ledger/ledger.dart';

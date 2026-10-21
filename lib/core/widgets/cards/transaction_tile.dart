@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 
 import 'koin_activity_row.dart';
@@ -104,12 +105,12 @@ class TransactionTile extends StatelessWidget {
     final color = isTransfer ? typeColor : (category?.color ?? typeColor);
 
     final icon = isTransfer
-        ? Icons.swap_horiz_rounded
+        ? KoinIcons.arrowsLeftRight
         : (category != null
               ? IconUtils.getIcon(category!.iconCodePoint)
               : (isIncome
-                    ? Icons.arrow_downward_rounded
-                    : Icons.arrow_upward_rounded));
+                    ? KoinIcons.arrowDown
+                    : KoinIcons.arrowUp));
 
     final categoryName = isTransfer
         ? 'Transfer'

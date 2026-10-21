@@ -423,7 +423,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 children: [
                   SelectionTile(
                     asCard: false,
-                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    fallbackIcon: KoinIcons.wallet,
                     label: 'Linked account',
                     selectedName: account?.name,
                     selectedColor: account?.color,
@@ -434,7 +434,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                   ),
                   SelectionTile(
                     asCard: false,
-                    fallbackIcon: Icons.category_rounded,
+                    fallbackIcon: KoinIcons.squaresFour,
                     label: 'Linked category',
                     selectedName: category?.name,
                     selectedColor: category?.color,
@@ -521,13 +521,13 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       SelectionTile(
         label: 'Record type',
         placeholder: 'Choose a type',
-        fallbackIcon: Icons.swap_horiz_rounded,
+        fallbackIcon: KoinIcons.arrowsLeftRight,
         selectedName: _recordType.label,
         selectedColor: primaryColor,
         selectedIconCodePoint: switch (_recordType) {
-          _DebtFormMode.owedToMe => Icons.arrow_downward_rounded.codePoint,
-          _DebtFormMode.iOwe => Icons.arrow_upward_rounded.codePoint,
-          _DebtFormMode.bnpl => Icons.shopping_cart.codePoint,
+          _DebtFormMode.owedToMe => KoinIcons.arrowDown.codePoint,
+          _DebtFormMode.iOwe => KoinIcons.arrowUp.codePoint,
+          _DebtFormMode.bnpl => KoinIcons.shoppingCart.codePoint,
         },
         onTap: () => _selectRecordType(context, primaryColor),
       );
@@ -634,12 +634,12 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                   children: [
                     const Gap(12),
                     SelectionTile(
-                      fallbackIcon: Icons.event_repeat_rounded,
+                      fallbackIcon: KoinIcons.calendarDots,
                       label: 'Payment frequency',
                       selectedName: _selectedFrequency.label,
                       selectedColor: primaryColor,
                       selectedIconCodePoint:
-                          Icons.event_repeat_rounded.codePoint,
+                          KoinIcons.calendarDots.codePoint,
                       placeholder: 'Choose frequency',
                       onTap: () {
                         _frequencyUserSet = true;
@@ -652,7 +652,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
-                            Icons.insights_rounded,
+                            KoinIcons.chartLineUp,
                             size: 18,
                             color: primaryColor,
                           ),
@@ -777,7 +777,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
               borderRadius: BorderRadius.circular(18),
               fillRoundedCorners: true,
               backgroundColor: AppTheme.errorColor(context),
-              icon: Icons.delete_rounded,
+              icon: KoinIcons.trash,
               confirmTitle: 'Remove Purchase?',
               confirmDescription:
                   'Remove "${item.name}" from this credit? Changes are applied when you save.',
@@ -859,7 +859,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.add_circle_outline_rounded,
+                    KoinIcons.plusCircle,
                     color: primaryColor,
                     size: 20,
                   ),

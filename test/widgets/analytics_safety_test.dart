@@ -79,14 +79,14 @@ void main() {
                 id: 'cash',
                 name: 'Cash',
                 initialBalance: 5000,
-                iconCodePoint: Icons.payments.codePoint,
+                iconCodePoint: KoinIcons.money.codePoint,
                 colorHex: '#008080',
               ),
               Account(
                 id: 'bank',
                 name: 'Bank',
                 initialBalance: 2000,
-                iconCodePoint: Icons.account_balance.codePoint,
+                iconCodePoint: KoinIcons.bank.codePoint,
                 colorHex: '#008080',
               ),
             ],
@@ -99,7 +99,7 @@ void main() {
                 id: 'food',
                 name: 'Food',
                 type: TransactionType.expense,
-                iconCodePoint: Icons.restaurant.codePoint,
+                iconCodePoint: KoinIcons.forkKnife.codePoint,
                 colorHex: '#008080',
               ),
               TransactionCategory(
@@ -300,7 +300,7 @@ void main() {
                 id: spec.id,
                 name: spec.name,
                 type: TransactionType.expense,
-                iconCodePoint: Icons.category.codePoint,
+                iconCodePoint: KoinIcons.squaresFour.codePoint,
                 colorHex: spec.color,
               ),
             );
@@ -553,7 +553,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Details'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(KoinIcons.warning), findsOneWidget);
       expect(find.text('Possible balance range'), findsNothing);
       expect(find.text('Expected income'), findsNothing);
       expect(find.text(r'$600.00'), findsOneWidget);

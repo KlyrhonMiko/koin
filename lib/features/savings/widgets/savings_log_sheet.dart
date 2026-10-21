@@ -142,7 +142,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
               : '${money.format(amount)} will be available to spend. ${money.format((available ?? 0) - amount!)} remains in ${widget.goal.name}.',
           confirmLabel: 'Release savings',
           confirmColor: AppTheme.primaryColor(context),
-          icon: Icons.south_west_rounded,
+          icon: KoinIcons.arrowDownLeft,
         );
         if (confirmed != true || !mounted) return;
       }

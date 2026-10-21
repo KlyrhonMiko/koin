@@ -16,7 +16,7 @@ void main() {
             body: DateSelectorTile(
               label: 'Test Date',
               date: testDate,
-              icon: Icons.calendar_today,
+              icon: KoinIcons.calendarBlank,
               onTap: () => tapped = true,
             ),
           ),
@@ -25,7 +25,7 @@ void main() {
 
       expect(find.text('Test Date'), findsOneWidget);
       expect(find.text('Oct 1, 2026'), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_today), findsOneWidget);
+      expect(find.byIcon(KoinIcons.calendarBlank), findsOneWidget);
 
       await tester.tap(find.text('Test Date'));
       await tester.pump();
@@ -66,7 +66,7 @@ void main() {
                   FormSectionTitle(title: 'Overview'),
                   FormSectionTitle.subhead(
                     title: 'details',
-                    icon: Icons.info_outline,
+                    icon: KoinIcons.info,
                   ),
                 ],
               ),
@@ -76,7 +76,7 @@ void main() {
 
         expect(find.text('Overview'), findsOneWidget);
         expect(find.text('DETAILS'), findsOneWidget);
-        expect(find.byIcon(Icons.info_outline), findsOneWidget);
+        expect(find.byIcon(KoinIcons.info), findsOneWidget);
       },
     );
 
@@ -137,7 +137,7 @@ void main() {
             home: Scaffold(
               body: KoinPrimaryButton(
                 label: 'Submit Action',
-                icon: Icons.check,
+                icon: KoinIcons.check,
                 onPressed: () => tapped = true,
               ),
             ),
@@ -145,7 +145,7 @@ void main() {
         );
 
         expect(find.text('Submit Action'), findsOneWidget);
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(find.byIcon(KoinIcons.check), findsOneWidget);
 
         await tester.tap(find.text('Submit Action'));
         await tester.pump();
@@ -188,7 +188,7 @@ void main() {
       );
 
       // Checkmark on the selected color
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(KoinIcons.check), findsOneWidget);
 
       // Tap on red
       await tester.tap(find.byType(GestureDetector).first);
@@ -251,7 +251,7 @@ void main() {
     testWidgets('IconPaletteGrid renders icons and triggers selection', (
       tester,
     ) async {
-      final icons = [Icons.home, Icons.star, Icons.person];
+      final icons = [KoinIcons.house, Icons.star, Icons.person];
       IconData? selected;
 
       await tester.pumpWidget(
@@ -267,12 +267,12 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.home), findsOneWidget);
+      expect(find.byIcon(KoinIcons.house), findsOneWidget);
       expect(find.byIcon(Icons.star), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.home));
+      await tester.tap(find.byIcon(KoinIcons.house));
       await tester.pump();
-      expect(selected, equals(Icons.home));
+      expect(selected, equals(KoinIcons.house));
     });
 
     testWidgets(
@@ -342,7 +342,7 @@ void main() {
               body: KoinGroupedCard(
                 children: [
                   KoinSettingTile(
-                    icon: Icons.settings,
+                    icon: KoinIcons.gearSix,
                     title: 'Preferences',
                     subtitle: 'Change app preferences',
                     onTap: () => tapped = true,
@@ -390,7 +390,7 @@ void main() {
         expect(find.text('Recent Activity'), findsOneWidget);
         expect(find.text('Latest transactions'), findsOneWidget);
         expect(find.text('See All'), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsOneWidget);
+        expect(find.byIcon(KoinIcons.caretRight), findsOneWidget);
 
         await tester.tap(find.text('See All'));
         await tester.pump();
@@ -408,7 +408,7 @@ void main() {
                 tag: 'STRATEGY',
                 title: 'Monthly Budgets',
                 trailing: IconButton(
-                  icon: const Icon(Icons.settings),
+                  icon: const Icon(KoinIcons.gearSix),
                   onPressed: () {},
                 ),
               ),
@@ -418,7 +418,7 @@ void main() {
 
         expect(find.text('STRATEGY'), findsOneWidget);
         expect(find.text('Monthly Budgets'), findsOneWidget);
-        expect(find.byIcon(Icons.settings), findsOneWidget);
+        expect(find.byIcon(KoinIcons.gearSix), findsOneWidget);
       },
     );
   });

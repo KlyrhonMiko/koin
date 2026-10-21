@@ -67,7 +67,7 @@ void main() {
               TransactionCategory(
                 id: 'food',
                 name: 'Food',
-                iconCodePoint: Icons.restaurant.codePoint,
+                iconCodePoint: KoinIcons.forkKnife.codePoint,
                 colorHex: '#FF9800',
                 type: TransactionType.expense,
                 budget: 912.5,

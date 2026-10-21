@@ -176,8 +176,8 @@ void main() {
                     isScrollableRow: true,
                   ),
                   IconPaletteGrid(
-                    icons: const [Icons.home, Icons.work],
-                    selectedIcon: selected ? Icons.work : Icons.home,
+                    icons: const [KoinIcons.house, KoinIcons.briefcase],
+                    selectedIcon: selected ? KoinIcons.briefcase : KoinIcons.house,
                     activeColor: Colors.teal,
                     isScrollableRow: true,
                   ),

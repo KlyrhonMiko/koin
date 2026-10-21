@@ -66,7 +66,7 @@ void main() {
     id: 'cash',
     name: 'Cash',
     initialBalance: 0.1,
-    iconCodePoint: Icons.wallet.codePoint,
+    iconCodePoint: KoinIcons.wallet.codePoint,
     colorHex: '#008080',
   );
   final income = AppTransaction(
@@ -199,6 +199,14 @@ void main() {
       outfit.addFont(rootBundle.load('assets/fonts/outfit/Outfit-$weight.ttf'));
     }
     await outfit.load();
+    for (final entry in {
+      'PhosphorRegular': 'Phosphor.ttf',
+      'PhosphorFill': 'Phosphor-Fill.ttf',
+    }.entries) {
+      await (FontLoader('packages/phosphor_icons/${entry.key}')
+            ..addFont(rootBundle.load('packages/phosphor_icons/lib/fonts/${entry.value}')))
+          .load();
+    }
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -425,7 +433,7 @@ void main() {
                 id: 'food',
                 name: 'Food',
                 type: TransactionType.expense,
-                iconCodePoint: Icons.restaurant.codePoint,
+                iconCodePoint: KoinIcons.forkKnife.codePoint,
                 colorHex: '#008080',
                 budget: 100,
               ),

@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
@@ -52,7 +53,7 @@ Future<String?> showAccountPickerSheet({
           name: noneLabel,
           accentColor: AppTheme.textLightColor(sheetContext)
               .withValues(alpha: 0.5),
-          iconCodePoint: Icons.money_off_rounded.codePoint,
+          iconCodePoint: KoinIcons.prohibit.codePoint,
           selected: selectedAccountId == null || selectedAccountId.isEmpty,
           onTap: () => Navigator.pop(sheetContext, noneValue),
         );

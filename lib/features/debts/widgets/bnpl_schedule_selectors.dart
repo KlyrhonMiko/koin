@@ -136,7 +136,7 @@ class _MonthDialogState extends State<_MonthDialog> {
               onPressed: _year > 2000 && !_choosingYear
                   ? () => setState(() => _year--)
                   : null,
-              icon: const Icon(Icons.chevron_left_rounded),
+              icon: const Icon(KoinIcons.caretLeft),
             ),
             Expanded(
               child: TextButton.icon(
@@ -148,8 +148,8 @@ class _MonthDialogState extends State<_MonthDialog> {
                 label: Text('$_year'),
                 icon: Icon(
                   _choosingYear
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
+                      ? KoinIcons.caretUp
+                      : KoinIcons.caretDown,
                 ),
                 iconAlignment: IconAlignment.end,
               ),
@@ -159,7 +159,7 @@ class _MonthDialogState extends State<_MonthDialog> {
               onPressed: _year < 2100 && !_choosingYear
                   ? () => setState(() => _year++)
                   : null,
-              icon: const Icon(Icons.chevron_right_rounded),
+              icon: const Icon(KoinIcons.caretRight),
             ),
           ],
         ),

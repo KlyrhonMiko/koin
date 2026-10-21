@@ -81,7 +81,7 @@ void main() {
         (index) => TransactionCategory(
           id: 'category-$index',
           name: 'Category ${index.toString().padLeft(3, '0')}',
-          iconCodePoint: Icons.category_rounded.codePoint,
+          iconCodePoint: KoinIcons.squaresFour.codePoint,
           colorHex: '#00C9A0',
           type: TransactionType.expense,
         ),

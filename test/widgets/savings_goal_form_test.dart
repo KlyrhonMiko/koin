@@ -74,7 +74,7 @@ void main() {
     final account = Account(
       id: 'mari',
       name: 'MariBank',
-      iconCodePoint: Icons.wallet.codePoint,
+      iconCodePoint: KoinIcons.wallet.codePoint,
       colorHex: '#00C9A0',
     );
     final goal = SavingsGoal(
@@ -126,7 +126,7 @@ void main() {
       final account = Account(
         id: 'mari',
         name: 'MariBank',
-        iconCodePoint: Icons.wallet.codePoint,
+        iconCodePoint: KoinIcons.wallet.codePoint,
         colorHex: '#00C9A0',
       );
       final repository = await openForm(

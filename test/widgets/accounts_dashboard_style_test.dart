@@ -46,7 +46,7 @@ void main() {
           id: 'cash',
           name: 'Cash',
           initialBalance: 250,
-          iconCodePoint: Icons.payments_rounded.codePoint,
+          iconCodePoint: KoinIcons.money.codePoint,
           colorHex: '#00D09E',
         ),
         for (final template in BankTemplate.templates.where(
@@ -60,7 +60,7 @@ void main() {
                 ? 'GoTyme account for household purchases and monthly bills'
                 : template.name,
             initialBalance: template.id == 'maya' ? 100000000 : 63,
-            iconCodePoint: Icons.account_balance_rounded.codePoint,
+            iconCodePoint: KoinIcons.bank.codePoint,
             colorHex: template.colorHex,
             logoAsset: template.logoAsset,
           ),
@@ -127,7 +127,7 @@ void main() {
       final addLabel = find.text('Add account');
       final addIcon = find.descendant(
         of: addTile,
-        matching: find.byIcon(Icons.add_rounded),
+        matching: find.byIcon(KoinIcons.plus),
       );
       expect(
         tester.getCenter(addIcon).dy,

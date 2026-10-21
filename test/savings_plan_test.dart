@@ -1,5 +1,4 @@
 import 'package:koin/features/savings/coach/coach_engine.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -191,7 +190,7 @@ void main() {
           Account(
             id: id,
             name: id,
-            iconCodePoint: Icons.wallet.codePoint,
+            iconCodePoint: KoinIcons.wallet.codePoint,
             colorHex: '#00C9A0',
             initialBalance: 1000,
           ),

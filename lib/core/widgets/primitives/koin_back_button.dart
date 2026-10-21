@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'pressable_scale.dart';
@@ -24,7 +25,7 @@ class KoinBackButton extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
         child: Icon(
-          Icons.arrow_back_rounded,
+          KoinIcons.arrowLeft,
           size: 24,
           color: color ?? AppTheme.textColor(context),
         ),

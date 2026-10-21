@@ -59,14 +59,14 @@ void main() {
               Account(
                 id: 'cash',
                 name: 'Cash',
-                iconCodePoint: Icons.payments.codePoint,
+                iconCodePoint: KoinIcons.money.codePoint,
                 colorHex: '#008080',
                 initialBalance: 5000,
               ),
               Account(
                 id: 'bank',
                 name: 'Bank',
-                iconCodePoint: Icons.account_balance.codePoint,
+                iconCodePoint: KoinIcons.bank.codePoint,
                 colorHex: '#008080',
               ),
             ],
@@ -78,14 +78,14 @@ void main() {
               TransactionCategory(
                 id: 'allowance',
                 name: 'Allowance',
-                iconCodePoint: Icons.payments.codePoint,
+                iconCodePoint: KoinIcons.money.codePoint,
                 colorHex: '#008080',
                 type: TransactionType.income,
               ),
               TransactionCategory(
                 id: 'food',
                 name: 'Food',
-                iconCodePoint: Icons.restaurant.codePoint,
+                iconCodePoint: KoinIcons.forkKnife.codePoint,
                 colorHex: '#008080',
                 type: TransactionType.expense,
               ),
@@ -605,7 +605,7 @@ void main() {
                 TransactionCategory(
                   id: 'extra-$index',
                   name: 'Category $index',
-                  iconCodePoint: Icons.restaurant.codePoint,
+                  iconCodePoint: KoinIcons.forkKnife.codePoint,
                   colorHex: '#008080',
                   type: TransactionType.expense,
                 ),
@@ -1201,7 +1201,7 @@ void main() {
           TransactionCategory(
             id: 'other',
             name: 'Other',
-            iconCodePoint: Icons.category.codePoint,
+            iconCodePoint: KoinIcons.squaresFour.codePoint,
             colorHex: '#008080',
             type: TransactionType.expense,
           ),

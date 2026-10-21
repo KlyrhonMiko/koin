@@ -47,26 +47,26 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   int? selectedCardShape;
 
   final List<IconData> icons = [
-    Icons.account_balance_wallet_rounded,
-    Icons.account_balance_rounded,
-    Icons.savings_rounded,
-    Icons.payments_rounded,
-    Icons.credit_card_rounded,
-    Icons.wallet_rounded,
-    Icons.money_rounded,
-    Icons.currency_exchange_rounded,
-    Icons.trending_up_rounded,
-    Icons.monetization_on_rounded,
-    Icons.paid_rounded,
-    Icons.local_atm_rounded,
-    Icons.request_quote_rounded,
-    Icons.account_tree_rounded,
-    Icons.business_center_rounded,
-    Icons.storefront_rounded,
-    Icons.currency_bitcoin_rounded,
-    Icons.currency_pound_rounded,
-    Icons.currency_yen_rounded,
-    Icons.currency_franc_rounded,
+    KoinIcons.wallet,
+    KoinIcons.bank,
+    KoinIcons.piggyBank,
+    KoinIcons.money,
+    KoinIcons.creditCard,
+    KoinIcons.wallet,
+    KoinIcons.money,
+    KoinIcons.currencyCircleDollar,
+    KoinIcons.trendUp,
+    KoinIcons.currencyCircleDollar,
+    KoinIcons.currencyCircleDollar,
+    KoinIcons.money,
+    KoinIcons.invoice,
+    KoinIcons.treeStructure,
+    KoinIcons.briefcase,
+    KoinIcons.storefront,
+    KoinIcons.currencyBtc,
+    KoinIcons.currencyGbp,
+    KoinIcons.currencyJpy,
+    KoinIcons.coins,
   ];
 
   @override
@@ -116,7 +116,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     )..addListener(_onInputChanged);
     selectedIcon =
         widget.account?.iconCodePoint ??
-        Icons.account_balance_wallet_rounded.codePoint;
+        KoinIcons.wallet.codePoint;
     excludeFromTotal = widget.account?.excludeFromTotal ?? false;
     isTransferFeePercentage = widget.account?.isTransferFeePercentage ?? false;
     isCredit = widget.account?.isCredit ?? false;
@@ -332,7 +332,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       description: 'All transactions associated with this account will be unlinked. This cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.errorColor(context),
-      icon: Icons.delete_forever_rounded,
+      icon: KoinIcons.trash,
       isDanger: true,
     );
     if (confirmed == true && mounted) {
@@ -665,7 +665,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           ),
           if (!enabled) ...[
             const Gap(8),
-            Icon(Icons.lock_outline_rounded, size: 16, color: disabledColor),
+            Icon(KoinIcons.lockSimple, size: 16, color: disabledColor),
           ],
         ],
       ),
@@ -856,7 +856,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         ),
                         const Gap(6),
                         Icon(
-                          Icons.chevron_right_rounded,
+                          KoinIcons.caretRight,
                           color: AppTheme.textLightColor(context),
                         ),
                       ],
@@ -945,8 +945,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               ),
                               Icon(
                                 _showInterestDetails
-                                    ? Icons.expand_less_rounded
-                                    : Icons.expand_more_rounded,
+                                    ? KoinIcons.caretUp
+                                    : KoinIcons.caretDown,
                               ),
                             ],
                           ),
@@ -1098,7 +1098,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             IconButton(
               onPressed: _deleteAccount,
               icon: Icon(
-                Icons.delete_outline_rounded,
+                KoinIcons.trash,
                 color: AppTheme.errorContentColor(context),
               ),
             ),
@@ -1138,7 +1138,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             Row(
               children: [
                 Icon(
-                  Icons.style_rounded,
+                  KoinIcons.cards,
                   size: 16,
                   color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
                 ),
@@ -1200,7 +1200,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 ),
                               ),
                               child: Icon(
-                                Icons.tune_rounded,
+                                KoinIcons.slidersHorizontal,
                                 color: isSelected
                                     ? selectedColor
                                     : AppTheme.fieldHintColor(
@@ -1325,7 +1325,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.image_rounded,
+                                      KoinIcons.image,
                                       size: 16,
                                       color: AppTheme.primaryColor(context)
                                           .withValues(alpha: 0.7),
@@ -1359,7 +1359,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.color_lens_rounded,
+                                      KoinIcons.palette,
                                       size: 16,
                                       color: AppTheme.primaryColor(context)
                                           .withValues(alpha: 0.7),
@@ -1392,7 +1392,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.wallpaper_rounded,
+                                      KoinIcons.imageSquare,
                                       size: 16,
                                       color: AppTheme.primaryColor(context)
                                           .withValues(alpha: 0.7),
@@ -1564,7 +1564,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                               ),
                                               child: isSelected
                                                   ? const Icon(
-                                                      Icons.check_rounded,
+                                                      KoinIcons.check,
                                                       color: Colors.white,
                                                       size: 22,
                                                     )
@@ -1612,7 +1612,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.auto_awesome_motion_rounded,
+                                      KoinIcons.stack,
                                       size: 16,
                                       color: AppTheme.primaryColor(context)
                                           .withValues(alpha: 0.7),
@@ -1792,7 +1792,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: const Icon(
-                                                      Icons.check_rounded,
+                                                      KoinIcons.check,
                                                       color: Colors.white,
                                                       size: 12,
                                                     ),

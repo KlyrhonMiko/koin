@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/widgets/primitives/koin_segmented_control.dart';
 import 'package:koin/core/models/models.dart';
@@ -32,19 +33,19 @@ class TransactionTypeSelector extends StatelessWidget {
         'Expense',
         TransactionType.expense,
         AppTheme.expenseColor(context),
-        Icons.arrow_upward_rounded,
+        KoinIcons.arrowUp,
       ),
       (
         'Income',
         TransactionType.income,
         AppTheme.incomeColor(context),
-        Icons.arrow_downward_rounded,
+        KoinIcons.arrowDown,
       ),
       (
         'Transfer',
         TransactionType.transfer,
         AppTheme.transferColor(context),
-        Icons.swap_horiz_rounded,
+        KoinIcons.arrowsLeftRight,
       ),
     ];
 

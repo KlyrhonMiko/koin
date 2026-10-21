@@ -67,7 +67,7 @@ void main() {
     );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.radio_button_checked_rounded), findsOneWidget);
+    expect(find.byIcon(KoinIcons.radioButton), findsOneWidget);
     await tester.tap(find.text('Option 3'));
     await tester.pumpAndSettle();
     expect(result, 3);
@@ -93,7 +93,7 @@ void main() {
               onPressed: () => calls++,
             ),
             const KoinQuickAction(
-              icon: Icons.remove,
+              icon: KoinIcons.minus,
               label: 'Release',
               color: Colors.teal,
               onPressed: null,
@@ -109,7 +109,7 @@ void main() {
     expect(calls, 1);
     final disabled = tester.widget<IconButton>(find.byType(IconButton));
     expect(disabled.onPressed, isNull);
-    await tester.tap(find.byIcon(Icons.remove));
+    await tester.tap(find.byIcon(KoinIcons.minus));
     await tester.pumpAndSettle();
     expect(calls, 1);
   });
@@ -139,7 +139,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(selected, isTrue);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(KoinIcons.checkCircle), findsOneWidget);
       expect(
         tester.getSemantics(find.text('Travel')),
         matchesSemantics(
@@ -166,7 +166,7 @@ void main() {
             children: [
               const KoinProgressBar(value: 2, color: Colors.teal),
               KoinAccountAvatar(
-                iconCodePoint: Icons.wallet_rounded.codePoint,
+                iconCodePoint: KoinIcons.wallet.codePoint,
                 color: Colors.teal,
                 logoAsset: 'assets/missing-bank.png',
               ),
@@ -183,7 +183,7 @@ void main() {
             .value,
         1,
       );
-      expect(find.byIcon(Icons.wallet_rounded), findsOneWidget);
+      expect(find.byIcon(IconUtils.getIcon(KoinIcons.wallet.codePoint)), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -244,7 +244,7 @@ void main() {
                             onPressed: () {},
                           ),
                           const KoinQuickAction(
-                            icon: Icons.remove,
+                            icon: KoinIcons.minus,
                             label: 'Release',
                             color: Colors.teal,
                             onPressed: null,

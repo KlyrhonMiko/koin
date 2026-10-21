@@ -245,7 +245,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                   children: [
                     SelectionTile(
                       asCard: false,
-                      fallbackIcon: Icons.account_balance_wallet_rounded,
+                      fallbackIcon: KoinIcons.wallet,
                       label: isAccountRequired
                           ? 'Account'
                           : 'Account (Optional)',
@@ -277,7 +277,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
-                              Icons.sticky_note_2_rounded,
+                              KoinIcons.note,
                               size: 18,
                               color: AppTheme.textLightColor(context),
                             ),

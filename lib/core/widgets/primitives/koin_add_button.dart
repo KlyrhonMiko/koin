@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 
@@ -38,7 +39,7 @@ class KoinAddButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.add_rounded,
+                  KoinIcons.plus,
                   color: AppTheme.textLightColor(context),
                   size: 24,
                 ),
@@ -60,7 +61,7 @@ class KoinAddButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.add_rounded,
+                  KoinIcons.plus,
                   color: AppTheme.textLightColor(context),
                   size: 20,
                 ),

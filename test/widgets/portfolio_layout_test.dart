@@ -49,7 +49,7 @@ void main() {
           id: 'cash',
           name: 'Cash',
           initialBalance: 300,
-          iconCodePoint: Icons.payments_rounded.codePoint,
+          iconCodePoint: KoinIcons.money.codePoint,
           colorHex: '#00D09E',
         );
         final providers = ProviderContainer(

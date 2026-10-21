@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -7,7 +6,7 @@ void main() {
   final account = Account(
     id: 'mari',
     name: 'MariBank',
-    iconCodePoint: Icons.wallet.codePoint,
+    iconCodePoint: KoinIcons.wallet.codePoint,
     colorHex: '#00C9A0',
     initialBalance: 263,
   );

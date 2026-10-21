@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -380,7 +381,7 @@ class _NumPadState extends State<NumPad> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.check_rounded,
+                  KoinIcons.check,
                   color: AppTheme.gradientForeground(
                     context,
                     AppTheme.primaryGradient(context),
@@ -488,7 +489,7 @@ class _NumPadState extends State<NumPad> {
                 _buildActionKey(
                   context,
                   action: NumPadAction.backspace,
-                  icon: Icons.backspace_outlined,
+                  icon: KoinIcons.backspace,
                   color: AppTheme.textLightColor(context),
                   bgColor: AppTheme.surfaceLightColor(context),
                 ),

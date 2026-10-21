@@ -82,14 +82,14 @@ class CoachStepper extends StatelessWidget {
       IconButton(
         tooltip: 'Decrease',
         onPressed: onDecrease,
-        icon: const Icon(Icons.remove_circle_outline),
+        icon: const Icon(KoinIcons.minusCircle),
         color: AppTheme.textLightColor(context),
       ),
       Expanded(child: child),
       IconButton(
         tooltip: 'Increase',
         onPressed: onIncrease,
-        icon: const Icon(Icons.add_circle_outline),
+        icon: const Icon(KoinIcons.plusCircle),
         color: AppTheme.textLightColor(context),
       ),
     ],

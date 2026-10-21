@@ -15,7 +15,7 @@ void main() {
           home: Scaffold(
             body: KoinEmptyState.sliver(
               contentKey: const ValueKey('empty_content'),
-              icon: Icons.event_repeat_rounded,
+              icon: KoinIcons.calendarDots,
               title: 'No subscriptions',
               subtitle:
                   'Add recurring payments to track your future obligations',
@@ -52,7 +52,7 @@ void main() {
             ),
             child: Scaffold(
               body: KoinEmptyState.sliver(
-                icon: Icons.event_repeat_rounded,
+                icon: KoinIcons.calendarDots,
                 title: 'No subscriptions',
                 subtitle:
                     'Add recurring payments to track your future obligations',

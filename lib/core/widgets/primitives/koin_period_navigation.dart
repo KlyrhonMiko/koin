@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 
@@ -38,7 +39,7 @@ class KoinPeriodNavigation extends StatelessWidget {
           tooltip: previousTooltip,
           onPressed: onPrevious,
           icon: Icon(
-            Icons.chevron_left_rounded,
+            KoinIcons.caretLeft,
             color: AppTheme.textLightColor(context),
             size: 20,
           ),
@@ -51,7 +52,7 @@ class KoinPeriodNavigation extends StatelessWidget {
         IconButton(
           tooltip: nextTooltip,
           onPressed: onNext,
-          icon: const Icon(Icons.chevron_right_rounded, size: 20),
+          icon: const Icon(KoinIcons.caretRight, size: 20),
         ),
       ],
     );

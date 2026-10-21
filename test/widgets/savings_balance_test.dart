@@ -67,7 +67,7 @@ void main() {
                 Account(
                   id: 'mari',
                   name: 'MariBank',
-                  iconCodePoint: Icons.account_balance.codePoint,
+                  iconCodePoint: KoinIcons.bank.codePoint,
                   colorHex: '#00C9A0',
                 ),
               ],
@@ -98,7 +98,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Uses ₱137.00 from savings'), findsOneWidget);
-    expect(find.byIcon(Icons.savings_outlined), findsOneWidget);
+    expect(find.byIcon(KoinIcons.piggyBank), findsOneWidget);
     final amountTop = tester
         .getTopLeft(
           find.byWidgetPredicate(
@@ -445,7 +445,7 @@ void main() {
               linkedAccount: Account(
                 id: 'mari',
                 name: 'MariBank',
-                iconCodePoint: Icons.wallet.codePoint,
+                iconCodePoint: KoinIcons.wallet.codePoint,
                 colorHex: '#00C9A0',
               ),
               linkedBalance: 263,

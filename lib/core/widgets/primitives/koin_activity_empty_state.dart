@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'koin_empty_state.dart';
 
@@ -14,7 +15,7 @@ class KoinActivityEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => KoinEmptyState(
     contentKey: const ValueKey('activity_empty_content'),
-    icon: Icons.receipt_long_rounded,
+    icon: KoinIcons.receipt,
     title: title,
     subtitle: subtitle,
   );

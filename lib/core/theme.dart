@@ -1,5 +1,7 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'typography.dart';
 
 export 'typography.dart';
@@ -139,9 +141,8 @@ class AppTheme {
   static Color fieldBorderColor(
     BuildContext context, {
     double lightOpacity = 0.7,
-  }) => dividerColor(
-    context,
-  ).withValues(alpha: hasEditorAppearance(context) ? 0.65 : lightOpacity);
+  }) => dividerColor(context)
+      .withValues(alpha: hasEditorAppearance(context) ? 0.65 : lightOpacity);
 
   /// Colored halos become subtle neutral depth in dark mode.
   static BoxShadow boxShadow(
@@ -214,6 +215,12 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (_) => const Icon(KoinIcons.arrowLeft),
+        closeButtonIconBuilder: (_) => const Icon(KoinIcons.x),
+        drawerButtonIconBuilder: (_) => const Icon(KoinIcons.squaresFour),
+        endDrawerButtonIconBuilder: (_) => const Icon(KoinIcons.squaresFour),
+      ),
       fontFamily: KoinTypography.fontFamily,
       brightness: brightness,
       primaryColor: primaryColor,

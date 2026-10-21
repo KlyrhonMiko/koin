@@ -35,7 +35,7 @@ void main() {
   }) => Account(
     id: 'bank',
     name: 'Everyday savings',
-    iconCodePoint: Icons.account_balance_rounded.codePoint,
+    iconCodePoint: KoinIcons.bank.codePoint,
     colorHex: '#00D09E',
     initialBalance: 10000,
     isCredit: credit,
@@ -582,7 +582,7 @@ void main() {
       );
       final selectedCheck = find.descendant(
         of: daily,
-        matching: find.byIcon(Icons.check_rounded),
+        matching: find.byIcon(KoinIcons.check),
       );
       expect(
         tester.getTopLeft(selectedCheck).dx -

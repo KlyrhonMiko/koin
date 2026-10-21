@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -90,7 +91,7 @@ Future<T?> showRadioSelectionSheet<T>({
                             Padding(
                               padding: const EdgeInsets.only(left: 12),
                               child: Icon(
-                                Icons.check_rounded,
+                                KoinIcons.check,
                                 size: 20,
                                 color:
                                     accentColor ??
@@ -104,14 +105,14 @@ Future<T?> showRadioSelectionSheet<T>({
                           : showCheckmark
                           ? option == selected
                                 ? Icon(
-                                    Icons.check_rounded,
+                                    KoinIcons.check,
                                     color: AppTheme.primaryColor(sheetContext),
                                   )
                                 : null
                           : Icon(
                               option == selected
-                                  ? Icons.radio_button_checked_rounded
-                                  : Icons.radio_button_unchecked_rounded,
+                                  ? KoinIcons.radioButton
+                                  : KoinIcons.circle,
                               color: option == selected
                                   ? accentColor ??
                                         AppTheme.primaryColor(sheetContext)

@@ -85,7 +85,7 @@ class UpcomingScreen extends ConsumerWidget {
 
   Widget _buildEmptyUpcoming(BuildContext context) => KoinEmptyState(
     fullScreen: true,
-    icon: Icons.event_repeat_rounded,
+    icon: KoinIcons.calendarDots,
     title: 'Nothing upcoming',
     subtitle: 'Add a planned payment or recurring income to see it here',
     action: TextButton(

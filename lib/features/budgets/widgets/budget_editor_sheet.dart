@@ -207,7 +207,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               'Are you sure you want to remove the monthly budget for ${category.name}?',
                           confirmLabel: 'Remove',
                           confirmColor: AppTheme.expenseColor(context),
-                          icon: Icons.delete_sweep_rounded,
+                          icon: KoinIcons.broom,
                           isDanger: true,
                         );
 
@@ -222,7 +222,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                         }
                       },
                       icon: Icon(
-                        Icons.delete_outline_rounded,
+                        KoinIcons.trash,
                         color: AppTheme.expenseContentColor(context),
                       ),
                       tooltip: 'Remove Budget',

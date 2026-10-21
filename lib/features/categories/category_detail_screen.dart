@@ -23,30 +23,32 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   late TransactionType _selectedType;
 
   final List<int> _availableIcons = [
-    Icons.shopping_cart.codePoint,
-    Icons.restaurant.codePoint,
-    Icons.directions_car.codePoint,
-    Icons.attach_money.codePoint,
-    Icons.movie.codePoint,
-    Icons.local_hospital.codePoint,
-    Icons.category.codePoint,
-    Icons.home.codePoint,
-    Icons.work.codePoint,
-    Icons.school.codePoint,
-    Icons.fitness_center.codePoint,
-    Icons.flight.codePoint,
-    Icons.pets.codePoint,
-    Icons.payments.codePoint,
-    Icons.account_balance.codePoint,
-    Icons.savings.codePoint,
-    Icons.electrical_services.codePoint,
-    Icons.water_drop.codePoint,
-    Icons.wifi.codePoint,
-    Icons.phone_android.codePoint,
-    Icons.celebration.codePoint,
-    Icons.card_giftcard.codePoint,
-    Icons.coffee.codePoint,
-    Icons.fastfood.codePoint,
+    KoinIcons.shoppingCart.codePoint,
+    KoinIcons.forkKnife.codePoint,
+    KoinIcons.car.codePoint,
+    KoinIcons.currencyDollar.codePoint,
+    KoinIcons.filmSlate.codePoint,
+    KoinIcons.firstAid.codePoint,
+    KoinIcons.squaresFour.codePoint,
+    KoinIcons.house.codePoint,
+    KoinIcons.briefcase.codePoint,
+    KoinIcons.graduationCap.codePoint,
+    KoinIcons.barbell.codePoint,
+    KoinIcons.airplane.codePoint,
+    KoinIcons.pawPrint.codePoint,
+    KoinIcons.money.codePoint,
+    KoinIcons.bank.codePoint,
+    KoinIcons.piggyBank.codePoint,
+    KoinIcons.plug.codePoint,
+    KoinIcons.drop.codePoint,
+    KoinIcons.wifiHigh.codePoint,
+    KoinIcons.deviceMobile.codePoint,
+    KoinIcons.devices.codePoint,
+    KoinIcons.confetti.codePoint,
+    KoinIcons.gift.codePoint,
+    KoinIcons.coffee.codePoint,
+    KoinIcons.pintGlass.codePoint,
+    KoinIcons.hamburger.codePoint,
   ];
 
   final List<String> _availableColors = [
@@ -79,7 +81,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       _selectedColorHex = widget.category!.colorHex;
       _selectedType = widget.category!.type;
     } else {
-      _selectedIconCodePoint = Icons.category.codePoint;
+      _selectedIconCodePoint = KoinIcons.squaresFour.codePoint;
       _selectedColorHex = '#00D09E';
       _selectedType = widget.initialType ?? TransactionType.expense;
     }
@@ -234,7 +236,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                               autofocus: widget.category == null,
                               decoration: const InputDecoration(
                                 hintText: 'e.g., Groceries',
-                                prefixIcon: Icon(Icons.label_outline),
+                                prefixIcon: Icon(KoinIcons.tag),
                               ),
                             )
                             .koinAnimate(

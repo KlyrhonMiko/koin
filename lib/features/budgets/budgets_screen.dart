@@ -251,7 +251,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               );
                                             },
                                             icon: const Icon(
-                                              Icons.settings_outlined,
+                                              KoinIcons.gearSix,
                                               size: 16,
                                             ),
                                             label: const Text(
@@ -325,7 +325,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       title: 'Monthly Budgets',
       backgroundColor: AppTheme.backgroundColor(context),
       trailing: IconButton(
-        icon: const Icon(Icons.category_outlined),
+        icon: const Icon(KoinIcons.squaresFour),
         tooltip: 'Manage Categories',
         onPressed: () {
           HapticService.light();
@@ -340,12 +340,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     return KoinEmptyState.sliver(
-      icon: Icons.account_balance_wallet_outlined,
+      icon: KoinIcons.calculator,
       title: 'No categories yet',
       subtitle: 'Create categories first to set budgets',
       action: KoinPrimaryButton(
         label: 'Create Category',
-        icon: Icons.add_rounded,
+        icon: KoinIcons.plus,
         onPressed: () => Navigator.push(
           context,
           SlideUpRoute(page: const CategoryDetailScreen()),
@@ -671,7 +671,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             ),
             const Gap(8),
             Icon(
-              Icons.add_circle_outline_rounded,
+              KoinIcons.plusCircle,
               size: 18,
               color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
             ),
@@ -707,7 +707,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.settings_outlined,
+                KoinIcons.gearSix,
                 size: 16,
                 color: AppTheme.primaryColor(context),
               ),
@@ -723,7 +723,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             ),
             const Gap(8),
             Icon(
-              Icons.chevron_right_rounded,
+              KoinIcons.caretRight,
               size: 18,
               color: AppTheme.textLightColor(context).withValues(alpha: 0.5),
             ),

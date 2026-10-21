@@ -140,8 +140,8 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                       ),
                       child: Icon(
                         _showSearch
-                            ? Icons.close_rounded
-                            : Icons.search_rounded,
+                            ? KoinIcons.x
+                            : KoinIcons.magnifyingGlass,
                         size: 18,
                         color: AppTheme.textColor(context),
                       ),
@@ -201,13 +201,13 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
     final isExpense = type == TransactionType.expense;
     return KoinEmptyState(
       fullScreen: true,
-      icon: isExpense ? Icons.category_outlined : Icons.add_chart_rounded,
+      icon: isExpense ? KoinIcons.squaresFour : KoinIcons.chartBar,
       title: isExpense ? 'No expense categories' : 'No income categories',
       subtitle:
           'Create your first ${isExpense ? 'expense' : 'income'} category',
       action: KoinPrimaryButton(
         label: 'Create ${isExpense ? 'Expense' : 'Income'}',
-        icon: Icons.add_rounded,
+        icon: KoinIcons.plus,
         onPressed: () {
           HapticService.medium();
           Navigator.push(
@@ -317,7 +317,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.add_rounded,
+                      KoinIcons.plus,
                       size: 18,
                       color: widget.type == TransactionType.expense
                           ? AppTheme.expenseColor(context)
@@ -351,7 +351,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
           confirmTitle: 'Delete Category?',
           confirmDescription:
               'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
-          icon: Icons.delete_forever_rounded,
+          icon: KoinIcons.trash,
           onDelete: () async {
             HapticService.heavy();
             await ref
@@ -375,7 +375,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 child: Padding(
                   padding: const EdgeInsets.all(4),
                   child: Icon(
-                    Icons.drag_indicator_rounded,
+                    KoinIcons.dotsSixVertical,
                     color: AppTheme.textLightColor(context)
                         .withValues(alpha: 0.25),
                     size: 20,

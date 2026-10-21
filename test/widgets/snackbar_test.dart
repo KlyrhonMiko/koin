@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -90,7 +91,7 @@ void main() {
       expect(tester.takeException(), isNull);
       final titleRect = tester.getRect(find.text('Income processed'));
       final subtitleRect = tester.getRect(find.text(subtitle.data!));
-      final iconRect = tester.getRect(find.byIcon(Icons.check_rounded));
+      final iconRect = tester.getRect(find.byIcon(KoinIcons.check));
       final toastRect = tester.getRect(find.byType(Dismissible));
       expect(iconRect.center.dy, closeTo(toastRect.center.dy, 1));
       expect(subtitleRect.top, greaterThan(titleRect.bottom));
@@ -238,7 +239,7 @@ void main() {
         description: 'History and balances are kept.',
         confirmLabel: 'Archive',
         confirmColor: AppTheme.primaryColor(source),
-        icon: Icons.archive_outlined,
+        icon: KoinIcons.archive,
       );
       await tester.pumpAndSettle();
       expect(find.text('Maya restored'), findsNothing);

@@ -63,7 +63,7 @@ void main() {
         (index) => TransactionCategory(
           id: 'category-$index',
           name: 'Category $index',
-          iconCodePoint: Icons.category.codePoint,
+          iconCodePoint: KoinIcons.squaresFour.codePoint,
           colorHex: '#009688',
           type: TransactionType.expense,
         ),

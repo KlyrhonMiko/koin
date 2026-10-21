@@ -32,7 +32,7 @@ class _ArchiveManagerScreenState extends ConsumerState<ArchiveManagerScreen> {
           description: 'History and balances are kept. Existing schedules keep using this item. You can restore it here at any time.',
           confirmLabel: 'Archive',
           confirmColor: AppTheme.primaryColor(context),
-          icon: Icons.archive_outlined,
+          icon: KoinIcons.archive,
         );
         if (confirmed != true || !mounted) return;
       }

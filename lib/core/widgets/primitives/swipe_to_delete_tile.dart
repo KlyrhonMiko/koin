@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
@@ -49,7 +50,7 @@ class SwipeToDeleteTile extends StatefulWidget {
     this.direction = DismissDirection.endToStart,
     this.borderRadius,
     this.margin,
-    this.icon = Icons.delete_outline_rounded,
+    this.icon = KoinIcons.trash,
     this.backgroundColor,
     this.iconColor,
     this.fillRoundedCorners = false,

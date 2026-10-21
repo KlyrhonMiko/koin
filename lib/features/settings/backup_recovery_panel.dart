@@ -54,7 +54,7 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
           'Replace your current data with the copy from ${_date(copy.createdAt)}? A recovery copy of your current data will be kept first.',
       confirmLabel: 'Restore',
       confirmColor: Theme.of(context).colorScheme.error,
-      icon: Icons.restore_rounded,
+      icon: KoinIcons.clockCounterClockwise,
       isDanger: true,
     );
     if (confirmed != true) return;
@@ -94,7 +94,7 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
               for (final copy in copies)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.history_rounded),
+                  leading: const Icon(KoinIcons.clockCounterClockwise),
                   title: Text(_date(copy.createdAt)),
                   subtitle: Text(_size(copy.bytes)),
                   onTap: () => Navigator.pop(context, copy),
@@ -191,7 +191,7 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
             divider(),
             action(
               'Restore data',
-              Icons.restore_rounded,
+              KoinIcons.clockCounterClockwise,
               () => _chooseCopy(service, status.copies),
               enabled: latest != null,
               subtitle: latest == null
@@ -214,7 +214,7 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
                     status.destinationLabel == null
                         ? 'Choose a backup folder'
                         : 'Change backup folder',
-                    Icons.folder_outlined,
+                    KoinIcons.folder,
                     () async {
                       await service.setupExternal();
                     },
@@ -263,12 +263,12 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
                 ],
                 action(
                   'Export a backup',
-                  Icons.upload_file_rounded,
+                  KoinIcons.uploadSimple,
                   widget.onExport,
                 ),
                 action(
                   'Import a backup',
-                  Icons.download_rounded,
+                  KoinIcons.downloadSimple,
                   widget.onImport,
                 ),
                 Padding(

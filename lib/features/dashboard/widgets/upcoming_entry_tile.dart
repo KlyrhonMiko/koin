@@ -40,7 +40,7 @@ class UpcomingEntryTile extends StatelessWidget {
       iconWidget = Icon(
         category != null
             ? IconUtils.getIcon(category!.iconCodePoint)
-            : Icons.category_rounded,
+            : KoinIcons.squaresFour,
         color: catColor,
         size: 20,
       );
@@ -48,8 +48,8 @@ class UpcomingEntryTile extends StatelessWidget {
       iconBgColor = amountColor;
       iconWidget = Icon(
         entry.isExpense
-            ? Icons.arrow_upward_rounded
-            : Icons.arrow_downward_rounded,
+            ? KoinIcons.arrowUp
+            : KoinIcons.arrowDown,
         color: amountColor,
         size: 20,
       );

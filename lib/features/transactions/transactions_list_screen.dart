@@ -38,7 +38,7 @@ class TransactionsListScreen extends ConsumerWidget {
               data: (rows) {
                 if (rows.isEmpty) {
                   return KoinEmptyState.sliver(
-                    icon: Icons.receipt_long_rounded,
+                    icon: KoinIcons.receipt,
                     title: filter.isEmpty
                         ? 'No recent activity'
                         : 'No results found',
@@ -128,7 +128,7 @@ class TransactionsListScreen extends ConsumerWidget {
                           key: Key(tx.id),
                           borderRadius: BorderRadius.zero,
                           backgroundColor: AppTheme.errorColor(context),
-                          icon: Icons.delete_forever_rounded,
+                          icon: KoinIcons.trash,
                           confirmTitle: isTransfer
                               ? 'Delete transfer and fee?'
                               : tx.plannedPaymentId != null
@@ -212,7 +212,7 @@ class TransactionsListScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Icon(
-                    Icons.search_rounded,
+                    KoinIcons.magnifyingGlass,
                     color: AppTheme.textLightColor(context)
                         .withValues(alpha: 0.5),
                     size: 20,
@@ -258,7 +258,7 @@ class TransactionsListScreen extends ConsumerWidget {
                       alignment: Alignment.center,
                       children: [
                         Icon(
-                          Icons.tune_rounded,
+                          KoinIcons.slidersHorizontal,
                           color: hasFilters
                               ? primary
                               : AppTheme.textLightColor(context)
@@ -311,7 +311,7 @@ class TransactionsListScreen extends ConsumerWidget {
                   Row(
                         children: [
                           Icon(
-                            Icons.filter_list_rounded,
+                            KoinIcons.funnelSimple,
                             size: 13,
                             color: primary.withValues(alpha: 0.6),
                           ),

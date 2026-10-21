@@ -104,7 +104,7 @@ void main() {
                     id: 'cash',
                     name: 'Cash',
                     initialBalance: 5000,
-                    iconCodePoint: Icons.wallet.codePoint,
+                    iconCodePoint: KoinIcons.wallet.codePoint,
                     colorHex: '#00D09E',
                   ),
                 ],
@@ -116,7 +116,7 @@ void main() {
               TransactionCategory(
                 id: 'food',
                 name: 'Food',
-                iconCodePoint: Icons.restaurant.codePoint,
+                iconCodePoint: KoinIcons.forkKnife.codePoint,
                 colorHex: '#00D09E',
                 type: TransactionType.expense,
                 budget: 500,
@@ -124,7 +124,7 @@ void main() {
               TransactionCategory(
                 id: 'salary',
                 name: 'Salary',
-                iconCodePoint: Icons.work.codePoint,
+                iconCodePoint: KoinIcons.briefcase.codePoint,
                 colorHex: '#00D09E',
                 type: TransactionType.income,
               ),
@@ -346,7 +346,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       await tester.tap(find.byTooltip('Budgets'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.chevron_left_rounded).first);
+      await tester.tap(find.byIcon(KoinIcons.caretLeft).first);
       await tester.pumpAndSettle();
       final now = DateTime.now();
       final previous = DateFormat('MMMM yyyy')
@@ -370,7 +370,7 @@ void main() {
       );
       await tester.tap(find.byTooltip('Activity'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.chevron_left_rounded).first);
+      await tester.tap(find.byIcon(KoinIcons.caretLeft).first);
       await tester.pumpAndSettle();
       expect(find.text(previous), findsOneWidget);
       await tester.tap(find.byTooltip('Home'));

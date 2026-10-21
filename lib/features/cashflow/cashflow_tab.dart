@@ -113,15 +113,15 @@ class CashflowScheduleTab extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context) => KoinEmptyState.sliver(
     icon: _isIncome
-        ? Icons.account_balance_wallet_rounded
-        : Icons.event_repeat_rounded,
+        ? KoinIcons.wallet
+        : KoinIcons.calendarDots,
     title: _isIncome ? 'No recurring incomes' : 'No planned payments',
     subtitle: _isIncome
         ? 'Add regular income streams like salary or freelance retainers'
         : 'Add recurring payments to track your future obligations',
     action: KoinPrimaryButton(
       label: _isIncome ? 'Add Recurring Income' : 'Add Planned Payment',
-      icon: Icons.add_rounded,
+      icon: KoinIcons.plus,
       onPressed: () {
         HapticService.medium();
         Navigator.push(
@@ -189,7 +189,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                   child: Icon(
                     category != null
                         ? IconUtils.getIcon(category.iconCodePoint)
-                        : Icons.category_rounded,
+                        : KoinIcons.squaresFour,
                     color: catColor,
                     size: 24,
                   ),
@@ -213,7 +213,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                       Row(
                         children: [
                           Icon(
-                            Icons.refresh_rounded,
+                            KoinIcons.arrowClockwise,
                             size: 14,
                             color: AppTheme.textLightColor(context),
                           ),
@@ -242,7 +242,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.bolt_rounded,
+                                    KoinIcons.lightning,
                                     size: 10,
                                     color: AppTheme.primaryColor(context),
                                   ),
@@ -296,7 +296,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.calendar_today_rounded,
+                          KoinIcons.calendarBlank,
                           size: 14,
                           color: AppTheme.textLightColor(context),
                         ),

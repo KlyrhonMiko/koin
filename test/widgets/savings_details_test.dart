@@ -119,7 +119,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+    expect(find.byIcon(KoinIcons.info), findsOneWidget);
     await tester.tap(indicator);
     await tester.pumpAndSettle();
     expectAlignedActivityRows();

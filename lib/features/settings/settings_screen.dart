@@ -177,10 +177,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       vertical: 2,
                     ),
                     icon: settings.themeMode == ThemeMode.system
-                        ? Icons.brightness_auto_rounded
+                        ? KoinIcons.circleHalf
                         : settings.themeMode == ThemeMode.dark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
+                        ? KoinIcons.moon
+                        : KoinIcons.sun,
                     title: 'Theme Mode',
                     subtitle: settings.themeMode == ThemeMode.system
                         ? 'Follow System'
@@ -271,7 +271,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ),
                                           ),
                                           child: const Icon(
-                                            Icons.check_rounded,
+                                            KoinIcons.check,
                                             color: Colors.white,
                                             size: 18,
                                           ),
@@ -301,14 +301,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Currency',
                     subtitle:
                         '${settings.currency.name} (${settings.currency.symbol})',
-                    icon: Icons.payments_outlined,
+                    icon: KoinIcons.money,
                     onTap: () =>
                         _showCurrencyPicker(context, ref, settings.currency),
                   ),
                   KoinSettingTile(
                     title: 'Haptic feedback',
                     subtitle: 'Vibrations for selections and action results',
-                    icon: Icons.vibration_rounded,
+                    icon: KoinIcons.vibrate,
                     trailing: Switch(
                       value: settings.hapticsEnabled,
                       onChanged: (enabled) => ref
@@ -319,7 +319,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   KoinSettingTile(
                     title: 'Manage archived items',
                     subtitle: 'Archive or restore accounts and categories',
-                    icon: Icons.archive_outlined,
+                    icon: KoinIcons.archive,
                     onTap: () => Navigator.push(
                       context,
                       SlideUpRoute(page: const ArchiveManagerScreen()),
@@ -354,7 +354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     KoinSettingTile(
                       title: 'Delete All Records',
                       subtitle: 'Clear all your transaction history',
-                      icon: Icons.delete_sweep_rounded,
+                      icon: KoinIcons.broom,
                       isDestructive: true,
                       onTap: () => _runMaintenanceAction(
                         () => _handleDeleteAllTransactions(context, ref),
@@ -363,7 +363,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     KoinSettingTile(
                       title: 'Delete All Data',
                       subtitle: 'Clear all records, accounts, and categories',
-                      icon: Icons.delete_forever_rounded,
+                      icon: KoinIcons.trash,
                       isDestructive: true,
                       onTap: () => _runMaintenanceAction(
                         () => _handleDeleteAllData(context, ref),
@@ -372,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     KoinSettingTile(
                       title: 'Factory Reset',
                       subtitle: 'Reset app to its initial state',
-                      icon: Icons.restore_rounded,
+                      icon: KoinIcons.clockCounterClockwise,
                       isDestructive: true,
                       onTap: () => _runMaintenanceAction(
                         () => _handleFactoryReset(context, ref),
@@ -440,7 +440,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           message:
               'Replace your current data with ${file.name}? A recovery copy of your current data will be kept first.',
           confirmText: 'Restore',
-          icon: Icons.download_rounded,
+          icon: KoinIcons.downloadSimple,
           isDestructive: true,
         );
         if (confirmed != true) return;
@@ -505,7 +505,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       title: 'Delete All Records',
       message: 'Delete all transactions from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete',
-      icon: Icons.delete_sweep_rounded,
+      icon: KoinIcons.broom,
       isDestructive: true,
     );
 
@@ -530,7 +530,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       title: 'Delete All Data',
       message: 'Delete all transactions, savings logs, accounts, and categories from your current data? Recovery copies and exported backups are kept.',
       confirmText: 'Delete Data',
-      icon: Icons.delete_forever_rounded,
+      icon: KoinIcons.trash,
       isDestructive: true,
     );
 
@@ -555,7 +555,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       title: 'Factory Reset',
       message: 'Reset your current database and settings to their initial state? Recovery copies and exported backups are kept.',
       confirmText: 'Factory Reset',
-      icon: Icons.restore_rounded,
+      icon: KoinIcons.clockCounterClockwise,
       isDestructive: true,
     );
 
@@ -664,7 +664,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 'Existing amounts will keep the same numbers and use ${currency.code}. No exchange-rate conversion is applied.',
                             confirmLabel: 'Change currency',
                             confirmColor: AppTheme.primaryColor(context),
-                            icon: Icons.currency_exchange_rounded,
+                            icon: KoinIcons.currencyCircleDollar,
                           );
                           if (confirmed != true || !context.mounted) return;
                           HapticService.light();
@@ -718,7 +718,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         trailing: isSelected
                             ? Icon(
-                                Icons.check_circle_rounded,
+                                KoinIcons.checkCircle,
                                 color: AppTheme.primaryColor(context),
                                 size: 22,
                               )
@@ -792,7 +792,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             context,
                             ref,
                             title: 'System',
-                            icon: Icons.brightness_auto_rounded,
+                            icon: KoinIcons.circleHalf,
                             mode: ThemeMode.system,
                             isSelected: currentMode == ThemeMode.system,
                           ),
@@ -803,7 +803,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             context,
                             ref,
                             title: 'Light',
-                            icon: Icons.light_mode_rounded,
+                            icon: KoinIcons.sun,
                             mode: ThemeMode.light,
                             isSelected: currentMode == ThemeMode.light,
                           ),
@@ -814,7 +814,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             context,
                             ref,
                             title: 'Dark',
-                            icon: Icons.dark_mode_rounded,
+                            icon: KoinIcons.moon,
                             mode: ThemeMode.dark,
                             isSelected: currentMode == ThemeMode.dark,
                           ),

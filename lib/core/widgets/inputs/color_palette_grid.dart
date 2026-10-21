@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
@@ -113,7 +114,7 @@ class ColorPaletteGrid extends StatelessWidget {
           child: isSelected
               ? const Center(
                   child: Icon(
-                    Icons.check_rounded,
+                    KoinIcons.check,
                     color: Colors.white,
                     size: 20,
                   ),

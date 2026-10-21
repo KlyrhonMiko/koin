@@ -30,7 +30,7 @@ class BudgetProgressCard extends StatelessWidget {
 
     if (budgets.isEmpty) {
       return KoinEmptyState(
-        icon: Icons.account_balance_wallet_outlined,
+        icon: KoinIcons.calculator,
         title: 'No budgets yet',
         subtitle: 'Set a monthly limit to track your spending',
         action: TextButton(

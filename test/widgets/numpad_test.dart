@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/widgets/inputs/numpad.dart';
@@ -62,7 +63,7 @@ void main() {
       initialValue: '15.99',
       onValueChanged: (_, value) => result = value,
     );
-    await tester.tap(find.byIcon(Icons.backspace_outlined));
+    await tester.tap(find.byIcon(KoinIcons.backspace));
     await tester.pumpAndSettle();
     await tester.tap(find.text('5'));
     await tester.pumpAndSettle();

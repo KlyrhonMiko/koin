@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -238,7 +239,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.calendar_today_rounded,
+                KoinIcons.calendarBlank,
                 color: AppTheme.primaryColor(context),
                 size: 18,
               ),
@@ -297,7 +298,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                     widget.onChanged(null);
                   },
                   child: Icon(
-                    Icons.close_rounded,
+                    KoinIcons.x,
                     color: AppTheme.textLightColor(context),
                     size: 20,
                   ),

@@ -932,7 +932,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.access_time_rounded,
+                              KoinIcons.clock,
                               size: 13,
                               color: AppTheme.textLightColor(context),
                             ),
@@ -974,7 +974,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.calendar_today_rounded,
+                              KoinIcons.calendarBlank,
                               size: 13,
                               color: AppTheme.textLightColor(context),
                             ),
@@ -1062,7 +1062,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     ],
                                   ),
                                   child: const Icon(
-                                    Icons.mic_rounded,
+                                    KoinIcons.microphone,
                                     size: 22,
                                     color: Colors.white,
                                   ),
@@ -1223,7 +1223,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.savings_outlined,
+                            KoinIcons.piggyBank,
                             size: 16,
                             color: AppTheme.textLightColor(context),
                           ),
@@ -1407,7 +1407,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      Icons.sticky_note_2_rounded,
+                      KoinIcons.note,
                       size: 17,
                       color: AppTheme.textLightColor(context),
                     ),
@@ -1488,8 +1488,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ),
                     child: Icon(
                       _isTransferFeePercentage
-                          ? Icons.percent_rounded
-                          : Icons.payments_rounded,
+                          ? KoinIcons.percent
+                          : KoinIcons.money,
                       size: 17,
                       color: AppTheme.textLightColor(context),
                     ),
@@ -1622,7 +1622,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             Widget child = SelectionTile(
                               minHeight: 72,
                               asCard: false,
-                              fallbackIcon: Icons.category_rounded,
+                              fallbackIcon: KoinIcons.squaresFour,
                               label: 'Category',
                               selectedName: _categoryById(
                                 categories,
@@ -1656,7 +1656,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     );
                                   },
                                   icon: Icon(
-                                    Icons.tune_rounded,
+                                    KoinIcons.slidersHorizontal,
                                     size: 18,
                                     color: AppTheme.textLightColor(context),
                                   ),
@@ -1718,7 +1718,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                       });
                                     },
                                     icon: const Icon(
-                                      Icons.auto_awesome_outlined,
+                                      KoinIcons.sparkle,
                                       size: 18,
                                     ),
                                     label: Text(
@@ -1790,7 +1790,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         return SelectionTile(
           minHeight: 72,
           asCard: false,
-          fallbackIcon: Icons.account_balance_wallet_rounded,
+          fallbackIcon: KoinIcons.wallet,
           label: 'To',
           selectedName: account == null || balance == null
               ? null
@@ -1882,7 +1882,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           SelectionTile(
             minHeight: 72,
             asCard: false,
-            fallbackIcon: Icons.account_balance_wallet_outlined,
+            fallbackIcon: KoinIcons.wallet,
             label: reserved > 0
                 ? (visibleSavings > 0
                       ? 'Spendable · ${currency.formatter.format(visibleSavings)} in savings'

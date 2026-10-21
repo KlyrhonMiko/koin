@@ -14,7 +14,7 @@ void main() {
           theme: AppTheme.getTheme(Colors.blue, false),
           home: Scaffold(
             body: SelectionTile(
-              fallbackIcon: Icons.category,
+              fallbackIcon: KoinIcons.squaresFour,
               label: 'Category',
               selectedName: null,
               selectedColor: null,
@@ -44,11 +44,11 @@ void main() {
             home: Scaffold(
               body: SelectionTile(
                 asCard: false,
-                fallbackIcon: Icons.category,
+                fallbackIcon: KoinIcons.squaresFour,
                 label: 'Account',
                 selectedName: 'Savings Wallet',
                 selectedColor: Colors.green,
-                selectedIconCodePoint: Icons.savings.codePoint,
+                selectedIconCodePoint: KoinIcons.piggyBank.codePoint,
                 placeholder: 'Select Account',
                 onTap: () {},
               ),

@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/motion_policy.dart';
@@ -63,7 +64,7 @@ class KoinSelectableOption extends StatelessWidget {
               children: [
                 if (compact && selected) ...[
                   Icon(
-                    Icons.check_circle_rounded,
+                    KoinIcons.checkCircle,
                     size: 15,
                     color: accentColor,
                   ),
@@ -94,7 +95,7 @@ class KoinSelectableOption extends StatelessWidget {
                 if (!compact && selected) ...[
                   const SizedBox(width: 4),
                   Icon(
-                    Icons.check_circle_rounded,
+                    KoinIcons.checkCircle,
                     size: 14,
                     color: accentColor,
                   ),

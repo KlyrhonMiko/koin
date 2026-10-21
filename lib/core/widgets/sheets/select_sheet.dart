@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -164,8 +165,8 @@ class SelectSheetItem extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       isPrivate
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
+                          ? KoinIcons.eyeSlash
+                          : KoinIcons.eye,
                       size: 18,
                       color: isPrivate
                           ? AppTheme.textLightColor(
@@ -182,7 +183,7 @@ class SelectSheetItem extends StatelessWidget {
               // ── Selection Indicator ──
               const Gap(8),
               if (selected)
-                Icon(Icons.check_circle_rounded, color: primary, size: 24)
+                Icon(KoinIcons.checkCircle, color: primary, size: 24)
               else
                 SizedBox(
                   width: 24,
@@ -290,7 +291,7 @@ Future<T?> showSelectSheet<T>({
                   if (emptyMessage != null && itemCount == 0)
                     Expanded(
                       child: KoinEmptyState(
-                        icon: Icons.search_off_rounded,
+                        icon: KoinIcons.magnifyingGlassMinus,
                         title: emptyMessage,
                         subtitle: 'There are no options to choose from yet',
                       ),

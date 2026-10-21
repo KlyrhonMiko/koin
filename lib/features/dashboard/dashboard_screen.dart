@@ -24,9 +24,9 @@ class DashboardScreen extends ConsumerWidget {
 
   IconData _getGreetingIcon() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return Icons.light_mode_rounded;
-    if (hour < 17) return Icons.wb_sunny_rounded;
-    return Icons.dark_mode_rounded;
+    if (hour < 12) return KoinIcons.sun;
+    if (hour < 17) return KoinIcons.sun;
+    return KoinIcons.moon;
   }
 
   @override
@@ -290,10 +290,7 @@ class DashboardScreen extends ConsumerWidget {
             HapticService.light();
             Navigator.push(context, SlideUpRoute(page: const SettingsScreen()));
           },
-          icon: Icon(
-            Icons.settings_outlined,
-            color: AppTheme.textColor(context),
-          ),
+          icon: Icon(KoinIcons.gearSix, color: AppTheme.textColor(context)),
           tooltip: 'Settings',
         ),
       ],
@@ -407,7 +404,7 @@ class DashboardScreen extends ConsumerWidget {
         final actions = <Widget>[
           _buildActionItem(
             context,
-            icon: Icons.add_rounded,
+            icon: KoinIcons.plus,
             label: 'Income',
             color: AppTheme.incomeContentColor(context),
             onTap: () {
@@ -424,7 +421,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           _buildActionItem(
             context,
-            icon: Icons.remove_rounded,
+            icon: KoinIcons.minus,
             label: 'Expense',
             color: AppTheme.expenseContentColor(context),
             onTap: () {
@@ -441,7 +438,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           _buildActionItem(
             context,
-            icon: Icons.swap_horiz_rounded,
+            icon: KoinIcons.arrowsLeftRight,
             label: 'Transfer',
             color: AppTheme.transferContentColor(context),
             onTap: () {
@@ -458,7 +455,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           _buildActionItem(
             context,
-            icon: Icons.savings_outlined,
+            icon: KoinIcons.calculator,
             label: 'Budgets',
             color: AppTheme.contentColor(
               context,
@@ -602,7 +599,7 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     if (stats.totalIncome == 0 && stats.totalExpense == 0) {
       return const KoinEmptyState(
-        icon: Icons.pie_chart_outline,
+        icon: KoinIcons.chartPie,
         title: 'No data for chart yet',
         subtitle: 'Add transactions to see your spending trend',
       );
@@ -663,7 +660,7 @@ class DashboardScreen extends ConsumerWidget {
       data: (transactions) {
         if (transactions.isEmpty) {
           return const KoinEmptyState(
-            icon: Icons.receipt_long_rounded,
+            icon: KoinIcons.receipt,
             title: 'No recent transactions',
             subtitle: 'Tap + to add your first transaction',
           );
@@ -871,7 +868,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             );
           },
-          icon: const Icon(Icons.add_rounded),
+          icon: const Icon(KoinIcons.plus),
           label: const Text('Add planned payment'),
         ),
       ],

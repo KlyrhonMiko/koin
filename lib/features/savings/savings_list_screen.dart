@@ -80,7 +80,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                             ),
                             fillRoundedCorners: true,
                             backgroundColor: AppTheme.errorColor(context),
-                            icon: Icons.delete_rounded,
+                            icon: KoinIcons.trash,
                             confirmTitle: 'Delete Goal?',
                             confirmDescription:
                                 'Are you sure you want to delete "${goal.name}"? This action cannot be undone.',
@@ -224,10 +224,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                   ),
                   child: Icon(
                     isCompleted
-                        ? Icons.check_rounded
+                        ? KoinIcons.check
                         : goal.isStash
-                        ? Icons.savings_outlined
-                        : Icons.flag_outlined,
+                        ? KoinIcons.piggyBank
+                        : KoinIcons.flag,
                     color: iconColor,
                     size: 24,
                   ),
@@ -322,7 +322,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
 
   Widget _buildEmptyState(BuildContext context) {
     Widget state = KoinEmptyState.sliver(
-      icon: Icons.savings_outlined,
+      icon: KoinIcons.piggyBank,
       title: 'Start saving for what matters',
       subtitle: 'Create a goal or an open-ended savings pot.\nUse Savings Helper to see what you could save.',
       action: Column(
@@ -353,7 +353,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                  Icon(KoinIcons.plusCircle, color: Colors.white, size: 20),
                   Gap(8),
                   Text(
                     'Create First Goal',
@@ -375,7 +375,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                 page: const AddSavingsGoalScreen(initialSavings: true),
               ),
             ),
-            icon: const Icon(Icons.savings_outlined),
+            icon: const Icon(KoinIcons.piggyBank),
             label: const Text('Create savings'),
           ),
         ],

@@ -281,7 +281,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       description: 'Are you sure you want to delete this savings goal? This action cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_forever_rounded,
+      icon: KoinIcons.trash,
       isDanger: true,
     );
     if (confirmed == true && mounted) {
@@ -301,7 +301,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         context,
         tooltip: 'Add Savings',
         label: 'Save',
-        icon: Icons.add_rounded,
+        icon: KoinIcons.plus,
         color: AppTheme.incomeContentColor(context),
         onPressed: () => _showAddLogSheet(
           goal: goal,
@@ -313,7 +313,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         context,
         tooltip: 'Release savings',
         label: 'Release',
-        icon: Icons.south_west_rounded,
+        icon: KoinIcons.arrowDownLeft,
         color: AppTheme.textColor(context),
         onPressed: goal.currentAmount > 0
             ? () => _showAddLogSheet(
@@ -328,7 +328,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         context,
         tooltip: 'Edit goal',
         label: 'Edit',
-        icon: Icons.edit_rounded,
+        icon: KoinIcons.pencilSimple,
         color: AppTheme.textLightColor(context),
         onPressed: () {
           HapticService.light();
@@ -342,7 +342,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
         context,
         tooltip: 'Delete goal',
         label: 'Delete',
-        icon: Icons.delete_outline_rounded,
+        icon: KoinIcons.trash,
         color: AppTheme.expenseContentColor(context),
         onPressed: () => _deleteGoal(goal),
       ),
@@ -659,7 +659,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
               backgroundColor: AppTheme.expenseColor(context)
                   .withValues(alpha: 0.15),
               iconColor: AppTheme.expenseColor(context),
-              icon: Icons.delete_outline_rounded,
+              icon: KoinIcons.trash,
               confirmTitle: 'Delete Entry?',
               confirmDescription:
                   'Are you sure you want to delete this savings entry?',
@@ -710,7 +710,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: KoinActivityRow(
         leading: KoinIconBadge(
-          icon: released ? Icons.south_west_rounded : Icons.north_east_rounded,
+          icon: released ? KoinIcons.arrowDownLeft : KoinIcons.arrowUpRight,
           color: released ? secondary : AppTheme.incomeContentColor(context),
         ),
         title: released ? 'Released' : 'Saved',
@@ -768,7 +768,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.lock_outline_rounded,
+                          KoinIcons.lockSimple,
                           size: 12,
                           color: textColor,
                         ),
@@ -781,7 +781,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                         ),
                         const Gap(4),
                         Icon(
-                          Icons.info_outline_rounded,
+                          KoinIcons.info,
                           size: 14,
                           color: textColor,
                         ),

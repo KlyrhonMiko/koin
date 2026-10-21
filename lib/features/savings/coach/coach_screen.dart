@@ -100,11 +100,7 @@ class _SavingsCoachScreenState extends ConsumerState<SavingsCoachScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.emoji_events_rounded,
-                size: 80,
-                color: Colors.amber,
-              ),
+              const Icon(KoinIcons.trophy, size: 80, color: Colors.amber),
               const Gap(24),
               Text(
                     headline,

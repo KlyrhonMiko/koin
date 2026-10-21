@@ -27,13 +27,13 @@ class DebtsTab extends ConsumerWidget {
       data: (debts) {
         if (debts.isEmpty) {
           return KoinEmptyState.sliver(
-            icon: Icons.handshake_rounded,
+            icon: KoinIcons.handshake,
             title: 'No credit or IOUs',
             subtitle:
                 'Track BNPL, credit cards, and\nmoney you owe or are owed.',
             action: KoinPrimaryButton(
               label: 'Add credit / IOU',
-              icon: Icons.add_rounded,
+              icon: KoinIcons.plus,
               onPressed: () => Navigator.push(
                 context,
                 SlideUpRoute(page: const AddEditDebtScreen()),
@@ -76,7 +76,7 @@ class DebtsTab extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(PortfolioCardStyle.radius),
                 fillRoundedCorners: true,
                 backgroundColor: AppTheme.errorColor(context),
-                icon: Icons.delete_rounded,
+                icon: KoinIcons.trash,
                 confirmTitle: 'Delete Credit/IOU?',
                 confirmDescription:
                     'Are you sure you want to delete "${debt.personName}"? This action cannot be undone.',
@@ -244,12 +244,12 @@ class DebtCard extends StatelessWidget {
                   child: Center(
                     child: Icon(
                       debt.isPurchaseAccount
-                          ? Icons.shopping_bag_outlined
+                          ? KoinIcons.shoppingBag
                           : isSettled
-                          ? Icons.check_rounded
+                          ? KoinIcons.check
                           : debt.type == DebtType.owedToMe
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
+                          ? KoinIcons.arrowDown
+                          : KoinIcons.arrowUp,
                       color: color,
                       size: 24,
                     ),
@@ -353,7 +353,7 @@ class DebtCard extends StatelessWidget {
                     color: color.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.add_rounded, size: 14, color: color),
+                  child: Icon(KoinIcons.plus, size: 14, color: color),
                 ),
               ),
             ],

@@ -137,7 +137,7 @@ void main() {
         narrow ? 'debt_record_types_narrow' : 'debt_record_types',
       );
       expect(find.byType(ListTile), findsNWidgets(3));
-      expect(find.byIcon(Icons.radio_button_checked_rounded), findsOneWidget);
+      expect(find.byIcon(KoinIcons.radioButton), findsOneWidget);
       expect(tester.getSize(find.byType(BottomSheet)).height, lessThan(450));
       expect(tester.takeException(), isNull);
     }
@@ -690,7 +690,7 @@ void main() {
         id: 'food',
         name: 'Food',
         type: type,
-        iconCodePoint: Icons.restaurant.codePoint,
+        iconCodePoint: KoinIcons.forkKnife.codePoint,
         colorHex: '#008080',
       );
       final suggester = TestStubSuggesterAdapter(
@@ -735,7 +735,7 @@ void main() {
         id: 'food',
         name: 'Food',
         type: debtForm ? TransactionType.income : TransactionType.expense,
-        iconCodePoint: Icons.restaurant.codePoint,
+        iconCodePoint: KoinIcons.forkKnife.codePoint,
         colorHex: '#008080',
       );
       await open(
@@ -771,7 +771,7 @@ void main() {
       id: 'food',
       name: 'Food',
       type: TransactionType.expense,
-      iconCodePoint: Icons.restaurant.codePoint,
+      iconCodePoint: KoinIcons.forkKnife.codePoint,
       colorHex: '#008080',
     );
     final suggester = TestStubSuggesterAdapter();
@@ -828,7 +828,7 @@ void main() {
       id: 'food',
       name: 'Food',
       type: TransactionType.expense,
-      iconCodePoint: Icons.restaurant.codePoint,
+      iconCodePoint: KoinIcons.forkKnife.codePoint,
       colorHex: '#008080',
     );
     final suggester = TestStubSuggesterAdapter(
@@ -886,7 +886,7 @@ void main() {
             id: 'food',
             name: 'Food',
             type: type,
-            iconCodePoint: Icons.restaurant.codePoint,
+            iconCodePoint: KoinIcons.forkKnife.codePoint,
             colorHex: '#008080',
           );
           final suggester = TestStubSuggesterAdapter(
@@ -905,7 +905,7 @@ void main() {
                 id: 'cash',
                 name: 'Cash',
                 initialBalance: 10000,
-                iconCodePoint: Icons.payments.codePoint,
+                iconCodePoint: KoinIcons.money.codePoint,
                 colorHex: '#008080',
               ),
             ],
@@ -988,7 +988,7 @@ void main() {
           id: 'food',
           name: 'Food',
           type: TransactionType.expense,
-          iconCodePoint: Icons.restaurant.codePoint,
+          iconCodePoint: KoinIcons.forkKnife.codePoint,
           colorHex: '#008080',
         );
         final suggester = TestStubSuggesterAdapter();

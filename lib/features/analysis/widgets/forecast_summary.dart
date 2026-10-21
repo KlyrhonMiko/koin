@@ -132,7 +132,7 @@ class ForecastSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    Icons.warning_amber_rounded,
+                    KoinIcons.warning,
                     size: 18,
                     color: AppTheme.expenseColor(context),
                   ),

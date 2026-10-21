@@ -95,7 +95,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                         context,
                         'No expenses found',
                         'Try changing the time period',
-                        Icons.search_off_rounded,
+                        KoinIcons.magnifyingGlassMinus,
                       ),
                     ),
                   )
@@ -553,8 +553,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               },
               icon: Icon(
                 _showPieChart
-                    ? Icons.bar_chart_rounded
-                    : Icons.donut_small_rounded,
+                    ? KoinIcons.chartBar
+                    : KoinIcons.chartDonut,
                 size: 18,
               ),
               label: Text(_showPieChart ? 'Trend' : 'Categories'),
@@ -914,7 +914,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           orElse: () => TransactionCategory(
             id: 'unknown',
             name: 'Uncategorized',
-            iconCodePoint: Icons.help_outline.codePoint,
+            iconCodePoint: KoinIcons.question.codePoint,
             colorHex: '#9E9E9E',
             type: TransactionType.expense,
           ),

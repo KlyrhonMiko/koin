@@ -22,7 +22,7 @@ class TestCategories extends CategoryNotifier {
 TransactionCategory category(String id, double percent) => TransactionCategory(
   id: id,
   name: id,
-  iconCodePoint: Icons.restaurant.codePoint,
+  iconCodePoint: KoinIcons.forkKnife.codePoint,
   colorHex: '#FF9800',
   type: TransactionType.expense,
   budgetPercent: percent,

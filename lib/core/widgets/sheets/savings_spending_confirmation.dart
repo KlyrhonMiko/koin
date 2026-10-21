@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,7 +185,7 @@ class _SavingsReleaseSheetState extends State<_SavingsReleaseSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.savings_outlined, size: 32, color: color),
+                Icon(KoinIcons.piggyBank, size: 32, color: color),
                 const SizedBox(height: 16),
                 Text(
                   'Use savings for this?',

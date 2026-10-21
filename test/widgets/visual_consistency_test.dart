@@ -22,14 +22,14 @@ void main() {
               home: Scaffold(
                 body: KoinPrimaryButton(
                   label: 'Save',
-                  icon: Icons.check_rounded,
+                  icon: KoinIcons.check,
                   onPressed: () {},
                 ),
               ),
             ),
           );
           final text = tester.widget<Text>(find.text('Save'));
-          final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+          final icon = tester.widget<Icon>(find.byIcon(KoinIcons.check));
           expect(icon.color, text.style!.color);
           final context = tester.element(find.byType(KoinPrimaryButton));
           for (final stop in AppTheme.primaryGradient(context).colors) {
@@ -91,14 +91,14 @@ void main() {
           TransactionCategory(
             id: 'food',
             name: 'Food',
-            iconCodePoint: Icons.restaurant.codePoint,
+            iconCodePoint: KoinIcons.forkKnife.codePoint,
             colorHex: '#00D09E',
             type: TransactionType.expense,
           ),
           TransactionCategory(
             id: 'salary',
             name: 'Salary',
-            iconCodePoint: Icons.work.codePoint,
+            iconCodePoint: KoinIcons.briefcase.codePoint,
             colorHex: '#00D09E',
             type: TransactionType.income,
           ),
@@ -108,7 +108,7 @@ void main() {
             id: 'cash',
             name: 'Cash',
             initialBalance: 5000,
-            iconCodePoint: Icons.payments_rounded.codePoint,
+            iconCodePoint: KoinIcons.money.codePoint,
             colorHex: '#00D09E',
           ),
         ],

@@ -804,7 +804,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   IconButton(
                                     onPressed: _saving ? null : _back,
                                     tooltip: 'Back',
-                                    icon: const Icon(Icons.arrow_back_rounded),
+                                    icon: const Icon(KoinIcons.arrowLeft),
                                   )
                                 else if (_step == _Step.action) ...[
                                   ClipRRect(
@@ -836,7 +836,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                   tooltip: _step == _Step.success
                                       ? 'Close'
                                       : 'Cancel',
-                                  icon: const Icon(Icons.close_rounded),
+                                  icon: const Icon(KoinIcons.x),
                                 ),
                               ],
                             ),
@@ -887,14 +887,14 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                     children: [
                                       KoinPrimaryButton(
                                         label: 'Add transaction',
-                                        icon: Icons.add_rounded,
+                                        icon: KoinIcons.plus,
                                         onPressed: () => _go(_Step.type),
                                       ),
                                       const SizedBox(height: 12),
                                       _option(
                                         'Claim income',
                                         'Collect a saved allowance or recurring income',
-                                        Icons.payments_outlined,
+                                        KoinIcons.money,
                                         () => _go(_Step.income),
                                       ),
                                       Divider(
@@ -905,7 +905,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                       _option(
                                         'Open app',
                                         'Continue in Koin',
-                                        Icons.open_in_new_rounded,
+                                        KoinIcons.arrowSquareOut,
                                         () => _dismiss('openApp'),
                                       ),
                                     ],
@@ -919,11 +919,11 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                           '',
                                           switch (type) {
                                             TransactionType.income =>
-                                              Icons.add_rounded,
+                                              KoinIcons.plus,
                                             TransactionType.expense =>
-                                              Icons.remove_rounded,
+                                              KoinIcons.minus,
                                             TransactionType.transfer =>
-                                              Icons.swap_horiz_rounded,
+                                              KoinIcons.arrowsLeftRight,
                                           },
                                           () => _selectType(type),
                                           color: switch (type) {
@@ -1008,7 +1008,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                                       : (_transfer
                                             ? 'Save transfer'
                                             : 'Save transaction'),
-                                  icon: Icons.check_rounded,
+                                  icon: KoinIcons.check,
                                   isLoading: _saving,
                                   enabled: !_saved,
                                   onPressed: _save,
@@ -1057,7 +1057,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                   color: successColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.check_rounded, color: successColor, size: 28),
+                child: Icon(KoinIcons.check, color: successColor, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1260,7 +1260,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
-            fallbackIcon: Icons.account_balance_wallet_outlined,
+            fallbackIcon: KoinIcons.wallet,
             placeholder: 'Select account',
             onTap: _openAccountPicker,
           ),
@@ -1308,7 +1308,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               selectedName: category?.name,
               selectedColor: category?.color,
               selectedIconCodePoint: category?.iconCodePoint,
-              fallbackIcon: Icons.category_rounded,
+              fallbackIcon: KoinIcons.squaresFour,
               placeholder: 'Select category',
               onTap: _openCategoryPicker,
             ),
@@ -1326,7 +1326,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               selectedColor: account?.color,
               selectedIconCodePoint: account?.iconCodePoint,
               selectedLogoAsset: account?.logoAsset,
-              fallbackIcon: Icons.account_balance_wallet_rounded,
+              fallbackIcon: KoinIcons.wallet,
               placeholder: 'Select account',
               onTap: _openAccountPicker,
             ),
@@ -1359,7 +1359,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               .toList();
           if (choices.isEmpty) {
             return const KoinEmptyState(
-              icon: Icons.category_outlined,
+              icon: KoinIcons.squaresFour,
               title: 'No categories available',
               subtitle: 'Create a category to use it here',
             );
@@ -1430,7 +1430,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             .toList();
         if (choices.isEmpty) {
           return const KoinEmptyState(
-            icon: Icons.account_balance_wallet_outlined,
+            icon: KoinIcons.wallet,
             title: 'No accounts available',
             subtitle: 'Add an account in Portfolio to use it here',
           );
@@ -1522,7 +1522,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
               .toList();
           if (incomes.isEmpty) {
             return const KoinEmptyState(
-              icon: Icons.payments_outlined,
+              icon: KoinIcons.money,
               title: 'No saved recurring income yet',
               subtitle: 'Set up an income in Portfolio → Incomes first',
             );
@@ -1535,7 +1535,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                   income.frequency == PaymentFrequency.flexible
                       ? 'Flexible · Claim whenever received'
                       : 'Recurring income',
-                  Icons.payments_outlined,
+                  KoinIcons.money,
                   () => _selectIncome(income),
                 ),
             ],
@@ -1613,7 +1613,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             selectedName: category?.name,
             selectedColor: category?.color,
             selectedIconCodePoint: category?.iconCodePoint,
-            fallbackIcon: Icons.category_outlined,
+            fallbackIcon: KoinIcons.squaresFour,
             placeholder: 'Select category',
             onTap: _openCategoryPicker,
           ),
@@ -1660,8 +1660,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       selectedIconCodePoint: account?.iconCodePoint,
       selectedLogoAsset: account?.logoAsset,
       fallbackIcon: receiving
-          ? Icons.south_west_rounded
-          : Icons.north_east_rounded,
+          ? KoinIcons.arrowDownLeft
+          : KoinIcons.arrowUpRight,
       placeholder: receiving ? 'Select receiving account' : 'Select account',
       onTap: () => _openAccountPicker(destination: receiving),
     );

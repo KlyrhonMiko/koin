@@ -64,7 +64,7 @@ class DebtPurchaseCard extends StatelessWidget {
                   child: Icon(
                     category != null
                         ? IconUtils.getIcon(category.iconCodePoint)
-                        : Icons.shopping_bag_outlined,
+                        : KoinIcons.shoppingBag,
                     color: iconColor,
                     size: 20,
                   ),

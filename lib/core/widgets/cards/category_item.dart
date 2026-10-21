@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/models/models.dart';
@@ -108,7 +109,7 @@ class CategoryItem extends StatelessWidget {
           const Gap(8),
           trailing ??
               Icon(
-                Icons.chevron_right_rounded,
+                KoinIcons.caretRight,
                 size: 20,
                 color: AppTheme.textLightColor(context).withValues(alpha: 0.4),
               ),

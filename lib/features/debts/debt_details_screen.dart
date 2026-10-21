@@ -47,7 +47,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
       description: 'Are you sure you want to delete this credit/IOU? This action cannot be undone and will delete all associated payment history.',
       confirmLabel: 'Delete',
       confirmColor: AppTheme.errorColor(context),
-      icon: Icons.delete_outline_rounded,
+      icon: KoinIcons.trash,
       isDanger: true,
     );
 
@@ -310,21 +310,21 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
       children: [
         _buildActionItem(
           context,
-          icon: Icons.add_rounded,
+          icon: KoinIcons.plus,
           label: 'Payment',
           color: color,
           onTap: () => _addRepayment(context, debt),
         ),
         _buildActionItem(
           context,
-          icon: Icons.arrow_upward_rounded,
+          icon: KoinIcons.arrowUp,
           label: 'Increase',
           color: color,
           onTap: () => _addRepayment(context, debt, isIncrease: true),
         ),
         _buildActionItem(
           context,
-          icon: Icons.edit_rounded,
+          icon: KoinIcons.pencilSimple,
           label: 'Edit',
           color: AppTheme.textLightColor(context),
           onTap: () {
@@ -337,7 +337,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         ),
         _buildActionItem(
           context,
-          icon: Icons.delete_outline_rounded,
+          icon: KoinIcons.trash,
           label: 'Delete',
           color: AppTheme.expenseColor(context),
           onTap: () => _showDeleteConfirmation(debt),
@@ -459,8 +459,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                   ),
                   Icon(
                     _purchasesExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
+                        ? KoinIcons.caretUp
+                        : KoinIcons.caretDown,
                     color: AppTheme.textLightColor(context),
                   ),
                 ],
@@ -481,7 +481,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 borderRadius: BorderRadius.circular(18),
                 fillRoundedCorners: true,
                 backgroundColor: AppTheme.errorColor(context),
-                icon: Icons.delete_rounded,
+                icon: KoinIcons.trash,
                 confirmTitle: 'Delete Purchase?',
                 confirmDescription:
                     'Delete "${item.name}"? This will update the credit total. This action cannot be undone.',
@@ -583,7 +583,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.add_circle_outline_rounded,
+                    KoinIcons.plusCircle,
                     color: color,
                     size: 20,
                   ),
@@ -696,7 +696,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
           borderRadius: BorderRadius.circular(8),
           backgroundColor: AppTheme.errorColor(context).withValues(alpha: 0.15),
           iconColor: AppTheme.errorColor(context),
-          icon: Icons.delete_outline_rounded,
+          icon: KoinIcons.trash,
           confirmTitle: 'Delete Payment?',
           confirmDescription:
               'Are you sure you want to delete this payment of ${currencyFormat.format(repayment.amount)}? This action cannot be undone.',
@@ -708,8 +708,8 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
             child: KoinActivityRow(
               leading: KoinIconBadge(
                 icon: repayment.isIncrease
-                    ? Icons.north_east_rounded
-                    : Icons.south_west_rounded,
+                    ? KoinIcons.arrowUpRight
+                    : KoinIcons.arrowDownLeft,
                 color: color,
               ),
               title: repayment.note?.isNotEmpty == true

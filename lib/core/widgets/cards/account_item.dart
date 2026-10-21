@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/models/models.dart';
@@ -188,8 +189,8 @@ class AccountItem extends StatelessWidget {
                       onPressed: onPrivateToggle,
                       icon: Icon(
                         isPrivate
-                            ? Icons.visibility_off_rounded
-                            : Icons.visibility_rounded,
+                            ? KoinIcons.eyeSlash
+                            : KoinIcons.eye,
                         size: 18,
                         color: textColor.withValues(alpha: 0.8),
                       ),
@@ -365,8 +366,8 @@ class AccountItem extends StatelessWidget {
                             height: 48,
                             child: Icon(
                               isPrivate
-                                  ? Icons.visibility_off_rounded
-                                  : Icons.visibility_rounded,
+                                  ? KoinIcons.eyeSlash
+                                  : KoinIcons.eye,
                               size: 20,
                               color: colored
                                   ? (foreground ?? Colors.white).withValues(

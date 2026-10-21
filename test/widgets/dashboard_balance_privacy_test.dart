@@ -31,7 +31,7 @@ void main() {
                 ? 'MariBank Credit Account for monthly household bills'
                 : 'Account ${i + 1}',
             initialBalance: i == 2 ? 100000 : (i + 1) * 110.0,
-            iconCodePoint: Icons.wallet.codePoint,
+            iconCodePoint: KoinIcons.wallet.codePoint,
             colorHex: '#00D09E',
             excludeFromTotal: i == 3,
           ),

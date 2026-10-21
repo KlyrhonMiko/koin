@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -70,7 +71,7 @@ class _UnsavedChangesGuardState extends State<UnsavedChangesGuard> {
       confirmLabel: 'Discard',
       isDanger: true,
       confirmColor: AppTheme.errorColor(context),
-      icon: Icons.delete_outline_rounded,
+      icon: KoinIcons.trash,
     );
     _promptOpen = false;
     if (!mounted || discard != true || (widget.isSaving?.call() ?? false)) {

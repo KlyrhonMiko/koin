@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 
@@ -26,7 +27,7 @@ class KoinErrorState extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(KoinIcons.arrowClockwise),
             label: const Text('Retry'),
           ),
         ],

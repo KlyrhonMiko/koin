@@ -46,7 +46,7 @@ void main() {
   final account = Account(
     id: 'bank',
     name: 'Main account',
-    iconCodePoint: Icons.wallet.codePoint,
+    iconCodePoint: KoinIcons.wallet.codePoint,
     colorHex: '#00C9A0',
     initialBalance: 10000,
   );
@@ -782,7 +782,7 @@ void main() {
               .selected,
           true,
         );
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(KoinIcons.check), findsOneWidget);
         await screenshot(tester, 'frequency-picker-$dark');
         await tester.tap(find.byKey(const ValueKey('frequency_monthly')));
         await tester.pumpAndSettle();

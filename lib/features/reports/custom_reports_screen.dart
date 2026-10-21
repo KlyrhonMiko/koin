@@ -212,7 +212,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             context,
             'Transactions',
             filtered.length.toDouble(),
-            Icons.receipt_long_rounded,
+            KoinIcons.receipt,
             AppTheme.primaryColor(context),
             null,
           );
@@ -220,7 +220,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             context,
             'Total Volume',
             totalAmount,
-            Icons.analytics_rounded,
+            KoinIcons.chartBar,
             AppTheme.secondaryColor(context),
             currencySymbol,
           );
@@ -439,7 +439,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     final csv = _buildExportButton(
       context,
       'Export CSV',
-      Icons.grid_on_rounded,
+      KoinIcons.gridFour,
       AppTheme.dividerColor(context).withValues(alpha: 0.5),
       AppTheme.textColor(context),
       () => _handleExport(
@@ -453,7 +453,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     final pdf = _buildExportButton(
       context,
       'Export PDF',
-      Icons.picture_as_pdf_rounded,
+      KoinIcons.filePdf,
       AppTheme.primaryColor(context),
       AppTheme.primaryColor(context),
       () => _handleExport(

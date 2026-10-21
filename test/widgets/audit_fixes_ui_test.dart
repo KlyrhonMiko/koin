@@ -77,13 +77,13 @@ void main() {
     id: 'cash',
     name: 'Cash',
     initialBalance: 1000,
-    iconCodePoint: Icons.wallet_rounded.codePoint,
+    iconCodePoint: KoinIcons.wallet.codePoint,
     colorHex: '#00D09E',
   );
   final food = TransactionCategory(
     id: 'food',
     name: 'Food',
-    iconCodePoint: Icons.restaurant.codePoint,
+    iconCodePoint: KoinIcons.forkKnife.codePoint,
     colorHex: '#00D09E',
     type: TransactionType.expense,
   );
@@ -203,7 +203,7 @@ void main() {
               id: 'salary',
               name: 'Salary',
               type: TransactionType.income,
-              iconCodePoint: Icons.attach_money.codePoint,
+              iconCodePoint: KoinIcons.currencyDollar.codePoint,
               colorHex: '#8BC34A',
             ),
           ],
@@ -480,8 +480,8 @@ void main() {
             ),
             IconPaletteGrid(
               activeColor: const Color(0xFF00D09E),
-              icons: const [Icons.wallet_rounded],
-              selectedIcon: Icons.wallet_rounded,
+              icons: const [KoinIcons.wallet],
+              selectedIcon: KoinIcons.wallet,
               onIconSelected: (_) {},
             ),
           ],

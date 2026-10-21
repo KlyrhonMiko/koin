@@ -475,7 +475,7 @@ void main() {
       expect(expression, '100/0');
       expect(result, '');
       expect(find.text('Cannot divide by zero'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.backspace_outlined));
+      await tester.tap(find.byIcon(KoinIcons.backspace));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();

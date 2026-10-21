@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
@@ -111,7 +112,7 @@ class SelectionTile extends StatelessWidget {
                 ),
                 ?trailing,
                 Icon(
-                  Icons.chevron_right_rounded,
+                  KoinIcons.caretRight,
                   color: AppTheme.textLightColor(
                     context,
                   ).withValues(alpha: 0.4),

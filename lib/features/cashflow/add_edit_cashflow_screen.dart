@@ -319,7 +319,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           'Are you sure you want to delete this $_domainNoun? This action cannot be undone.',
       confirmLabel: 'Delete $_domainNoun',
       confirmColor: AppTheme.expenseColor(context),
-      icon: Icons.delete_outline_rounded,
+      icon: KoinIcons.trash,
       isDanger: true,
     );
 
@@ -447,7 +447,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
             IconButton(
               tooltip: 'Delete $_domainNoun',
               icon: Icon(
-                Icons.delete_outline_rounded,
+                KoinIcons.trash,
                 color: AppTheme.expenseContentColor(context),
               ),
               onPressed: _showDeleteConfirmation,
@@ -464,11 +464,11 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
               _fieldLabel(context, 'Schedule'),
               const Gap(8),
               SelectionTile(
-                fallbackIcon: Icons.repeat_rounded,
+                fallbackIcon: KoinIcons.repeat,
                 label: 'Repeats',
                 selectedName: _selectedFrequency.label,
                 selectedColor: primaryColor,
-                selectedIconCodePoint: Icons.repeat_rounded.codePoint,
+                selectedIconCodePoint: KoinIcons.repeat.codePoint,
                 placeholder: 'Choose frequency',
                 onTap: () async {
                   final frequency = await _selectFrequency(
@@ -511,7 +511,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 children: [
                   SelectionTile(
                     asCard: false,
-                    fallbackIcon: Icons.category_rounded,
+                    fallbackIcon: KoinIcons.squaresFour,
                     label: 'Category',
                     selectedName: category?.name,
                     selectedColor: category?.color,
@@ -521,7 +521,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                   ),
                   SelectionTile(
                     asCard: false,
-                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    fallbackIcon: KoinIcons.wallet,
                     label: _isIncome ? 'Receiving account' : 'Payment account',
                     selectedName: account?.name,
                     selectedColor: account?.color,
@@ -604,7 +604,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 IconButton(
                   tooltip: 'Remove end date',
                   onPressed: () => setState(() => _endDate = null),
-                  icon: const Icon(Icons.clear_rounded),
+                  icon: const Icon(KoinIcons.x),
                 ),
               ],
             ),
@@ -616,7 +616,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
               onPressed: () => setState(
                 () => _endDate = _startDate.add(const Duration(days: 30)),
               ),
-              icon: const Icon(Icons.event_available_outlined),
+              icon: const Icon(KoinIcons.calendarCheck),
               label: const Text('Add end date'),
             ),
           )

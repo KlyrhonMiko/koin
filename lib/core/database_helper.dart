@@ -1,3 +1,5 @@
+import 'package:koin/core/migrations/phosphor_icon_migration.dart';
+import 'package:koin/core/icons.dart';
 import 'package:koin/core/database_version.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -37,6 +39,8 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // Convert existing records before older upgrades seed new Phosphor records.
+    if (oldVersion < 46) await PhosphorIconMigration.upgrade(db);
     if (oldVersion < 44) {
       // Do this first: older migrations serialize models when seeding records.
       // Tables absent in legacy versions are created with the new column below.
@@ -827,6 +831,7 @@ CREATE TABLE transactions (
     await _createTransactionIndexes(db);
     await _insertDefaultCategories(db);
     await _insertDefaultAccounts(db);
+    await PhosphorIconMigration.markCurrent(db);
   }
 
   Future _insertDefaultCategories(DatabaseExecutor db) async {
@@ -834,56 +839,56 @@ CREATE TABLE transactions (
       TransactionCategory(
         id: 'cat_groceries',
         name: 'Groceries',
-        iconCodePoint: Icons.shopping_cart.codePoint,
+        iconCodePoint: KoinIcons.shoppingCart.codePoint,
         colorHex: '#4CAF50',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_food',
         name: 'Food',
-        iconCodePoint: Icons.restaurant.codePoint,
+        iconCodePoint: KoinIcons.forkKnife.codePoint,
         colorHex: '#FF9800',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_transport',
         name: 'Transport',
-        iconCodePoint: Icons.directions_car.codePoint,
+        iconCodePoint: KoinIcons.car.codePoint,
         colorHex: '#2196F3',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_salary',
         name: 'Salary',
-        iconCodePoint: Icons.attach_money.codePoint,
+        iconCodePoint: KoinIcons.currencyDollar.codePoint,
         colorHex: '#8BC34A',
         type: TransactionType.income,
       ),
       TransactionCategory(
         id: 'cat_entertainment',
         name: 'Entertainment',
-        iconCodePoint: Icons.movie.codePoint,
+        iconCodePoint: KoinIcons.filmSlate.codePoint,
         colorHex: '#9C27B0',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_health',
         name: 'Health',
-        iconCodePoint: Icons.local_hospital.codePoint,
+        iconCodePoint: KoinIcons.firstAid.codePoint,
         colorHex: '#F44336',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_others',
         name: 'Others',
-        iconCodePoint: Icons.category.codePoint,
+        iconCodePoint: KoinIcons.squaresFour.codePoint,
         colorHex: '#607D8B',
         type: TransactionType.expense,
       ),
       TransactionCategory(
         id: 'cat_others_inc',
         name: 'Other Income',
-        iconCodePoint: Icons.add_circle.codePoint,
+        iconCodePoint: KoinIcons.plusCircle.codePoint,
         colorHex: '#00D09E',
         type: TransactionType.income,
       ),
@@ -899,21 +904,21 @@ CREATE TABLE transactions (
       Account(
         id: 'default_account',
         name: 'Cash',
-        iconCodePoint: Icons.payments_rounded.codePoint,
+        iconCodePoint: KoinIcons.money.codePoint,
         colorHex: '#00D09E',
         position: 0,
       ),
       Account(
         id: 'bank_account',
         name: 'Bank',
-        iconCodePoint: Icons.account_balance_rounded.codePoint,
+        iconCodePoint: KoinIcons.bank.codePoint,
         colorHex: '#3B82F6',
         position: 1,
       ),
       Account(
         id: 'savings_account',
         name: 'Savings',
-        iconCodePoint: Icons.savings_rounded.codePoint,
+        iconCodePoint: KoinIcons.piggyBank.codePoint,
         colorHex: '#F59E0B',
         position: 2,
       ),

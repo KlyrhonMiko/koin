@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
@@ -31,7 +32,7 @@ class KoinVisibilityButton extends StatelessWidget {
     iconSize: iconSize,
     color: color.withValues(alpha: hidden ? 0.6 : 0.9),
     icon: Icon(
-      hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+      hidden ? KoinIcons.eyeSlash : KoinIcons.eye,
     ),
   );
 }

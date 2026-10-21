@@ -242,7 +242,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         // Transaction Type
                         const FormSectionTitle.subhead(
                           title: 'Transaction Type',
-                          icon: Icons.swap_vert_rounded,
+                          icon: KoinIcons.arrowsDownUp,
                         ),
                         const Gap(12),
                         SingleChildScrollView(
@@ -252,25 +252,25 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _buildTypeChip(
                                 null,
                                 'All',
-                                Icons.grid_view_rounded,
+                                KoinIcons.squaresFour,
                               ),
                               const Gap(8),
                               _buildTypeChip(
                                 TransactionType.income,
                                 'Income',
-                                Icons.arrow_downward_rounded,
+                                KoinIcons.arrowDown,
                               ),
                               const Gap(8),
                               _buildTypeChip(
                                 TransactionType.expense,
                                 'Expense',
-                                Icons.arrow_upward_rounded,
+                                KoinIcons.arrowUp,
                               ),
                               const Gap(8),
                               _buildTypeChip(
                                 TransactionType.transfer,
                                 'Transfer',
-                                Icons.swap_horiz_rounded,
+                                KoinIcons.arrowsLeftRight,
                               ),
                             ],
                           ),
@@ -280,7 +280,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         // Date Range
                         const FormSectionTitle.subhead(
                           title: 'Date Range',
-                          icon: Icons.calendar_today_rounded,
+                          icon: KoinIcons.calendarBlank,
                         ),
                         const Gap(12),
                         DateRangeSelector(
@@ -300,7 +300,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         // Categories
                         const FormSectionTitle.subhead(
                           title: 'Categories',
-                          icon: Icons.category_rounded,
+                          icon: KoinIcons.squaresFour,
                         ),
                         const Gap(12),
                         Wrap(
@@ -315,7 +315,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         // Accounts
                         const FormSectionTitle.subhead(
                           title: 'Accounts',
-                          icon: Icons.account_balance_wallet_rounded,
+                          icon: KoinIcons.wallet,
                         ),
                         const Gap(12),
                         Wrap(
@@ -330,7 +330,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         // Amount Range
                         const FormSectionTitle.subhead(
                           title: 'Amount Range',
-                          icon: Icons.payments_rounded,
+                          icon: KoinIcons.money,
                         ),
                         const Gap(12),
                         Row(
@@ -400,7 +400,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 ),
                 child: KoinPrimaryButton(
                   label: 'Apply Filters',
-                  icon: Icons.check_rounded,
+                  icon: KoinIcons.check,
                   onPressed: _apply,
                 ),
               ),

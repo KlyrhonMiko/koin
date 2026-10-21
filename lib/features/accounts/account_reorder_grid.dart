@@ -188,7 +188,7 @@ class _AccountReorderGridState extends State<AccountReorderGrid>
         border: Border.all(color: AppTheme.primaryColor(context), width: 2),
       ),
       child: Icon(
-        Icons.drag_indicator_rounded,
+        KoinIcons.dotsSixVertical,
         color: AppTheme.primaryColor(context),
       ),
     ),

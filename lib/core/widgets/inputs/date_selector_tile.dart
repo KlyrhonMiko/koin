@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -62,7 +63,7 @@ class DateSelectorTile extends StatelessWidget {
     super.key,
     required this.label,
     required this.date,
-    this.icon = Icons.calendar_today_rounded,
+    this.icon = KoinIcons.calendarBlank,
     this.onTap,
     this.onDateSelected,
     this.dateFormat,

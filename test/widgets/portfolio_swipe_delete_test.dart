@@ -23,7 +23,7 @@ void main() {
       id: 'mari',
       name: 'MariBank',
       initialBalance: 263,
-      iconCodePoint: Icons.account_balance.codePoint,
+      iconCodePoint: KoinIcons.bank.codePoint,
       colorHex: '#008080',
     );
     final goal = SavingsGoal(

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:koin/core/icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -74,7 +74,7 @@ class DailyInterestRepository {
               TransactionCategory(
                 id: 'cat_interest',
                 name: 'Interest',
-                iconCodePoint: Icons.savings_rounded.codePoint,
+                iconCodePoint: KoinIcons.piggyBank.codePoint,
                 colorHex: '#00A884',
                 type: TransactionType.income,
               ).toMap(),

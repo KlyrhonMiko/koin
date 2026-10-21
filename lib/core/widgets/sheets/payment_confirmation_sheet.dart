@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 
@@ -364,7 +365,7 @@ class _PaymentConfirmationSheetState
                         // Category row
                         SelectionTile(
                           asCard: false,
-                          fallbackIcon: Icons.category_rounded,
+                          fallbackIcon: KoinIcons.squaresFour,
                           label: 'Category',
                           selectedName: selectedCategory?.name,
                           selectedColor: selectedCategory?.color,
@@ -385,7 +386,7 @@ class _PaymentConfirmationSheetState
                         // Account row
                         SelectionTile(
                           asCard: false,
-                          fallbackIcon: Icons.account_balance_wallet_rounded,
+                          fallbackIcon: KoinIcons.wallet,
                           label: 'Account',
                           selectedName: selectedAccount?.name,
                           selectedColor: selectedAccount?.color,

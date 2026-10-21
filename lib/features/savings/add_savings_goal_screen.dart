@@ -268,10 +268,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
               KoinChoiceControl(
                 key: const ValueKey('savings_type_selector'),
                 segments: const [
-                  KoinSegmentItem(label: 'Goal', icon: Icons.flag_rounded),
+                  KoinSegmentItem(label: 'Goal', icon: KoinIcons.flag),
                   KoinSegmentItem(
                     label: 'Savings',
-                    icon: Icons.savings_rounded,
+                    icon: KoinIcons.piggyBank,
                   ),
                 ],
                 selectedIndex: _isStash ? 1 : 0,
@@ -310,7 +310,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     final end = DateSelectorTile(
                       label: 'Target date',
                       date: _endDate,
-                      icon: Icons.flag_rounded,
+                      icon: KoinIcons.flag,
                       onTap: () => _selectDate(context, false),
                     );
                     if (constraints.maxWidth < 340 ||
@@ -342,7 +342,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(
-                                Icons.insights_rounded,
+                                KoinIcons.chartLineUp,
                                 size: 18,
                                 color: primaryColor,
                               ),
@@ -374,14 +374,14 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
               const Gap(12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.tips_and_updates_outlined),
+                leading: const Icon(KoinIcons.lightbulb),
                 title: const Text('Savings Helper'),
                 subtitle: Text(
                   _plan == null
                       ? 'See how much you could save and when'
                       : '${_plan!.frequency.label} · ${currency.formatter.format(_plan!.amount)}',
                 ),
-                trailing: const Icon(Icons.chevron_right_rounded),
+                trailing: const Icon(KoinIcons.caretRight),
                 onTap: () async {
                   final result = await SavingsPlanEditor.open(
                     context,
@@ -422,7 +422,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                 children: [
                   SelectionTile(
                     asCard: false,
-                    fallbackIcon: Icons.account_balance_wallet_rounded,
+                    fallbackIcon: KoinIcons.wallet,
                     label: 'Linked account',
                     selectedName: linkedAccount?.name,
                     selectedColor: linkedAccount?.color,

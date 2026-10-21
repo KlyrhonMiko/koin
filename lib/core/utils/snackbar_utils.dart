@@ -1,3 +1,4 @@
+import 'package:koin/core/icons.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -185,15 +186,15 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
     final (accentColor, icon) = switch (widget.type) {
       SnackBarType.success => (
         AppTheme.incomeContentColor(context),
-        Icons.check_rounded,
+        KoinIcons.check,
       ),
       SnackBarType.error => (
         AppTheme.errorColor(context),
-        Icons.error_outline_rounded,
+        KoinIcons.warningCircle,
       ),
       SnackBarType.info => (
         AppTheme.primaryColor(context),
-        Icons.info_outline_rounded,
+        KoinIcons.info,
       ),
     };
 

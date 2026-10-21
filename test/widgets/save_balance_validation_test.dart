@@ -30,7 +30,7 @@ void main() {
     id: 'cash',
     name: 'Cash',
     initialBalance: 100,
-    iconCodePoint: Icons.wallet.codePoint,
+    iconCodePoint: KoinIcons.wallet.codePoint,
     colorHex: '#008080',
   );
   final goal = SavingsGoal(
@@ -45,7 +45,7 @@ void main() {
     id: 'food',
     name: 'Food',
     type: TransactionType.expense,
-    iconCodePoint: Icons.restaurant.codePoint,
+    iconCodePoint: KoinIcons.forkKnife.codePoint,
     colorHex: '#008080',
   );
   setUp(() async {

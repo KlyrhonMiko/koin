@@ -169,7 +169,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                           ),
                           IconButton(
                             tooltip: 'Close',
-                            icon: const Icon(Icons.close_rounded),
+                            icon: const Icon(KoinIcons.x),
                             onPressed: () => Navigator.pop(ctx),
                           ),
                         ],
@@ -383,7 +383,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                                   Builder(
                                     builder: (ctx) {
                                       Widget child = SelectionTile(
-                                        fallbackIcon: Icons.category_rounded,
+                                        fallbackIcon: KoinIcons.squaresFour,
                                         label: 'Linked category',
                                         selectedName: selectedCategory?.name,
                                         selectedColor: selectedCategory?.color,

@@ -92,7 +92,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                         );
                       },
                       icon: Icon(
-                        Icons.summarize_outlined,
+                        KoinIcons.fileText,
                         color: AppTheme.textColor(context),
                       ),
                       tooltip: 'Custom Reports',

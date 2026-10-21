@@ -1,3 +1,5 @@
+import 'package:koin/core/utils/icon_utils.dart';
+
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -54,19 +56,20 @@ class ReportExportPayload {
 class ReportService {
   static Future<void>? _iconFontLoaded;
 
-  /// Flutter ships Material Icons as CFF OpenType, unsupported by dart_pdf's
-  /// TrueType embedding. Render the bundled glyphs at high resolution instead.
+  /// Render the same bundled Phosphor glyphs used by account/category rows.
   static Future<pw.MemoryImage> _renderIcon(
     int codePoint,
     String colorHex,
   ) async {
-    _iconFontLoaded ??= (FontLoader(
-      'KoinExportIcons',
-    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    _iconFontLoaded ??=
+        (FontLoader('KoinExportIcons')..addFont(
+              rootBundle.load('packages/phosphor_icons/lib/fonts/Phosphor-Fill.ttf'),
+            ))
+            .load();
     await _iconFontLoaded;
     final painter = painting.TextPainter(
       text: painting.TextSpan(
-        text: String.fromCharCode(codePoint),
+        text: String.fromCharCode(IconUtils.getIcon(codePoint).codePoint),
         style: painting.TextStyle(
           fontFamily: 'KoinExportIcons',
           fontSize: 64,

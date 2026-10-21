@@ -54,7 +54,7 @@ void main() {
               id: 'cash',
               name: 'Cash',
               initialBalance: 100,
-              iconCodePoint: Icons.payments.codePoint,
+              iconCodePoint: KoinIcons.money.codePoint,
               colorHex: '#008080',
             ),
           ],
@@ -66,7 +66,7 @@ void main() {
             TransactionCategory(
               id: 'food',
               name: 'Food',
-              iconCodePoint: Icons.restaurant.codePoint,
+              iconCodePoint: KoinIcons.forkKnife.codePoint,
               colorHex: '#008080',
               type: TransactionType.expense,
               budget: 10,

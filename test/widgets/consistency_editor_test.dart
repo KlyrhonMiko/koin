@@ -36,7 +36,7 @@ void main() {
         id: 'cash',
         name: 'Cash',
         initialBalance: 200,
-        iconCodePoint: Icons.wallet.codePoint,
+        iconCodePoint: KoinIcons.wallet.codePoint,
         colorHex: '#00D09E',
       );
       final savings = InMemorySavingsAdapter(
@@ -54,7 +54,7 @@ void main() {
       final food = TransactionCategory(
         id: 'food',
         name: 'Food',
-        iconCodePoint: Icons.restaurant.codePoint,
+        iconCodePoint: KoinIcons.forkKnife.codePoint,
         colorHex: '#00D09E',
         type: TransactionType.expense,
       );
@@ -121,7 +121,7 @@ void main() {
   final category = TransactionCategory(
     id: 'food',
     name: 'Food',
-    iconCodePoint: Icons.restaurant.codePoint,
+    iconCodePoint: KoinIcons.forkKnife.codePoint,
     colorHex: '#00D09E',
     type: TransactionType.expense,
     budgetPercent: 25,

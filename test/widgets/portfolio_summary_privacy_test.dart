@@ -94,7 +94,7 @@ void main() {
             findsOneWidget,
           );
           if (!savings) {
-            expect(find.byIcon(Icons.history_rounded), findsNothing);
+            expect(find.byIcon(KoinIcons.clockCounterClockwise), findsNothing);
           }
           final label = savings ? 'total saved' : 'net balance';
           await tester.tap(find.byTooltip('Hide $label'));

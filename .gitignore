@@ -23,6 +23,7 @@ Desktop.ini
 *~
 *.bak
 *.tmp
+/local-backups/
 
 # Node.js
 node_modules/

@@ -472,14 +472,14 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         ),
                         child: Icon(
                           isListening
-                              ? Icons.stop_rounded
+                              ? KoinIcons.stop
                               : showPreview
                               ? (_parsedData!.category != null
                                     ? IconUtils.getIcon(
                                         _parsedData!.category!.iconCodePoint,
                                       )
-                                    : Icons.check_rounded)
-                              : Icons.close_rounded,
+                                    : KoinIcons.check)
+                              : KoinIcons.x,
                           size: 32,
                           color: (isListening || showPreview)
                               ? Colors.white
@@ -628,7 +628,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.refresh_rounded,
+                                KoinIcons.arrowClockwise,
                                 size: 18,
                                 color: AppTheme.textLightColor(context),
                               ),
@@ -672,7 +672,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.check_rounded,
+                                KoinIcons.check,
                                 size: 20,
                                 color: AppTheme.gradientForeground(
                                   context,
@@ -744,7 +744,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               // Amount row
               _buildPreviewRow(
                 context,
-                icon: Icons.payments_rounded,
+                icon: KoinIcons.money,
                 label: 'Amount',
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -846,7 +846,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                       onTap: _editCategory,
                       icon: data.category != null
                           ? IconUtils.getIcon(data.category!.iconCodePoint)
-                          : Icons.category_rounded,
+                          : KoinIcons.squaresFour,
                       iconColor: data.category?.color,
                       label: 'Category',
                       trailing: Row(
@@ -883,7 +883,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                             ),
                           const Gap(8),
                           Icon(
-                            Icons.chevron_right_rounded,
+                            KoinIcons.caretRight,
                             size: 18,
                             color: AppTheme.textLightColor(context)
                                 .withValues(alpha: 0.3),
@@ -929,7 +929,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               _buildPreviewRow(
                 context,
                 onTap: _editAccount,
-                icon: Icons.account_balance_wallet_rounded,
+                icon: KoinIcons.wallet,
                 iconColor: data.account?.color,
                 label: data.type == TransactionType.transfer
                     ? 'From'
@@ -968,7 +968,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                       ),
                     const Gap(8),
                     Icon(
-                      Icons.chevron_right_rounded,
+                      KoinIcons.caretRight,
                       size: 18,
                       color: AppTheme.textLightColor(context)
                           .withValues(alpha: 0.3),
@@ -983,7 +983,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 _buildPreviewRow(
                   context,
                   onTap: _editToAccount,
-                  icon: Icons.account_balance_wallet_rounded,
+                  icon: KoinIcons.wallet,
                   iconColor: data.toAccount?.color,
                   label: 'To',
                   trailing: Row(
@@ -1020,7 +1020,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                         ),
                       const Gap(8),
                       Icon(
-                        Icons.chevron_right_rounded,
+                        KoinIcons.caretRight,
                         size: 18,
                         color: AppTheme.textLightColor(context)
                             .withValues(alpha: 0.3),
@@ -1034,7 +1034,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               // Note row
               _buildPreviewRow(
                 context,
-                icon: Icons.sticky_note_2_rounded,
+                icon: KoinIcons.note,
                 label: 'Note',
                 trailing: Flexible(
                   child: TextField(

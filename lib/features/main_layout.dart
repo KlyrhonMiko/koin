@@ -21,16 +21,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   final List<Widget?> _pages = List.filled(4, null);
   static const _labels = ['Home', 'Activity', 'Budgets', 'Portfolio'];
   static const _icons = [
-    Icons.home_outlined,
-    Icons.receipt_long_outlined,
-    Icons.savings_outlined,
-    Icons.account_balance_wallet_outlined,
+    KoinIcons.house,
+    KoinIcons.chartBar,
+    KoinIcons.calculator,
+    KoinIcons.wallet,
   ];
   static const _activeIcons = [
-    Icons.home_rounded,
-    Icons.receipt_long_rounded,
-    Icons.savings_rounded,
-    Icons.account_balance_wallet_rounded,
+    KoinIcons.houseFill,
+    KoinIcons.chartBarFill,
+    KoinIcons.calculatorFill,
+    KoinIcons.walletFill,
   ];
 
   void _select(int index) {
@@ -57,7 +57,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         backgroundColor: AppTheme.primaryColor(context),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add_rounded, size: 38),
+        child: const Icon(KoinIcons.plusBold, size: 32, color: Colors.black),
       ),
     ),
   );
