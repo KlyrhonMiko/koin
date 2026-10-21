@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
+import 'package:koin/core/ledger/transaction_rules.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -36,6 +37,19 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 44) {
+      // Do this first: older migrations serialize models when seeding records.
+      // Tables absent in legacy versions are created with the new column below.
+      for (final table in ['accounts', 'categories']) {
+        final columns = await db.rawQuery('PRAGMA table_info($table)');
+        if (columns.isNotEmpty &&
+            !columns.any((column) => column['name'] == 'isArchived')) {
+          await db.execute(
+            'ALTER TABLE $table ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+      }
+    }
     if (oldVersion < 43) {
       final columns = await db.rawQuery('PRAGMA table_info(accounts)');
       if (columns.isNotEmpty) {
@@ -440,6 +454,20 @@ CREATE TABLE debt_items (
         ) = 1
       """);
     }
+    await _createTransactionIndexes(db);
+  }
+
+  Future<void> _createTransactionIndexes(DatabaseExecutor db) async {
+    for (final entry in {
+      'transaction_date': 'date DESC, id DESC',
+      'transaction_source_date': 'accountId, date',
+      'transaction_destination_date': 'toAccountId, date',
+      'transaction_category_date': 'categoryId, date',
+    }.entries) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS ${entry.key} ON transactions(${entry.value})',
+      );
+    }
   }
 
   Future<void> _createSavingsSpendingLinks(Database db) async {
@@ -691,6 +719,7 @@ CREATE TABLE savings_logs (
 CREATE TABLE accounts (
   id $idType,
   name $textType,
+  isArchived INTEGER NOT NULL DEFAULT 0,
   iconCodePoint $intType,
   colorHex $textType,
   initialBalance $realType,
@@ -722,6 +751,7 @@ CREATE TABLE accounts (
 CREATE TABLE categories (
   id $idType,
   name $textType,
+  isArchived INTEGER NOT NULL DEFAULT 0,
   iconCodePoint $intType,
   colorHex $textType,
   type $textType,
@@ -773,6 +803,7 @@ CREATE TABLE transactions (
     await _createCategorizationHistoryTriggers(db);
 
     // Insert default data
+    await _createTransactionIndexes(db);
     await _insertDefaultCategories(db);
     await _insertDefaultAccounts(db);
   }
@@ -1132,6 +1163,41 @@ CREATE TABLE transactions (
       );
       if (repayments.isNotEmpty) {
         final repayment = DebtRepayment.fromMap(repayments.first);
+        final debts = await txn.query(
+          'debts',
+          where: 'id = ?',
+          whereArgs: [repayment.debtId],
+        );
+        if (debts.isEmpty) {
+          throw const FinancialValidationException(
+            'This debt is no longer available',
+          );
+        }
+        final debt = Debt.fromMap(debts.single);
+        final expectedType =
+            TransactionRules.debtIsExpense(
+              debt,
+              isIncrease: repayment.isIncrease,
+            )
+            ? TransactionType.expense
+            : TransactionType.income;
+        if (updated.type != expectedType) {
+          throw const FinancialValidationException(
+            'Keep the payment type linked to this debt',
+          );
+        }
+        TransactionRules.amount(updated.amount);
+        final newPaid =
+            debt.currentAmount +
+            (repayment.isIncrease ? 0 : updated.amount - repayment.amount);
+        final newTotal =
+            debt.amount +
+            (repayment.isIncrease ? updated.amount - repayment.amount : 0);
+        if (TransactionRules.exceedsBalance(newPaid, newTotal)) {
+          throw const FinancialValidationException(
+            'You cannot pay more than the remaining debt',
+          );
+        }
         await txn.update(
           'debt_repayments',
           {

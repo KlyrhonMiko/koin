@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -10,6 +11,11 @@ class KoinSnackBar {
   // Weak overlay keys keep independent navigators isolated without retaining
   // navigators after they have been disposed.
   static final Expando<VoidCallback> _activeDismissals = Expando();
+
+  static void dismiss(BuildContext context) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay != null) _activeDismissals[overlay]?.call();
+  }
 
   static void show(
     BuildContext context, {
@@ -125,7 +131,7 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
       reverseCurve: Curves.easeInCubic,
     );
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.2),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(animation);
     _opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animation);
@@ -170,6 +176,12 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final media = MediaQuery.of(context);
+    // Reserve the app's navigation/save area, or rise above an open keyboard.
+    final bottomInset = math.max(
+      media.viewInsets.bottom,
+      media.viewPadding.bottom + 80,
+    );
     final (accentColor, icon) = switch (widget.type) {
       SnackBarType.success => (
         AppTheme.incomeContentColor(context),
@@ -186,87 +198,100 @@ class _SnackBarWidgetState extends State<_SnackBarWidget>
     };
 
     return SafeArea(
+      bottom: false,
       child: Align(
-        alignment: Alignment.topCenter,
+        alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            KoinSpacing.screenInset,
-            12,
+          padding: EdgeInsets.fromLTRB(
             KoinSpacing.screenInset,
             0,
+            KoinSpacing.screenInset,
+            bottomInset + 12,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: SlideTransition(
-              position: _offsetAnimation,
-              child: FadeTransition(
-                opacity: _opacityAnimation,
-                child: Dismissible(
-                  key: ValueKey(this),
-                  direction: DismissDirection.up,
-                  resizeDuration: null,
-                  onDismissed: (_) => widget.onDismiss(),
-                  child: Semantics(
-                    container: true,
-                    liveRegion: true,
-                    onDismiss: _dismiss,
-                    child: Material(
-                      color: AppTheme.surfaceColor(context),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: AppTheme.dividerColor(context)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(icon, color: accentColor, size: 21),
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: IntrinsicWidth(
+              child: SlideTransition(
+                position: _offsetAnimation,
+                child: FadeTransition(
+                  opacity: _opacityAnimation,
+                  child: Dismissible(
+                    key: ValueKey(this),
+                    direction: DismissDirection.down,
+                    resizeDuration: null,
+                    onDismissed: (_) => widget.onDismiss(),
+                    child: Semantics(
+                      container: true,
+                      liveRegion: true,
+                      onDismiss: _dismiss,
+                      child: Material(
+                        color: AppTheme.surfaceColor(context),
+                        elevation: 4,
+                        shadowColor: Colors.black.withValues(alpha: 0.15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: AppTheme.dividerColor(context)
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
-                            const Gap(12),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 1,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.message,
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            color: AppTheme.textColor(context),
-                                            height: 1.3,
-                                          ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(icon, color: accentColor, size: 18),
+                                const Gap(10),
+                                Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 1,
                                     ),
-                                    if (widget.subtitle?.isNotEmpty ??
-                                        false) ...[
-                                      const Gap(KoinSpacing.labelGap),
-                                      Text(
-                                        widget.subtitle!,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: AppTheme.textLightColor(
-                                                context,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          widget.message,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color: AppTheme.textColor(
+                                                  context,
+                                                ),
+                                                fontWeight:
+                                                    KoinTypography.labelWeight,
+                                                height: 1.3,
                                               ),
-                                              height: 1.4,
-                                            ),
-                                      ),
-                                    ],
-                                  ],
+                                        ),
+                                        if (widget.subtitle?.isNotEmpty ??
+                                            false) ...[
+                                          const Gap(KoinSpacing.labelGap),
+                                          Text(
+                                            widget.subtitle!,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color:
+                                                      AppTheme.textLightColor(
+                                                        context,
+                                                      ),
+                                                  height: 1.4,
+                                                ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

@@ -403,7 +403,24 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard schedule changes?',
+    draft: () => (
+      _titleController.text,
+      _amountController.text,
+      _notesController.text,
+      _selectedType,
+      _selectedCategoryId,
+      _selectedAccountId,
+      _startDate,
+      _endDate,
+      _selectedFrequency,
+      _isAutoProcess,
+    ),
+    listenables: [_titleController, _amountController, _notesController],
+    isSaving: () => _saving,
+    child: KoinFormTheme(builder: _buildContent),
+  );
 
   Widget _buildContent(BuildContext context) {
     final isEditing = widget.payment != null;

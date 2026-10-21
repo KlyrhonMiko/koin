@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:sqflite/sqflite.dart';
+
 import 'transaction_rules.dart';
 
 /// Represents the outcome of voiding/deleting a transaction,
@@ -159,28 +160,55 @@ class SqliteLedgerAdapter implements Ledger {
     String? excluding,
     bool protectSavings = false,
   }) async {
-    final accounts = (await db.query('accounts')).map(Account.fromMap).toList();
-    final transactions = (await db.query('transactions'))
-        .map(AppTransaction.fromMap)
-        .where(
-          (tx) =>
-              tx.id != excluding &&
-              (excluding == null || tx.transferId != excluding),
-        );
+    final accounts = (await db.query(
+      'accounts',
+      where: 'id = ?',
+      whereArgs: [accountId],
+    )).map(Account.fromMap).toList();
+    final now = DateTime.now().toIso8601String();
+    final totals = await db.rawQuery(
+      '''
+      SELECT COALESCE(SUM(
+        CASE WHEN accountId = ? THEN CASE WHEN type = 'income' THEN amount ELSE -amount END ELSE 0 END
+        + CASE WHEN type = 'transfer' AND toAccountId = ? THEN amount ELSE 0 END
+      ), 0) AS delta FROM transactions
+      WHERE (accountId = ? OR toAccountId = ?) AND julianday(date) <= julianday(?)
+      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?)'}
+    ''',
+      [
+        accountId,
+        accountId,
+        accountId,
+        accountId,
+        now,
+        if (excluding != null) ...[excluding, excluding],
+      ],
+    );
+    final delta = (totals.single['delta'] as num).toDouble();
+    final adjusted = accounts
+        .map((a) => a.copyWith(initialBalance: a.initialBalance + delta))
+        .toList();
     TransactionRules.account(
       accountId: accountId,
       value: amount,
       isExpense: expense,
-      accounts: accounts,
-      transactions: transactions,
+      accounts: adjusted,
+      transactions: const [],
     );
     final account = accounts.firstWhere((a) => a.id == accountId);
     if (protectSavings && expense && !account.isCredit) {
-      final goals = (await db.query('savings_goals')).map(SavingsGoal.fromMap);
+      final goals = (await db.query(
+        'savings_goals',
+        where: 'linkedAccountId = ?',
+        whereArgs: [accountId],
+      )).map(SavingsGoal.fromMap);
       final reserved = goals
           .where((g) => g.linkedAccountId == accountId)
           .fold<double>(0, (sum, g) => sum + g.currentAmount);
-      if (TransactionRules.balance(account, transactions) - reserved < amount) {
+      if (TransactionRules.exceedsBalance(
+        amount,
+        account.initialBalance + delta - reserved,
+      )) {
         throw const FinancialValidationException(
           'Open this payment to review the savings needed.',
         );
@@ -229,7 +257,8 @@ class SqliteLedgerAdapter implements Ledger {
             whereArgs: [transaction.plannedPaymentId],
           );
 
-          if (ppMaps.isNotEmpty) {
+          if (ppMaps.isNotEmpty &&
+              !PlannedPayment.fromMap(ppMaps.first).isAutoProcess) {
             final payment = PlannedPayment.fromMap(ppMaps.first);
             final prevDate = payment.computePreviousDate();
 

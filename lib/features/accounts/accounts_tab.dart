@@ -26,7 +26,8 @@ class AccountsTab extends ConsumerWidget {
     final goals = ref.watch(savingsGoalsProvider).value ?? [];
 
     return accountsAsync.when(
-      data: (accounts) {
+      data: (allAccounts) {
+        final accounts = allAccounts.where((a) => !a.isArchived).toList();
         if (accounts.isEmpty) {
           return _buildEmptyState(context);
         }
@@ -93,11 +94,14 @@ class AccountsTab extends ConsumerWidget {
                     onReorder: (id, to) {
                       final current = ref.read(accountProvider).value ?? [];
                       final from = current.indexWhere((a) => a.id == id);
-                      if (from >= 0 && from != to) {
+                      final target = current.indexWhere(
+                        (a) => a.id == accounts[to].id,
+                      );
+                      if (from >= 0 && from != target) {
                         HapticService.selection();
                         ref
                             .read(accountProvider.notifier)
-                            .reorderAccounts(from, to);
+                            .reorderAccounts(from, target);
                       }
                     },
                     addButton: _buildAddAccountButton(context),

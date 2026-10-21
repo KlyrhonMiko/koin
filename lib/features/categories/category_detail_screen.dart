@@ -149,7 +149,20 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard category changes?',
+    draft: () => (
+      _nameController.text,
+      _selectedIconCodePoint,
+      _selectedColorHex,
+      _selectedType,
+    ),
+    listenables: [_nameController],
+    isSaving: () => _saving,
+    child: _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     final selectedColor = Color(
       int.parse(_selectedColorHex.replaceFirst('#', '0xFF')),
     );

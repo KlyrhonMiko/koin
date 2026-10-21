@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -133,8 +134,7 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
   @override
   Future<void> clearTransactions() async {
     await _dbHelper.deleteAllTransactions();
-    _ref.invalidate(transactionProvider);
-    _ref.invalidate(accountProvider);
+    _invalidateAllDomainProviders();
   }
 
   @override
@@ -158,6 +158,9 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
     _ref.invalidate(savingsGoalsProvider);
     _ref.invalidate(debtsProvider);
     _ref.invalidate(plannedPaymentProvider);
+    _ref.invalidate(savingsLogsProvider);
+    _ref.invalidate(debtRepaymentsProvider);
+    _ref.invalidate(transactionFilterProvider);
   }
 }
 

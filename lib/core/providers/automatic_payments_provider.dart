@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../ledger/ledger.dart';
 import '../ledger/transaction_rules.dart';
 import '../models/models.dart';
@@ -60,12 +62,13 @@ class AutomaticPaymentsNotifier extends Notifier<AutomaticPaymentsState> {
       final payments = await repository.getPlannedPayments();
       for (var payment in payments) {
         if (!payment.isAutoProcess ||
-            payment.frequency == PaymentFrequency.flexible ||
-            !payment.isEligible(at)) {
+            payment.frequency == PaymentFrequency.flexible) {
           continue;
         }
         var occurrences = 0;
-        while (payment.daysUntilNext(at) <= 0 && occurrences < 100) {
+        while (payment.daysUntilNext(at) <= 0 &&
+            payment.isEligible(payment.nextDate) &&
+            occurrences < 100) {
           try {
             final accounts = await ref
                 .read(accountRepositoryProvider)
@@ -89,9 +92,11 @@ class AutomaticPaymentsNotifier extends Notifier<AutomaticPaymentsState> {
               final reserved = goals
                   .where((g) => g.linkedAccountId == account.id)
                   .fold<double>(0, (sum, g) => sum + g.currentAmount);
-              if (TransactionRules.balance(account, transactions, at: at) -
-                      reserved <
-                  payment.amount) {
+              if (TransactionRules.exceedsBalance(
+                payment.amount,
+                TransactionRules.balance(account, transactions, at: at) -
+                    reserved,
+              )) {
                 throw const FinancialValidationException(
                   'Open this payment to review the savings needed.',
                 );
@@ -102,7 +107,7 @@ class AutomaticPaymentsNotifier extends Notifier<AutomaticPaymentsState> {
               amount: payment.amount,
               accountId: payment.accountId,
               categoryId: payment.categoryId,
-              date: at,
+              date: payment.nextDate,
               protectSavings: true,
             );
             payment = payment.copyWith(nextDate: payment.computeNextDate());

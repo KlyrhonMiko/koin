@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
+import '../primitives/pressable_scale.dart';
+
 /// Consolidated color palette selector module for Categories, Accounts,
 /// and Tags.
 /// Encapsulates color swatch rendering, scale animations, active checkmark badges,
@@ -70,7 +72,11 @@ class ColorPaletteGrid extends StatelessWidget {
   Widget _buildItem(BuildContext context, int index, Color color) {
     final isSelected = _isIndexSelected(index, color);
 
-    return GestureDetector(
+    return PressableScale(
+      enableHaptic: false,
+      semanticLabel:
+          'Color #${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+      selected: isSelected,
       onTap: () => _handleTap(index, color),
       child: AnimatedScale(
         scale: isSelected ? 1.08 : 1.0,

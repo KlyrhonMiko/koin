@@ -1,3 +1,4 @@
+import 'package:koin/core/database_version.dart';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -275,7 +276,7 @@ void main() {
       await db.setVersion(37);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 43);
+      expect(await db.getVersion(), databaseSchemaVersion);
       final legacy = (await helper.getSavingsGoals()).firstWhere(
         (g) => g.id == 'goal',
       );
@@ -322,7 +323,7 @@ void main() {
       await db.setVersion(36);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 43);
+      expect(await db.getVersion(), databaseSchemaVersion);
       expect(await saved('goal'), 63);
       expect((await helper.getSavingsLogs('goal')).length, 2);
       expect(

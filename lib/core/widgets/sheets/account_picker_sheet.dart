@@ -6,6 +6,7 @@ import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/providers/settings_provider.dart';
 import 'package:koin/core/providers/savings_provider.dart';
 import 'package:koin/core/theme.dart';
+
 import '../cards/account_item.dart';
 import 'select_sheet.dart';
 import '../../utils/snackbar_utils.dart';
@@ -28,7 +29,9 @@ Future<String?> showAccountPickerSheet({
   Map<String, double>? balancesOverride,
 }) async {
   final rawAccounts =
-      accountsOverride ?? (ref.read(accountProvider).value ?? []);
+      (accountsOverride ?? (ref.read(accountProvider).value ?? []))
+          .where((a) => !a.isArchived || a.id == selectedAccountId)
+          .toList();
   final accounts = excludeAccountId == null
       ? rawAccounts
       : rawAccounts.where((a) => a.id != excludeAccountId).toList();
@@ -47,9 +50,8 @@ Future<String?> showAccountPickerSheet({
       if (allowNone && index == 0) {
         return SelectSheetItem(
           name: noneLabel,
-          accentColor: AppTheme.textLightColor(
-            sheetContext,
-          ).withValues(alpha: 0.5),
+          accentColor: AppTheme.textLightColor(sheetContext)
+              .withValues(alpha: 0.5),
           iconCodePoint: Icons.money_off_rounded.codePoint,
           selected: selectedAccountId == null || selectedAccountId.isEmpty,
           onTap: () => Navigator.pop(sheetContext, noneValue),

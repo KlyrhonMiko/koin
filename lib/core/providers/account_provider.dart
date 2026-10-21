@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/repositories/account_repository.dart';
+
 import 'dart:developer' as dev;
+
 import 'transaction_provider.dart';
 import 'planned_payment_provider.dart';
 import 'savings_provider.dart';
@@ -71,6 +73,13 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     ref.invalidate(debtsProvider);
     ref.invalidate(debtRepaymentsProvider);
     await loadAccounts();
+  }
+
+  Future<void> setArchived(String id, bool archived) async {
+    final current = (await _repository.getAccounts()).firstWhere(
+      (a) => a.id == id,
+    );
+    await updateAccount(current.copyWith(isArchived: archived));
   }
 
   Future<void> reorderAccounts(int oldIndex, int newIndex) async {

@@ -24,7 +24,7 @@ class BudgetEditorSheet extends ConsumerStatefulWidget {
     required double totalIncome,
   }) {
     HapticService.light();
-    return showModalBottomSheet(
+    return showEditorBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -46,6 +46,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   late String _currentResult;
   String? _validationError;
   bool _saving = false;
+  bool _saved = false;
 
   @override
   void initState() {
@@ -77,6 +78,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     setState(() => _saving = true);
     try {
       await ref.read(categoriesProvider.notifier).editCategory(updated);
+      _saved = true;
       HapticService.success();
       return true;
     } catch (_) {
@@ -93,7 +95,15 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard budget changes?',
+    draft: () => (_isPercentMode, _currentExpression),
+    isSaving: () => _saving,
+    canLeave: () => _saved,
+    child: _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     final category = widget.category;
     final currency = widget.currency;
     final totalIncome = widget.totalIncome;

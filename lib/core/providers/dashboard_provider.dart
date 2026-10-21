@@ -64,6 +64,7 @@ class DashboardStats {
       balances[account.id] = account.initialBalance;
     }
     for (final transaction in transactions) {
+      if (transaction.date.isAfter(now)) continue;
       final inMonth =
           transaction.date.year == targetDate.year &&
           transaction.date.month == targetDate.month;
@@ -83,7 +84,6 @@ class DashboardStats {
               transaction.amount;
         }
       }
-      if (transaction.date.isAfter(now)) continue;
       if (balances.containsKey(transaction.accountId)) {
         balances[transaction.accountId] =
             balances[transaction.accountId]! +

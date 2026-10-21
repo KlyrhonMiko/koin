@@ -35,7 +35,7 @@ class SavingsLogSheet extends ConsumerStatefulWidget {
     required Future<void> Function(double amount) onSave,
   }) {
     HapticService.light();
-    return showModalBottomSheet(
+    return showEditorBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -164,7 +164,15 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard savings changes?',
+    draft: () => _currentExpression,
+    isSaving: () => _saving,
+    canLeave: () => _saved,
+    child: _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final hasAmount =
         _currentExpression.isNotEmpty && _currentExpression != '0';

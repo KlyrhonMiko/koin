@@ -58,7 +58,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                         c.name.toLowerCase().contains(
                           _searchQuery.toLowerCase(),
                         );
-                    return matchesSearch;
+                    return matchesSearch && !c.isArchived;
                   }).toList();
 
                   final expenseCategories = filtered
@@ -251,8 +251,6 @@ class _CategoryListState extends ConsumerState<CategoryList>
           ._buildEmptyState(context, widget.type);
     }
 
-    final fmt = widget.currency.formatter;
-
     return ReorderableListView.builder(
       padding: const EdgeInsets.fromLTRB(
         KoinSpacing.screenInset,
@@ -360,7 +358,9 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 .read(categoriesProvider.notifier)
                 .deleteCategory(category.id);
           },
-          child: PressableScale(
+          child: CategoryItem(
+            category: category,
+            currency: widget.currency,
             onTap: () {
               HapticService.light();
               Navigator.push(
@@ -368,111 +368,18 @@ class _CategoryListState extends ConsumerState<CategoryList>
                 SlideUpRoute(page: CategoryDetailScreen(category: category)),
               );
             },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor(context),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.dividerColor(context)),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-                        child: Row(
-                          children: [
-                            // Drag handle
-                            Listener(
-                              onPointerDown: (_) => HapticService.light(),
-                              child: ReorderableDragStartListener(
-                                index: index,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Icon(
-                                    Icons.drag_indicator_rounded,
-                                    color: AppTheme.textLightColor(context)
-                                        .withValues(alpha: 0.25),
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const Gap(8),
-                            // Glowing icon
-                            Container(
-                              padding: const EdgeInsets.all(11),
-                              decoration: BoxDecoration(
-                                color: category.color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  AppTheme.boxShadow(
-                                    context,
-                                    color: category.color.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                IconUtils.getIcon(category.iconCodePoint),
-                                color: category.color,
-                                size: 22,
-                              ),
-                            ),
-                            const Gap(14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    category.name,
-                                    style: const TextStyle(
-                                      fontWeight: KoinTypography.titleWeight,
-                                      fontSize: KoinTypography.body,
-                                      letterSpacing:
-                                          KoinTypography.itemTracking,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (category.type ==
-                                          TransactionType.expense &&
-                                      category.hasBudget) ...[
-                                    const Gap(4),
-                                    Text(
-                                      category.isPercentBudget
-                                          ? 'Budget: ${category.budgetPercent?.toStringAsFixed(0)}% of income'
-                                          : 'Budget: ${fmt.format(category.budget)}',
-                                      style: TextStyle(
-                                        color: AppTheme.textLightColor(context),
-                                        fontSize: KoinTypography.small,
-                                        fontWeight:
-                                            KoinTypography.supportingWeight,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const Gap(8),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 20,
-                              color: AppTheme.textLightColor(context)
-                                  .withValues(alpha: 0.4),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+            leading: Listener(
+              onPointerDown: (_) => HapticService.light(),
+              child: ReorderableDragStartListener(
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.drag_indicator_rounded,
+                    color: AppTheme.textLightColor(context)
+                        .withValues(alpha: 0.25),
+                    size: 20,
+                  ),
                 ),
               ),
             ),

@@ -29,6 +29,16 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   final Set<String> _selectedCategoryIds = {};
   final Set<String> _selectedAccountIds = {};
   bool _isExporting = false;
+  bool get _reportReady =>
+      ref.read(transactionProvider).hasValue &&
+      !ref.read(transactionProvider).hasError &&
+      !ref.read(transactionProvider).isLoading &&
+      ref.read(accountProvider).hasValue &&
+      !ref.read(accountProvider).hasError &&
+      !ref.read(accountProvider).isLoading &&
+      ref.read(categoriesProvider).hasValue &&
+      !ref.read(categoriesProvider).hasError &&
+      !ref.read(categoriesProvider).isLoading;
 
   TransactionFilter get _currentReportFilter => TransactionFilter(
     dateRange: _dateRange,
@@ -51,11 +61,11 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 KoinSpacing.screenInset,
                 16,
                 KoinSpacing.screenInset,
-                140,
+                _stackExportActions(context) ? 280 : 140,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,6 +73,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                     [
                           _buildHeader(context),
                           const Gap(32),
+                          if (!_reportReady) ...[
+                            _buildSummaryCard(context, ref, currencySymbol),
+                            const Gap(24),
+                          ],
                           DateRangeSelector(
                             initialDateRange: _dateRange,
                             onChanged: (range) {
@@ -72,7 +86,8 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                             },
                           ),
                           const Gap(24),
-                          _buildSummaryCard(context, ref, currencySymbol),
+                          if (_reportReady)
+                            _buildSummaryCard(context, ref, currencySymbol),
                           const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Transaction Type',
@@ -144,7 +159,32 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     String currencySymbol,
   ) {
     final transactionsAsync = ref.watch(transactionProvider);
-    if (transactionsAsync.value == null) return const SizedBox.shrink();
+    final accounts = ref.watch(accountProvider);
+    final categories = ref.watch(categoriesProvider);
+    if (transactionsAsync.hasError ||
+        accounts.hasError ||
+        categories.hasError) {
+      return KoinErrorState(
+        message: 'Could not load report data.',
+        onRetry: () {
+          ref.invalidate(transactionProvider);
+          ref.invalidate(accountProvider);
+          ref.invalidate(categoriesProvider);
+        },
+      );
+    }
+    if (!_reportReady) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Loading report data…'),
+          ],
+        ),
+      );
+    }
 
     final filtered = _currentReportFilter.apply(transactionsAsync.value!);
     final totalAmount = filtered.fold(0.0, (sum, tx) => sum + tx.amount);
@@ -376,12 +416,44 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     );
   }
 
+  bool _stackExportActions(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 380 ||
+      MediaQuery.textScalerOf(context).scale(14) > 20;
+
   Widget _buildExportActions(
     BuildContext context,
     List<TransactionCategory> categories,
     List<Account> accounts,
     String currencySymbol,
   ) {
+    final csv = _buildExportButton(
+      context,
+      'Export CSV',
+      Icons.grid_on_rounded,
+      AppTheme.dividerColor(context).withValues(alpha: 0.5),
+      AppTheme.textColor(context),
+      () => _handleExport(
+        context,
+        categories,
+        accounts,
+        currencySymbol,
+        isPdf: false,
+      ),
+    );
+    final pdf = _buildExportButton(
+      context,
+      'Export PDF',
+      Icons.picture_as_pdf_rounded,
+      AppTheme.primaryColor(context),
+      AppTheme.primaryColor(context),
+      () => _handleExport(
+        context,
+        categories,
+        accounts,
+        currencySymbol,
+        isPdf: true,
+      ),
+    );
     return Align(
       alignment: Alignment.bottomCenter,
       child: ClipRRect(
@@ -399,47 +471,21 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
               border: Border(
                 top: BorderSide(
                   color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
-                  width: 1,
                 ),
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildExportButton(
-                    context,
-                    'Export CSV',
-                    Icons.grid_on_rounded,
-                    AppTheme.dividerColor(context).withValues(alpha: 0.5),
-                    AppTheme.textColor(context),
-                    () => _handleExport(
-                      context,
-                      categories,
-                      accounts,
-                      currencySymbol,
-                      isPdf: false,
-                    ),
+            child: _stackExportActions(context)
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [csv, const Gap(12), pdf],
+                  )
+                : Row(
+                    children: [
+                      Expanded(child: csv),
+                      const Gap(12),
+                      Expanded(child: pdf),
+                    ],
                   ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: _buildExportButton(
-                    context,
-                    'Export PDF',
-                    Icons.picture_as_pdf_rounded,
-                    AppTheme.primaryColor(context),
-                    AppTheme.primaryColor(context),
-                    () => _handleExport(
-                      context,
-                      categories,
-                      accounts,
-                      currencySymbol,
-                      isPdf: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -454,10 +500,13 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     Color textColor,
     VoidCallback onTap,
   ) {
+    final ready = _reportReady && !_isExporting;
+    if (!ready) textColor = textColor.withValues(alpha: 0.45);
     return PressableScale(
-      onTap: onTap,
+      onTap: ready ? onTap : null,
       child: Container(
-        height: 56,
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(18),
@@ -468,12 +517,15 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           children: [
             Icon(icon, color: textColor, size: 18),
             const Gap(10),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: KoinTypography.titleWeight,
-                fontSize: KoinTypography.compact,
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: KoinTypography.titleWeight,
+                  fontSize: KoinTypography.compact,
+                ),
               ),
             ),
           ],
@@ -489,11 +541,19 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     String currencySymbol, {
     required bool isPdf,
   }) async {
+    if (_isExporting) return;
     HapticService.medium();
 
     // Get transactions from provider
     final transactionsAsync = ref.read(transactionProvider);
-    if (transactionsAsync.value == null) return;
+    if (!_reportReady) {
+      KoinSnackBar.info(
+        context,
+        'Report data is not ready',
+        subtitle: 'Wait for loading to finish or retry the failed request.',
+      );
+      return;
+    }
 
     setState(() => _isExporting = true);
 

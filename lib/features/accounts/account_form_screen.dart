@@ -441,6 +441,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       }
 
       final updatedAccount = Account(
+        isArchived: widget.account?.isArchived ?? false,
         id: isEditing ? widget.account!.id : const Uuid().v4(),
         name: nameController.text.trim(),
         initialBalance: newInitialBalance,
@@ -683,7 +684,35 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard account changes?',
+    draft: () => (
+      nameController.text,
+      balanceController.text,
+      transferFeeController.text,
+      interestRateController.text,
+      interestTaxController.text,
+      _dailyInterestEnabled,
+      _interestFrequency,
+      selectedIcon,
+      selectedColor,
+      excludeFromTotal,
+      isTransferFeePercentage,
+      isCredit,
+      selectedLogoAsset,
+      selectedCardColor,
+      selectedCardShape,
+    ),
+    listenables: [
+      nameController,
+      balanceController,
+      transferFeeController,
+      interestRateController,
+      interestTaxController,
+    ],
+    isSaving: () => _saving,
+    child: KoinFormTheme(builder: _buildContent),
+  );
 
   double? get _interestRate => ref
       .read(settingsProvider)

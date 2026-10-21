@@ -21,6 +21,18 @@ A new look for Koin, with faster transaction entry and more ways to plan your mo
 
 ## Fixes & refinements
 
+- Repayment edits enforce the remaining debt balance and preserve the payment direction.
+- Percentage transfer fees round to the selected currency's precision and stay intact when edited.
+- Automatic payments catch up using their due dates, including eligible occurrences before a schedule ended. Deleting an automatic entry skips it instead of recreating it.
+- Failed automatic payments appear on Home with review and retry actions.
+- Clearing or restoring records refreshes savings balances and cached activity histories.
+- Future-dated entries stay out of actual spending totals until their date arrives.
+- Clearing transaction filters also clears the visible search text. Busy transaction days render rows lazily, and account-balance validation uses indexed account queries.
+- Reports show loading and retry states, disable export until data is ready, and adapt export actions to large text and narrow screens.
+- Currency changes explain that existing amounts are relabeled without exchange-rate conversion.
+- Unsaved account, category, transaction, debt, schedule, savings, and budget edits require the same discard confirmation before leaving. Editable sheets also protect changes when closed, swiped down, or dismissed by tapping outside.
+- Settings includes an archive manager for accounts and categories. Archived items keep their history and balances, remain available to existing schedules, and are hidden from new entry choices.
+- Color and icon choices expose accessible names and selected states. Transfer deletion confirmations explain that linked fees are removed too.
 - Linked credit records now stay in sync when repayment transactions are edited.
 - Repayments are limited to the remaining balance and remember your selected account.
 - Improved database migrations, account ordering, and card customization.

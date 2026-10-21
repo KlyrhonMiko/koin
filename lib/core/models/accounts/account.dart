@@ -6,6 +6,7 @@ import 'daily_interest.dart';
 class Account {
   final String id;
   final String name;
+  final bool isArchived;
   final int iconCodePoint;
   final String colorHex;
   final double initialBalance;
@@ -37,6 +38,7 @@ class Account {
     required this.iconCodePoint,
     required this.colorHex,
     this.initialBalance = 0.0,
+    this.isArchived = false,
     this.excludeFromTotal = false,
     this.position = 0,
     this.transferFeeAmount = 0.0,
@@ -54,6 +56,7 @@ class Account {
   Account copyWith({
     String? id,
     String? name,
+    bool? isArchived,
     int? iconCodePoint,
     String? colorHex,
     double? initialBalance,
@@ -73,6 +76,7 @@ class Account {
     return Account(
       id: id ?? this.id,
       name: name ?? this.name,
+      isArchived: isArchived ?? this.isArchived,
       iconCodePoint: iconCodePoint ?? this.iconCodePoint,
       colorHex: colorHex ?? this.colorHex,
       initialBalance: initialBalance ?? this.initialBalance,
@@ -100,6 +104,7 @@ class Account {
     return {
       'id': id,
       'name': name,
+      'isArchived': isArchived ? 1 : 0,
       'iconCodePoint': iconCodePoint,
       'colorHex': colorHex,
       'initialBalance': initialBalance,
@@ -122,6 +127,7 @@ class Account {
     return Account(
       id: map['id'],
       name: map['name'],
+      isArchived: map['isArchived'] == 1,
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
       initialBalance: (map['initialBalance'] as num?)?.toDouble() ?? 0.0,

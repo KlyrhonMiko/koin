@@ -181,8 +181,9 @@ class SpendingAnalysis {
     final currentRange = period.dateRange(baseDate);
     final prevRange = period.previousDateRange(baseDate);
 
+    final now = DateTime.now();
     final expenseTransactions = transactions.where(
-      (t) => t.type == TransactionType.expense,
+      (t) => t.type == TransactionType.expense && !t.date.isAfter(now),
     );
 
     // Current period transactions

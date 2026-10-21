@@ -61,6 +61,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   bool _savingTransaction = false;
   bool _transactionSaved = false;
   AppTransaction? _existingFee;
+  Object get _draft => (
+    _noteController.text,
+    _amountController.text,
+    _feeController.text,
+    _selectedType,
+    _selectedCategoryId,
+    _selectedAccountId,
+    _selectedToAccountId,
+    _selectedDate,
+    _isTransferFeePercentage,
+  );
 
   @override
   void initState() {
@@ -109,7 +120,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ?.where((fee) => fee.transferId == tx.id)
           .firstOrNull;
       if (_existingFee != null) {
-        _feeController.text = _existingFee!.amount.toString();
+        _feeController.text = _existingFee!.amount.toStringAsFixed(
+          ref.read(settingsProvider).currency.decimalDigits,
+        );
         _feeExpression = _feeController.text;
       }
     }
@@ -242,7 +255,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ref.read(categoriesProvider).value ?? [],
           suggestion.categoryId,
         );
-        if (category == null || category.type != _selectedType) return;
+        if (category == null ||
+            category.isArchived ||
+            category.type != _selectedType) {
+          return;
+        }
         if (!suggestion.canAutoApply) {
           setState(() => _pendingCategorySuggestion = suggestion);
           return;
@@ -264,11 +281,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final savings = ref.read(savingsGoalsProvider.notifier);
     try {
       await _saveTransactionImpl();
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         _showErrorSnackbar(
-          'Could not save transaction',
-          subtitle: 'Please try again',
+          error is FinancialValidationException
+              ? error.message
+              : 'Could not save transaction',
+          subtitle: error is FinancialValidationException
+              ? 'Review the payment details'
+              : 'Please try again',
         );
       }
     } finally {
@@ -314,7 +335,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     AppTransaction newTransaction;
     AppTransaction? feeTransaction;
-    final enteredFee =
+    final parsedFee =
         ref
             .read(settingsProvider)
             .currency
@@ -322,9 +343,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               _feeController.text,
               precision: _isTransferFeePercentage ? 2 : null,
             ) ??
-        0.0;
+        (_feeController.text.trim().isEmpty ? 0.0 : double.nan);
+    if (isTransfer && (!parsedFee.isFinite || parsedFee < 0)) {
+      _showErrorSnackbar('Enter a valid non-negative fee');
+      return;
+    }
+    final enteredFee = parsedFee;
     final feeAmount = isTransfer
-        ? (_isTransferFeePercentage ? amount * (enteredFee / 100) : enteredFee)
+        ? double.parse(
+            (_isTransferFeePercentage
+                    ? amount * (enteredFee / 100)
+                    : enteredFee)
+                .toStringAsFixed(
+                  ref.read(settingsProvider).currency.decimalDigits,
+                ),
+          )
         : 0.0;
     final debitAmount = amount + feeAmount;
 
@@ -399,6 +432,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       }
 
       final draft = TransferDraft(
+        decimalDigits: ref.read(settingsProvider).currency.decimalDigits,
         sourceAccountId: _selectedAccountId!,
         destinationAccountId: _selectedToAccountId!,
         rawAmount: amount,
@@ -489,7 +523,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             .addTransaction(newTransaction);
       }
     }
-    _transactionSaved = true;
+    if (mounted) {
+      setState(() => _transactionSaved = true);
+    } else {
+      _transactionSaved = true;
+    }
     if (_manualCategory && !isTransfer) {
       await categorySuggester
           .recordFeedback(
@@ -502,6 +540,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           .catchError((Object _) {});
     }
     HapticService.success();
+    await WidgetsBinding.instance.endOfFrame;
     if (mounted) Navigator.pop(context);
   }
 
@@ -692,7 +731,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // Build
   // ═══════════════════════════════════════════════════════
   @override
-  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard transaction changes?',
+    draft: () => _draft,
+    isSaving: () => _savingTransaction,
+    canLeave: () => _transactionSaved,
+    listenables: [_noteController, _amountController, _feeController],
+    child: KoinFormTheme(builder: _buildContent),
+  );
 
   Widget _buildContent(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -1232,6 +1278,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ) ??
         0;
     final draft = TransferDraft(
+      decimalDigits: ref.read(settingsProvider).currency.decimalDigits,
       sourceAccountId: _selectedAccountId ?? '',
       destinationAccountId: _selectedToAccountId ?? '',
       rawAmount: amount,

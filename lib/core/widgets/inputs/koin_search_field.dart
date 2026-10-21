@@ -2,25 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 
 /// Borderless search input for a header or a search/filter capsule.
-class KoinSearchField extends StatelessWidget {
+class KoinSearchField extends StatefulWidget {
   const KoinSearchField({
     super.key,
     required this.hintText,
     required this.onChanged,
     this.inline = false,
     this.autofocus = false,
+    this.value,
   });
   final String hintText;
   final ValueChanged<String> onChanged;
   final bool inline;
   final bool autofocus;
+  final String? value;
+
+  @override
+  State<KoinSearchField> createState() => _KoinSearchFieldState();
+}
+
+class _KoinSearchFieldState extends State<KoinSearchField> {
+  late final _controller = TextEditingController(text: widget.value);
+
+  @override
+  void didUpdateWidget(KoinSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final value = widget.value;
+    if (value != null && value != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final inline = widget.inline;
     final size = inline ? KoinTypography.itemTitle : KoinTypography.compact;
     return TextField(
-      autofocus: autofocus,
-      onChanged: onChanged,
+      controller: _controller,
+      autofocus: widget.autofocus,
+      onChanged: widget.onChanged,
       style: TextStyle(
         color: AppTheme.textColor(context),
         fontSize: size,
@@ -29,7 +58,7 @@ class KoinSearchField extends StatelessWidget {
             : KoinTypography.labelWeight,
       ),
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: widget.hintText,
         hintStyle: TextStyle(
           color: AppTheme.textLightColor(context)
               .withValues(alpha: inline ? 1 : 0.4),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/database_version.dart';
 import 'package:koin/features/reports/report_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -242,7 +243,7 @@ void main() {
       await db.setVersion(39);
       await helper.close();
       db = await helper.database;
-      expect(await db.getVersion(), 43);
+      expect(await db.getVersion(), databaseSchemaVersion);
       final records = await helper.getTransactions();
       expect(
         records

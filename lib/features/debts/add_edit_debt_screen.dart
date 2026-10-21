@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -284,7 +285,30 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard debt changes?',
+    draft: () => (
+      _nameController.text,
+      _amountController.text,
+      _notesController.text,
+      _installmentsController.text,
+      _selectedType,
+      _startDate,
+      _selectedAccountId,
+      _selectedCategoryId,
+      _selectedFrequency,
+      _bnpl,
+      jsonEncode(_items.map((item) => item.toMap()).toList()),
+    ),
+    listenables: [
+      _nameController,
+      _amountController,
+      _notesController,
+      _installmentsController,
+    ],
+    isSaving: () => _saving,
+    child: KoinFormTheme(builder: _buildContent),
+  );
 
   Widget _buildContent(BuildContext context) {
     final isEdit = widget.debt != null;

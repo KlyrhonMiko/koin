@@ -35,6 +35,7 @@ class DashboardScreen extends ConsumerWidget {
     final transactionsAsync = ref.watch(transactionProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
+    final automaticPayments = ref.watch(automaticPaymentsProvider);
 
     return SafeArea(
       bottom: false,
@@ -58,6 +59,71 @@ class DashboardScreen extends ConsumerWidget {
             children:
                 [
                       _buildHeader(context),
+                      if (automaticPayments.problems.isNotEmpty)
+                        Semantics(
+                          liveRegion: true,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Automatic payments need attention',
+                                  style: TextStyle(
+                                    color: AppTheme.errorColor(context),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const Gap(8),
+                                for (final problem
+                                    in automaticPayments.problems)
+                                  Text(problem),
+                                Wrap(
+                                  spacing: 12,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        ref
+                                            .read(portfolioTabProvider.notifier)
+                                            .setIndex(3);
+                                        ref
+                                            .read(navigationProvider.notifier)
+                                            .setIndex(3);
+                                      },
+                                      child: const Text('Review bills'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        ref
+                                            .read(portfolioTabProvider.notifier)
+                                            .setIndex(4);
+                                        ref
+                                            .read(navigationProvider.notifier)
+                                            .setIndex(3);
+                                      },
+                                      child: const Text('Review incomes'),
+                                    ),
+                                    TextButton(
+                                      onPressed: automaticPayments.busy
+                                          ? null
+                                          : () => ref
+                                                .read(
+                                                  automaticPaymentsProvider
+                                                      .notifier,
+                                                )
+                                                .processDue(),
+                                      child: Text(
+                                        automaticPayments.busy
+                                            ? 'Retrying…'
+                                            : 'Retry',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const Gap(16),
                       _buildBalanceCard(context, ref, stats, settings),
                       const Gap(16),
@@ -391,16 +457,17 @@ class DashboardScreen extends ConsumerWidget {
     DashboardStats stats,
     Currency currency,
   ) {
-    if (stats.accounts.isEmpty) return const SizedBox.shrink();
+    final activeAccounts = stats.accounts.where((a) => !a.isArchived).toList();
+    if (activeAccounts.isEmpty) return const SizedBox.shrink();
     final displayedBalances = ref.watch(dashboardAccountBalancesProvider);
-    final visibleAccounts = stats.accounts.take(4).toList();
+    final visibleAccounts = activeAccounts.take(4).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         KoinSectionHeader(
           title: 'Accounts',
-          actionLabel: 'View all · ${stats.accounts.length}',
+          actionLabel: 'View all · ${activeAccounts.length}',
           onActionTap: () {
             ref.read(portfolioTabProvider.notifier).setIndex(0);
             ref.read(navigationProvider.notifier).setIndex(3);

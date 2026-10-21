@@ -1,4 +1,5 @@
 export 'account_item.dart';
+export 'category_item.dart';
 export 'card_background_shapes.dart';
 export 'koin_grouped_card.dart';
 export 'koin_summary_card.dart';

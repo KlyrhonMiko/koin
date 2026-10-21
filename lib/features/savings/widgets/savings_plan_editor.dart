@@ -119,7 +119,14 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard plan changes?',
+    draft: () => (_amount.text, _frequency, _date, _deadline),
+    listenables: [_amount],
+    child: _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     final format = ref.watch(settingsProvider).currency.formatter;
     final logsAsync = widget.goal == null
         ? null

@@ -13,6 +13,7 @@ import 'package:koin/core/maintenance/recovery_store.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
 
 import 'backup_recovery_panel.dart';
+import 'archive_manager_screen.dart';
 
 import 'package:koin/core/core.dart';
 
@@ -313,6 +314,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onChanged: (enabled) => ref
                           .read(settingsProvider.notifier)
                           .setHapticsEnabled(enabled),
+                    ),
+                  ),
+                  KoinSettingTile(
+                    title: 'Manage archived items',
+                    subtitle: 'Archive or restore accounts and categories',
+                    icon: Icons.archive_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      SlideUpRoute(page: const ArchiveManagerScreen()),
                     ),
                   ),
                 ],
@@ -642,12 +652,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       borderRadius: BorderRadius.circular(16),
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
-                        onTap: () {
+                        onTap: () async {
+                          if (isSelected) {
+                            Navigator.pop(context);
+                            return;
+                          }
+                          final confirmed = await ConfirmationSheet.show(
+                            context: context,
+                            title: 'Change currency to ${currency.code}?',
+                            description:
+                                'Existing amounts will keep the same numbers and use ${currency.code}. No exchange-rate conversion is applied.',
+                            confirmLabel: 'Change currency',
+                            confirmColor: AppTheme.primaryColor(context),
+                            icon: Icons.currency_exchange_rounded,
+                          );
+                          if (confirmed != true || !context.mounted) return;
                           HapticService.light();
-                          ref
+                          await ref
                               .read(settingsProvider.notifier)
                               .setCurrency(currency);
-                          Navigator.pop(context);
+                          if (context.mounted) Navigator.pop(context);
                         },
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),

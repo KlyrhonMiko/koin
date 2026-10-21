@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/category_provider.dart';
+
 import 'select_sheet.dart';
 
 /// Deep Category Picker Module: Encapsulates category filtering by TransactionType,
@@ -19,7 +20,9 @@ Future<String?> showCategoryPickerSheet({
   final allCategories =
       categoriesOverride ?? (ref?.read(categoriesProvider).value ?? []);
   final filteredCategories = allCategories
-      .where((c) => c.type == type)
+      .where(
+        (c) => c.type == type && (!c.isArchived || c.id == selectedCategoryId),
+      )
       .toList();
 
   return await showSelectSheet<String>(

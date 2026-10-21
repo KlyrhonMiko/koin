@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
+import 'package:koin/core/widgets/sheets/confirmation_sheet.dart';
 
 void main() {
   setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
@@ -89,6 +90,9 @@ void main() {
       expect(tester.takeException(), isNull);
       final titleRect = tester.getRect(find.text('Income processed'));
       final subtitleRect = tester.getRect(find.text(subtitle.data!));
+      final iconRect = tester.getRect(find.byIcon(Icons.check_rounded));
+      final toastRect = tester.getRect(find.byType(Dismissible));
+      expect(iconRect.center.dy, closeTo(toastRect.center.dy, 1));
       expect(subtitleRect.top, greaterThan(titleRect.bottom));
       expect(subtitleRect.right, lessThanOrEqualTo(300));
       await tester.pump(const Duration(seconds: 4));
@@ -101,12 +105,150 @@ void main() {
     tester,
   ) async {
     await showToast(tester);
-    await tester.drag(find.byType(Dismissible), const Offset(0, -180));
+    await tester.drag(find.byType(Dismissible), const Offset(0, 180));
     await tester.pumpAndSettle();
     expect(find.text('Income processed'), findsNothing);
     await tester.pump(const Duration(seconds: 4));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'short feedback stays compact and clears headers and navigation',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 950);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      late BuildContext source;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.getTheme(const Color(0xFF00D09E), true),
+          home: Scaffold(
+            appBar: AppBar(title: const Text('Archive manager')),
+            bottomNavigationBar: const SizedBox(
+              height: 68,
+              key: Key('navigation'),
+            ),
+            body: Builder(
+              builder: (context) {
+                source = context;
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+      KoinSnackBar.success(source, 'Maya archived');
+      await tester.pumpAndSettle();
+      final toast = tester.getRect(find.byType(Dismissible));
+      expect(toast.height, lessThanOrEqualTo(56));
+      expect(toast.width, lessThan(300));
+      expect(
+        toast.top,
+        greaterThan(tester.getRect(find.byType(AppBar)).bottom),
+      );
+      expect(
+        toast.bottom,
+        lessThan(tester.getRect(find.byKey(const Key('navigation'))).top),
+      );
+      expect(find.text('Maya archived').hitTestable(), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dismissible), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('sheet errors remain visible above a changing keyboard inset', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(430, 950);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final keyboard = ValueNotifier(0.0);
+    addTearDown(keyboard.dispose);
+    late BuildContext source;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.getTheme(const Color(0xFF00D09E), false),
+        builder: (context, child) => ValueListenableBuilder<double>(
+          valueListenable: keyboard,
+          builder: (context, inset, _) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(viewInsets: EdgeInsets.only(bottom: inset)),
+            child: child!,
+          ),
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              source = context;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+    showModalBottomSheet<void>(
+      context: source,
+      builder: (context) => SizedBox(
+        height: 350,
+        child: Center(
+          child: TextButton(
+            onPressed: () => KoinSnackBar.error(
+              context,
+              'Could not save budget',
+              subtitle: 'Your changes are kept. Try again.',
+            ),
+            child: const Text('Show error'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show error'));
+    await tester.pumpAndSettle();
+    expect(find.text('Could not save budget').hitTestable(), findsOneWidget);
+    final before = tester.getRect(find.byType(Dismissible));
+    keyboard.value = 350;
+    await tester.pumpAndSettle();
+    final after = tester.getRect(find.byType(Dismissible));
+    expect(after.bottom, lessThanOrEqualTo(600));
+    expect(after.top, lessThan(before.top));
+    expect(
+      find.text('Your changes are kept. Try again.').hitTestable(),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'opening confirmation clears feedback that would cover its content',
+    (tester) async {
+      final source = await mountToastHost(tester);
+      KoinSnackBar.success(source, 'Maya restored');
+      await tester.pumpAndSettle();
+      expect(find.text('Maya restored'), findsOneWidget);
+      ConfirmationSheet.show(
+        context: source,
+        title: 'Archive Cash?',
+        description: 'History and balances are kept.',
+        confirmLabel: 'Archive',
+        confirmColor: AppTheme.primaryColor(source),
+        icon: Icons.archive_outlined,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Maya restored'), findsNothing);
+      expect(find.text('Archive Cash?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 4));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('reduced motion presents and dismisses without animation', (
     tester,

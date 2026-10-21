@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'transaction.dart';
 
 class TransactionCategory {
   final String id;
   final String name;
+  final bool isArchived;
   final int iconCodePoint;
   final String colorHex;
   final double? budget;
@@ -23,11 +25,13 @@ class TransactionCategory {
     this.budgetPercent,
     this.isPercentBudget = false,
     this.position = 0,
+    this.isArchived = false,
   });
 
   TransactionCategory copyWith({
     String? id,
     String? name,
+    bool? isArchived,
     int? iconCodePoint,
     String? colorHex,
     double? budget,
@@ -39,6 +43,7 @@ class TransactionCategory {
     return TransactionCategory(
       id: id ?? this.id,
       name: name ?? this.name,
+      isArchived: isArchived ?? this.isArchived,
       iconCodePoint: iconCodePoint ?? this.iconCodePoint,
       colorHex: colorHex ?? this.colorHex,
       budget: budget ?? this.budget,
@@ -60,6 +65,7 @@ class TransactionCategory {
     budgetPercent: null,
     isPercentBudget: false,
     position: position,
+    isArchived: isArchived,
   );
 
   /// Returns a category copy with the specified percentage budget.
@@ -73,6 +79,7 @@ class TransactionCategory {
     budgetPercent: (percent == null || percent <= 0) ? null : percent,
     isPercentBudget: percent != null && percent > 0,
     position: position,
+    isArchived: isArchived,
   );
 
   /// Returns a category copy with any budget configuration cleared.
@@ -86,12 +93,14 @@ class TransactionCategory {
     budgetPercent: null,
     isPercentBudget: false,
     position: position,
+    isArchived: isArchived,
   );
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
+      'isArchived': isArchived ? 1 : 0,
       'iconCodePoint': iconCodePoint,
       'colorHex': colorHex,
       'type': type.name,
@@ -106,6 +115,7 @@ class TransactionCategory {
     return TransactionCategory(
       id: map['id'],
       name: map['name'],
+      isArchived: map['isArchived'] == 1,
       iconCodePoint: map['iconCodePoint'],
       colorHex: map['colorHex'],
       type: map['type'] != null

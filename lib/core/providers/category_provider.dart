@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/dashboard_provider.dart';
 import 'package:koin/core/repositories/category_repository.dart';
+
 import 'dart:developer' as dev;
+
 import 'transaction_provider.dart';
 import 'planned_payment_provider.dart';
 import 'debt_provider.dart';
@@ -67,6 +69,13 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     await _loadCategories();
   }
 
+  Future<void> setArchived(String id, bool archived) async {
+    final current = (await _repository.getCategories()).firstWhere(
+      (c) => c.id == id,
+    );
+    await editCategory(current.copyWith(isArchived: archived));
+  }
+
   Future<void> reorderCategories(
     int oldIndex,
     int newIndex,
@@ -76,8 +85,12 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     if (categories == null) return;
 
     // Filter categories by type to reorder within that type
-    final typeCategories = categories.where((c) => c.type == type).toList();
-    final otherCategories = categories.where((c) => c.type != type).toList();
+    final typeCategories = categories
+        .where((c) => c.type == type && !c.isArchived)
+        .toList();
+    final otherCategories = categories
+        .where((c) => c.type != type || c.isArchived)
+        .toList();
 
     final item = typeCategories.removeAt(oldIndex);
     typeCategories.insert(newIndex, item);

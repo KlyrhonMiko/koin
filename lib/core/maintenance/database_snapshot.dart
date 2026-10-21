@@ -105,7 +105,14 @@ class DatabaseSnapshot {
           'categoryId',
           if (version >= 40) 'transferId',
         ],
-        'categories': ['id', 'name', 'iconCodePoint', 'colorHex', 'type'],
+        'categories': [
+          'id',
+          'name',
+          'iconCodePoint',
+          'colorHex',
+          'type',
+          if (version >= 44) 'isArchived',
+        ],
         if (version >= 2)
           'accounts': [
             'id',
@@ -120,6 +127,7 @@ class DatabaseSnapshot {
               'interestNextDate',
             ],
             if (version >= 43) ...['interestFrequency', 'interestAccrued'],
+            if (version >= 44) 'isArchived',
           ],
       };
       for (final entry in requiredColumns.entries) {

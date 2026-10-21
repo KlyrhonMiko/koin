@@ -20,6 +20,7 @@ class TransferDraft {
   final bool isFeePercentage;
   final String note;
   final DateTime date;
+  final int decimalDigits;
 
   const TransferDraft({
     required this.sourceAccountId,
@@ -29,6 +30,7 @@ class TransferDraft {
     this.isFeePercentage = false,
     this.note = '',
     required this.date,
+    this.decimalDigits = 2,
   });
 
   /// Validates the transfer draft against domain integrity rules.
@@ -53,17 +55,18 @@ class TransferDraft {
   /// Calculates the resolved fee amount given the optional source account fee rules.
   double calculateFeeAmount([Account? sourceAccount]) {
     if (enteredFee <= 0) return 0.0;
-    if (sourceAccount != null) {
-      return sourceAccount.calculateTransferFee(
-        rawAmount,
-        enteredFee,
-        isFeePercentage,
-      );
-    }
-    if (isFeePercentage) {
-      return rawAmount * (enteredFee / 100.0);
-    }
-    return enteredFee;
+    final fee = sourceAccount != null
+        ? sourceAccount.calculateTransferFee(
+            rawAmount,
+            enteredFee,
+            isFeePercentage,
+          )
+        : isFeePercentage
+        ? rawAmount * (enteredFee / 100.0)
+        : enteredFee;
+    return fee.isFinite
+        ? double.parse(fee.toStringAsFixed(decimalDigits))
+        : fee;
   }
 
   /// The receiving account gets the full entered transfer amount.

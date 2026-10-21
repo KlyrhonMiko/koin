@@ -4,6 +4,8 @@ import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/utils/icon_utils.dart';
 
+import '../primitives/pressable_scale.dart';
+
 /// Consolidated icon selector module for Categories, Accounts, and Tags.
 /// Encapsulates icon rendering from code points or IconData, selection highlighting,
 /// active color tinting, scale bounce animations, and tactile light haptics.
@@ -76,9 +78,11 @@ class IconPaletteGrid extends StatelessWidget {
     final (icon, code) = _resolveItem(index);
     final isSelected = _isSelected(icon, code);
 
-    return GestureDetector(
+    return PressableScale(
+      enableHaptic: false,
+      semanticLabel: IconUtils.labelFor(code),
+      selected: isSelected,
       onTap: () => _handleTap(icon, code),
-      behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: isSelected ? 1.1 : 1.0,
         duration: KoinMotion.duration(context, KoinMotion.feedback),

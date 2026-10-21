@@ -1,8 +1,10 @@
 import 'dart:convert';
+
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
+
 import 'dart:math';
 
 class CategorizationResult {
@@ -176,8 +178,7 @@ class CategorizationEngine {
 
     final results = await db.query(
       'transactions',
-      where:
-          'amount = ? AND date >= ? AND date <= ? AND type = ? AND accountId != ?',
+      where: 'amount = ? AND date >= ? AND date <= ? AND type = ? AND accountId != ?',
       whereArgs: [
         absAmount,
         lowerBound,
@@ -393,7 +394,7 @@ SELECT destinationId, COUNT(*) AS count FROM (
             ? TransactionType.income.name
             : TransactionType.expense.name;
 
-        if (catType != expectedType) {
+        if (catType != expectedType || catResult.first['isArchived'] == 1) {
           return null; // Category type doesn't match transaction sign
         }
 

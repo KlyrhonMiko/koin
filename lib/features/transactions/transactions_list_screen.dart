@@ -57,10 +57,17 @@ class TransactionsListScreen extends ConsumerWidget {
                   );
                 }
 
-                // Group transactions into deep domain TransactionGroups
                 final groups = TransactionGroup.groupTransactions(transactions);
                 final accounts = accountsAsync.value ?? [];
-
+                // Build one row per entry so a busy day does not eagerly mount
+                // every transaction, animation, and dismissible at once.
+                final rows = <({TransactionGroup group, int index})>[
+                  for (final group in groups) ...[
+                    (group: group, index: -1),
+                    for (var i = 0; i < group.transactions.length; i++)
+                      (group: group, index: i),
+                  ],
+                ];
                 return ListView.builder(
                   key: const ValueKey('transactions_list_builder'),
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -70,124 +77,102 @@ class TransactionsListScreen extends ConsumerWidget {
                     KoinSpacing.screenInset,
                     100,
                   ),
-                  itemCount: groups.length,
-                  itemBuilder: (context, sectionIndex) {
-                    final group = groups[sectionIndex];
-                    final dateKey = group.dateKey;
-                    final txList = group.transactions;
-                    final dailyTotal = group.dailyTotal;
-
-                    Widget dayGroup = Padding(
-                      key: GlobalObjectKey('day_padding_$dateKey'),
-                      padding: EdgeInsets.only(
-                        bottom: sectionIndex == groups.length - 1 ? 0 : 20,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Day Header
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  dateKey.toUpperCase(),
-                                  style: TextStyle(
-                                    color: AppTheme.textLightColor(context)
-                                        .withValues(alpha: 0.8),
-                                    fontSize: KoinTypography.overline,
-                                    fontWeight: KoinTypography.titleWeight,
-                                    letterSpacing: 0.5,
-                                  ),
+                  itemCount: rows.length,
+                  itemBuilder: (context, rowIndex) {
+                    final row = rows[rowIndex];
+                    final group = row.group;
+                    if (row.index == -1) {
+                      final total = group.dailyTotal;
+                      return Padding(
+                        key: ValueKey('day_${group.dateKey}'),
+                        padding: EdgeInsets.fromLTRB(
+                          0,
+                          rowIndex == 0 ? 16 : 36,
+                          0,
+                          12,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                group.dateKey.toUpperCase(),
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context),
+                                  fontSize: KoinTypography.overline,
+                                  fontWeight: KoinTypography.titleWeight,
+                                  letterSpacing: 0.5,
                                 ),
-                                if (dailyTotal != 0)
-                                  AnimatedCounter(
-                                    key: ValueKey('total_$dateKey'),
-                                    value: dailyTotal.abs(),
-                                    animateFromZero: !AnimationTracker.isSeen(
-                                      'day_$dateKey',
-                                    ),
-                                    lastValueToken: 'total_$dateKey',
-                                    formatter: (v) {
-                                      String fmtBalance = currency.formatter
-                                          .format(v);
-                                      if (dailyTotal > 0) {
-                                        fmtBalance = '+$fmtBalance';
-                                      }
-                                      if (dailyTotal < 0) {
-                                        fmtBalance = '-$fmtBalance';
-                                      }
-                                      return fmtBalance;
-                                    },
-                                    duration: const Duration(
-                                      milliseconds: 1000,
-                                    ),
-                                    style: TextStyle(
-                                      color: dailyTotal > 0
-                                          ? AppTheme.incomeColor(context)
-                                          : AppTheme.expenseColor(context),
-
-                                      fontSize: KoinTypography.caption,
-                                      fontWeight: KoinTypography.titleWeight,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
-                              ],
+                              ),
+                            ),
+                            if (total != 0)
+                              AnimatedCounter(
+                                key: ValueKey('total_${group.dateKey}'),
+                                value: total.abs(),
+                                animateFromZero: !AnimationTracker.isSeen(
+                                  'day_${group.dateKey}',
+                                ),
+                                lastValueToken: 'total_${group.dateKey}',
+                                formatter: (value) =>
+                                    '${total > 0 ? '+' : '-'}${currency.formatter.format(value)}',
+                                style: TextStyle(
+                                  color: total > 0
+                                      ? AppTheme.incomeColor(context)
+                                      : AppTheme.expenseColor(context),
+                                  fontSize: KoinTypography.caption,
+                                  fontWeight: KoinTypography.titleWeight,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
+                    final tx = group.transactions[row.index];
+                    final isTransfer =
+                        tx.transferId != null ||
+                        tx.type == TransactionType.transfer;
+                    return Column(
+                      key: ValueKey('group_item_${tx.id}'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SwipeToDeleteTile(
+                          key: Key(tx.id),
+                          borderRadius: BorderRadius.zero,
+                          backgroundColor: AppTheme.errorColor(context),
+                          icon: Icons.delete_forever_rounded,
+                          confirmTitle: isTransfer
+                              ? 'Delete transfer and fee?'
+                              : tx.plannedPaymentId != null
+                              ? 'Delete scheduled entry?'
+                              : 'Delete Transaction?',
+                          confirmDescription: isTransfer
+                              ? 'The entire transfer and its linked fee will be removed. Any savings released for them will be restored.'
+                              : tx.plannedPaymentId != null
+                              ? 'This entry will be removed. For automatic schedules, this occurrence stays skipped and will not be recreated. Manual schedules return to their previous due date.'
+                              : 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
+                          onDelete: () => ref
+                              .read(transactionProvider.notifier)
+                              .deleteTransaction(tx.transferId ?? tx.id),
+                          child: TransactionTile.resolve(
+                            transaction: tx,
+                            categories: categories,
+                            accounts: accounts,
+                            currency: currency,
+                            activityStyle: true,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ).koinEntrance(context, token: 'tx_${tx.id}'),
+                        if (row.index < group.transactions.length - 1)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 54),
+                            child: Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: AppTheme.dividerColor(context)
+                                  .withValues(alpha: 0.4),
                             ),
                           ),
-                          // List of Transactions within the Day
-                          ...txList.asMap().entries.map((entry) {
-                            final i = entry.key;
-                            final tx = entry.value;
-
-                            final listItem = TransactionTile.resolve(
-                              transaction: tx,
-                              categories: categories,
-                              accounts: accounts,
-                              currency: currency,
-                              activityStyle: true,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            );
-
-                            Widget txAnimated = SwipeToDeleteTile(
-                              key: Key(tx.id),
-                              borderRadius: BorderRadius.zero,
-                              backgroundColor: AppTheme.errorColor(context),
-                              icon: Icons.delete_forever_rounded,
-                              confirmTitle: 'Delete Transaction?',
-                              confirmDescription: 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
-                              onDelete: () async {
-                                await ref
-                                    .read(transactionProvider.notifier)
-                                    .deleteTransaction(tx.transferId ?? tx.id);
-                              },
-                              child: listItem,
-                            ).koinEntrance(context, token: 'tx_${tx.id}');
-
-                            return Column(
-                              key: ValueKey('group_item_${tx.id}'),
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                txAnimated,
-
-                                if (i < txList.length - 1)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 54),
-                                    child: Container(
-                                      height: 1,
-                                      color: AppTheme.dividerColor(context)
-                                          .withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          }),
-                        ],
-                      ),
+                      ],
                     );
-
-                    return dayGroup;
                   },
                 );
               },
@@ -247,6 +232,7 @@ class TransactionsListScreen extends ConsumerWidget {
                 // Search field
                 Expanded(
                   child: KoinSearchField(
+                    value: filter.query,
                     hintText: 'Search transactions...',
                     onChanged: filterNotifier.setQuery,
                   ),
@@ -261,6 +247,7 @@ class TransactionsListScreen extends ConsumerWidget {
 
                 // Filter button
                 PressableScale(
+                  semanticLabel: 'Filter transactions',
                   onTap: () {
                     HapticService.light();
                     FilterBottomSheet.show(context);

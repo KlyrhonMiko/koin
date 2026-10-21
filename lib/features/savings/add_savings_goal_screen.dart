@@ -161,7 +161,26 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => KoinFormTheme(builder: _buildContent);
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard savings changes?',
+    draft: () => (
+      _nameController.text,
+      _amountController.text,
+      _notesController.text,
+      _startDate,
+      _endDate,
+      _selectedAccountId,
+      _isStash,
+      _hasDeadline,
+      _includeInDashboardBalance,
+      _plan?.amount,
+      _plan?.frequency,
+      _plan?.startDate,
+    ),
+    listenables: [_nameController, _amountController, _notesController],
+    isSaving: () => _saving,
+    child: KoinFormTheme(builder: _buildContent),
+  );
 
   Widget _buildContent(BuildContext context) {
     final isEditing = widget.goal != null;

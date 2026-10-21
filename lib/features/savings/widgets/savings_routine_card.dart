@@ -177,9 +177,7 @@ class SavingsRoutineCard extends ConsumerWidget {
           );
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save your plan. Try again.')),
-        );
+        KoinSnackBar.error(context, 'Could not save your plan. Try again.');
       }
     }
   }

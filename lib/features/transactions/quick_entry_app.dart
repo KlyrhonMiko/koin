@@ -394,7 +394,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         final category = (ref.read(categoriesProvider).value ?? [])
             .where((c) => c.id == suggestion.categoryId && c.type == _type)
             .firstOrNull;
-        if (category == null) return;
+        if (category == null || category.isArchived) return;
         setState(() {
           _categoryId = category.id;
           _categorySuggested = true;
@@ -536,6 +536,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   TransferDraft get _transferDraft => TransferDraft(
+    decimalDigits: ref.read(settingsProvider).currency.decimalDigits,
     sourceAccountId: _accountId ?? '',
     destinationAccountId: _destinationId ?? '',
     rawAmount: _amount,
@@ -684,8 +685,20 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
 
   @override
   Widget build(BuildContext context) {
-    final accounts = ref.watch(accountProvider);
-    final categories = ref.watch(categoriesProvider);
+    final accounts = ref
+        .watch(accountProvider)
+        .whenData(
+          (items) => items
+              .where((a) => !a.isArchived || a.id == _income?.accountId)
+              .toList(),
+        );
+    final categories = ref
+        .watch(categoriesProvider)
+        .whenData(
+          (items) => items
+              .where((c) => !c.isArchived || c.id == _income?.categoryId)
+              .toList(),
+        );
     final currency = ref.watch(settingsProvider).currency;
     WidgetsBinding.instance.addPostFrameCallback((_) => _resize());
     final title = switch (_step) {
@@ -1341,7 +1354,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           child: const Text('Could not load categories. Try again'),
         ),
         data: (all) {
-          final choices = all.where((c) => c.type == _type).toList();
+          final choices = all
+              .where((c) => !c.isArchived && c.type == _type)
+              .toList();
           if (choices.isEmpty) {
             return const KoinEmptyState(
               icon: Icons.category_outlined,
@@ -1410,7 +1425,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         final excluded = _transfer
             ? (destination ? _accountId : _destinationId)
             : null;
-        final choices = all.where((a) => a.id != excluded).toList();
+        final choices = all
+            .where((a) => !a.isArchived && a.id != excluded)
+            .toList();
         if (choices.isEmpty) {
           return const KoinEmptyState(
             icon: Icons.account_balance_wallet_outlined,
@@ -1707,9 +1724,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           _fee.text.isEmpty ? '0' : _fee.text,
           precision: _feePercentage ? 2 : null,
         );
-    final fee = enteredFee == null
-        ? null
-        : (_feePercentage ? _amount * enteredFee / 100 : enteredFee);
+    final fee = enteredFee == null ? null : _transferDraft.calculateFeeAmount();
     final validFee =
         fee != null && fee.isFinite && fee >= 0 && (_amount + fee).isFinite;
     return Column(

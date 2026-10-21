@@ -1,3 +1,4 @@
+import 'package:koin/core/database_version.dart';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -33,7 +34,7 @@ void main() {
     await db.setVersion(38);
     await helper.close();
     db = await helper.database;
-    expect(await db.getVersion(), 43);
+    expect(await db.getVersion(), databaseSchemaVersion);
     final migrated = (await helper.getDebts()).single;
     expect(migrated.isPurchaseAccount, isFalse);
     expect(migrated.currentAmount, 100);

@@ -10,7 +10,7 @@ import 'package:koin/core/utils/haptic_utils.dart';
 /// other tappable elements throughout the app.
 class PressableScale extends StatefulWidget {
   final Widget child;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// The scale factor when pressed down. Values closer to 1.0 are subtler.
   final double pressedScale;
@@ -66,6 +66,7 @@ class _PressableScaleState extends State<PressableScale>
   }
 
   void _activate() {
+    if (widget.onTap == null) return;
     if (widget.enableHaptic) {
       switch (widget.hapticLevel) {
         case HapticLevel.light:
@@ -88,13 +89,14 @@ class _PressableScaleState extends State<PressableScale>
           break;
       }
     }
-    widget.onTap();
+    widget.onTap!();
   }
 
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return FocusableActionDetector(
+      enabled: widget.onTap != null,
       onShowFocusHighlight: (focused) => setState(() => _focused = focused),
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
@@ -110,6 +112,7 @@ class _PressableScaleState extends State<PressableScale>
       },
       child: Semantics(
         button: true,
+        enabled: widget.onTap != null,
         label: widget.semanticLabel,
         selected: widget.selected,
         child: DecoratedBox(
@@ -121,14 +124,20 @@ class _PressableScaleState extends State<PressableScale>
           ),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapDown: (_) {
-              if (!reduceMotion) _controller.forward();
-            },
-            onTapUp: (_) {
-              _controller.reverse();
-            },
-            onTap: _activate,
-            onTapCancel: () => _controller.reverse(),
+            onTapDown: widget.onTap == null
+                ? null
+                : (_) {
+                    if (!reduceMotion) _controller.forward();
+                  },
+            onTapUp: widget.onTap == null
+                ? null
+                : (_) {
+                    _controller.reverse();
+                  },
+            onTap: widget.onTap == null ? null : _activate,
+            onTapCancel: widget.onTap == null
+                ? null
+                : () => _controller.reverse(),
             child: reduceMotion
                 ? widget.child
                 : ScaleTransition(scale: _scaleAnim, child: widget.child),

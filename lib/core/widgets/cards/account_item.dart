@@ -177,21 +177,23 @@ class AccountItem extends StatelessWidget {
                     style: amountStyle,
                   ),
           ),
-          action: onPrivateToggle == null
-              ? null
-              : IconButton(
-                  tooltip: isPrivate
-                      ? 'Show balance and include in totals'
-                      : 'Hide balance and exclude from totals',
-                  onPressed: onPrivateToggle,
-                  icon: Icon(
-                    isPrivate
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    size: 18,
-                    color: textColor.withValues(alpha: 0.8),
-                  ),
-                ),
+          action:
+              trailing ??
+              (onPrivateToggle == null
+                  ? null
+                  : IconButton(
+                      tooltip: isPrivate
+                          ? 'Show balance and include in totals'
+                          : 'Hide balance and exclude from totals',
+                      onPressed: onPrivateToggle,
+                      icon: Icon(
+                        isPrivate
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        size: 18,
+                        color: textColor.withValues(alpha: 0.8),
+                      ),
+                    )),
           footer: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

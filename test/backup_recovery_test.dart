@@ -1,3 +1,4 @@
+import 'package:koin/core/database_version.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -242,7 +243,7 @@ void main() {
         await db.setVersion(35);
         await helper.close();
         db = await helper.database;
-        expect(await db.getVersion(), 43);
+        expect(await db.getVersion(), databaseSchemaVersion);
         final migrated = (await helper.getSavingsGoals()).single;
         expect(migrated.currentAmount, 250);
         expect(migrated.includeInDashboardBalance, true);
