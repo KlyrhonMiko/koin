@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -58,12 +59,14 @@ class KoinChoiceControl extends StatelessWidget {
   final List<KoinSegmentItem> segments;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
+  final bool vertical;
 
   const KoinChoiceControl({
     super.key,
     required this.segments,
     required this.selectedIndex,
     required this.onChanged,
+    this.vertical = false,
   }) : assert(segments.length > 0),
        assert(selectedIndex >= 0 && selectedIndex < segments.length);
 
@@ -79,6 +82,7 @@ class KoinChoiceControl extends StatelessWidget {
     curve: Curves.easeOutCubic,
     builder: (context, position, _) => _SegmentTrack(
       segments: segments,
+      vertical: vertical,
       position: position,
       selectedIndex: selectedIndex,
       onChanged: (index) {
@@ -95,12 +99,14 @@ class _SegmentTrack extends StatelessWidget {
   final double position;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
+  final bool vertical;
 
   const _SegmentTrack({
     required this.segments,
     required this.position,
     required this.selectedIndex,
     required this.onChanged,
+    this.vertical = false,
   });
 
   @override
@@ -116,7 +122,9 @@ class _SegmentTrack extends StatelessWidget {
     const radius = BorderRadius.all(Radius.circular(KoinShape.field));
 
     return Container(
-      height: height,
+      height: vertical
+          ? height * segments.length + segments.length - 1
+          : height,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor(context),
@@ -127,13 +135,15 @@ class _SegmentTrack extends StatelessWidget {
         border: Border.all(color: borderColor),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Row(
+      child: Flex(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        direction: vertical ? Axis.vertical : Axis.horizontal,
         children: [
           for (var index = 0; index < segments.length; index++) ...[
             if (index > 0)
               SizedBox(
-                width: 1,
-                height: double.infinity,
+                width: vertical ? double.infinity : 1,
+                height: vertical ? 1 : double.infinity,
                 child: ColoredBox(color: borderColor),
               ),
             Expanded(

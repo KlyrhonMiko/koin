@@ -9,6 +9,8 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 import 'package:koin/core/providers/planned_payment_provider.dart';
 
+import 'calendar_provider.dart';
+
 export 'package:koin/core/forecasting/cashflow_forecaster.dart'
     show ForecastData, ForecastHorizon;
 
@@ -16,6 +18,8 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
   ref,
   filterIndex,
 ) async {
+  ref.watch(calendarDayProvider);
+  final clock = ref.watch(calendarClockProvider);
   // Register dependencies before awaiting. Never substitute empty financial
   // data while a dependency is loading or has failed.
   final transactionsFuture = ref.watch(transactionProvider.future);
@@ -29,11 +33,12 @@ final forecastProvider = FutureProvider.family<ForecastData, int>((
   final debts = await debtsFuture;
   final savings = await savingsFuture;
   final payments = await paymentsFuture;
-  final now = DateTime.now();
+  final now = clock();
   final dashboardStats = DashboardStats.calculate(
     accounts: accounts,
     transactions: transactions.where((tx) => !tx.date.isAfter(now)).toList(),
     referenceDate: now,
+    asOf: now,
   );
   final includedIds = accounts
       .where((account) => !account.excludeFromTotal)

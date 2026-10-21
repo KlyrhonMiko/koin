@@ -43,6 +43,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   final _quickTransactions = QuickTransactionService();
   late AutomaticPaymentsNotifier _automaticPayments;
   late DailyInterestNotifier _dailyInterest;
+  late CalendarDayNotifier _calendar;
 
   @override
   void initState() {
@@ -50,10 +51,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _automaticPayments = ref.read(automaticPaymentsProvider.notifier);
     _dailyInterest = ref.read(dailyInterestProvider.notifier);
+    _calendar = ref.read(calendarDayProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _quickTransactions.initialize(_openQuickTransaction);
         ref.read(recoveryServiceProvider).start();
+        _calendar.start();
         _automaticPayments.start();
         _dailyInterest.start();
       }
@@ -67,6 +70,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
+      _calendar.start();
       ref.read(automaticPaymentsProvider.notifier).start();
       ref.read(dailyInterestProvider.notifier).start();
       // The standalone window has its own engine and provider container.
@@ -74,7 +78,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       ref.invalidate(plannedPaymentProvider);
       ref.invalidate(accountProvider);
       ref.invalidate(categoriesProvider);
+      ref.invalidate(savingsGoalsProvider);
+      ref.invalidate(savingsLogsProvider);
+      ref.invalidate(debtsProvider);
+      ref.invalidate(debtRepaymentsProvider);
     } else if (mounted) {
+      _calendar.suspend();
       ref.read(automaticPaymentsProvider.notifier).stop();
       ref.read(dailyInterestProvider.notifier).stop();
     }
@@ -84,6 +93,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _quickTransactions.dispose();
+    _calendar.suspend();
     _automaticPayments.stop();
     _dailyInterest.stop();
     super.dispose();

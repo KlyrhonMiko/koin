@@ -75,3 +75,13 @@ The short window opened from Android Quick Settings uses the same KoinFormTheme 
 ## Account editor
 
 Use open underlined name and balance inputs with persistent labels above, a 20px name and 28px balance, and live preview updates. Group Private account and Credit account in one quiet surface with a divider and native teal switches. Transfer fee has its own section with the shared Fixed amount / Percentage choice control, a labeled input with currency or percent units, and concise zero-fee guidance. Preserve account storage and validation.
+
+## Audit follow-up behavior
+
+Summary visibility also masks forecast amounts, including all monetary metrics and possible ranges in Forecast details. The user reviewed and confirmed this linked masking behavior. Keep per-account privacy and total-inclusion preferences separate. The forecast remains available even when spending history or the selected expense period is empty; keep its explicit future horizon visible.
+
+Keep the phone bottom navigation icon-only, with equal-width destinations, a compact 58px bar, and no active-destination text. Preserve tooltips and screen-reader destination labels and selected state. At expanded widths (840px and above), use the labeled navigation rail. Retain the teal materials, Add transaction action, tab history, lazy pages, and inactive-page ticker suppression.
+
+Report category/account options have at least 48px touch height and content-driven height for two-line labels, with one column on narrow windows or at large text sizes and a full-name tooltip. Stack report summary metrics and transaction-type choices when large text makes horizontal layouts cramped. Dashboard quick actions wrap into two rows under the same constraints.
+
+Refresh date-dependent values at local midnight and on app resume. Budget and Analysis views that were following the current period advance; deliberately selected historical periods remain selected. Upcoming preserves loading/error states across its schedule and debt sources rather than substituting an empty list.

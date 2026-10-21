@@ -84,7 +84,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           widget.account!.initialBalance;
       amountText = currentBalance == currentBalance.truncateToDouble()
           ? currentBalance.toInt().toString()
-          : currentBalance.toString();
+          : currentBalance.toStringAsFixed(
+              ref.read(settingsProvider).currency.decimalDigits,
+            );
     }
 
     balanceController = TextEditingController(

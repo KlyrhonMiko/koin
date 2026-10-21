@@ -37,12 +37,20 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         debugPrint('Error loading analysis filter setting: $e');
         _selectedFilterIndex = 0;
       }
+      _baseDate = ref.read(calendarDayProvider);
       _isInitialized = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(calendarDayProvider, (previous, next) {
+      if (previous != null &&
+          _currentPeriod.isCurrentPeriod(_baseDate, previous)) {
+        setState(() => _baseDate = next);
+      }
+    });
+    ref.watch(calendarDayProvider);
     final transactionsAsync = ref.watch(transactionProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final categories = categoriesAsync.value ?? [];
@@ -60,15 +68,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         backgroundColor: AppTheme.surfaceColor(context),
         child: transactionsAsync.when(
           data: (transactions) {
-            if (transactions.isEmpty) {
-              return _buildEmptyState(
-                context,
-                'No expense data yet',
-                'Add some expenses to see your analysis',
-                Icons.insights_rounded,
-              );
-            }
-
             final period = AnalysisPeriod.fromIndex(_selectedFilterIndex);
             final analysis = SpendingAnalysis.calculate(
               transactions: transactions,
@@ -81,6 +80,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 _buildImmersiveHeader(context, analysis, currency),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildForecast(context, currency),
+                  ),
+                ),
                 if (filteredTransactions.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -105,13 +110,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate(
                         [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                child: _buildForecast(context, currency),
-                              ),
-                              const Gap(16),
                               _buildChartSection(
                                 context,
                                 analysis,
@@ -346,6 +344,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         forecast: forecast,
         currency: currency,
         horizon: ForecastHorizon.fromIndex(_selectedFilterIndex),
+        hideAmounts: ref.watch(settingsProvider).hideBalance,
       ),
       loading: () => Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -402,7 +401,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
 
   Widget _buildInlinePeriodSelector() {
     final period = _currentPeriod;
-    final isCurrentPeriod = period.isCurrentPeriod(_baseDate);
+    final isCurrentPeriod = period.isCurrentPeriod(
+      _baseDate,
+      ref.read(calendarDayProvider),
+    );
 
     return KoinPeriodNavigation(
           label: _getPeriodLabel(),
@@ -491,7 +493,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             HapticService.selection();
             setState(() {
               _selectedFilterIndex = index;
-              _baseDate = DateTime.now();
+              _baseDate = ref.read(calendarDayProvider);
             });
             ref.read(settingsProvider.notifier).setAnalysisFilterIndex(index);
           },
@@ -1047,13 +1049,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       }).toList(),
     );
   }
-
-  Widget _buildEmptyState(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) => KoinEmptyState.sliver(icon: icon, title: title, subtitle: subtitle);
 
   Widget _buildEmptyStateContent(
     BuildContext context,

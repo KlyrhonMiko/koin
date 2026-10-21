@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'calendar_provider.dart';
+
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/ledger/ledger.dart';
 import 'package:koin/core/repositories/planned_payment_repository.dart';
@@ -67,8 +70,33 @@ final plannedPaymentProvider =
       return PlannedPaymentNotifier();
     });
 
-final upcomingTimelineProvider = Provider<UpcomingTimeline>((ref) {
-  final payments = ref.watch(plannedPaymentProvider).value ?? [];
-  final debts = ref.watch(debtsProvider).value ?? [];
-  return UpcomingTimeline.calculate(payments: payments, debts: debts);
+final upcomingTimelineProvider = Provider<AsyncValue<UpcomingTimeline>>((ref) {
+  ref.watch(calendarDayProvider);
+  final payments = ref.watch(plannedPaymentProvider);
+  final debts = ref.watch(debtsProvider);
+  // A partial or failed source must never look like a complete empty timeline.
+  if (payments.hasError) {
+    return AsyncError(payments.error!, payments.stackTrace!);
+  }
+  if (debts.hasError) {
+    return AsyncError(debts.error!, debts.stackTrace!);
+  }
+  if (payments.isLoading ||
+      debts.isLoading ||
+      !payments.hasValue ||
+      !debts.hasValue) {
+    return const AsyncLoading();
+  }
+  return AsyncData(
+    UpcomingTimeline.calculate(
+      payments: payments.value!,
+      debts: debts.value!,
+      now: ref.read(calendarClockProvider)(),
+    ),
+  );
 });
+
+void retryUpcoming(WidgetRef ref) {
+  ref.invalidate(plannedPaymentProvider);
+  ref.invalidate(debtsProvider);
+}

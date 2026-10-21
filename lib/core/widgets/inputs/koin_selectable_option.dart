@@ -22,73 +22,85 @@ class KoinSelectableOption extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    selected: selected,
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(compact ? 12 : 16),
-        child: AnimatedContainer(
-          duration: KoinMotion.duration(
-            context,
-            Duration(milliseconds: compact ? 250 : 200),
-          ),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: compact ? 9 : 0,
-          ),
-          decoration: BoxDecoration(
-            color: selected
-                ? accentColor.withValues(alpha: compact ? 0.12 : 0.1)
-                : compact
-                ? AppTheme.surfaceLightColor(context)
-                : AppTheme.surfaceColor(context),
-            borderRadius: BorderRadius.circular(compact ? 12 : 16),
-            border: Border.all(
-              width: selected ? 1.5 : 1,
-              color: selected
-                  ? accentColor.withValues(alpha: compact ? 0.4 : 1)
-                  : AppTheme.dividerColor(context)
-                        .withValues(alpha: compact ? 0.3 : 0.5),
+  Widget build(BuildContext context) => Tooltip(
+    message: label,
+    child: Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(compact ? 12 : 16),
+          child: AnimatedContainer(
+            duration: KoinMotion.duration(
+              context,
+              Duration(milliseconds: compact ? 250 : 200),
             ),
-          ),
-          child: Row(
-            mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
-            children: [
-              if (compact && selected) ...[
-                Icon(Icons.check_circle_rounded, size: 15, color: accentColor),
-                const SizedBox(width: 6),
-              ] else if (leading != null) ...[
-                leading!,
-                SizedBox(width: compact ? 6 : 10),
-              ],
-              Flexible(
-                fit: compact ? FlexFit.loose : FlexFit.tight,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: compact && selected
-                        ? accentColor
-                        : AppTheme.textColor(context),
-                    fontSize: compact
-                        ? KoinTypography.small
-                        : KoinTypography.caption,
-                    fontWeight: selected
-                        ? KoinTypography.titleWeight
-                        : KoinTypography.labelWeight,
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: compact ? 9 : 0,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? accentColor.withValues(alpha: compact ? 0.12 : 0.1)
+                  : compact
+                  ? AppTheme.surfaceLightColor(context)
+                  : AppTheme.surfaceColor(context),
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              border: Border.all(
+                width: selected ? 1.5 : 1,
+                color: selected
+                    ? accentColor.withValues(alpha: compact ? 0.4 : 1)
+                    : AppTheme.dividerColor(context)
+                          .withValues(alpha: compact ? 0.3 : 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+              children: [
+                if (compact && selected) ...[
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 15,
+                    color: accentColor,
+                  ),
+                  const SizedBox(width: 6),
+                ] else if (leading != null) ...[
+                  leading!,
+                  SizedBox(width: compact ? 6 : 10),
+                ],
+                Flexible(
+                  fit: compact ? FlexFit.loose : FlexFit.tight,
+                  child: Text(
+                    label,
+                    maxLines: compact ? 1 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: compact && selected
+                          ? accentColor
+                          : AppTheme.textColor(context),
+                      fontSize: compact
+                          ? KoinTypography.small
+                          : KoinTypography.caption,
+                      fontWeight: selected
+                          ? KoinTypography.titleWeight
+                          : KoinTypography.labelWeight,
+                    ),
                   ),
                 ),
-              ),
-              if (!compact && selected) ...[
-                const SizedBox(width: 4),
-                Icon(Icons.check_circle_rounded, size: 14, color: accentColor),
+                if (!compact && selected) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 14,
+                    color: accentColor,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

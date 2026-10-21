@@ -206,37 +206,43 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSummaryItem(
-              context,
-              'Transactions',
-              filtered.length.toDouble(),
-              Icons.receipt_long_rounded,
-              AppTheme.primaryColor(context),
-              null,
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            margin: const EdgeInsets.symmetric(
-              horizontal: KoinSpacing.screenInset,
-            ),
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
-          ),
-          Expanded(
-            child: _buildSummaryItem(
-              context,
-              'Total Volume',
-              totalAmount,
-              Icons.analytics_rounded,
-              AppTheme.secondaryColor(context),
-              currencySymbol,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final count = _buildSummaryItem(
+            context,
+            'Transactions',
+            filtered.length.toDouble(),
+            Icons.receipt_long_rounded,
+            AppTheme.primaryColor(context),
+            null,
+          );
+          final volume = _buildSummaryItem(
+            context,
+            'Total Volume',
+            totalAmount,
+            Icons.analytics_rounded,
+            AppTheme.secondaryColor(context),
+            currencySymbol,
+          );
+          if (constraints.maxWidth < 280 ||
+              MediaQuery.textScalerOf(context).scale(11) > 16) {
+            return Column(children: [count, const Gap(16), volume]);
+          }
+          return Row(
+            children: [
+              Expanded(child: count),
+              Container(
+                width: 1,
+                height: 40,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: KoinSpacing.screenInset,
+                ),
+                color: AppTheme.dividerColor(context).withValues(alpha: 0.5),
+              ),
+              Expanded(child: volume),
+            ],
+          );
+        },
       ),
     );
   }
@@ -316,6 +322,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
   Widget _buildTypeSelector(BuildContext context) {
     const types = [null, TransactionType.expense, TransactionType.income];
     return KoinChoiceControl(
+      vertical: MediaQuery.textScalerOf(context).scale(16) > 22,
       segments: const [
         KoinSegmentItem(label: 'All'),
         KoinSegmentItem(label: 'Expenses'),
@@ -335,12 +342,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: categories.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.8,
-      ),
+      gridDelegate: _optionGrid(context),
       itemBuilder: (context, index) {
         final cat = categories[index];
         final isSelected = _selectedCategoryIds.contains(cat.id);
@@ -375,12 +377,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: accounts.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.8,
-      ),
+      gridDelegate: _optionGrid(context),
       itemBuilder: (context, index) {
         final acc = accounts[index];
         final isSelected = _selectedAccountIds.contains(acc.id);
@@ -413,6 +410,19 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           },
         );
       },
+    );
+  }
+
+  SliverGridDelegate _optionGrid(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount:
+          MediaQuery.sizeOf(context).width < 380 || scaler.scale(13) > 18
+          ? 1
+          : 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      mainAxisExtent: 24 + scaler.scale(13) * 2.8,
     );
   }
 

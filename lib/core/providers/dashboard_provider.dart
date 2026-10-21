@@ -3,6 +3,8 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 
+import 'calendar_provider.dart';
+
 class DashboardStats {
   final double totalIncome;
   final double totalExpense;
@@ -49,8 +51,10 @@ class DashboardStats {
     required List<Account> accounts,
     required List<AppTransaction> transactions,
     DateTime? referenceDate,
+    DateTime? asOf,
   }) {
-    final targetDate = referenceDate ?? DateTime.now();
+    final now = asOf ?? DateTime.now();
+    final targetDate = referenceDate ?? now;
     double monthlyIncome = 0;
     double monthlyExpense = 0;
     double allTimeInc = 0;
@@ -59,7 +63,6 @@ class DashboardStats {
     Map<String, double> monthlyCatSpending = {};
     Map<String, double> allTimeCatSpending = {};
 
-    final now = DateTime.now();
     for (final account in accounts) {
       balances[account.id] = account.initialBalance;
     }
@@ -121,12 +124,15 @@ class DashboardStats {
 }
 
 final dashboardStatsProvider = Provider<DashboardStats>((ref) {
+  ref.watch(calendarDayProvider);
+  final now = ref.read(calendarClockProvider)();
   final transactionsState = ref.watch(transactionProvider);
   final accountsState = ref.watch(accountProvider);
 
   if (transactionsState.value != null && accountsState.value != null) {
     return DashboardStats.calculate(
       accounts: accountsState.value!,
+      asOf: now,
       transactions: transactionsState.value!,
     );
   }
@@ -135,6 +141,7 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
       return accountsState.maybeWhen(
         data: (accounts) => DashboardStats.calculate(
           accounts: accounts,
+          asOf: now,
           transactions: transactions,
         ),
         orElse: () => DashboardStats.empty(),
@@ -146,12 +153,15 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
 
 final monthlyDashboardStatsProvider = Provider.family<DashboardStats, DateTime>(
   (ref, date) {
+    ref.watch(calendarDayProvider);
+    final now = ref.read(calendarClockProvider)();
     final transactionsState = ref.watch(transactionProvider);
     final accountsState = ref.watch(accountProvider);
 
     if (transactionsState.value != null && accountsState.value != null) {
       return DashboardStats.calculate(
         accounts: accountsState.value!,
+        asOf: now,
         transactions: transactionsState.value!,
         referenceDate: date,
       );
@@ -162,6 +172,7 @@ final monthlyDashboardStatsProvider = Provider.family<DashboardStats, DateTime>(
         return accountsState.maybeWhen(
           data: (accounts) => DashboardStats.calculate(
             accounts: accounts,
+            asOf: now,
             transactions: transactions,
             referenceDate: date,
           ),

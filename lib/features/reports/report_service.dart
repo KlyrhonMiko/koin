@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
+
 import 'package:flutter/painting.dart' as painting;
 import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
@@ -134,6 +135,19 @@ class ReportService {
     }
   }
 
+  /// Spreadsheet applications evaluate formula prefixes even in quoted CSV.
+  /// Prefix text cells only; amount columns retain their numeric type.
+  static String _spreadsheetText(String value) {
+    final candidate = value.trimLeft();
+    if (RegExp(r'^[=+@-]').hasMatch(candidate) ||
+        value.startsWith('\t') ||
+        value.startsWith('\r') ||
+        value.startsWith('\n')) {
+      return "'$value";
+    }
+    return value;
+  }
+
   static Future<Uint8List> generateCSV({
     required List<AppTransaction> transactions,
     required List<TransactionCategory> categories,
@@ -200,10 +214,10 @@ class ReportService {
         DateFormat('yyyy-MM-dd HH:mm').format(tx.date),
         tx.amount,
         tx.type.name.toUpperCase(),
-        categoryName,
-        account.name,
-        toAccountName,
-        tx.note,
+        _spreadsheetText(categoryName),
+        _spreadsheetText(account.name),
+        _spreadsheetText(toAccountName),
+        _spreadsheetText(tx.note),
         currencyCode ?? '',
       ]);
     }

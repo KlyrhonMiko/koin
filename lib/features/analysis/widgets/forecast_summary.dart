@@ -9,13 +9,18 @@ class ForecastSummary extends StatelessWidget {
   final ForecastData forecast;
   final Currency currency;
   final ForecastHorizon horizon;
+  final bool hideAmounts;
 
   const ForecastSummary({
     super.key,
     required this.forecast,
     required this.currency,
     required this.horizon,
+    this.hideAmounts = false,
   });
+
+  String _money(NumberFormat format, double? amount) =>
+      hideAmounts ? '••••' : format.format(amount);
 
   String get _periodLabel => switch (horizon) {
     ForecastHorizon.weekly => 'Next 7 days',
@@ -56,7 +61,10 @@ class ForecastSummary extends StatelessWidget {
                     ),
                     const Gap(4),
                     Text(
-                      format.format(forecast.predictedNetBalance),
+                      _money(format, forecast.predictedNetBalance),
+                      semanticsLabel: hideAmounts
+                          ? 'Forecast balance hidden'
+                          : null,
                       style: TextStyle(
                         color: AppTheme.textColor(context),
                         fontSize: KoinTypography.cardAmount,
@@ -95,6 +103,16 @@ class ForecastSummary extends StatelessWidget {
                 );
               },
             ),
+            if (hideAmounts) ...[
+              const Gap(6),
+              Text(
+                'Summary amounts hidden',
+                style: TextStyle(
+                  color: AppTheme.textLightColor(context),
+                  fontSize: KoinTypography.small,
+                ),
+              ),
+            ],
             if (_limitedHistory) ...[
               const Gap(6),
               Text(
@@ -200,10 +218,9 @@ class ForecastSummary extends StatelessWidget {
                 ),
                 const Gap(8),
                 Text(
-                  format.format(forecast.predictedNetBalance),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: KoinTypography.headingWeight,
-                  ),
+                  _money(format, forecast.predictedNetBalance),
+                  style: Theme.of(context).textTheme.headlineMedium
+                      ?.copyWith(fontWeight: KoinTypography.headingWeight),
                 ),
                 if (forecast.firstShortfallDate != null) ...[
                   const Gap(12),
@@ -215,23 +232,23 @@ class ForecastSummary extends StatelessWidget {
                 _metric(
                   context,
                   'Starting balance',
-                  format.format(forecast.currentBaseline),
+                  _money(format, forecast.currentBaseline),
                 ),
                 _metric(
                   context,
                   'Expected income',
-                  format.format(forecast.forecastedInflow),
+                  _money(format, forecast.forecastedInflow),
                 ),
                 _metric(
                   context,
                   'Expected outgoings',
-                  format.format(forecast.forecastedOutflow),
+                  _money(format, forecast.forecastedOutflow),
                 ),
                 if (forecast.savingsOutflow > 0) ...[
                   _metric(
                     context,
                     'Includes savings contributions',
-                    format.format(forecast.savingsOutflow),
+                    _money(format, forecast.savingsOutflow),
                   ),
                   const Text(
                     'Assumes you keep funding your savings goals. Money set aside for savings stays yours.',
@@ -254,7 +271,7 @@ class ForecastSummary extends StatelessWidget {
                       ),
                       const Gap(4),
                       Text(
-                        '${format.format(forecast.lowerNetBalance)} to ${format.format(forecast.upperNetBalance)}',
+                        '${_money(format, forecast.lowerNetBalance)} to ${_money(format, forecast.upperNetBalance)}',
                       ),
                       const Gap(8),
                       const Text(

@@ -106,8 +106,8 @@ class TransactionsListScreen extends ConsumerWidget {
                                     '${total > 0 ? '+' : '-'}${currency.formatter.format(value)}',
                                 style: TextStyle(
                                   color: total > 0
-                                      ? AppTheme.incomeColor(context)
-                                      : AppTheme.expenseColor(context),
+                                      ? AppTheme.incomeContentColor(context)
+                                      : AppTheme.expenseContentColor(context),
                                   fontSize: KoinTypography.caption,
                                   fontWeight: KoinTypography.titleWeight,
                                 ),

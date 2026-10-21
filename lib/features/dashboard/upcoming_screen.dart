@@ -39,37 +39,44 @@ class UpcomingScreen extends ConsumerWidget {
             child: const KoinPageHeader(title: 'Upcoming'),
           ),
           Expanded(
-            child: timeline.isEmpty
-                ? _buildEmptyUpcoming(context)
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      KoinSpacing.screenInset,
-                      24,
-                      KoinSpacing.screenInset,
-                      120,
-                    ),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: timeline.length,
-                    itemBuilder: (context, index) {
-                      final entry = timeline.entries[index];
-                      final category = categories
-                          .where((c) => c.id == entry.categoryId)
-                          .firstOrNull;
+            child: timeline.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => KoinErrorState(
+                message: 'Could not load upcoming entries.',
+                onRetry: () => retryUpcoming(ref),
+              ),
+              data: (timeline) => timeline.isEmpty
+                  ? _buildEmptyUpcoming(context)
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        KoinSpacing.screenInset,
+                        24,
+                        KoinSpacing.screenInset,
+                        120,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: timeline.length,
+                      itemBuilder: (context, index) {
+                        final entry = timeline.entries[index];
+                        final category = categories
+                            .where((c) => c.id == entry.categoryId)
+                            .firstOrNull;
 
-                      return UpcomingEntryTile(
-                        key: ValueKey(entry.id),
-                        entry: entry,
-                        currency: currency,
-                        category: category,
-                        onPayPayment: (payment) =>
-                            PaymentConfirmationSheet.confirmAndProcess(
-                              context: context,
-                              ref: ref,
-                              payment: payment,
-                            ),
-                      );
-                    },
-                  ),
+                        return UpcomingEntryTile(
+                          key: ValueKey(entry.id),
+                          entry: entry,
+                          currency: currency,
+                          category: category,
+                          onPayPayment: (payment) =>
+                              PaymentConfirmationSheet.confirmAndProcess(
+                                context: context,
+                                ref: ref,
+                                payment: payment,
+                              ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

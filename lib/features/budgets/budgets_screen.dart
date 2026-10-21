@@ -21,12 +21,20 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
+    final now = ref.read(calendarDayProvider);
     _selectedMonth = DateTime(now.year, now.month);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(calendarDayProvider, (previous, next) {
+      if (previous != null &&
+          _selectedMonth.year == previous.year &&
+          _selectedMonth.month == previous.month) {
+        setState(() => _selectedMonth = DateTime(next.year, next.month));
+      }
+    });
+    ref.watch(calendarDayProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final settings = ref.watch(settingsProvider);
     final stats = ref.watch(monthlyDashboardStatsProvider(_selectedMonth));
@@ -347,7 +355,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   }
 
   Widget _buildMonthToolbar(BuildContext context) {
-    final now = DateTime.now();
+    final now = ref.read(calendarDayProvider);
     final isCurrentMonth =
         _selectedMonth.year == now.year && _selectedMonth.month == now.month;
     return KoinPeriodNavigation(

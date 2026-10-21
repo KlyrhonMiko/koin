@@ -19,24 +19,72 @@ class MainLayout extends ConsumerStatefulWidget {
 
 class _MainLayoutState extends ConsumerState<MainLayout> {
   final List<Widget?> _pages = List.filled(4, null);
+  static const _labels = ['Home', 'Activity', 'Budgets', 'Portfolio'];
+  static const _icons = [
+    Icons.home_outlined,
+    Icons.receipt_long_outlined,
+    Icons.savings_outlined,
+    Icons.account_balance_wallet_outlined,
+  ];
+  static const _activeIcons = [
+    Icons.home_rounded,
+    Icons.receipt_long_rounded,
+    Icons.savings_rounded,
+    Icons.account_balance_wallet_rounded,
+  ];
+
+  void _select(int index) {
+    if (ref.read(navigationProvider) == index) return;
+    HapticService.selection();
+    ref.read(navigationProvider.notifier).setIndex(index);
+  }
+
+  Widget _addTransaction(BuildContext context, {double size = 66}) => SizedBox(
+    width: size,
+    height: size,
+    child: _GlowFAB(
+      glowColor: AppTheme.primaryColor(context),
+      child: FloatingActionButton(
+        tooltip: 'Add transaction',
+        onPressed: () {
+          HapticService.medium();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: const AddTransactionScreen()),
+          );
+        },
+        elevation: 0,
+        backgroundColor: AppTheme.primaryColor(context),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add_rounded, size: 38),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
     _pages[currentIndex] ??= _getPage(currentIndex);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    void onItemTapped(int index) {
-      if (currentIndex == index) return;
-      HapticService.selection();
-      ref.read(navigationProvider.notifier).setIndex(index);
-    }
-
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final canGoBack = ref.read(navigationProvider.notifier).canPop();
-
+    final expanded = MediaQuery.sizeOf(context).width >= 840;
+    final pages = IndexedStack(
+      index: currentIndex,
+      children: [
+        for (var i = 0; i < 4; i++)
+          ExcludeFocus(
+            excluding: i != currentIndex,
+            child: TickerMode(
+              enabled: i == currentIndex,
+              child: _pages[i] ?? const SizedBox.shrink(),
+            ),
+          ),
+      ],
+    );
     return PopScope(
       canPop: !canGoBack,
-      onPopInvokedWithResult: (bool didPop, dynamic result) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         HapticService.light();
         ref.read(navigationProvider.notifier).pop();
@@ -44,148 +92,139 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: isDarkMode
-              ? Brightness.light
-              : Brightness.dark,
+          statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
           systemNavigationBarColor: AppTheme.surfaceColor(context),
           systemNavigationBarContrastEnforced: false,
-          systemNavigationBarIconBrightness: isDarkMode
+          systemNavigationBarIconBrightness: dark
               ? Brightness.light
               : Brightness.dark,
         ),
         child: Scaffold(
-          extendBody: true,
-          body: IndexedStack(
-            index: currentIndex,
-            children: [
-              for (var i = 0; i < 4; i++)
-                ExcludeFocus(
-                  excluding: i != currentIndex,
-                  child: TickerMode(
-                    enabled: i == currentIndex,
-                    child: _pages[i] ?? const SizedBox.shrink(),
+          extendBody: !expanded,
+          body: expanded
+              ? Row(
+                  children: [
+                    SafeArea(
+                      child: NavigationRail(
+                        selectedIndex: currentIndex,
+                        onDestinationSelected: _select,
+                        extended:
+                            MediaQuery.textScalerOf(context).scale(12) > 18,
+                        labelType:
+                            MediaQuery.textScalerOf(context).scale(12) > 18
+                            ? NavigationRailLabelType.none
+                            : NavigationRailLabelType.all,
+                        minWidth: 96,
+                        minExtendedWidth: 240,
+                        backgroundColor: AppTheme.surfaceColor(context),
+                        leading: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _addTransaction(context, size: 56),
+                        ),
+                        destinations: [
+                          for (var i = 0; i < 4; i++)
+                            NavigationRailDestination(
+                              icon: Icon(_icons[i]),
+                              selectedIcon: Icon(_activeIcons[i]),
+                              label: Text(_labels[i]),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(child: pages),
+                  ],
+                )
+              : pages,
+          bottomNavigationBar: expanded
+              ? null
+              : _bottomNavigation(context, currentIndex, dark),
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomNavigation(BuildContext context, int index, bool dark) {
+    final narrow = MediaQuery.sizeOf(context).width < 320;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(narrow ? 12 : 16, 0, narrow ? 12 : 16, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 58,
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor(context)
+                      .withValues(alpha: dark ? 0.7 : 0.85),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    AppTheme.boxShadow(
+                      context,
+                      color: Colors.black.withValues(alpha: dark ? 0.4 : 0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: (dark ? Colors.white : Colors.black).withValues(
+                      alpha: dark ? 0.08 : 0.05,
+                    ),
                   ),
                 ),
-            ],
-          ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor(context)
-                            .withValues(alpha: isDarkMode ? 0.7 : 0.85),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          AppTheme.boxShadow(
-                            context,
-                            color: Colors.black.withValues(
-                              alpha: isDarkMode ? 0.4 : 0.08,
-                            ),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
+                clipBehavior: Clip.antiAlias,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < 4; i++)
+                          Expanded(
+                            child: _buildNavItem(context, i, index == i),
                           ),
-                        ],
-                        border: Border.all(
-                          color: (isDarkMode ? Colors.white : Colors.black)
-                              .withValues(alpha: isDarkMode ? 0.08 : 0.05),
-                          width: 1,
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                child: _buildNavItem(
-                                  context,
-                                  icon: Icons.home_outlined,
-                                  activeIcon: Icons.home_rounded,
-                                  isActive: currentIndex == 0,
-                                  targetIndex: 0,
-                                  onTap: onItemTapped,
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildNavItem(
-                                  context,
-                                  icon: Icons.receipt_long_outlined,
-                                  activeIcon: Icons.receipt_long_rounded,
-                                  isActive: currentIndex == 1,
-                                  targetIndex: 1,
-                                  onTap: onItemTapped,
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildNavItem(
-                                  context,
-                                  icon: Icons.savings_outlined,
-                                  activeIcon: Icons.savings_rounded,
-                                  isActive: currentIndex == 2,
-                                  targetIndex: 2,
-                                  onTap: onItemTapped,
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildNavItem(
-                                  context,
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  activeIcon:
-                                      Icons.account_balance_wallet_rounded,
-                                  isActive: currentIndex == 3,
-                                  targetIndex: 3,
-                                  onTap: onItemTapped,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  AnimatedSlide(
-                    duration: KoinMotion.duration(
-                      context,
-                      const Duration(milliseconds: 600),
-                    ),
-                    curve: Curves.easeOutBack,
-                    offset: Offset.zero,
-                    child: _GlowFAB(
-                      glowColor: AppTheme.primaryColor(context),
-                      child: SizedBox(
-                        width: 66,
-                        height: 66,
-                        child: FloatingActionButton(
-                          tooltip: 'Add transaction',
-                          onPressed: () {
-                            HapticService.medium();
-                            Navigator.push(
-                              context,
-                              SlideUpRoute(page: const AddTransactionScreen()),
-                            );
-                          },
-                          elevation: 0,
-                          backgroundColor: AppTheme.primaryColor(context),
-                          foregroundColor: Theme.of(context)
-                              .colorScheme
-                              .onPrimary,
-                          shape: const CircleBorder(),
-                          child: const Icon(Icons.add_rounded, size: 38),
-                        ),
-                      ),
-                    ),
+                ),
+              ),
+            ),
+            SizedBox(width: narrow ? 8 : 12),
+            _addTransaction(context, size: narrow ? 54 : 66),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, int index, bool active) {
+    final primary = AppTheme.primaryColor(context);
+    return Tooltip(
+      excludeFromSemantics: true,
+      message: _labels[index],
+      child: PressableScale(
+        semanticLabel: _labels[index],
+        selected: active,
+        enableHaptic: false,
+        onTap: () => _select(index),
+        child: SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ExcludeSemantics(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: active ? 1 : 0),
+              duration: KoinMotion.duration(context, KoinMotion.feedback),
+              curve: KoinMotion.curve,
+              builder: (context, value, child) => Transform.scale(
+                scale: 0.9 + value * 0.1,
+                child: Icon(
+                  active ? _activeIcons[index] : _icons[index],
+                  color: Color.lerp(
+                    AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                    primary,
+                    value,
                   ),
-                ],
+                  size: 24,
+                ),
               ),
             ),
           ),
@@ -194,70 +233,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     );
   }
 
-  Widget _getPage(int index) {
-    switch (index) {
-      case 0:
-        return const DashboardScreen();
-      case 1:
-        return const ActivityScreen();
-      case 2:
-        return const BudgetsScreen();
-      case 3:
-        return const PortfolioScreen();
-      default:
-        return const DashboardScreen();
-    }
-  }
-
-  Widget _buildNavItem(
-    BuildContext context, {
-    required IconData icon,
-    required IconData activeIcon,
-    required bool isActive,
-    required int targetIndex,
-    required Function(int) onTap,
-  }) {
-    final primaryColor = AppTheme.primaryColor(context);
-
-    const labels = ['Home', 'Activity', 'Budgets', 'Portfolio'];
-    return Tooltip(
-      excludeFromSemantics: true,
-      message: labels[targetIndex],
-      child: PressableScale(
-        semanticLabel: labels[targetIndex],
-        selected: isActive,
-        enableHaptic: false,
-        onTap: () => onTap(targetIndex),
-        child: AnimatedContainer(
-          duration: KoinMotion.duration(context, KoinMotion.feedback),
-          curve: Curves.easeOutCubic,
-          width: double.infinity,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(color: Colors.transparent),
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
-            duration: KoinMotion.duration(context, KoinMotion.feedback),
-            curve: KoinMotion.curve,
-            builder: (context, value, child) {
-              return Transform.scale(
-                scale: 0.9 + (value * 0.1),
-                child: Icon(
-                  isActive ? activeIcon : icon,
-                  color: Color.lerp(
-                    AppTheme.textLightColor(context).withValues(alpha: 0.5),
-                    primaryColor,
-                    value,
-                  ),
-                  size: 24,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _getPage(int index) => switch (index) {
+    0 => const DashboardScreen(),
+    1 => const ActivityScreen(),
+    2 => const BudgetsScreen(),
+    3 => const PortfolioScreen(),
+    _ => const DashboardScreen(),
+  };
 }
 
 class AnimatedClipRect extends StatelessWidget {

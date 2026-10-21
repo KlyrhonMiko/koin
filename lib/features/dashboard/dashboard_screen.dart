@@ -31,6 +31,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(calendarDayProvider);
     final stats = ref.watch(dashboardStatsProvider);
     final transactionsAsync = ref.watch(transactionProvider);
     final settings = ref.watch(settingsProvider);
@@ -403,78 +404,88 @@ class DashboardScreen extends ConsumerWidget {
       builder: (context, constraints) {
         final compactWidth = constraints.maxWidth.clamp(0.0, 280.0);
         final actionWidth = (constraints.maxWidth + compactWidth) / 2;
+        final actions = <Widget>[
+          _buildActionItem(
+            context,
+            icon: Icons.add_rounded,
+            label: 'Income',
+            color: AppTheme.incomeContentColor(context),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                SlideUpRoute(
+                  page: const AddTransactionScreen(
+                    initialType: TransactionType.income,
+                  ),
+                ),
+              );
+            },
+          ),
+          _buildActionItem(
+            context,
+            icon: Icons.remove_rounded,
+            label: 'Expense',
+            color: AppTheme.expenseContentColor(context),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                SlideUpRoute(
+                  page: const AddTransactionScreen(
+                    initialType: TransactionType.expense,
+                  ),
+                ),
+              );
+            },
+          ),
+          _buildActionItem(
+            context,
+            icon: Icons.swap_horiz_rounded,
+            label: 'Transfer',
+            color: AppTheme.transferContentColor(context),
+            onTap: () {
+              HapticService.medium();
+              Navigator.push(
+                context,
+                SlideUpRoute(
+                  page: const AddTransactionScreen(
+                    initialType: TransactionType.transfer,
+                  ),
+                ),
+              );
+            },
+          ),
+          _buildActionItem(
+            context,
+            icon: Icons.savings_outlined,
+            label: 'Budgets',
+            color: AppTheme.contentColor(
+              context,
+              AppTheme.primaryColor(context),
+            ),
+            onTap: () {
+              HapticService.medium();
+              Navigator.popUntil(context, (route) => route.isFirst);
+              ref.read(navigationProvider.notifier).setIndex(2);
+            },
+          ),
+        ];
+        final stack =
+            constraints.maxWidth < 280 ||
+            MediaQuery.textScalerOf(context).scale(12) > 18;
         return Center(
           child: SizedBox(
             width: actionWidth,
-            child: Row(
-              children: [
-                _buildActionItem(
-                  context,
-                  icon: Icons.add_rounded,
-                  label: 'Income',
-                  color: AppTheme.incomeContentColor(context),
-                  onTap: () {
-                    HapticService.medium();
-                    Navigator.push(
-                      context,
-                      SlideUpRoute(
-                        page: const AddTransactionScreen(
-                          initialType: TransactionType.income,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                _buildActionItem(
-                  context,
-                  icon: Icons.remove_rounded,
-                  label: 'Expense',
-                  color: AppTheme.expenseContentColor(context),
-                  onTap: () {
-                    HapticService.medium();
-                    Navigator.push(
-                      context,
-                      SlideUpRoute(
-                        page: const AddTransactionScreen(
-                          initialType: TransactionType.expense,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                _buildActionItem(
-                  context,
-                  icon: Icons.swap_horiz_rounded,
-                  label: 'Transfer',
-                  color: AppTheme.transferContentColor(context),
-                  onTap: () {
-                    HapticService.medium();
-                    Navigator.push(
-                      context,
-                      SlideUpRoute(
-                        page: const AddTransactionScreen(
-                          initialType: TransactionType.transfer,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                _buildActionItem(
-                  context,
-                  icon: Icons.savings_outlined,
-                  label: 'Budgets',
-                  color: AppTheme.contentColor(
-                    context,
-                    AppTheme.primaryColor(context),
-                  ),
-                  onTap: () {
-                    HapticService.medium();
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                    ref.read(navigationProvider.notifier).setIndex(2);
-                  },
-                ),
-              ],
-            ),
+            child: stack
+                ? Column(
+                    children: [
+                      Row(children: actions.take(2).toList()),
+                      const Gap(16),
+                      Row(children: actions.skip(2).toList()),
+                    ],
+                  )
+                : Row(children: actions),
           ),
         );
       },
@@ -787,31 +798,40 @@ class DashboardScreen extends ConsumerWidget {
           },
         ),
         const Gap(16),
-        if (timeline.isEmpty)
-          _buildEmptyUpcoming(context, ref)
-        else
-          Column(
-            children: timeline.take(3).map((entry) {
-              final category = categories
-                  .where((c) => c.id == entry.categoryId)
-                  .firstOrNull;
-
-              final child = UpcomingEntryTile(
-                key: ValueKey(entry.id),
-                entry: entry,
-                currency: currency,
-                category: category,
-                onPayPayment: (payment) =>
-                    PaymentConfirmationSheet.confirmAndProcess(
-                      context: context,
-                      ref: ref,
-                      payment: payment,
-                    ),
-              );
-
-              return child;
-            }).toList(),
+        timeline.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
           ),
+          error: (_, _) => KoinErrorState(
+            message: 'Could not load upcoming entries.',
+            onRetry: () => retryUpcoming(ref),
+          ),
+          data: (timeline) => timeline.isEmpty
+              ? _buildEmptyUpcoming(context, ref)
+              : Column(
+                  children: timeline.take(3).map((entry) {
+                    final category = categories
+                        .where((c) => c.id == entry.categoryId)
+                        .firstOrNull;
+
+                    final child = UpcomingEntryTile(
+                      key: ValueKey(entry.id),
+                      entry: entry,
+                      currency: currency,
+                      category: category,
+                      onPayPayment: (payment) =>
+                          PaymentConfirmationSheet.confirmAndProcess(
+                            context: context,
+                            ref: ref,
+                            payment: payment,
+                          ),
+                    );
+
+                    return child;
+                  }).toList(),
+                ),
+        ),
       ],
     );
 
