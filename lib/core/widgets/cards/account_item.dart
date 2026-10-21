@@ -176,6 +176,9 @@ class AccountItem extends StatelessWidget {
                     value: balance,
                     currency: accountCurrency,
                     style: amountStyle,
+                    detail: savingsAmount > 0
+                        ? '${money.format(savingsAmount)} in savings'
+                        : null,
                   ),
           ),
           action:
@@ -195,25 +198,6 @@ class AccountItem extends StatelessWidget {
                         color: textColor.withValues(alpha: 0.8),
                       ),
                     )),
-          footer: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (savingsAmount > 0 && !isPrivate) ...[
-                const Gap(2),
-                Text(
-                  '${money.format(savingsAmount)} in savings',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: KoinTypography.small,
-                    color: colored
-                        ? textColor.withValues(alpha: 0.7)
-                        : AppTheme.textLightColor(context),
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
       );
     }

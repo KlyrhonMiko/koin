@@ -8,16 +8,19 @@ class AccountCardAmount extends StatelessWidget {
     required this.value,
     required this.currency,
     required this.style,
+    this.detail,
   });
 
   final double value;
   final Currency currency;
   final TextStyle style;
+  final String? detail;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final fullAmount = currency.formatter.format(value);
+      final description = detail == null ? fullAmount : '$fullAmount\n$detail';
       final measure = TextPainter(
         text: TextSpan(
           text: fullAmount,
@@ -30,10 +33,10 @@ class AccountCardAmount extends StatelessWidget {
       final compact = measure.width > constraints.maxWidth;
       measure.dispose();
       return Tooltip(
-        message: fullAmount,
+        message: description,
         excludeFromSemantics: true,
         child: Semantics(
-          label: fullAmount,
+          label: description,
           excludeSemantics: true,
           child: FittedBox(
             fit: BoxFit.scaleDown,

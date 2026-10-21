@@ -74,23 +74,7 @@ class AccountsTab extends ConsumerWidget {
                   AccountReorderGrid(
                     columns: columns,
                     cardWidth: cardWidth,
-                    cardHeight:
-                        AccountCardLayout.minimumHeight(context) +
-                        (accounts.any(
-                              (a) =>
-                                  !a.excludeFromTotal &&
-                                  goals.any(
-                                    (g) =>
-                                        g.linkedAccountId == a.id &&
-                                        g.includeInDashboardBalance &&
-                                        g.currentAmount > 0,
-                                  ),
-                            )
-                            ? 2 +
-                                  MediaQuery.textScalerOf(context)
-                                          .scale(KoinTypography.small) *
-                                      1.5
-                            : 0),
+                    cardHeight: AccountCardLayout.minimumHeight(context),
                     onReorder: (id, to) async {
                       final current = ref.read(accountProvider).value ?? [];
                       final from = current.indexWhere((a) => a.id == id);

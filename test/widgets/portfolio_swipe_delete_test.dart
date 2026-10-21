@@ -72,18 +72,28 @@ void main() {
     expect(tester.widget<AccountItem>(find.byType(AccountItem)).balance, 63);
     expect(find.textContaining('in savings'), findsNothing);
     expect(find.textContaining('Reserved'), findsNothing);
+    final compactHeight = tester.getSize(find.byType(AccountItem)).height;
     await providers
         .read(savingsGoalsProvider.notifier)
         .updateGoal(goal.copyWith(includeInDashboardBalance: true));
     await tester.pumpAndSettle();
     expect(tester.widget<AccountItem>(find.byType(AccountItem)).balance, 263);
     final symbol = providers.read(settingsProvider).currency.symbol;
-    expect(find.text('${symbol}200.00 in savings'), findsOneWidget);
+    expect(find.text('${symbol}200.00 in savings'), findsNothing);
+    expect(
+      find.byTooltip('${symbol}263.00\n${symbol}200.00 in savings'),
+      findsOneWidget,
+    );
+    expect(tester.getSize(find.byType(AccountItem)).height, compactHeight);
     await providers
         .read(accountProvider.notifier)
         .updateAccount(account.copyWith(excludeFromTotal: true));
     await tester.pumpAndSettle();
     expect(find.textContaining('in savings'), findsNothing);
+    expect(
+      find.byTooltip('${symbol}263.00\n${symbol}200.00 in savings'),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 
