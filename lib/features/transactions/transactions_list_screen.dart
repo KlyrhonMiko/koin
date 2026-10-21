@@ -12,7 +12,7 @@ class TransactionsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final transactionsAsync = ref.watch(filteredTransactionsProvider);
+    final rowsAsync = ref.watch(transactionRowsProvider);
 
     final filter = ref.watch(transactionFilterProvider);
     final filterNotifier = ref.read(transactionFilterProvider.notifier);
@@ -34,9 +34,9 @@ class TransactionsListScreen extends ConsumerWidget {
         children: [
           _buildSearchAndFilterHeader(context, ref, filter, filterNotifier),
           Expanded(
-            child: transactionsAsync.when(
-              data: (transactions) {
-                if (transactions.isEmpty) {
+            child: rowsAsync.when(
+              data: (rows) {
+                if (rows.isEmpty) {
                   return KoinEmptyState.sliver(
                     icon: Icons.receipt_long_rounded,
                     title: filter.isEmpty
@@ -57,17 +57,7 @@ class TransactionsListScreen extends ConsumerWidget {
                   );
                 }
 
-                final groups = TransactionGroup.groupTransactions(transactions);
                 final accounts = accountsAsync.value ?? [];
-                // Build one row per entry so a busy day does not eagerly mount
-                // every transaction, animation, and dismissible at once.
-                final rows = <({TransactionGroup group, int index})>[
-                  for (final group in groups) ...[
-                    (group: group, index: -1),
-                    for (var i = 0; i < group.transactions.length; i++)
-                      (group: group, index: i),
-                  ],
-                ];
                 return ListView.builder(
                   key: const ValueKey('transactions_list_builder'),
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -147,7 +137,7 @@ class TransactionsListScreen extends ConsumerWidget {
                           confirmDescription: isTransfer
                               ? 'The entire transfer and its linked fee will be removed. Any savings released for them will be restored.'
                               : tx.plannedPaymentId != null
-                              ? 'This entry will be removed. For automatic schedules, this occurrence stays skipped and will not be recreated. Manual schedules return to their previous due date.'
+                              ? 'This entry will be removed. For manual schedules, only the latest tracked occurrence of an unchanged schedule becomes due again. Other occurrences stay skipped.'
                               : 'This transaction will be permanently removed. Any savings released for it will be restored. This action cannot be undone.',
                           onDelete: () => ref
                               .read(transactionProvider.notifier)

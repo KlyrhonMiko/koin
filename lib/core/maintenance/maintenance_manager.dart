@@ -48,18 +48,7 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
   @override
   Future<BackupBundle?> createBackup() async {
     final prefs = _ref.read(sharedPreferencesProvider);
-    final settings = <String, String>{
-      if (prefs.getString('currency_code') != null)
-        'currency_code': prefs.getString('currency_code')!,
-      if (prefs.getInt('theme_color') != null)
-        'theme_color': prefs.getInt('theme_color')!.toString(),
-      if (prefs.getInt('theme_mode') != null)
-        'theme_mode': prefs.getInt('theme_mode')!.toString(),
-      if (prefs.getInt('analysis_filter_index') != null)
-        'analysis_filter_index': prefs
-            .getInt('analysis_filter_index')!
-            .toString(),
-    };
+    final settings = SettingsSnapshot.capture(prefs);
     await _dbHelper.saveSettingsToDb(settings);
 
     final temp = await (await getTemporaryDirectory()).createTemp(
@@ -102,30 +91,7 @@ class SqliteMaintenanceAdapter implements AppMaintenanceService {
     // Restore settings from db to SharedPreferences
     final settingsFromDb = await _dbHelper.loadSettingsFromDb();
     final prefs = _ref.read(sharedPreferencesProvider);
-    if (settingsFromDb.containsKey('currency_code')) {
-      await prefs.setString('currency_code', settingsFromDb['currency_code']!);
-    }
-    if (settingsFromDb.containsKey('theme_color') &&
-        settingsFromDb['theme_color']!.isNotEmpty) {
-      await prefs.setInt(
-        'theme_color',
-        int.tryParse(settingsFromDb['theme_color']!) ?? 0xFF00D09E,
-      );
-    }
-    if (settingsFromDb.containsKey('theme_mode') &&
-        settingsFromDb['theme_mode']!.isNotEmpty) {
-      await prefs.setInt(
-        'theme_mode',
-        int.tryParse(settingsFromDb['theme_mode']!) ?? 0,
-      );
-    }
-    if (settingsFromDb.containsKey('analysis_filter_index') &&
-        settingsFromDb['analysis_filter_index']!.isNotEmpty) {
-      await prefs.setInt(
-        'analysis_filter_index',
-        int.tryParse(settingsFromDb['analysis_filter_index']!) ?? 0,
-      );
-    }
+    await SettingsSnapshot.restore(prefs, settingsFromDb);
 
     _invalidateAllDomainProviders();
     return true;

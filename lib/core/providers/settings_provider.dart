@@ -45,6 +45,53 @@ class SettingsState {
   }
 }
 
+/// Portable effective preferences, shared by snapshots and change detection.
+/// Missing legacy keys use app defaults rather than target-device settings.
+abstract final class SettingsSnapshot {
+  static Map<String, String> capture(SharedPreferences prefs) => {
+    'settings_snapshot_version': '1',
+    'currency_code': prefs.getString('currency_code') ?? 'USD',
+    'theme_color': (prefs.getInt('theme_color') ?? 0xFF00D09E).toString(),
+    'theme_mode': (prefs.getInt('theme_mode') ?? ThemeMode.system.index)
+        .toString(),
+    'analysis_filter_index': (prefs.getInt('analysis_filter_index') ?? 0)
+        .toString(),
+    'hide_balance': (prefs.getBool('hide_balance') ?? false).toString(),
+    'haptics_enabled': (prefs.getBool('haptics_enabled') ?? true).toString(),
+  };
+
+  static Future<void> restore(
+    SharedPreferences prefs,
+    Map<String, String> data,
+  ) async {
+    final currency = data['currency_code'];
+    await prefs.setString(
+      'currency_code',
+      Currency.supportedCurrencies.any((c) => c.code == currency)
+          ? currency!
+          : 'USD',
+    );
+    await prefs.setInt(
+      'theme_color',
+      int.tryParse(data['theme_color'] ?? '') ?? 0xFF00D09E,
+    );
+    final mode = int.tryParse(data['theme_mode'] ?? '');
+    await prefs.setInt(
+      'theme_mode',
+      mode != null && mode >= 0 && mode < ThemeMode.values.length
+          ? mode
+          : ThemeMode.system.index,
+    );
+    final period = int.tryParse(data['analysis_filter_index'] ?? '');
+    await prefs.setInt(
+      'analysis_filter_index',
+      period != null && period >= 0 && period <= 3 ? period : 0,
+    );
+    await prefs.setBool('hide_balance', data['hide_balance'] == 'true');
+    await prefs.setBool('haptics_enabled', data['haptics_enabled'] != 'false');
+  }
+}
+
 class SettingsNotifier extends Notifier<SettingsState> {
   static const String _currencyCodeKey = 'currency_code';
   static const String _themeColorKey = 'theme_color';
@@ -74,7 +121,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
         ? Color(themeColorValue)
         : const Color(0xFF00D09E);
 
-    final themeMode = themeModeIndex != null
+    final themeMode =
+        themeModeIndex != null &&
+            themeModeIndex >= 0 &&
+            themeModeIndex < ThemeMode.values.length
         ? ThemeMode.values[themeModeIndex]
         : ThemeMode.system;
 

@@ -10,6 +10,7 @@ import 'savings_provider.dart';
 import 'debt_provider.dart';
 
 class AccountNotifier extends AsyncNotifier<List<Account>> {
+  bool _reordering = false;
   AccountRepository get _repository => ref.read(accountRepositoryProvider);
 
   @override
@@ -84,8 +85,9 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
 
   Future<void> reorderAccounts(int oldIndex, int newIndex) async {
     final accounts = state.value;
-    if (accounts == null) return;
+    if (accounts == null || _reordering) return;
 
+    final previousState = state;
     final items = List<Account>.from(accounts);
 
     final item = items.removeAt(oldIndex);
@@ -96,17 +98,22 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     for (int i = 0; i < items.length; i++) {
       updatedItems.add(items[i].copyWith(position: i));
     }
+    _reordering = true;
     state = AsyncValue.data(updatedItems);
 
     // Update database efficiently with batch
     try {
       await _repository.updateAccountPositions(updatedItems);
     } catch (e, stackTrace) {
+      if (identical(state.value, updatedItems)) state = previousState;
       dev.log(
         'Error updating account positions',
         error: e,
         stackTrace: stackTrace,
       );
+      rethrow;
+    } finally {
+      _reordering = false;
     }
   }
 }

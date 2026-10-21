@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -8,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/providers/settings_provider.dart';
+
 import 'external_backup.dart';
 import 'maintenance_manager.dart';
 import 'recovery_store.dart';
@@ -207,9 +209,8 @@ class RecoveryService with WidgetsBindingObserver {
     try {
       // The selected copy might be pruned when the pre-restore copy is saved.
       // Stage it first so even the oldest retained copy remains restorable.
-      final selected = await File(
-        path,
-      ).copy(p.join(temp.path, 'selected.koin'));
+      final selected = await File(path)
+          .copy(p.join(temp.path, 'selected.koin'));
       // Preserve the current state before replacing it. Serialize against all
       // automatic copies so none reads a database while it is being restored.
       await _saveLocal();
@@ -264,15 +265,7 @@ final recoveryServiceProvider = Provider<RecoveryService>((ref) {
       final db = await DatabaseHelper.instance.database;
       final changes = await db.rawQuery('SELECT total_changes() AS n');
       final version = await db.rawQuery('PRAGMA data_version');
-      final settings = {
-        for (final key in [
-          'currency_code',
-          'theme_color',
-          'theme_mode',
-          'analysis_filter_index',
-        ])
-          key: prefs.get(key),
-      };
+      final settings = SettingsSnapshot.capture(prefs);
       return '${identityHashCode(db)}:$changes:$version:${jsonEncode(settings)}';
     },
   );

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -167,9 +169,10 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
+          PressableScale(
+            semanticLabel: 'Choose portfolio section',
+            enableHaptic: false,
             onTap: () => _showNavigationDropdown(context),
-            behavior: HitTestBehavior.opaque,
             child: Column(
               key: _headerKey,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,154 +233,70 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   // ═══════════════════════════════════════════════════════
   // NAVIGATION DROPDOWN
   // ═══════════════════════════════════════════════════════
-  void _showNavigationDropdown(BuildContext context) {
+  Future<void> _showNavigationDropdown(BuildContext context) async {
     HapticService.selection();
-    final renderBox =
-        _headerKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final top = offset.dy + renderBox.size.height + 6;
-    final left = offset.dx;
-
-    showGeneralDialog(
+    final anchor = _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (anchor == null || overlay == null) return;
+    final offset = anchor.localToGlobal(Offset.zero, ancestor: overlay);
+    final availableWidth = math.max(0.0, overlay.size.width - 32);
+    final selection = await showMenu<int>(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Dismiss',
-      barrierColor: Colors.black.withValues(alpha: 0.1),
-      transitionDuration: KoinMotion.duration(context, KoinMotion.entrance),
-      transitionBuilder: (context, anim, secondaryAnim, child) {
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              left: left,
-              top: top,
-              child: AnimatedBuilder(
-                animation: anim,
-                child: child,
-                builder: (context, child) {
-                  final reduced = MediaQuery.disableAnimationsOf(context);
-                  final progress = reduced
-                      ? 1.0
-                      : KoinMotion.curve.transform(anim.value);
-                  return Opacity(
-                    opacity: progress,
-                    child: Transform.scale(
-                      alignment: Alignment.topLeft,
-                      scale: 0.95 + 0.05 * progress,
-                      child: child,
+      semanticLabel: 'Portfolio sections',
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(offset.dx, offset.dy + anchor.size.height + 6, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      constraints: BoxConstraints(
+        minWidth: math.min(240, availableWidth),
+        maxWidth: math.min(320, availableWidth),
+      ),
+      color: AppTheme.surfaceColor(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: AppTheme.dividerColor(context)),
+      ),
+      items: [
+        for (var index = 0; index < _tabs.length; index++)
+          PopupMenuItem<int>(
+            value: index,
+            child: Semantics(
+              selected: _tabController.index == index,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _tabs[index],
+                      style: TextStyle(
+                        color: _tabController.index == index
+                            ? AppTheme.primaryColor(context)
+                            : AppTheme.textColor(context),
+                        fontSize: KoinTypography.body,
+                        fontWeight: _tabController.index == index
+                            ? KoinTypography.titleWeight
+                            : KoinTypography.labelWeight,
+                      ),
                     ),
-                  );
-                },
+                  ),
+                  const Gap(12),
+                  if (_tabController.index == index)
+                    Icon(
+                      Icons.check_rounded,
+                      size: 20,
+                      color: AppTheme.primaryColor(context),
+                    ),
+                ],
               ),
             ),
-          ],
-        );
-      },
-      pageBuilder: (context, anim, secondaryAnim) {
-        return _DropdownMenu(controller: _tabController, tabs: _tabs);
-      },
+          ),
+      ],
     );
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// RADIAL PROGRESS PAINTER
-// ═══════════════════════════════════════════════════════
-
-class _DropdownMenu extends StatelessWidget {
-  final TabController controller;
-  final List<String> tabs;
-
-  const _DropdownMenu({required this.controller, required this.tabs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        width: 180,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 36,
-              offset: const Offset(0, 12),
-            ),
-            AppTheme.boxShadow(
-              context,
-              color: AppTheme.primaryColor(context).withValues(alpha: 0.05),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ],
-          border: Border.all(
-            color: AppTheme.dividerColor(context).withValues(alpha: 0.4),
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignOutside,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(tabs.length, (index) {
-              final isSelected = controller.index == index;
-              return InkWell(
-                onTap: () {
-                  HapticService.selection();
-                  controller.animateTo(
-                    index,
-                    duration: KoinMotion.duration(context, KoinMotion.entrance),
-                    curve: KoinMotion.curve,
-                  );
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KoinSpacing.screenInset,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.primaryColor(context).withValues(alpha: 0.06)
-                        : Colors.transparent,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        tabs[index],
-                        style: TextStyle(
-                          color: isSelected
-                              ? AppTheme.primaryColor(context)
-                              : AppTheme.textColor(context),
-                          fontSize: KoinTypography.body,
-                          fontWeight: isSelected
-                              ? KoinTypography.titleWeight
-                              : KoinTypography.labelWeight,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (isSelected)
-                        Icon(
-                          Icons.check_rounded,
-                          color: AppTheme.primaryColor(context),
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
+    if (!mounted || !context.mounted || selection == null) return;
+    _tabController.animateTo(
+      selection,
+      duration: KoinMotion.duration(context, KoinMotion.entrance),
+      curve: KoinMotion.curve,
     );
   }
 }

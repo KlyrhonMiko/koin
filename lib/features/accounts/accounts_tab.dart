@@ -91,7 +91,7 @@ class AccountsTab extends ConsumerWidget {
                                           .scale(KoinTypography.small) *
                                       1.5
                             : 0),
-                    onReorder: (id, to) {
+                    onReorder: (id, to) async {
                       final current = ref.read(accountProvider).value ?? [];
                       final from = current.indexWhere((a) => a.id == id);
                       final target = current.indexWhere(
@@ -99,9 +99,19 @@ class AccountsTab extends ConsumerWidget {
                       );
                       if (from >= 0 && from != target) {
                         HapticService.selection();
-                        ref
-                            .read(accountProvider.notifier)
-                            .reorderAccounts(from, target);
+                        try {
+                          await ref
+                              .read(accountProvider.notifier)
+                              .reorderAccounts(from, target);
+                        } catch (_) {
+                          if (context.mounted) {
+                            KoinSnackBar.error(
+                              context,
+                              'Could not save account order',
+                              subtitle: 'Try rearranging the accounts again.',
+                            );
+                          }
+                        }
                       }
                     },
                     addButton: _buildAddAccountButton(context),

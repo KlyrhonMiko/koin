@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
+import 'package:koin/core/utils/snackbar_utils.dart';
 
 enum NumPadAction { digit, operator, decimal, backspace, clear, equals, done }
 
@@ -34,6 +35,7 @@ class _NumPadState extends State<NumPad> {
   String _expression = '';
   String _result = '0';
   bool _replaceOnNextDigit = false;
+  String? _calculationError;
 
   @override
   void initState() {
@@ -58,6 +60,14 @@ class _NumPadState extends State<NumPad> {
 
   void _onPress(String value, NumPadAction action) {
     if (!widget.enabled) return;
+    if (action == NumPadAction.done || action == NumPadAction.equals) {
+      _calculate();
+      if (_calculationError != null) {
+        HapticService.error();
+        KoinSnackBar.error(context, _calculationError!);
+        return;
+      }
+    }
     HapticService.light();
     setState(() {
       if (_replaceOnNextDigit &&
@@ -121,58 +131,58 @@ class _NumPadState extends State<NumPad> {
   }
 
   void _calculate() {
+    _calculationError = null;
+    _result = '';
     if (_expression.isEmpty) {
       _result = '0';
       return;
     }
-
+    // Preserve the existing left-to-right calculator behavior. Every token must
+    // be valid: an incomplete expression must never reuse the last amount.
+    if (!RegExp(r'^-?\d+(?:\.\d*)?(?:[+\-*/]\d+(?:\.\d*)?)*$')
+        .hasMatch(_expression)) {
+      _calculationError = 'Complete the calculation';
+      return;
+    }
     try {
-      final hasOperators = _expression.contains(RegExp(r'[+\-*/]'));
-      if (!hasOperators) {
-        _result = _expression;
-        return;
-      }
-
-      final tokens = RegExp(r'(\d+\.?\d*)|([+\-*/])')
+      final tokens = RegExp(r'\d+\.?\d*|[+\-*/]')
           .allMatches(_expression)
           .map((m) => m.group(0)!)
           .toList();
-
-      if (tokens.isEmpty) {
-        _result = '0';
+      final negative = tokens.first == '-';
+      if (negative) tokens.removeAt(0);
+      var amount = double.parse(tokens.first) * (negative ? -1 : 1);
+      for (var i = 1; i < tokens.length; i += 2) {
+        final value = double.parse(tokens[i + 1]);
+        switch (tokens[i]) {
+          case '+':
+            amount += value;
+          case '-':
+            amount -= value;
+          case '*':
+            amount *= value;
+          case '/':
+            if (value == 0) {
+              _calculationError = 'Cannot divide by zero';
+              return;
+            }
+            amount /= value;
+        }
+      }
+      if (!amount.isFinite) {
+        _calculationError = 'This amount is too large';
         return;
       }
-
-      double currentResult = 0;
-      if (tokens.isNotEmpty) {
-        currentResult = double.tryParse(tokens[0]) ?? 0;
-      }
-
-      for (int i = 1; i < tokens.length; i += 2) {
-        if (i + 1 >= tokens.length) break;
-        final op = tokens[i];
-        final nextVal = double.tryParse(tokens[i + 1]) ?? 0;
-
-        if (op == '+') currentResult += nextVal;
-        if (op == '-') currentResult -= nextVal;
-        if (op == '*') currentResult *= nextVal;
-        if (op == '/') {
-          if (nextVal != 0) {
-            currentResult /= nextVal;
-          }
-        }
-      }
-
-      if (currentResult == currentResult.toInt()) {
-        _result = currentResult.toInt().toString();
+      if (tokens.length == 1) {
+        _result = _expression;
       } else {
-        _result = currentResult.toStringAsFixed(widget.decimalDigits);
-        if (_result.endsWith('0')) {
-          _result = _result.replaceAll(RegExp(r'\.?0+$'), '');
+        _result = amount.toStringAsFixed(widget.decimalDigits);
+        if (_result.contains('.')) {
+          _result = _result.replaceFirst(RegExp(r'\.?0+$'), '');
         }
       }
-    } catch (e) {
-      // Keep last valid result
+    } on FormatException {
+      _calculationError = 'Check the calculation';
     }
   }
 

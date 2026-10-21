@@ -36,6 +36,56 @@ class DashboardScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final currency = settings.currency;
     final automaticPayments = ref.watch(automaticPaymentsProvider);
+    final accountsAsync = ref.watch(accountProvider);
+    if (!transactionsAsync.hasValue || !accountsAsync.hasValue) {
+      final failed = transactionsAsync.hasError || accountsAsync.hasError;
+      void retry() {
+        ref.invalidate(transactionProvider);
+        ref.invalidate(accountProvider);
+      }
+
+      return SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              ref.read(transactionProvider.notifier).loadTransactions(),
+              ref.read(accountProvider.notifier).loadAccounts(),
+            ]);
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+              KoinSpacing.screenInset,
+              16,
+              KoinSpacing.screenInset,
+              100,
+            ),
+            children: [
+              _buildHeader(context),
+              const Gap(24),
+              if (failed)
+                KoinErrorState(
+                  key: const ValueKey('dashboard_financial_error'),
+                  message: 'Could not load your balances.',
+                  onRetry: retry,
+                )
+              else
+                Semantics(
+                  liveRegion: true,
+                  label: 'Loading balances',
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              const Gap(24),
+              _buildQuickActions(context, ref),
+            ],
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       bottom: false,
@@ -768,12 +818,28 @@ class DashboardScreen extends ConsumerWidget {
     return content;
   }
 
-  Widget _buildEmptyUpcoming(BuildContext context, WidgetRef ref) =>
-      KoinEmptyState(
-        icon: Icons.event_repeat_rounded,
-        title: 'Nothing upcoming',
-        subtitle: 'Add a planned payment or recurring income to see it here',
-        action: TextButton(
+  Widget _buildEmptyUpcoming(BuildContext context, WidgetRef ref) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nothing upcoming',
+          style: TextStyle(
+            fontSize: KoinTypography.itemTitle,
+            color: AppTheme.textColor(context),
+          ),
+        ),
+        const Gap(4),
+        Text(
+          'Add a planned payment or recurring income to see it here',
+          style: TextStyle(
+            fontSize: KoinTypography.caption,
+            color: AppTheme.textLightColor(context),
+          ),
+        ),
+        const Gap(8),
+        TextButton.icon(
           onPressed: () {
             HapticService.medium();
             Navigator.push(
@@ -785,9 +851,12 @@ class DashboardScreen extends ConsumerWidget {
               ),
             );
           },
-          child: const Text('Add planned payment'),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add planned payment'),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _HiddenBalanceMask extends StatelessWidget {

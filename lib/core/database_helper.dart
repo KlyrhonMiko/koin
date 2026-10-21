@@ -454,7 +454,27 @@ CREATE TABLE debt_items (
         ) = 1
       """);
     }
+    if (oldVersion < 45) await _createPlannedOccurrences(db);
     await _createTransactionIndexes(db);
+  }
+
+  Future<void> _createPlannedOccurrences(DatabaseExecutor db) async {
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS planned_payment_occurrences (
+  transactionId TEXT PRIMARY KEY,
+  paymentId TEXT NOT NULL,
+  dueDate TEXT NOT NULL,
+  nextDate TEXT NOT NULL,
+  scheduleKey TEXT NOT NULL
+)
+''');
+    await db.execute('''
+CREATE TRIGGER IF NOT EXISTS planned_occurrence_deleted
+AFTER DELETE ON transactions
+BEGIN
+  DELETE FROM planned_payment_occurrences WHERE transactionId = OLD.id;
+END
+''');
   }
 
   Future<void> _createTransactionIndexes(DatabaseExecutor db) async {
@@ -795,6 +815,7 @@ CREATE TABLE transactions (
     await _createSavingsTables(db);
     await _createSavingsSpendingLinks(db);
     await _createPlannedPaymentsTable(db);
+    await _createPlannedOccurrences(db);
     await _createDebtsTables(db);
     await _createCategorizationTables(db);
 

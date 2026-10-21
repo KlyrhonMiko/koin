@@ -344,7 +344,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               precision: _isTransferFeePercentage ? 2 : null,
             ) ??
         (_feeController.text.trim().isEmpty ? 0.0 : double.nan);
-    if (isTransfer && (!parsedFee.isFinite || parsedFee < 0)) {
+    if (isTransfer &&
+        (!parsedFee.isFinite ||
+            parsedFee < 0 ||
+            (_feeExpression.isNotEmpty && _feeController.text.isEmpty))) {
       _showErrorSnackbar('Enter a valid non-negative fee');
       return;
     }

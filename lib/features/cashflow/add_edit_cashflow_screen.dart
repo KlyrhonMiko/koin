@@ -572,12 +572,18 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       title: Text('Auto-Process $_domainNoun'),
-      subtitle: const Text('Create transaction automatically'),
-      value: _isAutoProcess,
-      onChanged: (value) {
-        HapticService.light();
-        setState(() => _isAutoProcess = value);
-      },
+      subtitle: Text(
+        _selectedFrequency == PaymentFrequency.flexible
+            ? 'Choose a repeating schedule to enable automatic entries.'
+            : 'Records due entries while Koin is open or when you return.',
+      ),
+      value: _selectedFrequency != PaymentFrequency.flexible && _isAutoProcess,
+      onChanged: _selectedFrequency == PaymentFrequency.flexible
+          ? null
+          : (value) {
+              HapticService.light();
+              setState(() => _isAutoProcess = value);
+            },
     );
   }
 

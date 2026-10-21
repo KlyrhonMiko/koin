@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'transaction.dart';
 
 class TransactionFilter {
@@ -52,6 +53,17 @@ class TransactionFilter {
       minAmount == null &&
       maxAmount == null &&
       type == null;
+
+  /// Whether only the search query differs (used to debounce search alone).
+  bool hasSameCriteria(TransactionFilter other) =>
+      dateRange == other.dateRange &&
+      type == other.type &&
+      minAmount == other.minAmount &&
+      maxAmount == other.maxAmount &&
+      categoryIds.length == other.categoryIds.length &&
+      categoryIds.containsAll(other.categoryIds) &&
+      accountIds.length == other.accountIds.length &&
+      accountIds.containsAll(other.accountIds);
 
   /// The count of non-query filters actively applied.
   int get activeFilterCount {

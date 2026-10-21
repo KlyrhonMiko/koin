@@ -22,9 +22,8 @@ void quickEntry() {
 }
 
 Future<Widget> _initializeApp({bool standalone = false}) async {
-  // Complete initial history training before the UI can request suggestions.
-  if (!standalone) await HybridMlSuggesterAdapter().bootstrap();
-
+  // Suggestions await their own history bootstrap; the rest of the app can
+  // open without waiting for a dirty categorization model to rebuild.
   final sharedPrefs = await SharedPreferences.getInstance();
 
   return ProviderScope(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/ledger/ledger.dart';
 import 'package:koin/core/models/models.dart';
@@ -5,6 +7,7 @@ import 'package:koin/core/providers/category_provider.dart';
 
 import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
+
 import 'savings_provider.dart';
 
 class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
@@ -107,10 +110,37 @@ final transactionFilterProvider =
       return TransactionFilterNotifier();
     });
 
+class EffectiveTransactionFilter extends Notifier<TransactionFilter> {
+  Timer? _timer;
+  @override
+  TransactionFilter build() {
+    ref.onDispose(() => _timer?.cancel());
+    ref.listen(transactionFilterProvider, (previous, next) {
+      _timer?.cancel();
+      if (next.query.isEmpty || next.query == state.query) {
+        state = next;
+      } else {
+        // Typed text stays immediate in the input; expensive filtering waits
+        // for a pause. Other filter criteria still take effect immediately.
+        if (!next.hasSameCriteria(state)) {
+          state = next.copyWith(query: state.query);
+        }
+        _timer = Timer(const Duration(milliseconds: 200), () => state = next);
+      }
+    });
+    return ref.read(transactionFilterProvider);
+  }
+}
+
+final effectiveTransactionFilterProvider =
+    NotifierProvider<EffectiveTransactionFilter, TransactionFilter>(
+      EffectiveTransactionFilter.new,
+    );
+
 final filteredTransactionsProvider = Provider<AsyncValue<List<AppTransaction>>>(
   (ref) {
     final transactionsAsync = ref.watch(transactionProvider);
-    final filter = ref.watch(transactionFilterProvider);
+    final filter = ref.watch(effectiveTransactionFilterProvider);
     final categories = ref.watch(categoriesProvider).value ?? [];
 
     return transactionsAsync.whenData((transactions) {
@@ -119,4 +149,21 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<AppTransaction>>>(
       return filter.apply(transactions, categoryNamesById: categoryNamesById);
     });
   },
+);
+
+/// Cache grouping and row descriptors independently of theme/privacy rebuilds.
+final transactionRowsProvider = Provider(
+  (ref) => ref
+      .watch(filteredTransactionsProvider)
+      .whenData(
+        (transactions) => [
+          for (final group in TransactionGroup.groupTransactions(
+            transactions,
+          )) ...[
+            (group: group, index: -1),
+            for (var i = 0; i < group.transactions.length; i++)
+              (group: group, index: i),
+          ],
+        ],
+      ),
 );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/database_helper.dart';
@@ -84,6 +86,11 @@ abstract class Ledger {
 
 /// Production Adapter: Uses DatabaseHelper and SQLite under an atomic transaction.
 class SqliteLedgerAdapter implements Ledger {
+  String _scheduleKey(PlannedPayment payment) => jsonEncode([
+    payment.startDate.toIso8601String(),
+    payment.frequency.name,
+    payment.recurrenceDay,
+  ]);
   final DatabaseHelper _dbHelper;
 
   SqliteLedgerAdapter({DatabaseHelper? dbHelper})
@@ -260,15 +267,29 @@ class SqliteLedgerAdapter implements Ledger {
           if (ppMaps.isNotEmpty &&
               !PlannedPayment.fromMap(ppMaps.first).isAutoProcess) {
             final payment = PlannedPayment.fromMap(ppMaps.first);
-            final prevDate = payment.computePreviousDate();
-
-            await txn.update(
-              'planned_payments',
-              {'nextDate': prevDate.toIso8601String()},
-              where: 'id = ?',
-              whereArgs: [payment.id],
+            final occurrences = await txn.query(
+              'planned_payment_occurrences',
+              where: 'transactionId = ?',
+              whereArgs: [id],
             );
-            rolledBackPlannedPaymentId = payment.id;
+            // Reopen only the latest occurrence of the unchanged schedule.
+            // Legacy entries have no reliable occurrence identity: deleting
+            // those preserves the current schedule instead of guessing a date.
+            if (occurrences.isNotEmpty) {
+              final occurrence = occurrences.single;
+              if (occurrence['paymentId'] == payment.id &&
+                  occurrence['nextDate'] ==
+                      payment.nextDate.toIso8601String() &&
+                  occurrence['scheduleKey'] == _scheduleKey(payment)) {
+                await txn.update(
+                  'planned_payments',
+                  {'nextDate': occurrence['dueDate']},
+                  where: 'id = ?',
+                  whereArgs: [payment.id],
+                );
+                rolledBackPlannedPaymentId = payment.id;
+              }
+            }
           }
         }
 
@@ -395,6 +416,13 @@ class SqliteLedgerAdapter implements Ledger {
       );
 
       await txn.insert('transactions', transaction.toMap());
+      await txn.insert('planned_payment_occurrences', {
+        'transactionId': transaction.id,
+        'paymentId': current.id,
+        'dueDate': current.nextDate.toIso8601String(),
+        'nextDate': nextDate.toIso8601String(),
+        'scheduleKey': _scheduleKey(current),
+      });
       return transaction;
     });
   }

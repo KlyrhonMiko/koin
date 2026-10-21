@@ -46,7 +46,9 @@ class KoinCalculatorAmount extends StatelessWidget {
           ],
         ),
       ),
-      if (result != null && expression.contains(RegExp(r'[+\-*/]')))
+      if (result != null &&
+          result!.isNotEmpty &&
+          expression.contains(RegExp(r'[+\-*/]')))
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(

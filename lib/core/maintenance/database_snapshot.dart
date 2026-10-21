@@ -71,6 +71,14 @@ class DatabaseSnapshot {
         throw const FormatException('Unsupported backup version');
       }
       final requiredColumns = {
+        if (version >= 45)
+          'planned_payment_occurrences': [
+            'transactionId',
+            'paymentId',
+            'dueDate',
+            'nextDate',
+            'scheduleKey',
+          ],
         if (version >= 41)
           'categorization_rules': [
             'id',
