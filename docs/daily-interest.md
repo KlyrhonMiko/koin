@@ -28,8 +28,8 @@ finishes outstanding days at the previous rate before saving the new rate.
 Changing the payout frequency carries unpaid interest forward to the next payout
 under the new schedule.
 
-Entries appear in Transactions as **Daily interest (estimated)**,
-**Monthly interest (estimated)**, or **Yearly interest (estimated)** under the
+Entries appear in Transactions as **Daily interest**,
+**Monthly interest**, or **Yearly interest** under the
 **Interest** income category, and count toward account balances, income, and
 reports. The account editor shows a compact estimate for a full day, calendar
 month, or calendar year at your current balance, after tax. Expand

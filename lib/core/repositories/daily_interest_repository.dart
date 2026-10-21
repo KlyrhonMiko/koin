@@ -84,7 +84,7 @@ class DailyInterestRepository {
               'transactions',
               AppTransaction(
                 id: id,
-                note: '${account.interestFrequency.label} interest (estimated)',
+                note: '${account.interestFrequency.label} interest',
                 amount: amount,
                 date: next.subtract(const Duration(milliseconds: 1)),
                 type: TransactionType.income,

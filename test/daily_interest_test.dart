@@ -160,6 +160,7 @@ void main() {
         );
         expect(await interest.processDue(now: DateTime(2026, 10, 23)), 3);
         final posted = await entries();
+        expect(posted.map((t) => t.note), everyElement('Daily interest'));
         expect(posted.map((t) => t.amount), [10, 10.01, 10.02]);
         expect(posted.first.date, DateTime(2026, 10, 20, 23, 59, 59, 999));
         expect(
@@ -336,7 +337,7 @@ void main() {
         await helper.close();
         expect(await interest.processDue(now: DateTime(2026, 11, 1)), 1);
         expect((await entries()).single.amount, 9.6);
-        expect((await entries()).single.note, 'Monthly interest (estimated)');
+        expect((await entries()).single.note, 'Monthly interest');
         expect((await entries()).single.date.day, 31);
         expect(await interest.processDue(now: DateTime(2026, 11, 1)), 0);
         expect(await interest.processDue(now: DateTime(2026, 12, 1)), 1);
@@ -387,7 +388,7 @@ void main() {
         expect(await entries(), isEmpty);
         expect(await interest.processDue(now: DateTime(2029, 1, 1)), 1);
         expect((await entries()).single.amount, 292.8);
-        expect((await entries()).single.note, 'Yearly interest (estimated)');
+        expect((await entries()).single.note, 'Yearly interest');
         expect(
           (await entries()).single.date,
           DateTime(2028, 12, 31, 23, 59, 59, 999),
