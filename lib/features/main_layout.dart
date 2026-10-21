@@ -242,44 +242,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   };
 }
 
-class AnimatedClipRect extends StatelessWidget {
-  final Widget child;
-  final bool open;
-  final bool horizontalAnimation;
-  final bool verticalAnimation;
-  final Alignment alignment;
-  final Duration duration;
-  final Curve curve;
-
-  const AnimatedClipRect({
-    super.key,
-    required this.child,
-    required this.open,
-    this.horizontalAnimation = true,
-    this.verticalAnimation = true,
-    this.alignment = Alignment.center,
-    this.duration = const Duration(milliseconds: 500),
-    this.curve = Curves.linear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSize(
-      duration: KoinMotion.duration(context, duration),
-      curve: curve,
-      alignment: alignment,
-      child: ClipRect(
-        child: Align(
-          alignment: alignment,
-          heightFactor: verticalAnimation ? (open ? 1.0 : 0.0) : 1.0,
-          widthFactor: horizontalAnimation ? (open ? 1.0 : 0.0) : 1.0,
-          child: open ? child : const SizedBox.shrink(),
-        ),
-      ),
-    );
-  }
-}
-
 /// Keep the FAB glow without continuously rendering frames while idle.
 class _GlowFAB extends StatelessWidget {
   final Widget child;

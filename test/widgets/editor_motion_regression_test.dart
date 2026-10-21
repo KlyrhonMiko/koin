@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
@@ -13,7 +12,6 @@ void main() {
   late SharedPreferences preferences;
 
   setUpAll(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     preferences = await SharedPreferences.getInstance();
   });

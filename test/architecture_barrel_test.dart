@@ -60,7 +60,6 @@ void main() {
         expect(PortfolioScreen, isNotNull);
         expect(ActivityScreen, isNotNull);
         expect(BudgetsScreen, isNotNull);
-        expect(AccountsScreen, isNotNull);
         expect(CategoryManagerScreen, isNotNull);
         expect(CustomReportsScreen, isNotNull);
         expect(SettingsScreen, isNotNull);

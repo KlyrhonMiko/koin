@@ -9,7 +9,6 @@ import 'package:koin/core/widgets/cards/spending_trend_chart.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/inputs/numpad.dart';
 import 'package:koin/features/debts/widgets/bnpl_schedule_selectors.dart';
-import 'package:koin/features/savings/coach/coach_controls.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -113,58 +112,6 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(haptics, isEmpty);
-  });
-
-  testWidgets('continuous slider acknowledges only changed final values', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CoachAmountSlider(value: 20, max: 100, onChanged: (_) {}),
-        ),
-      ),
-    );
-    final slider = tester.widget<Slider>(find.byType(Slider));
-    slider.onChangeStart!(20);
-    slider.onChangeEnd!(20);
-    await tester.pump();
-    expect(haptics, isEmpty);
-    slider.onChangeStart!(20);
-    slider.onChanged!(30);
-    await tester.pump();
-    expect(haptics, isEmpty);
-    slider.onChangeEnd!(30);
-    await tester.pump();
-    expect(haptics, ['HapticFeedbackType.selectionClick']);
-  });
-
-  testWidgets('discrete slider ticks only when crossing a step', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CoachAmountSlider(
-            value: 20,
-            max: 100,
-            divisions: 10,
-            onChanged: (_) {},
-          ),
-        ),
-      ),
-    );
-    final slider = tester.widget<Slider>(find.byType(Slider));
-    slider.onChangeStart!(20);
-    slider.onChanged!(20);
-    await tester.pump();
-    expect(haptics, isEmpty);
-    slider.onChanged!(30);
-    await tester.pump();
-    slider.onChanged!(30);
-    slider.onChangeEnd!(30);
-    await tester.pump();
-    expect(haptics, ['HapticFeedbackType.selectionClick']);
   });
 
   testWidgets(

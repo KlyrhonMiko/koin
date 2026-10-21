@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 
 Widget host(Widget child, {bool dark = false, double scale = 1}) => MaterialApp(
@@ -43,7 +42,6 @@ void main() {
       await icons.load();
     }
   });
-  setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
 
   testWidgets('radio sheet returns a typed choice and null on dismissal', (
     tester,

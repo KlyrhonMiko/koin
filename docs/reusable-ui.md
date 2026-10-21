@@ -28,10 +28,8 @@ callbacks. Prefer the smallest matching component over a generic financial card.
 | `KoinMetric` | Quiet label/value/detail stack | Savings-plan metrics and goal saving rates |
 | `KoinPageHeader` | Back button and flexible title with supporting/trailing slots | Debt details, Upcoming, Reports |
 | `KoinSearchField` | Borderless search input for a header or capsule | Categories and transaction history |
-| `CoachAmountSlider`, `CoachStepper` | Feature-local simulation controls | Goal coach and stash coach |
 
 Use `KoinAddButton` for the cashflow add action as well as portfolio lists.
-Stash coach uses the existing `KoinChoiceControl` for its mode selection.
 
 ## Usage
 
@@ -97,10 +95,8 @@ large text. Test long names/amounts and keyboard-open states where applicable.
 12. **Reports:** account/category multi-selection and CSV/PDF exports.
 13. **Transactions/filters:** search, account/category selection, retained filters,
     activity rows and editing.
-14. **Savings coach:** mode selection, sliders, date/amount steppers, Reset and
-    Use this amount.
-15. **Settings:** currency, appearance and confirmation sheets.
-16. **Upcoming/Categories/Accounts:** back navigation, category search, account
+14. **Settings:** currency, appearance and confirmation sheets.
+15. **Upcoming/Categories/Accounts:** back navigation, category search, account
     logos/previews and entrance animations.
 
 ## Automated validation

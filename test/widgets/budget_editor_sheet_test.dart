@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/budgets/widgets/budget_editor_sheet.dart';
 
@@ -30,7 +29,6 @@ TransactionCategory category(String id, double percent) => TransactionCategory(
 );
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
   Future<TestCategories> pumpEditor(
     WidgetTester tester, {

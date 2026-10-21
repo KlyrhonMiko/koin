@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +10,6 @@ void main() {
     testWidgets('single debt details have no purchase section ${type.name}', (
       tester,
     ) async {
-      GoogleFonts.config.allowRuntimeFetching = false;
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final repository = InMemoryDebtAdapter(
@@ -52,7 +50,6 @@ void main() {
     testWidgets('purchase swipe preserves legacy records and BNPL mode $bnpl', (
       tester,
     ) async {
-      GoogleFonts.config.allowRuntimeFetching = false;
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final items = [

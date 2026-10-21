@@ -44,11 +44,10 @@ check a narrow screen or increased system font size for clipped controls.
    color, and icon near the end of each picker. The correct choice should scroll
    into view promptly. Select colors/icons quickly, apply bank templates, and
    leave during scrolling. There should be no overflow, stuck zoom, or exception.
-10. **Savings Coach:** Drag the contribution slider back and forth. Timeline
-    markers and displayed estimates should track the input together without a
-    trailing animation. Change the deadline and reset. In the stash coach, rapidly
-    switch Target Date/Target Amount: the result and controls should transition
-    together, with smooth layout resizing and no old controls left clickable.
+10. **Savings plan editor:** Change the contribution amount, frequency and start
+    date. Projections should update together, retain recorded balances, and
+    distinguish estimates from saved money. Check Save, Cancel, and dismissal
+    with unsaved changes at large text sizes.
 11. **Android Quick Settings entry:** Launch Koin's quick-entry tile. Navigate
     forward and back through transaction types, amounts, pickers, details,
     recurring income, and success. The window should resize smoothly without

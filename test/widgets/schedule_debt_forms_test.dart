@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/cashflow/add_edit_cashflow_screen.dart';
 import 'package:koin/features/debts/add_edit_debt_screen.dart';
@@ -17,7 +16,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   late SharedPreferences prefs;
   setUpAll(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     prefs = await SharedPreferences.getInstance();
     if (const bool.fromEnvironment('FORM_PREVIEWS')) {

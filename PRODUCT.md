@@ -4,20 +4,20 @@
 
 ## Platform
 
-Android mobile app, implemented in Flutter. Other supported platforms are not confirmed.
+android
 
 ## Users and Purpose
 
-People tracking personal savings. The savings detail screen primarily helps them check their recorded balance and record deposits. Savings plans provide supporting information.
+People managing personal finances across accounts, transactions, budgets, debts, savings, and recurring payments. Users need to understand recorded balances, enter activity quickly, and plan upcoming cashflow.
 
 ## Capabilities and Constraints
 
-Preserve saving, releasing funds, goal editing and deletion, savings plan editing, and activity history. Recorded savings and estimated future savings must remain distinguishable. Contributions are manually recorded; estimates do not create deposits.
+The Flutter app stores financial records locally in SQLite. Preserve account privacy, transfers and fees, debt repayments, savings reservations, recurring payments, bank interest, backup/restore, and Android Quick Entry. Forecasts and savings projections are estimates; they never create deposits or change recorded balances.
 
 ## Brand Commitments
 
-Preserve the app's teal theme. The user prefers a minimal, open layout without another bordered helper card, and one Save action instead of a duplicate Set aside button. Savings plan information should stay quiet and compact; avoid decorative icons, date badges, internal dividers, or accent-heavy estimates.
+Preserve Outfit typography, teal accents, light and dark themes, compact navigation, and the shared components documented in DESIGN.md. Use open layouts and clear financial amounts. Keep savings plans quiet and compact, with one Save action and a clear distinction between saved money and projections.
 
 ## Evidence on Hand
 
-The savings screen implementation and flutter_04.png through flutter_10.png show the existing product and user-reviewed iterations. The redesign is scoped to savings details.
+README.md describes the supported flows. DESIGN.md records the current interface rules. The app implementation and regression tests are the source of truth; docs/savings.md and docs/forecasting.md explain the active planning models.

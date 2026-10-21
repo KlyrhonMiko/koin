@@ -30,7 +30,7 @@ Koin brings accounts, transactions, budgets, debts, and savings into one place. 
 | **Budgets & insights** | Set category budgets, follow spending trends, compare periods, and export reports as CSV or PDF. |
 | **Cashflow planning** | Organize recurring income and payments, see upcoming commitments, and project balances over the next week, month, or year. |
 | **Debts & credit** | Track money owed in either direction, itemized purchases, installment plans, and repayment history. |
-| **Savings goals** | Build savings goals and stashes. Explore how changes to contributions or deadlines affect your plan with Savings Coach. |
+| **Savings goals** | Build savings goals and stashes. Set contribution schedules and see projected balances and completion dates. |
 | **Faster entry** | Get category suggestions from your history, use voice input, or open a standalone entry window from Android Quick Settings. |
 
 Light and dark themes, adjustable accent colors, bank templates, and consistent numeric keypads make Koin easy to personalize and use day to day.
@@ -115,8 +115,5 @@ Koin uses **Flutter and Dart**, **Riverpod** for state management, and **SQLite*
 | `docs/` | Forecast details and release notes |
 
 See the [domain glossary](GLOSSARY.md) for the concepts used throughout the codebase.
-
-The [offline AI handoff](docs/offline-ai-handoff.md) records the AICore investigation,
-local model tests, and proposed next steps for continuing on another device.
 
 </details>

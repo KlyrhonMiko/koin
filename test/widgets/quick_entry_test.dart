@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/main_layout.dart';
 import 'package:koin/features/transactions/quick_entry_app.dart';
@@ -19,7 +18,6 @@ void main() {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   setUpAll(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
       final font = FontLoader(KoinTypography.fontFamily);
       for (final weight in [

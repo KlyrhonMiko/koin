@@ -1,14 +1,14 @@
-<!-- Release title: Koin v1.1.3 — Quick Entry, Forecasts & Savings Coach -->
+<!-- Release title: Koin v1.1.3 — Quick Entry, Forecasts & Savings Plans -->
 <!-- Release notes cover changes since v1.1.2. -->
 
-A new look for Koin, with faster transaction entry and more ways to plan your money. This update adds Android Quick Entry, cashflow forecasts, Savings Coach, and automatic backups.
+A new look for Koin, with faster transaction entry and more ways to plan your money. This update adds Android Quick Entry, cashflow forecasts, savings plans, and automatic backups.
 
 ## What's new
 
 - **Quick Entry on Android** — Record an expense, income, or transfer from your Quick Settings panel. You can also claim recurring income in the same compact window.
 - **Category suggestions** — Koin learns from your transaction history to suggest categories and accounts as you type. Learning happens on your device.
 - **Cashflow forecasts** — See where your balance could be heading over the next week, month, or year, based on your activity, upcoming payments, debts, and savings plans.
-- **Savings Coach** — Try different weekly contributions and deadlines to see how they affect your goal. For stashes, explore how much you could save by a date or when you could reach an amount.
+- **Savings plans** — Set weekly, fortnightly, or monthly contributions and review projected balances or goal completion dates in the plan editor.
 - **Automatic recovery copies** — Koin keeps up to three local backups, with restore options in Settings. You can also export a `.koin` file or choose a backup folder on Android, Windows, and Linux.
 - **More detailed debt tracking** — Add individual purchases and installment plans, increase existing debts, and see exactly how much remains when recording a repayment.
 

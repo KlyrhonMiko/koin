@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/debt_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +30,6 @@ void main() {
       testWidgets('last payment transition dark=$dark failure=$failDeletion', (
         tester,
       ) async {
-        GoogleFonts.config.allowRuntimeFetching = false;
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final repository = FakeHistoryDebtAdapter(

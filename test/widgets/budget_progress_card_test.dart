@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/dashboard/widgets/budget_progress_card.dart';
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
   const currency = Currency(code: 'PHP', symbol: '₱', name: 'Philippine Peso');
   TransactionCategory category(String id, {double? percent}) =>
       TransactionCategory(

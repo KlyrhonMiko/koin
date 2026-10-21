@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/main_layout.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
@@ -24,7 +23,6 @@ void main() {
   late SharedPreferences prefs;
 
   setUpAll(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
   });

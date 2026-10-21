@@ -15,7 +15,6 @@ import 'package:koin/core/maintenance/recovery_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/accounts/account_form_screen.dart';
@@ -97,7 +96,6 @@ void main() {
     DateTime Function()? clock,
     List<Account>? accounts,
   }) async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({
       'hide_balance': hidden,
       'analysis_filter_index': 1,

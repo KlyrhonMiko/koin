@@ -1,64 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
-import 'package:koin/features/savings/coach/stash_coach_view.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(AnimationTracker.clear);
-
-  testWidgets(
-    'stash coach switches controls together without retaining old actions',
-    (tester) async {
-      GoogleFonts.config.allowRuntimeFetching = false;
-      SharedPreferences.setMockInitialValues({});
-      final preferences = await SharedPreferences.getInstance();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
-          child: MaterialApp(
-            theme: AppTheme.getTheme(Colors.teal, false),
-            home: StashCoachView(
-              goal: SavingsGoal(
-                id: 'stash-motion',
-                name: 'Stash',
-                startDate: DateTime(2026),
-                currentAmount: 100,
-                isStash: true,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      for (final label in ['Target Amount', 'Target Date', 'Target Amount']) {
-        await tester.tap(find.text(label));
-        await tester.pump();
-        expect(
-          find.text(
-            label == 'Target Amount'
-                ? 'Adjust Target Amount'
-                : 'Adjust Target Date',
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.text(
-            label == 'Target Amount'
-                ? 'Adjust Target Date'
-                : 'Adjust Target Amount',
-          ),
-          findsNothing,
-        );
-        await tester.pump(const Duration(milliseconds: 40));
-        expect(tester.takeException(), isNull);
-      }
-      await tester.pumpAndSettle();
-      expect(tester.binding.transientCallbackCount, 0);
-    },
-  );
 
   testWidgets('entrance preserves child state across refresh and disabling', (
     tester,

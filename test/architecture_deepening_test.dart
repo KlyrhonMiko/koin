@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
-import 'package:koin/features/savings/coach/coach_engine.dart';
 
 void main() {
   group('TransactionFilter Deep Domain Tests', () {
@@ -290,7 +289,7 @@ void main() {
     });
   });
 
-  group('SavingsGoal Pace & CoachEngine Tests', () {
+  group('SavingsGoal Pace Tests', () {
     final goal = SavingsGoal(
       id: 'g1',
       name: 'Emergency Fund',
@@ -308,21 +307,6 @@ void main() {
         expect(goal.expectedAmountToday(today), greaterThan(500.0));
         expect(goal.currentWeeklyPace(today), greaterThan(0));
         expect(goal.goalGap(today), greaterThan(0));
-      },
-    );
-
-    test(
-      'CoachEngine simulates goal status, projected finish, and required pace',
-      () {
-        final engine = CoachEngine(goal: goal, today: DateTime(2026, 6, 1));
-        final result = engine.simulate();
-
-        expect(result.weeklyAmountRequired, greaterThan(0));
-        expect(result.status, isNotNull);
-        expect(result.newDeadline, equals(DateTime(2026, 12, 31)));
-
-        final presets = engine.generatePresets(500.0);
-        expect(presets, isA<List<double>>());
       },
     );
   });

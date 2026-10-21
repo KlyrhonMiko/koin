@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/dashboard/dashboard_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     AnimationTracker.clear();
     SharedPreferences.setMockInitialValues({'currency_code': 'USD'});
   });

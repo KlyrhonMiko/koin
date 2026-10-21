@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
@@ -44,7 +43,6 @@ void main() {
   testWidgets('expense amount previews savings usage and tracks edits', (
     tester,
   ) async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     final prefs = await SharedPreferences.getInstance();
     final savings = InMemorySavingsAdapter(
@@ -230,7 +228,6 @@ void main() {
   testWidgets(
     'bottom sheet releases only the shortfall and cancellation preserves savings',
     (tester) async {
-      GoogleFonts.config.allowRuntimeFetching = false;
       SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
       final prefs = await SharedPreferences.getInstance();
       await repository.insertSavingsLog(log('deposit', 250));
@@ -306,7 +303,6 @@ void main() {
   testWidgets('automatic release spans goals and leaves other accounts alone', (
     tester,
   ) async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     final prefs = await SharedPreferences.getInstance();
     final multiRepository = InMemorySavingsAdapter(
@@ -379,7 +375,6 @@ void main() {
   testWidgets(
     'release asks for confirmation and saves a negative activity amount',
     (tester) async {
-      GoogleFonts.config.allowRuntimeFetching = false;
       SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
       final prefs = await SharedPreferences.getInstance();
       await repository.insertSavingsLog(log('deposit', 250));
@@ -426,7 +421,6 @@ void main() {
   testWidgets('sheet shows only remaining funds and blocks saving an excess', (
     tester,
   ) async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     final prefs = await SharedPreferences.getInstance();
     await repository.insertSavingsLog(log('first', 250));

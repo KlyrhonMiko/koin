@@ -1,4 +1,4 @@
-import 'package:koin/features/savings/coach/coach_engine.dart';
+import 'package:koin/core/models/savings/savings_projection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -35,15 +35,19 @@ void main() {
           startDate: start,
         ),
       );
-      final result = CoachEngine(goal: scheduled, today: today).simulate();
-      expect(result.weeklyPace, 20);
-      expect(
-        CoachEngine(
-          goal: scheduled,
-          today: today,
-        ).simulate(extraSavedPerWeek: 5).weeklyPace,
-        25,
+      final projection = SavingsProjection(goal: scheduled, today: today);
+      expect(projection.totalBy(DateTime(2026, 3, 28)), 620);
+      final increased = SavingsProjection(
+        goal: scheduled.copyWith(
+          savingsPlan: SavingsPlan(
+            amount: 50,
+            frequency: SavingsFrequency.fortnightly,
+            startDate: start,
+          ),
+        ),
+        today: today,
       );
+      expect(increased.totalBy(DateTime(2026, 3, 28)), 650);
     },
   );
 

@@ -8,7 +8,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/analysis/analysis_screen.dart';
 import 'package:koin/features/transactions/add_transaction_screen.dart';
@@ -50,7 +49,6 @@ void main() {
     }
   });
   setUp(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({'analysis_filter_index': 1});
     final prefs = await SharedPreferences.getInstance();
     suggester = DelayedSuggester();

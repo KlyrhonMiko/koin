@@ -1,13 +1,11 @@
 import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/snackbar_utils.dart';
 import 'package:koin/core/widgets/sheets/confirmation_sheet.dart';
 
 void main() {
-  setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
 
   Future<BuildContext> mountToastHost(
     WidgetTester tester, {
