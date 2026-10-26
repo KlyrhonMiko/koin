@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/core.dart';
@@ -23,6 +24,11 @@ void main() {
   late SharedPreferences prefs;
 
   setUpAll(() async {
+    final outfit = FontLoader(KoinTypography.fontFamily);
+    for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      outfit.addFont(rootBundle.load('assets/fonts/outfit/Outfit-$weight.ttf'));
+    }
+    await outfit.load();
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
   });

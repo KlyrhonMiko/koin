@@ -33,6 +33,13 @@ abstract final class KoinTypography {
   static const chartLabel = overline;
   static const badgeLabel = overline;
 
+  static const choiceLabelStyle = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: compact,
+    fontWeight: labelWeight,
+    letterSpacing: 0,
+    height: 1.2,
+  );
   static const entityNameStyle = TextStyle(
     fontSize: formTitle,
     fontWeight: FontWeight.w800,

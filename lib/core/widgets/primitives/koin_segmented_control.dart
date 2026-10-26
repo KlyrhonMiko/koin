@@ -60,6 +60,7 @@ class KoinChoiceControl extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool vertical;
+  final bool compact;
 
   const KoinChoiceControl({
     super.key,
@@ -67,6 +68,7 @@ class KoinChoiceControl extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     this.vertical = false,
+    this.compact = false,
   }) : assert(segments.length > 0),
        assert(selectedIndex >= 0 && selectedIndex < segments.length);
 
@@ -83,6 +85,7 @@ class KoinChoiceControl extends StatelessWidget {
     builder: (context, position, _) => _SegmentTrack(
       segments: segments,
       vertical: vertical,
+      compact: compact,
       position: position,
       selectedIndex: selectedIndex,
       onChanged: (index) {
@@ -100,6 +103,7 @@ class _SegmentTrack extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool vertical;
+  final bool compact;
 
   const _SegmentTrack({
     required this.segments,
@@ -107,18 +111,33 @@ class _SegmentTrack extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     this.vertical = false,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final primary = AppTheme.primaryColor(context);
     final scaler = MediaQuery.textScalerOf(context);
-    final height = math.max(
-      48.0,
-      scaler.scale(KoinTypography.itemTitle) * 2 + 16,
-    );
+    final labelStyle = compact
+        ? KoinTypography.choiceLabelStyle
+        : const TextStyle(
+            fontSize: KoinTypography.itemTitle,
+            fontWeight: KoinTypography.titleWeight,
+            letterSpacing: KoinTypography.itemTracking,
+          );
+    final height = math.max(48.0, scaler.scale(labelStyle.fontSize!) * 2 + 16);
     final borderColor = AppTheme.fieldBorderColor(context);
     final color = AppTheme.textColor(context);
+    final selectedColor = compact
+        ? AppTheme.contentColor(
+            context,
+            primary,
+            background: Color.alphaBlend(
+              primary.withValues(alpha: 0.14),
+              AppTheme.surfaceColor(context),
+            ),
+          )
+        : color;
     const radius = BorderRadius.all(Radius.circular(KoinShape.field));
 
     return Container(
@@ -153,7 +172,11 @@ class _SegmentTrack extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => onChanged(index),
                   style: TextButton.styleFrom(
-                    foregroundColor: color,
+                    foregroundColor: compact
+                        ? (index == selectedIndex
+                              ? selectedColor
+                              : AppTheme.textLightColor(context))
+                        : color,
                     backgroundColor: primary.withValues(
                       alpha:
                           0.14 *
@@ -168,20 +191,15 @@ class _SegmentTrack extends StatelessWidget {
                     children: [
                       if (segments[index].icon != null &&
                           scaler.scale(16) <= 20) ...[
-                        Icon(segments[index].icon, size: 20, color: color),
-                        const SizedBox(width: 8),
+                        Icon(segments[index].icon, size: compact ? 16 : 20),
+                        SizedBox(width: compact ? 6 : 8),
                       ],
                       Flexible(
                         child: Text(
                           segments[index].label,
                           textAlign: TextAlign.center,
                           maxLines: 2,
-                          style: TextStyle(
-                            color: color,
-                            fontSize: KoinTypography.itemTitle,
-                            fontWeight: KoinTypography.titleWeight,
-                            letterSpacing: KoinTypography.itemTracking,
-                          ),
+                          style: labelStyle,
                         ),
                       ),
                     ],
