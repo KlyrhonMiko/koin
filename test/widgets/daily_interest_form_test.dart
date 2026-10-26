@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -22,10 +23,18 @@ class _InterestRepository extends DailyInterestRepository {
   }
 }
 
+class _ReloadableLedger extends InMemoryLedgerAdapter {
+  Completer<List<AppTransaction>>? pending;
+
+  @override
+  Future<List<AppTransaction>> getTransactions() =>
+      pending?.future ?? super.getTransactions();
+}
+
 void main() {
   late ProviderContainer container;
   late InMemoryAccountAdapter accounts;
-  late InMemoryLedgerAdapter ledger;
+  late _ReloadableLedger ledger;
   late _InterestRepository interest;
   final boundary = GlobalKey();
   Account bank({
@@ -60,7 +69,7 @@ void main() {
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
     final prefs = await SharedPreferences.getInstance();
     accounts = InMemoryAccountAdapter(initial: [?account]);
-    ledger = InMemoryLedgerAdapter();
+    ledger = _ReloadableLedger();
     interest = _InterestRepository();
     container = ProviderContainer(
       overrides: [
@@ -287,6 +296,69 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('one Save waits for ledger reload before adjusting the balance', (
+    tester,
+  ) async {
+    await launch(tester, account: bank());
+    await container
+        .read(transactionProvider.notifier)
+        .addTransaction(
+          AppTransaction(
+            id: 'income',
+            amount: 250,
+            date: DateTime(2026, 10, 20),
+            type: TransactionType.income,
+            categoryId: 'salary',
+            accountId: 'bank',
+          ),
+        );
+    await ledger.recordTransaction(
+      AppTransaction(
+        id: 'pending-income',
+        amount: 100,
+        date: DateTime(2026, 10, 20),
+        type: TransactionType.income,
+        categoryId: 'salary',
+        accountId: 'bank',
+      ),
+    );
+    final transactions = await ledger.getTransactions();
+    await tester.enterText(field('account_balance_field'), '12,345.67');
+    ledger.pending = Completer<List<AppTransaction>>();
+    final reload = container
+        .read(transactionProvider.notifier)
+        .loadTransactions();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save Changes'));
+    await tester.tap(find.text('Save Changes'));
+    await tester.pump(const Duration(milliseconds: 100));
+    ledger.pending!.complete(transactions);
+    await reload;
+    await tester.pumpAndSettle();
+    final saved = (await accounts.getAccounts()).single;
+    expect(
+      TransactionRules.balance(saved, transactions),
+      closeTo(12345.67, 0.001),
+    );
+    expect(find.byType(AccountFormScreen), findsNothing);
+  });
+
+  testWidgets(
+    'balance save uses the current account rather than its opening copy',
+    (tester) async {
+      await launch(tester, account: bank());
+      await container
+          .read(accountProvider.notifier)
+          .updateAccount(bank().copyWith(initialBalance: 11000));
+      await tester.enterText(field('account_balance_field'), '12345.67');
+      await save(tester);
+      final saved = (await accounts.getAccounts()).single;
+      expect(TransactionRules.balance(saved, []), closeTo(12345.67, 0.001));
+      expect(find.byType(AccountFormScreen), findsNothing);
+    },
+  );
 
   testWidgets('enables automatic interest with optional zero tax', (
     tester,

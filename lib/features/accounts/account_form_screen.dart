@@ -427,16 +427,25 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               .currency
               .tryParseInput(balanceController.text) ??
           0.0;
+      // Dashboard values can still reflect the ledger before a pending reload.
+      final transactions = isEditing
+          ? await ref.read(transactionProvider.future)
+          : const <AppTransaction>[];
+      final currentAccount = isEditing
+          ? (await ref.read(accountProvider.future))
+                .firstWhere((account) => account.id == widget.account!.id)
+          : null;
       if (isEditing && balanceController.text == _openingBalanceText) {
         // Automatic interest received while editing must not be erased by an
         // unchanged balance field that still shows the opening value.
-        newInitialBalance = widget.account!.initialBalance;
+        newInitialBalance = currentAccount!.initialBalance;
       } else if (isEditing) {
-        final dashboardStats = ref.read(dashboardStatsProvider);
-        final currentBalance =
-            dashboardStats.accountBalances[widget.account!.id] ??
-            widget.account!.initialBalance;
-        newInitialBalance = widget.account!.computeAdjustedInitialBalance(
+        final currentBalance = TransactionRules.balance(
+          currentAccount!,
+          transactions,
+          at: ref.read(calendarClockProvider)(),
+        );
+        newInitialBalance = currentAccount.computeAdjustedInitialBalance(
           targetBalance: newInitialBalance,
           currentBalance: currentBalance,
         );
