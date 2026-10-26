@@ -416,59 +416,71 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final isSelected = _filter.type == type;
     final primary = AppTheme.primaryColor(context);
 
-    return GestureDetector(
-      onTap: () {
-        HapticService.selection();
-        setState(() {
-          _filter = _filter.copyWith(type: type, clearType: type == null);
-        });
-      },
-      child: AnimatedContainer(
-        duration: KoinMotion.duration(
-          context,
-          const Duration(milliseconds: 250),
-        ),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? primary : AppTheme.surfaceLightColor(context),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          border: isSelected
-              ? null
-              : Border.all(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.3),
+          onTap: () {
+            HapticService.selection();
+            setState(() {
+              _filter = _filter.copyWith(type: type, clearType: type == null);
+            });
+          },
+          child: AnimatedContainer(
+            duration: KoinMotion.duration(
+              context,
+              const Duration(milliseconds: 250),
+            ),
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? primary : AppTheme.surfaceLightColor(context),
+              borderRadius: BorderRadius.circular(14),
+              border: isSelected
+                  ? null
+                  : Border.all(
+                      color: AppTheme.dividerColor(context)
+                          .withValues(alpha: 0.3),
+                    ),
+              boxShadow: isSelected
+                  ? [
+                      AppTheme.boxShadow(
+                        context,
+                        color: primary.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : AppTheme.textLightColor(context),
                 ),
-          boxShadow: isSelected
-              ? [
-                  AppTheme.boxShadow(
-                    context,
-                    color: primary.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                const Gap(6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : AppTheme.textColor(context),
+                    fontWeight: KoinTypography.titleWeight,
+                    fontSize: KoinTypography.caption,
                   ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected
-                  ? Colors.white
-                  : AppTheme.textLightColor(context),
+                ),
+              ],
             ),
-            const Gap(6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textColor(context),
-                fontWeight: KoinTypography.titleWeight,
-                fontSize: KoinTypography.caption,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

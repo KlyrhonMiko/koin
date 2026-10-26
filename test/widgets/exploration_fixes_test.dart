@@ -99,6 +99,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'hide_balance': hidden,
       'analysis_filter_index': 1,
+      'currency_code': 'USD',
     });
     final prefs = await SharedPreferences.getInstance();
     final c = ProviderContainer(

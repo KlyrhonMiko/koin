@@ -7,7 +7,7 @@ import 'package:koin/core/widgets/app_startup.dart';
 void main() {
   const readyApp = MaterialApp(home: Scaffold(body: Text('Ready')));
 
-  testWidgets('draws loading UI before initialization and opens when ready', (
+  testWidgets('keeps fast startup branded without flashing progress', (
     tester,
   ) async {
     final initialization = Completer<Widget>();
@@ -18,7 +18,7 @@ void main() {
         initialize: () {
           calls++;
           hadFirstFrame = find
-              .byType(LinearProgressIndicator)
+              .byType(KoinStartupPlaceholder)
               .evaluate()
               .isNotEmpty;
           return initialization.future;
@@ -28,10 +28,11 @@ void main() {
 
     expect(hadFirstFrame, isTrue);
     expect(find.byType(Image), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.text('Ready'), findsNothing);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 100));
     expect(calls, 1);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
 
     initialization.complete(readyApp);
     await tester.pump();
@@ -39,6 +40,22 @@ void main() {
     expect(find.text('Ready'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  testWidgets('shows progress only when initialization takes longer', (
+    tester,
+  ) async {
+    final initialization = Completer<Widget>();
+    await tester.pumpWidget(
+      AppStartup(initialize: () => initialization.future),
+    );
+    await tester.pump(const Duration(milliseconds: 399));
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    initialization.complete(readyApp);
+    await tester.pumpAndSettle();
+    expect(find.text('Ready'), findsOneWidget);
   });
 
   testWidgets('offers recovery when initialization fails', (tester) async {

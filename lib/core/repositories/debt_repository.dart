@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/models.dart';
 
+import '../ledger/transaction_rules.dart';
+
 /// Domain Seam: The interface for persisting and retrieving debts, sub-items, and repayments.
 abstract class DebtRepository {
   Future<List<Debt>> getDebts();
@@ -138,7 +140,11 @@ class InMemoryDebtAdapter implements DebtRepository {
 
   @override
   Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) async {
-    _debts[debt.id] = debt;
+    _debts[debt.id] = TransactionRules.debtEdit(
+      debt,
+      previous: _debts[debt.id],
+      hasHistory: (_repayments[debt.id] ?? []).isNotEmpty,
+    );
     _items[debt.id] = List.from(items.map((i) => i.copyWith(debtId: debt.id)));
   }
 

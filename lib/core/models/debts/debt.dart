@@ -1,4 +1,16 @@
 import 'debt_item.dart';
+import 'installment_amounts.dart';
+
+class DebtInstallment {
+  const DebtInstallment({
+    required this.date,
+    required this.amount,
+    this.itemId,
+  });
+  final DateTime date;
+  final double amount;
+  final String? itemId;
+}
 
 enum InstallmentFrequency {
   weekly,
@@ -158,11 +170,20 @@ class Debt {
   }
 
   double get perInstallmentAmount =>
-      totalInstallments > 0 ? amount / totalInstallments : amount;
+      InstallmentAmounts.at(amount, totalInstallments, 0);
 
-  int get paidInstallmentsCount => perInstallmentAmount > 0
-      ? (currentAmount / perInstallmentAmount).floor()
-      : 0;
+  int get paidInstallmentsCount => paidInstallments();
+
+  int paidInstallments({int decimalDigits = 2}) {
+    if (totalInstallments <= 0) return 0;
+    final paid = InstallmentAmounts.units(currentAmount, decimalDigits);
+    final total = InstallmentAmounts.units(amount, decimalDigits);
+    if (paid >= total) return totalInstallments;
+    final base = total ~/ totalInstallments;
+    return base == 0
+        ? totalInstallments - 1
+        : (paid ~/ base).clamp(0, totalInstallments - 1);
+  }
 
   int get remainingInstallmentsCount =>
       (totalInstallments - paidInstallmentsCount).clamp(0, totalInstallments);
@@ -200,90 +221,85 @@ class Debt {
     }
   }
 
-  Map<DateTime, double> get _installmentSchedule {
-    final Map<DateTime, double> groups = {};
-    for (var item in items) {
-      if (item.totalInstallments > 0) {
-        final installmentAmount = item.amount / item.totalInstallments;
-        DateTime nextDate = item.firstPaymentDate;
-        for (int i = 0; i < item.totalInstallments; i++) {
-          final dateKey = DateTime(nextDate.year, nextDate.month, nextDate.day);
-          groups[dateKey] = (groups[dateKey] ?? 0.0) + installmentAmount;
-          nextDate = isMonthlyPurchaseAccount
-              ? monthlyBillDate(nextDate.year, nextDate.month + 1)
-              : _advanceDate(nextDate, frequency, item.firstPaymentDate);
-        }
-      } else {
-        final dateKey = DateTime(
-          item.firstPaymentDate.year,
-          item.firstPaymentDate.month,
-          item.firstPaymentDate.day,
+  List<DebtInstallment> installmentSchedule({int decimalDigits = 2}) {
+    final result = <DebtInstallment>[];
+    if (items.isEmpty) {
+      var date = startDate;
+      final count = totalInstallments > 0 ? totalInstallments : 1;
+      for (var i = 0; i < count; i++) {
+        result.add(
+          DebtInstallment(
+            date: date,
+            amount: InstallmentAmounts.at(
+              amount,
+              count,
+              i,
+              digits: decimalDigits,
+            ),
+          ),
         );
-        groups[dateKey] = (groups[dateKey] ?? 0.0) + item.amount;
+        date = _advanceDate(date, frequency, startDate);
+      }
+    } else {
+      for (final item in items) {
+        var date = item.firstPaymentDate;
+        final count = item.totalInstallments > 0 ? item.totalInstallments : 1;
+        for (var i = 0; i < count; i++) {
+          result.add(
+            DebtInstallment(
+              date: date,
+              itemId: item.id,
+              amount: item.installmentAmountAt(i, decimalDigits: decimalDigits),
+            ),
+          );
+          date = isMonthlyPurchaseAccount
+              ? monthlyBillDate(date.year, date.month + 1)
+              : _advanceDate(date, frequency, item.firstPaymentDate);
+        }
+      }
+    }
+    result.sort((a, b) => a.date.compareTo(b.date));
+    return result;
+  }
+
+  Map<DateTime, double> remainingSchedule({int decimalDigits = 2}) {
+    final Map<DateTime, double> groups = {};
+    final scale = InstallmentAmounts.units(1, decimalDigits);
+    var paid = InstallmentAmounts.units(currentAmount, decimalDigits);
+    DateTime? overriddenDate;
+    for (final event in installmentSchedule(decimalDigits: decimalDigits)) {
+      final units = InstallmentAmounts.units(event.amount, decimalDigits);
+      if (paid >= units) {
+        paid -= units;
+        continue;
+      }
+      final date = items.isEmpty && dueDate != null
+          ? overriddenDate ?? dueDate!
+          : event.date;
+      final key = DateTime(date.year, date.month, date.day);
+      groups[key] = (groups[key] ?? 0) + (units - paid) / scale;
+      paid = 0;
+      if (items.isEmpty && dueDate != null) {
+        overriddenDate = _advanceDate(date, frequency, dueDate!);
       }
     }
     return groups;
   }
 
-  double get upcomingPaymentAmount {
-    if (items.isNotEmpty) {
-      final schedule = _installmentSchedule;
-      final sortedDates = schedule.keys.toList()..sort();
-      double remainingPaid = currentAmount;
+  double get upcomingPaymentAmount => upcomingPayment();
 
-      for (var date in sortedDates) {
-        final amount = schedule[date]!;
-        if (remainingPaid >= amount) {
-          remainingPaid -= amount;
-        } else {
-          return amount - remainingPaid;
-        }
-      }
-      return 0.0;
-    }
-
-    if (totalInstallments > 0) {
-      final perInstallment = amount / totalInstallments;
-      final unpaidCurrent = remainingAmount % perInstallment;
-      if (unpaidCurrent > 0) return unpaidCurrent;
-      return remainingAmount < perInstallment
-          ? remainingAmount
-          : perInstallment;
-    }
-    return remainingAmount;
+  double upcomingPayment({int decimalDigits = 2}) {
+    final remaining = remainingSchedule(decimalDigits: decimalDigits);
+    return remaining.isEmpty ? 0 : remaining.values.first;
   }
 
-  DateTime get nextDueDate {
-    if (dueDate != null) return dueDate!;
-    if (items.isNotEmpty) {
-      final schedule = _installmentSchedule;
-      final sortedDates = schedule.keys.toList()..sort();
-      double remainingPaid = currentAmount;
+  DateTime get nextDueDate => nextPaymentDate();
 
-      for (var date in sortedDates) {
-        final amount = schedule[date]!;
-        if (remainingPaid >= amount) {
-          remainingPaid -= amount;
-        } else {
-          return date;
-        }
-      }
-      if (sortedDates.isNotEmpty) return sortedDates.last;
-      return startDate;
-    }
-
-    if (totalInstallments <= 0) return startDate;
-
-    final singleInstallment = amount / totalInstallments;
-    final installmentsPaid = singleInstallment > 0
-        ? (currentAmount / singleInstallment).floor()
-        : 0;
-
-    DateTime next = startDate;
-    for (int i = 0; i < installmentsPaid; i++) {
-      next = _advanceDate(next, frequency, startDate);
-    }
-    return next;
+  DateTime nextPaymentDate({int decimalDigits = 2}) {
+    final remaining = remainingSchedule(decimalDigits: decimalDigits);
+    if (remaining.isNotEmpty) return remaining.keys.first;
+    final full = installmentSchedule(decimalDigits: decimalDigits);
+    return dueDate ?? (full.isEmpty ? startDate : full.last.date);
   }
 
   /// Resolves the effective next due date, preferring explicitly assigned [dueDate]

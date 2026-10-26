@@ -1,5 +1,6 @@
 export 'account_provider.dart';
 export 'calendar_provider.dart';
+export 'currency_precision_provider.dart';
 export 'automatic_payments_provider.dart';
 export 'category_provider.dart';
 export 'dashboard_provider.dart';

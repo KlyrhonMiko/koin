@@ -1,3 +1,5 @@
+import 'installment_amounts.dart';
+
 class DebtItem {
   final String id;
   final String debtId;
@@ -61,6 +63,13 @@ class DebtItem {
     );
   }
 
-  double get perInstallmentAmount =>
-      totalInstallments > 0 ? amount / totalInstallments : amount;
+  double get perInstallmentAmount => installmentAmountAt(0);
+
+  double installmentAmountAt(int index, {int decimalDigits = 2}) =>
+      InstallmentAmounts.at(
+        amount,
+        totalInstallments,
+        index,
+        digits: decimalDigits,
+      );
 }

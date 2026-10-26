@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/repositories/savings_repository.dart';
+
 import 'dashboard_provider.dart';
+import '../ledger/savings_spending_approval.dart';
 
 class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
   SavingsRepository get _repository => ref.read(savingsRepositoryProvider);
@@ -155,27 +157,25 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
     await loadGoals();
   });
 
-  Future<void> updateLog(
-    SavingsLog oldLog,
-    SavingsLog newLog,
-  ) => _writeLog(() async {
-    final logs = await _repository.getSavingsLogs(oldLog.goalId);
-    final currentLog = logs.where((l) => l.id == oldLog.id).firstOrNull;
-    if (currentLog == null) {
-      throw const SavingsBalanceException(
-        'This savings entry is no longer available',
-      );
-    }
-    if (currentLog.transactionId != null) {
-      throw const SavingsBalanceException(
-        'Automatic releases are read only. Edit the linked transaction instead.',
-      );
-    }
-    await _validateLog(newLog, oldLog: currentLog);
-    await _repository.updateSavingsLog(currentLog, newLog);
-    ref.invalidate(savingsLogsProvider);
-    await loadGoals();
-  });
+  Future<void> updateLog(SavingsLog oldLog, SavingsLog newLog) =>
+      _writeLog(() async {
+        final logs = await _repository.getSavingsLogs(oldLog.goalId);
+        final currentLog = logs.where((l) => l.id == oldLog.id).firstOrNull;
+        if (currentLog == null) {
+          throw const SavingsBalanceException(
+            'This savings entry is no longer available',
+          );
+        }
+        if (currentLog.transactionId != null) {
+          throw const SavingsBalanceException(
+            'Automatic releases are read only. Edit the linked transaction instead.',
+          );
+        }
+        await _validateLog(newLog, oldLog: currentLog);
+        await _repository.updateSavingsLog(currentLog, newLog);
+        ref.invalidate(savingsLogsProvider);
+        await loadGoals();
+      });
 
   Future<void> deleteLog(SavingsLog log) => _writeLog(() async {
     final logs = await _repository.getSavingsLogs(log.goalId);
@@ -199,12 +199,11 @@ class SavingsGoalsNotifier extends AsyncNotifier<List<SavingsGoal>> {
     await loadGoals();
   });
 
-  Future<void> rollbackDraftRelease(String transactionId) =>
-      _writeLog(() async {
-        await _repository.rollbackSpendingRelease(transactionId);
-        ref.invalidate(savingsLogsProvider);
-        await loadGoals();
-      });
+  Future<void> rollbackDraftRelease(String transactionId) async {
+    // Draft consent never wrote savings. Cancellation must work even when the
+    // database is unavailable; migration repairs legacy interrupted releases.
+    ref.read(savingsSpendingApprovalsProvider).clear(transactionId);
+  }
 }
 
 final savingsGoalsProvider =

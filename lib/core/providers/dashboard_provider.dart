@@ -4,6 +4,7 @@ import 'package:koin/core/providers/transaction_provider.dart';
 import 'package:koin/core/providers/account_provider.dart';
 
 import 'calendar_provider.dart';
+import 'effective_transaction_clock_provider.dart';
 
 class DashboardStats {
   final double totalIncome;
@@ -125,7 +126,7 @@ class DashboardStats {
 
 final dashboardStatsProvider = Provider<DashboardStats>((ref) {
   ref.watch(calendarDayProvider);
-  final now = ref.read(calendarClockProvider)();
+  final now = ref.watch(effectiveTransactionClockProvider);
   final transactionsState = ref.watch(transactionProvider);
   final accountsState = ref.watch(accountProvider);
 
@@ -154,7 +155,7 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
 final monthlyDashboardStatsProvider = Provider.family<DashboardStats, DateTime>(
   (ref, date) {
     ref.watch(calendarDayProvider);
-    final now = ref.read(calendarClockProvider)();
+    final now = ref.watch(effectiveTransactionClockProvider);
     final transactionsState = ref.watch(transactionProvider);
     final accountsState = ref.watch(accountProvider);
 

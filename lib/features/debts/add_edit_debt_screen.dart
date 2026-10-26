@@ -164,12 +164,14 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     setState(() => _saving = true);
     try {
       await _saveImpl();
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         HapticService.error();
         KoinSnackBar.error(
           context,
-          'Could not save debt',
+          error is FinancialValidationException
+              ? error.message
+              : 'Could not save debt',
           subtitle: 'Your changes are kept. Try again.',
         );
       }
@@ -638,8 +640,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                       label: 'Payment frequency',
                       selectedName: _selectedFrequency.label,
                       selectedColor: primaryColor,
-                      selectedIconCodePoint:
-                          KoinIcons.calendarDots.codePoint,
+                      selectedIconCodePoint: KoinIcons.calendarDots.codePoint,
                       placeholder: 'Choose frequency',
                       onTap: () {
                         _frequencyUserSet = true;
@@ -858,11 +859,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    KoinIcons.plusCircle,
-                    color: primaryColor,
-                    size: 20,
-                  ),
+                  Icon(KoinIcons.plusCircle, color: primaryColor, size: 20),
                   const Gap(8),
                   Flexible(
                     child: Text(

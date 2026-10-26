@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'calendar_provider.dart';
+import 'currency_precision_provider.dart';
 
 import 'package:koin/core/models/models.dart';
 import 'package:koin/core/ledger/ledger.dart';
@@ -8,6 +9,9 @@ import 'package:koin/core/repositories/planned_payment_repository.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
 import 'package:koin/core/providers/debt_provider.dart';
+
+import 'savings_provider.dart';
+import '../ledger/savings_spending_approval.dart';
 
 class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
   PlannedPaymentRepository get _repository =>
@@ -37,6 +41,7 @@ class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
 
   Future<void> deletePlannedPayment(String id) async {
     await _repository.deletePlannedPayment(id);
+    ref.invalidate(transactionProvider);
     await loadPlannedPayments();
   }
 
@@ -59,8 +64,15 @@ class PlannedPaymentNotifier extends AsyncNotifier<List<PlannedPayment>> {
       transactionId: transactionId,
       date: date,
     );
+    if (transactionId != null) {
+      ref.read(savingsSpendingApprovalsProvider).clear(transactionId);
+    }
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
     await loadPlannedPayments();
-    ref.invalidate(transactionProvider);
+    await ref.read(transactionProvider.notifier).acceptRecordedTransactions([
+      tx,
+    ]);
     return tx;
   }
 }
@@ -92,6 +104,7 @@ final upcomingTimelineProvider = Provider<AsyncValue<UpcomingTimeline>>((ref) {
       payments: payments.value!,
       debts: debts.value!,
       now: ref.read(calendarClockProvider)(),
+      decimalDigits: ref.watch(currencyPrecisionProvider),
     ),
   );
 });

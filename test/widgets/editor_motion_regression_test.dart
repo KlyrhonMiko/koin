@@ -46,6 +46,9 @@ void main() {
           filteredTransactionsProvider.overrideWithValue(
             AsyncData(transactions),
           ),
+          ledgerProvider.overrideWithValue(
+            InMemoryLedgerAdapter(initial: transactions),
+          ),
         ],
         child: MaterialApp(
           theme: AppTheme.getTheme(Colors.teal, false),

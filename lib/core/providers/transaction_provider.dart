@@ -9,6 +9,7 @@ import 'package:koin/core/providers/planned_payment_provider.dart';
 import 'package:koin/core/providers/debt_provider.dart';
 
 import 'savings_provider.dart';
+import '../ledger/savings_spending_approval.dart';
 
 class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
   Ledger get _ledger => ref.read(ledgerProvider);
@@ -26,8 +27,33 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
   }
 
   Future<void> addTransaction(AppTransaction transaction) async {
-    await _ledger.recordTransaction(transaction);
-    await loadTransactions(showLoading: false);
+    final recorded = await _ledger.recordTransaction(transaction);
+    ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
+    await acceptRecordedTransactions([recorded]);
+  }
+
+  Future<void> acceptRecordedTransactions(
+    List<AppTransaction> recorded, {
+    String? familyId,
+  }) async {
+    final current = state.value;
+    if (current == null) {
+      await loadTransactions(showLoading: false);
+      return;
+    }
+    final ids = recorded.map((tx) => tx.id).toSet();
+    final merged = [
+      ...current.where(
+        (tx) =>
+            !ids.contains(tx.id) &&
+            (familyId == null ||
+                (tx.id != familyId && tx.transferId != familyId)),
+      ),
+      ...recorded,
+    ]..sort(TransactionPage.compare);
+    state = AsyncData(merged);
   }
 
   Future<TransferResult> addTransfer({
@@ -38,15 +64,25 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
       transferTransaction: transferTransaction,
       feeTransaction: feeTransaction,
     );
-    await loadTransactions(showLoading: false);
+    ref.read(savingsSpendingApprovalsProvider).clear(transferTransaction.id);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
+    await acceptRecordedTransactions([
+      result.transferTransaction,
+      if (result.feeTransaction != null) result.feeTransaction!,
+    ], familyId: transferTransaction.id);
     return result;
   }
 
   Future<void> updateTransaction(AppTransaction transaction) async {
     await _ledger.updateTransaction(transaction);
+    ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    await loadTransactions(showLoading: false);
+    await acceptRecordedTransactions(
+      await _ledger.getTransactionFamily(transaction.id),
+      familyId: transaction.id,
+    );
     final updated = state.value
         ?.where((tx) => tx.id == transaction.id)
         .firstOrNull;
@@ -61,16 +97,26 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     AppTransaction? fee,
   ) async {
     await _ledger.updateTransfer(transaction, fee);
+    ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    await loadTransactions(showLoading: false);
+    await acceptRecordedTransactions(
+      await _ledger.getTransactionFamily(transaction.id),
+      familyId: transaction.id,
+    );
   }
 
   Future<void> deleteTransaction(String id) async {
     final result = await _ledger.voidTransaction(id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    await loadTransactions(showLoading: false);
+    if (state.value != null) {
+      state = AsyncData(
+        state.value!.where((tx) => tx.id != id && tx.transferId != id).toList(),
+      );
+    } else {
+      await loadTransactions(showLoading: false);
+    }
 
     if (result.hadPlannedPaymentRollback) {
       // Force reload of planned payments if a rollback occurred

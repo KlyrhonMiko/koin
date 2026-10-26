@@ -43,6 +43,10 @@ Download the APK from the [latest GitHub release](https://github.com/KlyrhonMiko
 
 For quick entry, add **Koin · Add entry** from the Android Quick Settings tile editor. Use it to record a transaction or claim recurring income without opening the full app.
 
+New installations offer optional currency and opening-balance setup, starting with **PHP · Philippine Peso**. Existing saved currency choices are retained. Tap **+** to record a transaction; setting an opening balance does not create income.
+
+Transaction history loads 100 entries at a time with **Load more transactions**. Search and filters cover the complete history, and day totals include entries on later pages. Speech input follows your system language by default; choose another installed language in **Settings → Speech language**.
+
 ## Your data
 
 Financial records and category learning stay on your device. Cashflow forecasts use your history and scheduled commitments; they are estimates that change as your records change. Read more about [how forecasting works](docs/forecasting.md).
@@ -50,8 +54,10 @@ Financial records and category learning stay on your device. Cashflow forecasts 
 Koin checks for changes every 10 seconds while open and when moving between foreground and background. It keeps up to **three verified local recovery copies**, with dates, storage use, and restore options in Settings.
 
 - **Folder backups:** Android, Windows, and Linux can save copies to a selected local folder or USB drive while Koin is running.
-- **Manual export:** Save a compressed `.koin` backup. Earlier `.db` backups can still be imported.
+- **Manual export:** Save a `.koin` backup with optional password protection. Protected files require that password to import; Koin cannot recover it. Compressed `.koin` and earlier `.db` backups remain supported. See [backup formats](docs/backup-formats.md).
 - **Device-loss protection:** Keep an exported copy on another device. Local copies may be removed on uninstall, and backup files contain personal financial data.
+
+Password protection applies to the manual export you select. Automatic local recovery and folder copies retain their existing unencrypted format.
 
 ## Development
 

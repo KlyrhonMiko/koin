@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import 'settings_provider.dart';
+
 final voiceInputProvider =
     NotifierProvider<VoiceInputNotifier, VoiceInputState>(() {
       return VoiceInputNotifier();
@@ -38,6 +40,15 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
   final SpeechToText _speechToText = SpeechToText();
 
   bool _isInitInProgress = false;
+
+  Future<List<LocaleName>> availableLocales() async {
+    if (!await _ensureInitialized()) {
+      throw StateError(
+        'Speech recognition is unavailable. Check microphone permission.',
+      );
+    }
+    return _speechToText.locales();
+  }
 
   @override
   VoiceInputState build() {
@@ -87,44 +98,44 @@ class VoiceInputNotifier extends Notifier<VoiceInputState> {
 
     state = state.copyWith(isListening: true, lastWords: '', error: '');
 
+    // A null locale lets the recognizer follow the user's system language.
+    final selectedLocale = ref.read(settingsProvider).voiceLocale;
     String? preferredLocaleId;
-    try {
-      final locales = await _speechToText.locales();
-      // Try to find a Philippine locale (en_PH or fil_PH) for better local word recognition
-      for (var locale in locales) {
-        if (locale.localeId.contains('en_PH') ||
-            locale.localeId.contains('en-PH')) {
-          preferredLocaleId = locale.localeId;
-          break;
+    if (selectedLocale != null) {
+      try {
+        final locales = await _speechToText.locales();
+        if (locales.any((locale) => locale.localeId == selectedLocale)) {
+          preferredLocaleId = selectedLocale;
         }
+      } catch (_) {
+        // A removed or unavailable language falls back to the system default.
       }
-
-      if (preferredLocaleId == null) {
-        for (var locale in locales) {
-          if (locale.localeId.contains('fil') ||
-              locale.localeId.contains('TL')) {
-            preferredLocaleId = locale.localeId;
-            break;
-          }
-        }
-      }
-    } catch (_) {
-      // Fallback to system default if locales fetch fails
     }
 
-    await _speechToText.listen(
-      onResult: (result) {
-        state = state.copyWith(lastWords: result.recognizedWords);
-      },
-      listenOptions: SpeechListenOptions(
-        listenMode: ListenMode.dictation,
-        partialResults: true,
-        cancelOnError: true,
-        localeId: preferredLocaleId,
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
-      ),
-    );
+    try {
+      await _speechToText.listen(
+        onResult: (result) {
+          if (ref.mounted) {
+            state = state.copyWith(lastWords: result.recognizedWords);
+          }
+        },
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.dictation,
+          partialResults: true,
+          cancelOnError: true,
+          localeId: preferredLocaleId,
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 5),
+        ),
+      );
+    } catch (_) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isListening: false,
+          error: 'Could not start speech recognition. Check microphone permission and try again.',
+        );
+      }
+    }
   }
 
   Future<void> stopListening() async {

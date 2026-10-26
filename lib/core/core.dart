@@ -3,6 +3,7 @@ export 'database_helper.dart';
 export 'theme.dart';
 export 'ledger/ledger.dart';
 export 'ledger/transaction_rules.dart';
+export 'ledger/savings_spending_approval.dart';
 export 'repositories/repositories.dart';
 export 'maintenance/maintenance_manager.dart';
 export 'forecasting/forecasting.dart';

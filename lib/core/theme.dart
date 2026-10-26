@@ -89,8 +89,9 @@ class AppTheme {
     BuildContext context,
     Color color, {
     Color? background,
-  }) {
-    final surface = background ?? surfaceLightColor(context);
+  }) => _contentColorOn(color, background ?? surfaceLightColor(context));
+
+  static Color _contentColorOn(Color color, Color surface) {
     final target = foregroundFor(surface);
     for (var step = 0; step <= 100; step++) {
       final candidate = Color.lerp(color, target, step / 100)!;
@@ -433,7 +434,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: _contentColorOn(primaryColor, surfaceLightColor),
           textStyle: TextStyle(
             fontFamily: KoinTypography.fontFamily,
             fontSize: 14,
@@ -561,6 +562,25 @@ class AppTheme {
   }
 
   // Predefined colors for variety
+  static const accentColorNames = [
+    'Teal',
+    'Blue',
+    'Indigo',
+    'Purple',
+    'Pink',
+    'Rose',
+    'Red',
+    'Amber',
+    'Yellow',
+    'Lime',
+    'Emerald',
+    'Cyan',
+    'Sky',
+    'Fuchsia',
+    'Slate',
+    'Black',
+  ];
+
   static const List<Color> accentColors = [
     Color(0xFF00D09E), // Original Teal
     Color(0xFF3B82F6), // Blue

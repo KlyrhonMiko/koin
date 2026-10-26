@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:koin/core/models/models.dart';
+
 import 'forecast_evaluation.dart';
 
 /// Projection timeframe for financial cashflow forecasts.
@@ -150,68 +151,18 @@ class CashflowForecaster {
     return count;
   }
 
-  static double _debtProjection(Debt debt, DateTime end) {
+  static double _debtProjection(Debt debt, DateTime end, int decimalDigits) {
     if (debt.remainingAmount <= 0) return 0;
-    final (days, months) = switch (debt.frequency) {
-      InstallmentFrequency.weekly => (7, null),
-      InstallmentFrequency.biweekly => (14, null),
-      InstallmentFrequency.monthly => (null, 1),
-      InstallmentFrequency.yearly => (null, 12),
-    };
-    if (debt.items.isNotEmpty) {
-      // Allocate repayments to the oldest item installments first. Items can
-      // start at different dates and stop after their own installment count.
-      final events = <({DateTime date, double amount})>[];
-      for (final item in debt.items) {
-        final count = math.max(1, item.totalInstallments);
-        for (var i = 0; i < count; i++) {
-          final due = debt.isMonthlyPurchaseAccount
-              ? debt.monthlyBillDate(
-                  item.firstPaymentDate.year,
-                  item.firstPaymentDate.month + i,
-                )
-              : _occurrence(
-                  _day(item.firstPaymentDate),
-                  i,
-                  days: days,
-                  months: months,
-                );
-          if (!due.isBefore(end)) break;
-          events.add((date: due, amount: item.amount / count));
-        }
-      }
-      events.sort((a, b) => a.date.compareTo(b.date));
-      var paid = debt.currentAmount;
-      var projected = 0.0;
-      for (final event in events) {
-        final covered = math.min(paid, event.amount);
-        paid -= covered;
-        projected += event.amount - covered;
-      }
-      return projected.clamp(0.0, debt.remainingAmount);
-    }
-    if (debt.totalInstallments <= 0) {
+    if (debt.totalInstallments <= 0 && debt.items.isEmpty) {
       final due = debt.dueDate;
       return due != null && _day(due).isBefore(end) ? debt.remainingAmount : 0;
     }
-    final installment = debt.perInstallmentAmount;
-    if (installment <= 0) return 0;
-    // Explicit due dates describe the next installment; otherwise use the
-    // original schedule and subtract recorded repayments, including partials.
-    final anchor = _day(debt.dueDate ?? debt.startDate);
-    final count = debt.dueDate == null
-        ? debt.totalInstallments
-        : debt.remainingInstallmentsCount;
-    var projected = 0.0;
-    for (var i = 0; i < count; i++) {
-      final due = _occurrence(anchor, i, days: days, months: months);
-      if (!due.isBefore(end)) break;
-      projected += installment;
-    }
-    final paid = debt.dueDate == null
-        ? debt.currentAmount
-        : debt.currentAmount % installment;
-    return (projected - paid).clamp(0.0, debt.remainingAmount);
+    return debt
+        .remainingSchedule(decimalDigits: decimalDigits)
+        .entries
+        .where((entry) => entry.key.isBefore(end))
+        .fold<double>(0, (sum, entry) => sum + entry.value)
+        .clamp(0.0, debt.remainingAmount);
   }
 
   static double _savingsProjection(
@@ -293,6 +244,7 @@ class CashflowForecaster {
   static ({double monthlyInflow, double monthlyOutflow}) calculateDebtsMonthly({
     required List<Debt> debts,
     DateTime? referenceDate,
+    int decimalDigits = 2,
   }) {
     final now = referenceDate ?? DateTime.now();
     double inflow = 0.0;
@@ -301,7 +253,7 @@ class CashflowForecaster {
     for (final debt in debts) {
       if (debt.remainingAmount <= 0) continue;
 
-      final payment = debt.upcomingPaymentAmount;
+      final payment = debt.upcomingPayment(decimalDigits: decimalDigits);
       if (payment <= 0) continue;
 
       double monthlyPayment = 0.0;
@@ -375,6 +327,7 @@ class CashflowForecaster {
     required ForecastHorizon horizon,
     DateTime? referenceDate,
     int? historyDays,
+    int decimalDigits = 2,
   }) {
     final start = _day(referenceDate ?? DateTime.now());
     final end = horizonEnd(horizon, start);
@@ -391,10 +344,8 @@ class CashflowForecaster {
         ? horizon.scaleFactor
         : end.difference(start).inDays /
               DateTime(start.year, start.month + 1, 0).day;
-    final variableInflow =
-        inflowEvaluation.monthlyEstimate * variableScale;
-    final variableOutflow =
-        outflowEvaluation.monthlyEstimate * variableScale;
+    final variableInflow = inflowEvaluation.monthlyEstimate * variableScale;
+    final variableOutflow = outflowEvaluation.monthlyEstimate * variableScale;
     var forecastedInflow = variableInflow;
     var forecastedOutflow = variableOutflow;
     for (final payment in plannedPayments) {
@@ -406,7 +357,7 @@ class CashflowForecaster {
       if (payment.type == TransactionType.expense) forecastedOutflow += amount;
     }
     for (final debt in debts) {
-      final amount = _debtProjection(debt, end);
+      final amount = _debtProjection(debt, end, decimalDigits);
       if (debt.type == DebtType.owedToMe) forecastedInflow += amount;
       if (debt.type == DebtType.iOwe) forecastedOutflow += amount;
     }
@@ -445,7 +396,7 @@ class CashflowForecaster {
         if (payment.type == TransactionType.expense) balance -= amount;
       }
       for (final debt in debts) {
-        final amount = _debtProjection(debt, through);
+        final amount = _debtProjection(debt, through, decimalDigits);
         if (debt.type == DebtType.owedToMe) balance += amount;
         if (debt.type == DebtType.iOwe) balance -= amount;
       }

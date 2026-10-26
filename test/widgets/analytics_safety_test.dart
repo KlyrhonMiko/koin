@@ -49,7 +49,10 @@ void main() {
     }
   });
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'analysis_filter_index': 1});
+    SharedPreferences.setMockInitialValues({
+      'analysis_filter_index': 1,
+      'currency_code': 'USD',
+    });
     final prefs = await SharedPreferences.getInstance();
     suggester = DelayedSuggester();
     container = ProviderContainer(

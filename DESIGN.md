@@ -72,6 +72,12 @@ Make Remaining the main teal card's label and large amount, using the shared sum
 
 The short window opened from Android Quick Settings uses the same KoinFormTheme as the transaction editor, the shared page background throughout, 20px content insets, Outfit heading styles, and 28px sheet corners. Keep Add transaction as the primary teal action, with Claim income and Open app as compact shared action rows below. Use the app icon beside the opening title, grouped transaction-type choices with semantic icon colors, shared account/category selectors and keypad, and KoinPrimaryButton for saving. Preserve content-driven native window sizing, drag dismissal, draft handling, accessibility, and all transaction validation.
 
+## First-run setup
+
+Start new users in PHP · Philippine Peso unless a currency is already saved. Keep the centered Koin startup logo steady until account and transaction data are ready; do not insert a circular loading screen before the form. Startup progress appears only when initialization lasts beyond 400ms, without delaying a ready form.
+
+Keep onboarding as one optional setup screen. Use a compact Koin logo/name row with a quiet Skip for now action, a clear introductory heading, and the existing explanatory copy. Group currency and account choices in one shared surface; allow selected names to wrap fully at large text sizes. Use open underlined name and balance inputs, persistent labels, and the shared prominent amount typography. Keep the savings explanation quiet and unboxed. Anchor Start tracking near the bottom on regular-height screens, and place it in the scrolling form when the keyboard, large text, or short landscape height needs the space. Preserve drafts through layout changes and keep initial balances separate from income.
+
 ## Account editor
 
 Use open underlined name and balance inputs with persistent labels above, a 20px name and 28px balance, and live preview updates. Group Private account and Credit account in one quiet surface with a divider and native teal switches. Transfer fee has its own section with the shared Fixed amount / Percentage choice control, a labeled input with currency or percent units, and concise zero-fee guidance. Preserve account storage and validation.

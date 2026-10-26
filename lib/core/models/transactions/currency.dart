@@ -54,6 +54,12 @@ class Currency {
     );
   }
 
+  static const defaultCurrency = Currency(
+    code: 'PHP',
+    symbol: '₱',
+    name: 'Philippine Peso',
+  );
+
   static const List<Currency> supportedCurrencies = [
     Currency(code: 'USD', symbol: '\$', name: 'US Dollar'),
     Currency(code: 'EUR', symbol: '€', name: 'Euro'),
@@ -64,6 +70,6 @@ class Currency {
     Currency(code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah'),
     Currency(code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit'),
     Currency(code: 'SGD', symbol: '\$', name: 'Singapore Dollar'),
-    Currency(code: 'PHP', symbol: '₱', name: 'Philippine Peso'),
+    defaultCurrency,
   ];
 }

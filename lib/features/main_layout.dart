@@ -57,7 +57,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         backgroundColor: AppTheme.primaryColor(context),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         shape: const CircleBorder(),
-        child: const Icon(KoinIcons.plusBold, size: 32, color: Colors.black),
+        child: const Icon(KoinIcons.plusBold, size: 32),
       ),
     ),
   );
@@ -197,7 +197,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   Widget _buildNavItem(BuildContext context, int index, bool active) {
-    final primary = AppTheme.primaryColor(context);
+    final primary = AppTheme.contentColor(
+      context,
+      AppTheme.primaryColor(context),
+    );
     return Tooltip(
       excludeFromSemantics: true,
       message: _labels[index],

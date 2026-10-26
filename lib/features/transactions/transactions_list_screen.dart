@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/transactions/widgets/filter_bottom_sheet.dart';
 import 'package:gap/gap.dart';
+import 'package:koin/core/providers/transaction_history_provider.dart';
 
 // Removed local AnimationTracker as it is now in core/utils/animation_utils.dart
 
@@ -12,7 +13,8 @@ class TransactionsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rowsAsync = ref.watch(transactionRowsProvider);
+    final rowsAsync = ref.watch(pagedTransactionRowsProvider);
+    final history = ref.watch(transactionHistoryProvider).value;
 
     final filter = ref.watch(transactionFilterProvider);
     final filterNotifier = ref.read(transactionFilterProvider.notifier);
@@ -67,8 +69,25 @@ class TransactionsListScreen extends ConsumerWidget {
                     KoinSpacing.screenInset,
                     100,
                   ),
-                  itemCount: rows.length,
+                  itemCount: rows.length + (history?.next != null ? 1 : 0),
                   itemBuilder: (context, rowIndex) {
+                    if (rowIndex == rows.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: history!.loadingMore
+                            ? const Center(child: CircularProgressIndicator())
+                            : TextButton(
+                                onPressed: () => ref
+                                    .read(transactionHistoryProvider.notifier)
+                                    .loadMore(),
+                                child: Text(
+                                  history.loadMoreError
+                                      ? 'Could not load more. Retry'
+                                      : 'Load more transactions',
+                                ),
+                              ),
+                      );
+                    }
                     final row = rows[rowIndex];
                     final group = row.group;
                     if (row.index == -1) {
@@ -168,7 +187,7 @@ class TransactionsListScreen extends ConsumerWidget {
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, _) => KoinErrorState(
-                onRetry: () => ref.invalidate(transactionProvider),
+                onRetry: () => ref.invalidate(transactionHistoryProvider),
               ),
             ),
           ),

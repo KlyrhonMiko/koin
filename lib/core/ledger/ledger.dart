@@ -7,6 +7,7 @@ import 'package:koin/core/models/models.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'transaction_rules.dart';
+import 'savings_spending_approval.dart';
 
 /// Represents the outcome of voiding/deleting a transaction,
 /// recording any cascading domain side effects that occurred.
@@ -43,6 +44,24 @@ class TransferResult {
 /// Hides raw SQL persistence and encapsulates transaction cascade rules.
 abstract class Ledger {
   Future<List<AppTransaction>> getTransactions();
+
+  Future<TransactionPage> getTransactionPage({
+    required TransactionFilter filter,
+    required Map<String, String> categoryNamesById,
+    TransactionCursor? after,
+    int limit = 100,
+  }) async => TransactionPage.fromTransactions(
+    await getTransactions(),
+    filter: filter,
+    categoryNamesById: categoryNamesById,
+    after: after,
+    limit: limit,
+  );
+
+  Future<List<AppTransaction>> getTransactionFamily(String id) async =>
+      (await getTransactions())
+          .where((tx) => tx.id == id || tx.transferId == id)
+          .toList();
 
   Future<AppTransaction> recordTransaction(AppTransaction transaction);
 
@@ -85,20 +104,44 @@ abstract class Ledger {
 }
 
 /// Production Adapter: Uses DatabaseHelper and SQLite under an atomic transaction.
-class SqliteLedgerAdapter implements Ledger {
+class SqliteLedgerAdapter extends Ledger {
   String _scheduleKey(PlannedPayment payment) => jsonEncode([
     payment.startDate.toIso8601String(),
     payment.frequency.name,
     payment.recurrenceDay,
   ]);
   final DatabaseHelper _dbHelper;
+  final SavingsSpendingApprovals? savingsApprovals;
 
-  SqliteLedgerAdapter({DatabaseHelper? dbHelper})
+  SqliteLedgerAdapter({DatabaseHelper? dbHelper, this.savingsApprovals})
     : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
   Future<List<AppTransaction>> getTransactions() async {
     return await _dbHelper.getTransactions();
+  }
+
+  @override
+  Future<TransactionPage> getTransactionPage({
+    required TransactionFilter filter,
+    required Map<String, String> categoryNamesById,
+    TransactionCursor? after,
+    int limit = 100,
+  }) => _dbHelper.getTransactionPage(
+    filter: filter,
+    categoryNamesById: categoryNamesById,
+    after: after,
+    limit: limit,
+  );
+
+  @override
+  Future<List<AppTransaction>> getTransactionFamily(String id) async {
+    final db = await _dbHelper.database;
+    return (await db.query(
+      'transactions',
+      where: 'id = ? OR transferId = ?',
+      whereArgs: [id, id],
+    )).map(AppTransaction.fromMap).toList();
   }
 
   @override
@@ -117,6 +160,14 @@ class SqliteLedgerAdapter implements Ledger {
         transaction.amount,
         transaction.type != TransactionType.income,
       );
+      if (transaction.type != TransactionType.income) {
+        await _releaseApprovedSavings(
+          txn,
+          transaction.id,
+          transaction.accountId,
+          transaction.amount,
+        );
+      }
       await txn.insert('transactions', transaction.toMap());
       return transaction;
     });
@@ -126,13 +177,24 @@ class SqliteLedgerAdapter implements Ledger {
   Future<void> updateTransaction(AppTransaction transaction) async {
     await _dbHelper.updateTransaction(
       transaction,
-      validate: (txn) => _validateMoney(
-        txn,
-        transaction.accountId,
-        transaction.amount,
-        transaction.type != TransactionType.income,
-        excluding: transaction.id,
-      ),
+      validate: (txn) async {
+        await _validateMoney(
+          txn,
+          transaction.accountId,
+          transaction.amount,
+          transaction.type != TransactionType.income,
+          excluding: transaction.id,
+        );
+        if (transaction.type != TransactionType.income) {
+          await _releaseApprovedSavings(
+            txn,
+            transaction.id,
+            transaction.accountId,
+            transaction.amount,
+            excluding: transaction.id,
+          );
+        }
+      },
     );
   }
 
@@ -154,6 +216,15 @@ class SqliteLedgerAdapter implements Ledger {
         );
         if (transaction.type == TransactionType.transfer) {
           await _validateDestination(txn, transaction);
+        }
+        if (transaction.type != TransactionType.income) {
+          await _releaseApprovedSavings(
+            txn,
+            transaction.id,
+            transaction.accountId,
+            transaction.amount + (fee?.amount ?? 0),
+            excluding: transaction.id,
+          );
         }
       },
     );
@@ -238,6 +309,41 @@ class SqliteLedgerAdapter implements Ledger {
         'Choose two different available accounts',
       );
     }
+  }
+
+  Future<void> _releaseApprovedSavings(
+    DatabaseExecutor db,
+    String id,
+    String accountId,
+    double debit, {
+    String? excluding,
+  }) async {
+    final approval = savingsApprovals?[id];
+    if (savingsApprovals == null) return;
+    // Existing linked edits are reconciled by _syncSavingsRelease in this same
+    // transaction, including restoration of their earlier releases.
+    if ((await db.query(
+      'savings_spending_links',
+      where: 'transactionId = ?',
+      whereArgs: [id],
+    )).isNotEmpty) {
+      return;
+    }
+    if (approval != null &&
+        (approval.accountId != accountId ||
+            approval.debitCents != (debit * 100).round())) {
+      throw const FinancialValidationException(
+        'Review the savings needed again',
+      );
+    }
+    await _dbHelper.releaseSavingsForTransaction(
+      db,
+      transactionId: id,
+      accountId: accountId,
+      debit: debit,
+      approvedGoalCents: approval?.goalCents ?? const {},
+      excluding: excluding,
+    );
   }
 
   @override
@@ -415,6 +521,9 @@ class SqliteLedgerAdapter implements Ledger {
         plannedPaymentId: payment.id,
       );
 
+      if (current.type == TransactionType.expense) {
+        await _releaseApprovedSavings(txn, transaction.id, accountId, amount);
+      }
       await txn.insert('transactions', transaction.toMap());
       await txn.insert('planned_payment_occurrences', {
         'transactionId': transaction.id,
@@ -520,6 +629,14 @@ class SqliteLedgerAdapter implements Ledger {
           debtRepaymentId: repayment.id,
         );
 
+        if (isExpense) {
+          await _releaseApprovedSavings(
+            txn,
+            transaction.id,
+            repayment.accountId!,
+            repayment.amount,
+          );
+        }
         await txn.insert('transactions', transaction.toMap());
         return transaction;
       }
@@ -541,6 +658,12 @@ class SqliteLedgerAdapter implements Ledger {
         true,
       );
       await _validateDestination(txn, transferTransaction);
+      await _releaseApprovedSavings(
+        txn,
+        transferTransaction.id,
+        transferTransaction.accountId,
+        transferTransaction.amount + (feeTransaction?.amount ?? 0),
+      );
       await txn.insert('transactions', transferTransaction.toMap());
       if (feeTransaction != null) {
         await txn.insert(
@@ -585,7 +708,7 @@ class SqliteLedgerAdapter implements Ledger {
 }
 
 /// In-Memory Test Adapter: Provides deterministic in-memory ledger operations for testing.
-class InMemoryLedgerAdapter implements Ledger {
+class InMemoryLedgerAdapter extends Ledger {
   final Map<String, AppTransaction> _store = {};
   final List<TransactionVoidResult> voidLog = [];
 
@@ -722,5 +845,7 @@ class InMemoryLedgerAdapter implements Ledger {
 
 /// Riverpod provider exposing the Ledger seam to notifiers
 final ledgerProvider = Provider<Ledger>((ref) {
-  return SqliteLedgerAdapter();
+  return SqliteLedgerAdapter(
+    savingsApprovals: ref.read(savingsSpendingApprovalsProvider),
+  );
 });

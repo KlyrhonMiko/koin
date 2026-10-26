@@ -10,6 +10,12 @@ import 'package:koin/core/services/quick_transaction_service.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
 import 'package:koin/features/transactions/quick_entry_app.dart';
 
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:sqflite/sqflite.dart';
+import 'package:koin/features/onboarding/account_setup_screen.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(AppStartup(initialize: _initializeApp));
@@ -25,9 +31,19 @@ Future<Widget> _initializeApp({bool standalone = false}) async {
   // Suggestions await their own history bootstrap; the rest of the app can
   // open without waiting for a dirty categorization model to rebuild.
   final sharedPrefs = await SharedPreferences.getInstance();
+  if (!sharedPrefs.containsKey('setup_completed')) {
+    final existing = await File(p.join(await getDatabasesPath(), 'koin.db'))
+        .exists();
+    await sharedPrefs.setBool('setup_completed', existing);
+  }
 
   return ProviderScope(
-    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+      currencyPrecisionProvider.overrideWith(
+        (ref) => ref.watch(settingsProvider).currency.decimalDigits,
+      ),
+    ],
     child: standalone ? const QuickEntryApp() : const MyApp(),
   );
 }
@@ -111,7 +127,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       builder: (context, child) =>
           AppInputFocus(child: AppWindowTheme(child: child!)),
-      home: const MainLayout(),
+      home: settings.setupCompleted
+          ? const MainLayout()
+          : const AccountSetupScreen(),
     );
   }
 }

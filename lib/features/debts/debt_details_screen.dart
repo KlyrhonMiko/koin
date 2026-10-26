@@ -221,7 +221,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               const Gap(4),
               Text(
                 debt.isMonthlyPurchaseAccount && !debt.isSettled
-                    ? '${currencyFormat.format(debt.upcomingPaymentAmount)} next bill · ${DateFormat.MMMd().format(debt.nextDueDate)}'
+                    ? '${currencyFormat.format(debt.upcomingPayment(decimalDigits: currencyFormat.decimalDigits ?? 2))} next bill · ${DateFormat.MMMd().format(debt.nextPaymentDate(decimalDigits: currencyFormat.decimalDigits ?? 2))}'
                     : debt.totalInstallments > 0
                     ? '${currencyFormat.format(debt.amount)} total · ${debt.totalInstallments} ${debt.frequency.label.toLowerCase()} payments'
                     : '${currencyFormat.format(debt.amount)} total',
@@ -374,11 +374,17 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
     final List<_ItemInstallment> installments = [];
     for (var item in items) {
       if (item.totalInstallments > 0) {
-        final installmentAmount = item.amount / item.totalInstallments;
         DateTime nextDate = item.firstPaymentDate;
         for (int i = 0; i < item.totalInstallments; i++) {
           installments.add(
-            _ItemInstallment(item.id, nextDate, installmentAmount),
+            _ItemInstallment(
+              item.id,
+              nextDate,
+              item.installmentAmountAt(
+                i,
+                decimalDigits: currencyFormat.decimalDigits ?? 2,
+              ),
+            ),
           );
           nextDate = debt.isMonthlyPurchaseAccount
               ? debt.monthlyBillDate(nextDate.year, nextDate.month + 1)
@@ -582,11 +588,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    KoinIcons.plusCircle,
-                    color: color,
-                    size: 20,
-                  ),
+                  Icon(KoinIcons.plusCircle, color: color, size: 20),
                   const Gap(8),
                   Flexible(
                     child: Text(

@@ -72,6 +72,7 @@ class UpcomingTimeline {
     required List<PlannedPayment> payments,
     required List<Debt> debts,
     DateTime? now,
+    int decimalDigits = 2,
   }) {
     final List<UpcomingEntry> all = [];
     final reference = now ?? DateTime.now();
@@ -116,8 +117,8 @@ class UpcomingTimeline {
             subtitle:
                 d.description ??
                 (d.isMonthlyPurchaseAccount ? 'BNPL bill' : 'Installment'),
-            amount: d.upcomingPaymentAmount,
-            dueDate: d.nextDueDate,
+            amount: d.upcomingPayment(decimalDigits: decimalDigits),
+            dueDate: d.nextPaymentDate(decimalDigits: decimalDigits),
             isExpense: d.type == DebtType.iOwe,
             isAutoProcess: false,
             categoryId: d.categoryId,

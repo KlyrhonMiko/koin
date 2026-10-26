@@ -592,24 +592,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         accounts: accounts,
         transactions: transactions,
       ).accountBalances[account.id];
-      if (_type == TransactionType.expense && !account.isCredit) {
-        final goals = await ref
-            .read(savingsRepositoryProvider)
-            .getSavingsGoals();
-        final reserved = goals
-            .where((g) => g.linkedAccountId == account.id)
-            .fold<double>(0, (sum, g) => sum + g.currentAmount);
-        if ((debitAmount * 100).round() >
-            (((currentBalance ?? account.initialBalance) - reserved) * 100)
-                .round()) {
-          if (mounted) {
-            _go(_Step.amount);
-            _showError('Review this amount to release the savings needed.');
-          }
-          return;
-        }
-      }
-      if (_transfer &&
+      if (_type != TransactionType.income &&
           mounted &&
           !await _confirmSavings(account, debitAmount, currentBalance)) {
         return;

@@ -19,6 +19,7 @@ class SelectionTile extends StatelessWidget {
   final Widget? trailing;
   final bool asCard;
   final double minHeight;
+  final int? selectedNameMaxLines;
 
   const SelectionTile({
     super.key,
@@ -33,6 +34,7 @@ class SelectionTile extends StatelessWidget {
     this.trailing,
     this.asCard = true,
     this.minHeight = 0,
+    this.selectedNameMaxLines = 1,
   });
 
   bool get hasSelection =>
@@ -104,8 +106,10 @@ class SelectionTile extends StatelessWidget {
                                   lightOpacity: 0.5,
                                 ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: selectedNameMaxLines,
+                        overflow: selectedNameMaxLines == null
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                       ),
                     ],
                   ),

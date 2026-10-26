@@ -14,6 +14,10 @@ import 'package:koin/core/maintenance/recovery_service.dart';
 
 import 'backup_recovery_panel.dart';
 import 'archive_manager_screen.dart';
+import 'voice_language_sheet.dart';
+import 'backup_password_sheet.dart';
+
+import 'package:koin/core/maintenance/backup_encryption.dart';
 
 import 'package:koin/core/core.dart';
 
@@ -209,7 +213,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         const Gap(2),
                         SizedBox(
-                          height: 72,
+                          height: 80,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(
@@ -224,6 +228,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   settings.themeColor.toARGB32() ==
                                   color.toARGB32();
                               return PressableScale(
+                                semanticLabel:
+                                    '${AppTheme.accentColorNames[index]} theme',
+                                selected: isSelected,
                                 onTap: () {
                                   HapticService.light();
                                   ref
@@ -235,8 +242,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     context,
                                     const Duration(milliseconds: 200),
                                   ),
-                                  width: 40,
-                                  height: 40,
+                                  width: 48,
+                                  height: 48,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
@@ -317,6 +324,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   KoinSettingTile(
+                    title: 'Speech language',
+                    subtitle: settings.voiceLocale == null
+                        ? 'Follow system language'
+                        : settings.voiceLocaleName ??
+                              'Selected speech language',
+                    icon: KoinIcons.microphone,
+                    onTap: () => VoiceLanguageSheet.show(context),
+                  ),
+                  KoinSettingTile(
                     title: 'Manage archived items',
                     subtitle: 'Archive or restore accounts and categories',
                     icon: KoinIcons.archive,
@@ -392,13 +408,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleBackup(BuildContext context, WidgetRef ref) async {
     try {
+      final protection = await BackupPasswordSheet.show(context);
+      if (protection == null || !context.mounted) return;
       final bundle = await ref.read(recoveryServiceProvider).exportBackup();
 
       if (bundle != null) {
-        // Prompt user for save location
+        final bytes = protection.password == null
+            ? await compute(compressBackup, bundle.bytes)
+            : await BackupEncryption.encrypt(
+                bundle.bytes,
+                protection.password!,
+              );
+        if (!context.mounted) return;
         final savedPath = await FilePicker.saveFile(
           fileName: '${bundle.fileName}.koin',
-          bytes: await compute(compressBackup, bundle.bytes),
+          bytes: bytes,
         );
 
         if (context.mounted && savedPath != null) {
@@ -445,19 +469,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
         if (confirmed != true) return;
         String? path = file.path;
-        File? tempFile;
+        final stagedFiles = <File>[];
         try {
           if (path == null) {
             final bytes = await file.readAsBytes();
             final tempDir = await getTemporaryDirectory();
-            tempFile = File(
+            final tempFile = File(
               p.join(
                 tempDir.path,
                 'koin_import_${DateTime.now().microsecondsSinceEpoch}.koin',
               ),
             );
+            stagedFiles.add(tempFile);
             await tempFile.writeAsBytes(bytes);
             path = tempFile.path;
+          }
+
+          final encoded = await File(path).readAsBytes();
+          if (BackupEncryption.isEncrypted(encoded)) {
+            if (!context.mounted) return;
+            final result = await BackupPasswordSheet.show(
+              context,
+              encrypted: encoded,
+            );
+            if (result?.unlocked == null || !context.mounted) return;
+            final tempDir = await getTemporaryDirectory();
+            final unlocked = File(
+              p.join(
+                tempDir.path,
+                'koin_unlocked_${DateTime.now().microsecondsSinceEpoch}.db',
+              ),
+            );
+            stagedFiles.add(unlocked);
+            await unlocked.writeAsBytes(result!.unlocked!, flush: true);
+            path = unlocked.path;
           }
 
           final success = await ref.read(recoveryServiceProvider).restore(path);
@@ -478,9 +523,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
           }
         } finally {
-          if (tempFile != null && await tempFile.exists()) {
+          for (final tempFile in stagedFiles) {
             try {
-              await tempFile.delete();
+              if (await tempFile.exists()) await tempFile.delete();
             } catch (_) {}
           }
         }

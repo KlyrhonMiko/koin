@@ -4,6 +4,9 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/repositories/debt_repository.dart';
 import 'package:koin/core/providers/transaction_provider.dart';
 
+import 'savings_provider.dart';
+import '../ledger/savings_spending_approval.dart';
+
 class DebtsNotifier extends AsyncNotifier<List<Debt>> {
   DebtRepository get _repository => ref.read(debtRepositoryProvider);
 
@@ -36,6 +39,8 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
 
   Future<void> deleteDebt(String id) async {
     await _repository.deleteDebt(id);
+    ref.invalidate(transactionProvider);
+    ref.invalidate(debtRepaymentsProvider(id));
     await loadDebts();
   }
 
@@ -105,8 +110,17 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
       categoryId: categoryId,
       transactionId: transactionId,
     );
+    if (transactionId != null) {
+      ref.read(savingsSpendingApprovalsProvider).clear(transactionId);
+    }
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
     ref.invalidate(debtRepaymentsProvider(repayment.debtId));
-    ref.invalidate(transactionProvider);
+    if (tx != null) {
+      await ref.read(transactionProvider.notifier).acceptRecordedTransactions([
+        tx,
+      ]);
+    }
     await loadDebts();
     return tx;
   }

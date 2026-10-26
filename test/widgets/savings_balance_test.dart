@@ -226,7 +226,7 @@ void main() {
   );
 
   testWidgets(
-    'bottom sheet releases only the shortfall and cancellation preserves savings',
+    'bottom sheet approves only the shortfall without changing savings',
     (tester) async {
       SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
       final prefs = await SharedPreferences.getInstance();
@@ -249,6 +249,7 @@ void main() {
                       ref: ref,
                       accountId: 'mari',
                       amount: 50,
+                      transactionId: 'draft-expense',
                     );
                   },
                   child: const Text('Record expense'),
@@ -292,15 +293,22 @@ void main() {
       await tester.tap(find.text('Release & continue'));
       await tester.pumpAndSettle();
       expect(accepted, true);
-      expect((await repository.getSavingsGoals()).single.currentAmount, 213);
+      expect((await repository.getSavingsGoals()).single.currentAmount, 250);
       final logs = await repository.getSavingsLogs(goal.id);
-      expect(logs.length, 2);
-      expect(logs.last.amount, -37);
-      expect(logs.last.note, 'Automatically released for spending');
+      expect(logs.length, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('Record expense')),
+      );
+      expect(
+        container
+            .read(savingsSpendingApprovalsProvider)['draft-expense']!
+            .goalCents,
+        {goal.id: 3700},
+      );
     },
   );
 
-  testWidgets('automatic release spans goals and leaves other accounts alone', (
+  testWidgets('release consent spans goals without changing accounts', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({'currency_code': 'PHP'});
@@ -342,6 +350,7 @@ void main() {
                     ref: ref,
                     accountId: 'mari',
                     amount: 150.01,
+                    transactionId: 'draft-spanning',
                   );
                 },
                 child: const Text('Record expense'),
@@ -361,13 +370,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(accepted, true);
     final goals = await multiRepository.getSavingsGoals();
-    expect(goals.first.currentAmount, 0);
-    expect(goals[1].currentAmount, closeTo(112.99, 0.000001));
+    expect(goals.first.currentAmount, 100);
+    expect(goals[1].currentAmount, 150);
     expect(goals[2].currentAmount, 500);
-    expect((await multiRepository.getSavingsLogs(goal.id)).single.amount, -100);
+    expect(await multiRepository.getSavingsLogs(goal.id), isEmpty);
+    expect(await multiRepository.getSavingsLogs('second'), isEmpty);
+    final container = ProviderScope.containerOf(
+      tester.element(find.text('Record expense')),
+    );
     expect(
-      (await multiRepository.getSavingsLogs('second')).single.amount,
-      -37.01,
+      container
+          .read(savingsSpendingApprovalsProvider)['draft-spanning']!
+          .goalCents,
+      {goal.id: 10000, 'second': 3701},
     );
     expect(tester.takeException(), isNull);
   });

@@ -9,6 +9,31 @@ class FinancialValidationException implements Exception {
 
 /// One authority for money direction, validity, and available account funds.
 abstract final class TransactionRules {
+  static Debt debtEdit(
+    Debt proposed, {
+    Debt? previous,
+    bool hasHistory = false,
+  }) {
+    final paid = previous?.currentAmount ?? proposed.currentAmount;
+    if (!proposed.amount.isFinite ||
+        proposed.amount < 0 ||
+        !paid.isFinite ||
+        paid < 0 ||
+        exceedsBalance(paid, proposed.amount)) {
+      throw const FinancialValidationException(
+        'The total cannot be less than the amount already repaid',
+      );
+    }
+    if (previous != null &&
+        previous.type != proposed.type &&
+        (hasHistory || paid > 0)) {
+      throw const FinancialValidationException(
+        'Keep the record type after payments have been recorded',
+      );
+    }
+    return proposed.copyWith(currentAmount: paid);
+  }
+
   /// Compare the same rounded cents in previews and persisted validation.
   static bool exceedsBalance(double value, double available) =>
       !value.isFinite ||

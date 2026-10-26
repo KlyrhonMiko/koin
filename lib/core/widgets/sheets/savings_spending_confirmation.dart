@@ -1,14 +1,17 @@
 import 'package:koin/core/icons.dart';
+
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
+
+import '../../ledger/savings_spending_approval.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../theme.dart';
 
-/// Confirm and release only the savings needed to cover this debit.
+/// Confirm the release; the ledger persists it atomically with the debit.
 Future<bool> confirmSavingsSpending({
   required BuildContext context,
   required WidgetRef ref,
@@ -55,7 +58,20 @@ Future<bool> confirmSavingsSpending({
     if (neededCents == 0) break;
   }
   if (releases.isEmpty) return true;
-  final notifier = ref.read(savingsGoalsProvider.notifier);
+  final approvals = ref.read(savingsSpendingApprovalsProvider);
+  final previousApproval = transactionId == null
+      ? null
+      : approvals[transactionId];
+  if (previousApproval != null &&
+      previousApproval.accountId == accountId &&
+      previousApproval.debitCents == (amount * 100).round() &&
+      releases.every(
+        (r) =>
+            (previousApproval.goalCents[r.goal.id] ?? 0) >=
+            (r.amount * 100).round(),
+      )) {
+    return true;
+  }
   final money = ref.read(settingsProvider).currency.formatter;
   ModalRoute<dynamic>? sheetRoute;
   onSheetVisibilityChanged?.call(true);
@@ -82,17 +98,24 @@ Future<bool> confirmSavingsSpending({
               available: math.max(0, availableCents) / 100,
               money: money,
               onHeightChanged: onSheetHeightChanged,
-              onRelease: () => notifier.releaseForSpending([
-                for (final release in releases)
-                  SavingsLog(
-                    id: const Uuid().v4(),
-                    goalId: release.goal.id,
-                    amount: -release.amount,
-                    date: DateTime.now(),
-                    note: 'Automatically released for spending',
-                    transactionId: transactionId,
+              onRelease: () async {
+                if (transactionId == null) {
+                  throw StateError(
+                    'A transaction is required for this release',
+                  );
+                }
+                approvals.approve(
+                  transactionId,
+                  SavingsSpendingApproval(
+                    accountId: accountId,
+                    debitCents: (amount * 100).round(),
+                    goalCents: {
+                      for (final r in releases)
+                        r.goal.id: (r.amount * 100).round(),
+                    },
                   ),
-              ], spendingAmount: amount),
+                );
+              },
             );
           },
         ) ??
@@ -198,7 +221,7 @@ class _SavingsReleaseSheetState extends State<_SavingsReleaseSheet> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'You have ${widget.money.format(widget.available)} available. Continuing will automatically release ${widget.money.format(total)} from your savings to cover the rest.',
+                  'You have ${widget.money.format(widget.available)} available. Saving this transaction will release ${widget.money.format(total)} from your savings to cover the rest.',
                   textAlign: TextAlign.center,
                   style: bodyStyle,
                 ),
@@ -228,7 +251,9 @@ class _SavingsReleaseSheetState extends State<_SavingsReleaseSheet> {
                 if (_error != null) ...[
                   Text(
                     _error!,
-                    style: TextStyle(color: AppTheme.expenseContentColor(context)),
+                    style: TextStyle(
+                      color: AppTheme.expenseContentColor(context),
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],

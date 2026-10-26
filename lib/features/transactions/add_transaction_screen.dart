@@ -1032,10 +1032,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             animation: _pulseAnimation,
                             builder: (context, child) {
                               return PressableScale(
+                                semanticLabel: 'Add transaction with voice',
                                 onTap: _showVoiceInputSheet,
                                 child: Container(
-                                  width: 44,
-                                  height: 44,
+                                  width: 48,
+                                  height: 48,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,

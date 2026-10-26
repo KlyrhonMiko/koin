@@ -459,6 +459,7 @@ CREATE TABLE debt_items (
       """);
     }
     if (oldVersion < 45) await _createPlannedOccurrences(db);
+    if (oldVersion < 47) await _restoreOrphanSavingsReleases(db);
     await _createTransactionIndexes(db);
   }
 
@@ -481,12 +482,122 @@ END
 ''');
   }
 
+  Future<void> _restoreOrphanSavingsReleases(DatabaseExecutor db) async {
+    // Older versions committed releases before spending. Recover drafts that
+    // were interrupted; completed transactions and manual savings stay intact.
+    await db.execute('''
+      UPDATE savings_goals SET currentAmount = currentAmount - COALESCE((
+        SELECT SUM(amount) FROM savings_logs l
+        WHERE l.goalId = savings_goals.id AND l.transactionId IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.id = l.transactionId)
+      ), 0)
+    ''');
+    await db.execute(
+      '''DELETE FROM savings_logs
+      WHERE transactionId IS NOT NULL AND NOT EXISTS
+      (SELECT 1 FROM transactions t WHERE t.id = savings_logs.transactionId)''',
+    );
+    await db.execute(
+      '''DELETE FROM savings_spending_links WHERE NOT EXISTS
+      (SELECT 1 FROM transactions t WHERE t.id = savings_spending_links.transactionId)''',
+    );
+  }
+
+  Future<void> releaseSavingsForTransaction(
+    DatabaseExecutor txn, {
+    required String transactionId,
+    required String accountId,
+    required double debit,
+    required Map<String, int> approvedGoalCents,
+    String? excluding,
+  }) async {
+    final accounts = (await txn.query(
+      'accounts',
+      where: 'id = ?',
+      whereArgs: [accountId],
+    )).map(Account.fromMap).toList();
+    if (accounts.isEmpty || accounts.single.isCredit) return;
+    final goals =
+        (await txn.query(
+          'savings_goals',
+          where: 'linkedAccountId = ?',
+          whereArgs: [accountId],
+        )).map(SavingsGoal.fromMap).toList()..sort((a, b) {
+          final date = a.startDate.compareTo(b.startDate);
+          return date == 0 ? a.id.compareTo(b.id) : date;
+        });
+    final reserved = goals.fold<int>(
+      0,
+      (sum, g) => sum + (g.currentAmount * 100).round(),
+    );
+    if (reserved == 0) return;
+    final totals = await txn.rawQuery(
+      '''
+      SELECT COALESCE(SUM(
+        CASE WHEN accountId = ? THEN CASE WHEN type = 'income' THEN amount ELSE -amount END ELSE 0 END
+        + CASE WHEN type = 'transfer' AND toAccountId = ? THEN amount ELSE 0 END
+      ), 0) AS delta FROM transactions
+      WHERE (accountId = ? OR toAccountId = ?) AND julianday(date) <= julianday(?)
+      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?)'}
+      ''',
+      [
+        accountId,
+        accountId,
+        accountId,
+        accountId,
+        DateTime.now().toIso8601String(),
+        if (excluding != null) ...[excluding, excluding],
+      ],
+    );
+    final balance =
+        accounts.single.initialBalance +
+        (totals.single['delta'] as num).toDouble();
+    final spendable = (balance * 100).round() - reserved;
+    var needed = math.max(0, (debit * 100).round() - spendable);
+    if (needed == 0) return;
+    for (final goal in goals) {
+      final cents = math.min(
+        needed,
+        math.min(
+          (goal.currentAmount * 100).round(),
+          approvedGoalCents[goal.id] ?? 0,
+        ),
+      );
+      if (cents <= 0) continue;
+      final log = SavingsLog(
+        id: const Uuid().v4(),
+        goalId: goal.id,
+        amount: -cents / 100,
+        date: DateTime.now(),
+        note: 'Automatically released for spending',
+        transactionId: transactionId,
+      );
+      await txn.insert('savings_logs', log.toMap());
+      await txn.rawUpdate(
+        'UPDATE savings_goals SET currentAmount = currentAmount - ? WHERE id = ?',
+        [cents / 100, goal.id],
+      );
+      needed -= cents;
+    }
+    if (needed > 0) {
+      throw const FinancialValidationException(
+        'Savings changed. Review the release again.',
+      );
+    }
+    await txn.insert('savings_spending_links', {
+      'transactionId': transactionId,
+      'spendableAmount': spendable / 100,
+    });
+  }
+
   Future<void> _createTransactionIndexes(DatabaseExecutor db) async {
     for (final entry in {
       'transaction_date': 'date DESC, id DESC',
       'transaction_source_date': 'accountId, date',
       'transaction_destination_date': 'toAccountId, date',
       'transaction_category_date': 'categoryId, date',
+      'transaction_history_cursor': 'julianday(date) DESC, date DESC, id DESC',
+      'transaction_history_day': 'substr(date, 1, 10)',
     }.entries) {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS ${entry.key} ON transactions(${entry.value})',
@@ -1119,6 +1230,124 @@ CREATE TABLE transactions (
     return result.map((json) => AppTransaction.fromMap(json)).toList();
   }
 
+  Future<TransactionPage> getTransactionPage({
+    required TransactionFilter filter,
+    required Map<String, String> categoryNamesById,
+    TransactionCursor? after,
+    int limit = 100,
+  }) async {
+    RangeError.checkValueInInterval(limit, 1, 500, 'limit');
+    final clauses = <String>[];
+    final args = <Object?>[];
+    String slots(int count) => List.filled(count, '?').join(',');
+    if (filter.type != null) {
+      clauses.add('type = ?');
+      args.add(filter.type!.name);
+    }
+    final query = filter.query.trim().toLowerCase();
+    // SQLite's built-in lower() folds ASCII only. Retain Dart's existing
+    // Unicode search behavior for those queries rather than returning misses.
+    if (RegExp(r'[^\x00-\x7f]').hasMatch(query)) {
+      return TransactionPage.fromTransactions(
+        await getTransactions(),
+        filter: filter,
+        categoryNamesById: categoryNamesById,
+        after: after,
+        limit: limit,
+      );
+    }
+    if (query.isNotEmpty) {
+      final ids = categoryNamesById.entries
+          .where((entry) => entry.value.toLowerCase().contains(query))
+          .map((entry) => entry.key)
+          .toList();
+      clauses.add(
+        '(instr(lower(title), ?) > 0${ids.isEmpty ? '' : ' OR categoryId IN (${slots(ids.length)})'})',
+      );
+      args.addAll([query, ...ids]);
+    }
+    if (filter.categoryIds.isNotEmpty) {
+      clauses.add('categoryId IN (${slots(filter.categoryIds.length)})');
+      args.addAll(filter.categoryIds);
+    }
+    if (filter.accountIds.isNotEmpty) {
+      final placeholders = slots(filter.accountIds.length);
+      clauses.add(
+        '(accountId IN ($placeholders) OR (type = \'transfer\' AND toAccountId IN ($placeholders)))',
+      );
+      args.addAll([...filter.accountIds, ...filter.accountIds]);
+    }
+    if (filter.minAmount != null) {
+      clauses.add('amount >= ?');
+      args.add(filter.minAmount);
+    }
+    if (filter.maxAmount != null) {
+      clauses.add('amount <= ?');
+      args.add(filter.maxAmount);
+    }
+    final range = filter.dateRange;
+    if (range != null) {
+      clauses.add(
+        'julianday(date) >= julianday(?) AND julianday(date) < julianday(?)',
+      );
+      args.addAll([
+        DateTime(
+          range.start.year,
+          range.start.month,
+          range.start.day,
+        ).toIso8601String(),
+        DateTime(
+          range.end.year,
+          range.end.month,
+          range.end.day + 1,
+        ).toIso8601String(),
+      ]);
+    }
+    final baseWhere = clauses.isEmpty ? '1' : clauses.join(' AND ');
+    final pageWhere = <String>[baseWhere];
+    final pageArgs = <Object?>[...args];
+    if (after != null) {
+      final date = after.date.toIso8601String();
+      pageWhere.add(
+        '(julianday(date) < julianday(?) OR (julianday(date) = julianday(?) AND (date < ? OR (date = ? AND id < ?))))',
+      );
+      pageArgs.addAll([date, date, date, date, after.id]);
+    }
+    final db = await database;
+    return db.transaction((txn) async {
+      final rows = await txn.query(
+        'transactions',
+        where: pageWhere.join(' AND '),
+        whereArgs: pageArgs,
+        orderBy: 'julianday(date) DESC, date DESC, id DESC',
+        limit: limit + 1,
+      );
+      final items = rows.take(limit).map(AppTransaction.fromMap).toList();
+      final days = items.map((tx) => TransactionPage.dayKey(tx.date)).toSet();
+      final totals = days.isEmpty
+          ? <Map<String, Object?>>[]
+          : await txn.rawQuery(
+              '''
+        SELECT substr(date, 1, 10) AS day, SUM(CASE type
+          WHEN 'income' THEN amount WHEN 'expense' THEN -amount ELSE 0 END) AS total
+        FROM transactions WHERE ($baseWhere) AND substr(date, 1, 10) IN (${slots(days.length)})
+        GROUP BY substr(date, 1, 10)
+      ''',
+              [...args, ...days],
+            );
+      return TransactionPage(
+        items: items,
+        dayTotals: {
+          for (final row in totals)
+            row['day'] as String: (row['total'] as num).toDouble(),
+        },
+        next: rows.length > limit
+            ? TransactionCursor(items.last.date, items.last.id)
+            : null,
+      );
+    });
+  }
+
   Future<int> updateTransaction(
     AppTransaction transaction, {
     Future<void> Function(DatabaseExecutor)? validate,
@@ -1727,12 +1956,26 @@ CREATE TABLE transactions (
         where: 'id = ?',
         whereArgs: [debt.id],
       );
+      final history = await txn.query(
+        'debt_repayments',
+        columns: ['id'],
+        where: 'debtId = ?',
+        whereArgs: [debt.id],
+        limit: 1,
+      );
+      final savedDebt = TransactionRules.debtEdit(
+        debt,
+        previous: existingDebt.isEmpty
+            ? null
+            : Debt.fromMap(existingDebt.single),
+        hasHistory: history.isNotEmpty,
+      );
       if (existingDebt.isEmpty) {
-        await txn.insert('debts', debt.toMap());
+        await txn.insert('debts', savedDebt.toMap());
       } else {
         await txn.update(
           'debts',
-          debt.toMap(),
+          savedDebt.toMap(),
           where: 'id = ?',
           whereArgs: [debt.id],
         );

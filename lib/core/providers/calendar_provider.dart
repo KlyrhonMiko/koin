@@ -31,7 +31,12 @@ class CalendarDayNotifier extends Notifier<DateTime> {
   void refresh() {
     final now = ref.read(calendarClockProvider)();
     final day = DateTime(now.year, now.month, now.day);
-    if (state != day) state = day;
+    if (state != day) {
+      state = day;
+    } else {
+      // Same-day resume/refresh can cross a transaction's scheduled time.
+      ref.notifyListeners();
+    }
     if (_running) _schedule(now);
   }
 

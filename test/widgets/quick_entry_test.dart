@@ -546,7 +546,7 @@ void main() {
         (await providers.read(savingsRepositoryProvider).getSavingsGoals())
             .single
             .currentAmount,
-        4875,
+        4900,
       );
       expect(await providers.read(transactionProvider.future), isEmpty);
       await tap(tester, 'Select category');

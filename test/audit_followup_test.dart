@@ -164,13 +164,13 @@ void main() {
       );
       addTearDown(container.dispose);
       final maintenance = container.read(appMaintenanceProvider);
-      expect(container.read(settingsProvider).currency.code, 'USD');
+      expect(container.read(settingsProvider).currency.code, 'PHP');
       final bundle = (await maintenance.createBackup())!;
       final backup = File('${root.path}/default.db');
       await backup.writeAsBytes(bundle.bytes);
       await prefs.setString('currency_code', 'PHP');
       expect(await maintenance.restoreBackup(backup.path), isTrue);
-      expect(container.read(settingsProvider).currency.code, 'USD');
+      expect(container.read(settingsProvider).currency.code, 'PHP');
     },
   );
 

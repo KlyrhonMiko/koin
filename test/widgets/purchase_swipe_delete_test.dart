@@ -169,9 +169,14 @@ void main() {
       );
       await tester.pumpAndSettle();
       credit = (await repository.getDebts()).single;
-      expect(credit.items, isEmpty);
-      expect(credit.amount, 0);
+      // Removing the last purchase would put the total below the 50 repaid.
+      expect(credit.items.single.id, 'second');
+      expect(credit.amount, 200);
       expect(credit.currentAmount, 50);
+      expect(
+        find.text('The total cannot be less than the amount already repaid'),
+        findsOneWidget,
+      );
       expect(find.text('Add Purchase / Sub-Plan'), findsNothing);
       expect(find.text('Add Purchase'), bnpl ? findsOneWidget : findsNothing);
       expect(tester.takeException(), isNull);
