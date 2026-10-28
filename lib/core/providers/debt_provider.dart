@@ -66,6 +66,28 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
     await loadDebts();
   }
 
+  Future<void> createLoan(Debt debt, {required String transactionId}) async {
+    final approvals = ref.read(savingsSpendingApprovalsProvider);
+    final approval = approvals[transactionId];
+    final funding = await _repository.createLoan(
+      debt,
+      transactionId: transactionId,
+      approvedGoalCents:
+          approval?.accountId == debt.accountId &&
+              approval?.debitCents == (debt.amount * 100).round()
+          ? approval!.goalCents
+          : const {},
+    );
+    approvals.clear(transactionId);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
+    ref.invalidate(debtRepaymentsProvider(debt.id));
+    await ref.read(transactionProvider.notifier).acceptRecordedTransactions([
+      funding,
+    ]);
+    await loadDebts();
+  }
+
   /// Adds or updates an item on a debt and synchronizes the parent debt atomically.
   Future<void> saveDebtItem(Debt debt, DebtItem item) async {
     final existingIndex = debt.items.indexWhere((i) => i.id == item.id);
@@ -134,6 +156,8 @@ class DebtsNotifier extends AsyncNotifier<List<Debt>> {
   Future<void> deleteRepayment(DebtRepayment repayment) async {
     final ledger = ref.read(ledgerProvider);
     await ledger.voidDebtRepayment(repayment);
+    ref.invalidate(savingsGoalsProvider);
+    ref.invalidate(savingsLogsProvider);
     ref.invalidate(debtRepaymentsProvider(repayment.debtId));
     ref.invalidate(transactionProvider);
     await loadDebts();

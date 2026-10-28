@@ -183,7 +183,7 @@ class SpendingAnalysis {
 
     final now = DateTime.now();
     final expenseTransactions = transactions.where(
-      (t) => t.type == TransactionType.expense && !t.date.isAfter(now),
+      (t) => t.countsAsExpense && !t.date.isAfter(now),
     );
 
     // Current period transactions

@@ -409,6 +409,7 @@ class SqliteLedgerAdapter extends Ledger {
 
           if (repaymentMaps.isNotEmpty) {
             final repayment = DebtRepayment.fromMap(repaymentMaps.first);
+            await _dbHelper.validateDebtRepaymentRemoval(txn, repayment);
             affectedDebtId = repayment.debtId;
 
             await txn.delete(
@@ -627,6 +628,7 @@ class SqliteLedgerAdapter extends Ledger {
                     ? 'Payment from ${debt.personName}'
                     : 'Payment to ${debt.personName}'),
           debtRepaymentId: repayment.id,
+          isDebtTransfer: currentDebt.type == DebtType.owedToMe,
         );
 
         if (isExpense) {
@@ -681,29 +683,17 @@ class SqliteLedgerAdapter extends Ledger {
   @override
   Future<void> voidDebtRepayment(DebtRepayment repayment) async {
     final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete(
-        'debt_repayments',
-        where: 'id = ?',
-        whereArgs: [repayment.id],
-      );
-      await txn.delete(
-        'transactions',
-        where: 'debtRepaymentId = ?',
-        whereArgs: [repayment.id],
-      );
-      if (repayment.isIncrease) {
-        await txn.execute('UPDATE debts SET amount = amount - ? WHERE id = ?', [
-          repayment.amount,
-          repayment.debtId,
-        ]);
-      } else {
-        await txn.execute(
-          'UPDATE debts SET currentAmount = currentAmount - ? WHERE id = ?',
-          [repayment.amount, repayment.debtId],
-        );
-      }
-    });
+    final transactions = await db.query(
+      'transactions',
+      columns: ['id'],
+      where: 'debtRepaymentId = ?',
+      whereArgs: [repayment.id],
+    );
+    if (transactions.isNotEmpty) {
+      await voidTransaction(transactions.single['id'] as String);
+    } else {
+      await _dbHelper.deleteDebtRepayment(repayment);
+    }
   }
 }
 
@@ -739,6 +729,7 @@ class InMemoryLedgerAdapter extends Ledger {
       plannedPaymentId: previous.plannedPaymentId,
       debtRepaymentId: previous.debtRepaymentId,
       transferId: previous.transferId,
+      isDebtTransfer: previous.isDebtTransfer,
     );
   }
 
@@ -813,6 +804,7 @@ class InMemoryLedgerAdapter extends Ledger {
                   ? 'Payment from ${debt.personName}'
                   : 'Payment to ${debt.personName}'),
         debtRepaymentId: repayment.id,
+        isDebtTransfer: debt.type == DebtType.owedToMe,
       );
       _store[tx.id] = tx;
       return tx;

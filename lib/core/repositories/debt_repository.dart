@@ -17,6 +17,11 @@ abstract class DebtRepository {
   Future<void> insertDebtRepayment(DebtRepayment repayment);
   Future<void> updateDebtPositions(List<Debt> debts);
   Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items);
+  Future<AppTransaction> createLoan(
+    Debt debt, {
+    required String transactionId,
+    Map<String, int> approvedGoalCents = const {},
+  });
 }
 
 /// Concrete SQLite Adapter: delegates to DatabaseHelper.
@@ -70,6 +75,17 @@ class SqliteDebtAdapter implements DebtRepository {
   @override
   Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) =>
       _dbHelper.saveDebtWithItems(debt, items);
+
+  @override
+  Future<AppTransaction> createLoan(
+    Debt debt, {
+    required String transactionId,
+    Map<String, int> approvedGoalCents = const {},
+  }) => _dbHelper.createLoan(
+    debt,
+    transactionId: transactionId,
+    approvedGoalCents: approvedGoalCents,
+  );
 }
 
 /// In-Memory Test Adapter: provides deterministic debt persistence for testing.
@@ -77,6 +93,7 @@ class InMemoryDebtAdapter implements DebtRepository {
   final Map<String, Debt> _debts = {};
   final Map<String, List<DebtItem>> _items = {};
   final Map<String, List<DebtRepayment>> _repayments = {};
+  final Map<String, AppTransaction> _funding = {};
 
   InMemoryDebtAdapter({List<Debt> initial = const []}) {
     for (final d in initial) {
@@ -146,6 +163,33 @@ class InMemoryDebtAdapter implements DebtRepository {
       hasHistory: (_repayments[debt.id] ?? []).isNotEmpty,
     );
     _items[debt.id] = List.from(items.map((i) => i.copyWith(debtId: debt.id)));
+  }
+
+  @override
+  Future<AppTransaction> createLoan(
+    Debt debt, {
+    required String transactionId,
+    Map<String, int> approvedGoalCents = const {},
+  }) async {
+    final funding = TransactionRules.loanFunding(debt, transactionId);
+    if (_funding[transactionId] case final saved?) return saved;
+    if (_debts.containsKey(debt.id)) {
+      throw const FinancialValidationException('This loan already exists');
+    }
+    _debts[debt.id] = debt;
+    _repayments[debt.id] = [
+      DebtRepayment(
+        id: transactionId,
+        debtId: debt.id,
+        amount: debt.amount,
+        date: funding.date,
+        note: funding.note,
+        accountId: funding.accountId,
+        isIncrease: true,
+      ),
+    ];
+    _funding[transactionId] = funding;
+    return funding;
   }
 
   @override

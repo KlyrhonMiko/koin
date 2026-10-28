@@ -114,9 +114,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           ? widget.account!.transferFeeAmount.toString()
           : '',
     )..addListener(_onInputChanged);
-    selectedIcon =
-        widget.account?.iconCodePoint ??
-        KoinIcons.wallet.codePoint;
+    selectedIcon = widget.account?.iconCodePoint ?? KoinIcons.wallet.codePoint;
     excludeFromTotal = widget.account?.excludeFromTotal ?? false;
     isTransferFeePercentage = widget.account?.isTransferFeePercentage ?? false;
     isCredit = widget.account?.isCredit ?? false;
@@ -505,7 +503,17 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   bool get _previewHasColoredBackground =>
       selectedCardColor != null || selectedLogoAsset != null;
 
-  Widget _buildAccountPreview(BuildContext context, Currency currency) {
+  double _accountCardWidth(BuildContext context, double availableWidth) {
+    final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
+    final columns = availableWidth < 280 || largeText ? 1 : 2;
+    return (availableWidth - KoinSpacing.cardGap * (columns - 1)) / columns;
+  }
+
+  Widget _buildAccountPreview(
+    BuildContext context,
+    Currency currency, {
+    required int? shapeType,
+  }) {
     String hex(Color color) =>
         '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
     final account = Account(
@@ -515,7 +523,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       colorHex: hex(selectedColor),
       logoAsset: selectedLogoAsset,
       cardColorHex: selectedCardColor == null ? null : hex(selectedCardColor!),
-      cardShapeType: selectedCardShape,
+      cardShapeType: shapeType,
     );
     final foreground = account.cardForeground ?? Colors.white;
     final primary = _previewHasColoredBackground
@@ -554,6 +562,83 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCardDecorationPicker(BuildContext context, Currency currency) {
+    final labelHeight =
+        MediaQuery.textScalerOf(context).scale(KoinTypography.caption) * 1.5;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) => SizedBox(
+            height: AccountCardLayout.minimumHeight(context) + 8 + labelHeight,
+            child: ListView.separated(
+              controller: _cardShapeScrollController,
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: 9,
+              separatorBuilder: (_, _) => const Gap(KoinSpacing.cardGap),
+              itemBuilder: (context, index) {
+                final shapeType = index == 0 ? null : index - 1;
+                final isSelected = selectedCardShape == shapeType;
+                return SizedBox(
+                  width: _accountCardWidth(context, constraints.maxWidth),
+                  child: Semantics(
+                    button: true,
+                    selected: isSelected,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticService.light();
+                        setState(() => selectedCardShape = shapeType);
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              foregroundDecoration: isSelected
+                                  ? BoxDecoration(
+                                      borderRadius: BorderRadius.circular(
+                                        KoinShape.field,
+                                      ),
+                                      border: Border.all(
+                                        color: AppTheme.primaryColor(context),
+                                        width: 2,
+                                      ),
+                                    )
+                                  : null,
+                              child: _buildAccountPreview(
+                                context,
+                                currency,
+                                shapeType: shapeType,
+                              ),
+                            ),
+                          ),
+                          const Gap(8),
+                          SizedBox(
+                            height: labelHeight,
+                            child: Text(
+                              index == 0 ? 'Auto' : 'Style $index',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: KoinTypography.caption,
+                                height: 1.5,
+                                color: AppTheme.textLightColor(context),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1124,17 +1209,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             // Account preview
             LayoutBuilder(
               builder: (context, constraints) {
-                final largeText =
-                    MediaQuery.textScalerOf(context).scale(13) > 19.5;
-                final columns = constraints.maxWidth < 280 || largeText ? 1 : 2;
-                final cardWidth =
-                    (constraints.maxWidth -
-                        KoinSpacing.cardGap * (columns - 1)) /
-                    columns;
                 return Center(
                   child: SizedBox(
-                    width: cardWidth,
-                    child: _buildAccountPreview(context, currency),
+                    width: _accountCardWidth(context, constraints.maxWidth),
+                    child: _buildAccountPreview(
+                      context,
+                      currency,
+                      shapeType: selectedCardShape,
+                    ),
                   ),
                 );
               },
@@ -1160,6 +1242,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     fontSize: KoinTypography.caption,
                     fontWeight: KoinTypography.labelWeight,
                     letterSpacing: 0.3,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Swipe to browse',
+                  style: TextStyle(
+                    fontSize: KoinTypography.overline,
+                    color: AppTheme.textLightColor(context),
                   ),
                 ),
               ],
@@ -1640,180 +1730,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                   ],
                                 ),
                                 const Gap(12),
-                                SizedBox(
-                                  height: 90,
-                                  child: ListView.builder(
-                                    controller: _cardShapeScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    clipBehavior: Clip.none,
-                                    itemCount:
-                                        9, // Default (None/Hash) + 8 shapes
-                                    itemBuilder: (context, index) {
-                                      final isSelected = index == 0
-                                          ? selectedCardShape == null
-                                          : selectedCardShape == (index - 1);
-                                      final shapeIndex = index == 0
-                                          ? null
-                                          : index - 1;
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          HapticService.light();
-                                          setState(
-                                            () =>
-                                                selectedCardShape = shapeIndex,
-                                          );
-                                        },
-                                        child: Container(
-                                          width: 140,
-                                          height: 80,
-                                          margin: const EdgeInsets.only(
-                                            right: 12,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.surfaceColor(
-                                              context,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? AppTheme.primaryColor(
-                                                      context,
-                                                    )
-                                                  : AppTheme.fieldBorderColor(
-                                                      context,
-                                                      lightOpacity: 0.15,
-                                                    ),
-                                              width: 2.5,
-                                            ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    AppTheme.boxShadow(
-                                                      context,
-                                                      color:
-                                                          AppTheme.primaryColor(
-                                                            context,
-                                                          ).withValues(
-                                                            alpha: 0.15,
-                                                          ),
-                                                      blurRadius: 10,
-                                                      offset: const Offset(
-                                                        0,
-                                                        4,
-                                                      ),
-                                                    ),
-                                                  ]
-                                                : null,
-                                          ),
-                                          clipBehavior: Clip.antiAlias,
-                                          child: Stack(
-                                            children: [
-                                              if (index == 0)
-                                                Center(
-                                                  child: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons
-                                                            .auto_awesome_rounded,
-                                                        size: 20,
-                                                        color: isSelected
-                                                            ? AppTheme.primaryColor(
-                                                                context,
-                                                              )
-                                                            : AppTheme.fieldHintColor(
-                                                                context,
-                                                                lightOpacity:
-                                                                    0.5,
-                                                              ),
-                                                      ),
-                                                      const Gap(4),
-                                                      Text(
-                                                        'Auto',
-                                                        style: TextStyle(
-                                                          fontSize:
-                                                              KoinTypography
-                                                                  .small,
-                                                          fontWeight:
-                                                              KoinTypography
-                                                                  .titleWeight,
-                                                          color: isSelected
-                                                              ? AppTheme.textColor(
-                                                                  context,
-                                                                )
-                                                              : AppTheme.textLightColor(
-                                                                  context,
-                                                                ).withValues(
-                                                                  alpha: 0.7,
-                                                                ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                )
-                                              else
-                                                Positioned.fill(
-                                                  child: Center(
-                                                    child: IgnorePointer(
-                                                      child: Transform.scale(
-                                                        scale: 0.6,
-                                                        child: SizedBox(
-                                                          width: 200,
-                                                          height: 120,
-                                                          child: AccountItem(
-                                                            account: Account(
-                                                              id: 'shape_preview_$index',
-                                                              name: 'Preview',
-                                                              iconCodePoint:
-                                                                  selectedIcon,
-                                                              colorHex:
-                                                                  '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
-                                                              cardColorHex:
-                                                                  '#${(selectedCardColor ?? selectedColor).toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
-                                                              cardShapeType:
-                                                                  index - 1,
-                                                            ),
-                                                            balance: 0,
-                                                            currencySymbol: '',
-                                                            onTap: () {},
-                                                            isPreview: true,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (isSelected)
-                                                Positioned(
-                                                  top: 8,
-                                                  right: 8,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(4),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          AppTheme.primaryColor(
-                                                            context,
-                                                          ),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: const Icon(
-                                                      KoinIcons.check,
-                                                      color: Colors.white,
-                                                      size: 12,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+                                _buildCardDecorationPicker(context, currency),
                                 const Gap(24),
                               ]
                               .koinAnimate(

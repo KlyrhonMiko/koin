@@ -248,7 +248,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         await snapshot(editing ? 'edit-account' : 'create-account');
-        final preview = find.byType(AccountCardLayout).last;
+        final preview = find.byType(AccountCardLayout).first;
         expect(tester.getSize(preview).width, accountCardSize.width);
         if (scale == 1) {
           expect(
@@ -348,6 +348,71 @@ void main() {
         await tester.enterText(balanceField, '1234567.89');
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
+        final template = find.text(BankTemplate.templates.first.name).first;
+        await tester.ensureVisible(template);
+        await tester.tap(template);
+        await tester.pumpAndSettle();
+        final decorationSize = tester.getSize(preview);
+        Finder decorationCard(String label) => find.descendant(
+          of: find.widgetWithText(GestureDetector, label),
+          matching: find.byType(AccountCardLayout),
+        );
+        await tester.ensureVisible(find.text('Card Decoration'));
+        await tester.pumpAndSettle();
+        final decorationScroll = tester
+            .widget<ListView>(
+              find.ancestor(
+                of: decorationCard('Auto'),
+                matching: find.byType(ListView),
+              ),
+            )
+            .controller!;
+        expect(find.text('Swipe to browse'), findsOneWidget);
+        await tester.ensureVisible(decorationCard('Auto'));
+        await tester.pumpAndSettle();
+        await tester.drag(
+          decorationCard('Auto'),
+          Offset(-decorationSize.width, 0),
+        );
+        await tester.pumpAndSettle();
+        expect(decorationScroll.offset, greaterThan(0));
+        for (final (label, shape) in [
+          ('Auto', null),
+          ('Style 1', 0),
+          ('Style 8', 7),
+          ('Auto', null),
+        ]) {
+          decorationScroll.jumpTo(
+            ((shape == null ? 0 : shape + 1) *
+                    (decorationSize.width + KoinSpacing.cardGap))
+                .clamp(0.0, decorationScroll.position.maxScrollExtent),
+          );
+          await tester.pumpAndSettle();
+          final card = decorationCard(label);
+          await tester.ensureVisible(card);
+          await tester.pumpAndSettle();
+          expect(tester.getSize(card), decorationSize);
+          expect(
+            find.descendant(of: card, matching: find.text(updatedName)),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: card,
+              matching: find.byTooltip('₱1,234,567.89'),
+            ),
+            findsOneWidget,
+          );
+          await tester.tap(card);
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<AccountCardLayout>(preview).account.cardShapeType,
+            shape,
+          );
+        }
+        await snapshot(
+          editing ? 'edit-card-decoration' : 'create-card-decoration',
+        );
         final feeField = find.byKey(
           const ValueKey('account_transfer_fee_field'),
         );

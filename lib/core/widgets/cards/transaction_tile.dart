@@ -96,23 +96,27 @@ class TransactionTile extends StatelessWidget {
     final isIncome = transaction.type == TransactionType.income;
     final isTransfer = transaction.type == TransactionType.transfer;
 
-    final typeColor = isTransfer
+    final typeColor = isTransfer || transaction.isDebtTransfer
         ? AppTheme.transferContentColor(context)
         : (isIncome
               ? AppTheme.incomeContentColor(context)
               : AppTheme.expenseContentColor(context));
 
-    final color = isTransfer ? typeColor : (category?.color ?? typeColor);
+    final color = isTransfer || transaction.isDebtTransfer
+        ? typeColor
+        : (category?.color ?? typeColor);
 
-    final icon = isTransfer
+    final icon = transaction.isDebtTransfer
+        ? KoinIcons.wallet
+        : isTransfer
         ? KoinIcons.arrowsLeftRight
         : (category != null
               ? IconUtils.getIcon(category!.iconCodePoint)
-              : (isIncome
-                    ? KoinIcons.arrowDown
-                    : KoinIcons.arrowUp));
+              : (isIncome ? KoinIcons.arrowDown : KoinIcons.arrowUp));
 
-    final categoryName = isTransfer
+    final categoryName = transaction.isDebtTransfer
+        ? 'Loan'
+        : isTransfer
         ? 'Transfer'
         : (category?.name ?? 'Uncategorized');
     final displayTitle = transaction.note.isEmpty

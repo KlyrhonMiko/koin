@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -36,6 +37,16 @@ void main() {
       final icons = FontLoader('MaterialIcons');
       icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
       await icons.load();
+      for (final entry in {
+        'PhosphorRegular': 'Phosphor.ttf',
+        'PhosphorFill': 'Phosphor-Fill.ttf',
+      }.entries) {
+        final font = FontLoader('packages/phosphor_icons/${entry.key}');
+        font.addFont(
+          rootBundle.load('packages/phosphor_icons/lib/fonts/${entry.value}'),
+        );
+        await font.load();
+      }
     }
   });
 
@@ -65,6 +76,8 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          ledgerProvider.overrideWithValue(InMemoryLedgerAdapter()),
+          savingsRepositoryProvider.overrideWithValue(InMemorySavingsAdapter()),
           accountRepositoryProvider.overrideWithValue(
             accounts ?? InMemoryAccountAdapter(),
           ),
@@ -84,9 +97,8 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.getTheme(Colors.teal, dark),
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(scale)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
             child: RepaintBoundary(key: const Key('preview'), child: child!),
           ),
           home: Builder(
@@ -116,9 +128,8 @@ void main() {
       final image = await boundary.toImage();
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
       await Directory('build/form_previews').create(recursive: true);
-      await File(
-        'build/form_previews/$name.png',
-      ).writeAsBytes(data!.buffer.asUint8List());
+      await File('build/form_previews/$name.png')
+          .writeAsBytes(data!.buffer.asUint8List());
       image.dispose();
     });
   }
@@ -931,6 +942,8 @@ void main() {
             '100',
           );
           if (debtForm) {
+            await tester.ensureVisible(find.text('Existing debt'));
+            await tester.tap(find.text('Existing debt'));
             final notes = find.widgetWithText(
               TextFormField,
               'Notes (Optional)',
@@ -978,6 +991,72 @@ void main() {
       );
     }
   }
+  for (final existing in [false, true]) {
+    testWidgets('IOU account deduction existing=$existing', (tester) async {
+      final debts = InMemoryDebtAdapter();
+      await open(
+        tester,
+        const AddEditDebtScreen(),
+        debts: debts,
+        accounts: InMemoryAccountAdapter(
+          initial: [
+            Account(
+              id: 'cash',
+              name: 'Cash',
+              initialBalance: 500,
+              iconCodePoint: KoinIcons.money.codePoint,
+              colorHex: '#008080',
+            ),
+          ],
+        ),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Who is involved?'),
+        'Alex',
+      );
+      await tester.enterText(find.widgetWithText(TextFormField, '0'), '100');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AddEditDebtScreen)),
+      );
+      if (existing) {
+        await tester.ensureVisible(find.text('Existing debt'));
+        await tester.tap(find.text('Existing debt'));
+        await tester.pumpAndSettle();
+        expect(
+          find.widgetWithText(SelectionTile, 'Source account'),
+          findsNothing,
+        );
+      } else {
+        await tester.tap(find.text('Create'));
+        await tester.pumpAndSettle();
+        expect(await debts.getDebts(), isEmpty);
+        expect(find.text('Choose an available account'), findsOneWidget);
+        final source = find.widgetWithText(SelectionTile, 'Source account');
+        await tester.ensureVisible(source);
+        await tester.tap(source);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cash'));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+      expect((await debts.getDebts()).single.remainingAmount, 100);
+      expect(
+        await debts.getDebtRepayments((await debts.getDebts()).single.id),
+        hasLength(existing ? 0 : 1),
+      );
+      await container.read(accountProvider.future);
+      await container.read(transactionProvider.future);
+      expect(
+        container.read(dashboardStatsProvider).accountBalances['cash'],
+        existing ? 500 : 400,
+      );
+      expect(container.read(dashboardStatsProvider).totalExpense, 0);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final saveParent in [false, true]) {
     testWidgets(
       'BNPL manual purchase feedback waits for parent save=$saveParent',

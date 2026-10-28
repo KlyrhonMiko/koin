@@ -41,11 +41,13 @@ class TransactionPage {
       final key = dayKey(tx.date);
       totals[key] =
           (totals[key] ?? 0) +
-          switch (tx.type) {
-            TransactionType.income => tx.amount,
-            TransactionType.expense => -tx.amount,
-            TransactionType.transfer => 0,
-          };
+          (tx.isDebtTransfer
+              ? 0
+              : switch (tx.type) {
+                  TransactionType.income => tx.amount,
+                  TransactionType.expense => -tx.amount,
+                  TransactionType.transfer => 0,
+                });
     }
     final remaining = filtered.where(
       (tx) =>

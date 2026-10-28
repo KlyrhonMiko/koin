@@ -47,6 +47,7 @@ class ForecastHistory {
         .map((payment) => payment.id)
         .toSet();
     bool isVariable(AppTransaction tx) =>
+        !tx.isDebtTransfer &&
         tx.debtRepaymentId == null &&
         (tx.plannedPaymentId == null ||
             flexibleIds.contains(tx.plannedPaymentId));

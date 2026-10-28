@@ -46,9 +46,9 @@ class TransactionGroup {
 
       double netTotal = 0.0;
       for (final tx in txList) {
-        if (tx.type == TransactionType.income) {
+        if (tx.countsAsIncome) {
           netTotal += tx.amount;
-        } else if (tx.type == TransactionType.expense) {
+        } else if (tx.countsAsExpense) {
           netTotal -= tx.amount;
         }
       }

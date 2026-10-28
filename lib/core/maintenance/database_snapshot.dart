@@ -112,6 +112,7 @@ class DatabaseSnapshot {
           'type',
           'categoryId',
           if (version >= 40) 'transferId',
+          if (version >= 48) 'isDebtTransfer',
         ],
         'categories': [
           'id',

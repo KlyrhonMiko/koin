@@ -128,9 +128,9 @@ class BudgetOverview {
         continue;
       }
 
-      if (t.type == TransactionType.income) {
+      if (t.countsAsIncome) {
         totalIncome += t.amount;
-      } else if (t.type == TransactionType.expense) {
+      } else if (t.countsAsExpense) {
         categorySpending[t.categoryId] =
             (categorySpending[t.categoryId] ?? 0.0) + t.amount;
       }

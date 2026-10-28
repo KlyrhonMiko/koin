@@ -13,6 +13,13 @@ class AppTransaction {
   final String? debtRepaymentId;
   final String? transferId;
 
+  /// Loan principal changes cash without counting as income or spending.
+  final bool isDebtTransfer;
+
+  bool get countsAsIncome => type == TransactionType.income && !isDebtTransfer;
+  bool get countsAsExpense =>
+      type == TransactionType.expense && !isDebtTransfer;
+
   AppTransaction({
     required this.id,
     this.note = '',
@@ -25,6 +32,7 @@ class AppTransaction {
     this.plannedPaymentId,
     this.debtRepaymentId,
     this.transferId,
+    this.isDebtTransfer = false,
   });
 
   AppTransaction copyWith({
@@ -39,6 +47,7 @@ class AppTransaction {
     String? plannedPaymentId,
     String? debtRepaymentId,
     String? transferId,
+    bool? isDebtTransfer,
   }) {
     return AppTransaction(
       id: id ?? this.id,
@@ -52,6 +61,7 @@ class AppTransaction {
       plannedPaymentId: plannedPaymentId ?? this.plannedPaymentId,
       debtRepaymentId: debtRepaymentId ?? this.debtRepaymentId,
       transferId: transferId ?? this.transferId,
+      isDebtTransfer: isDebtTransfer ?? this.isDebtTransfer,
     );
   }
 
@@ -68,6 +78,7 @@ class AppTransaction {
       'plannedPaymentId': plannedPaymentId,
       'debtRepaymentId': debtRepaymentId,
       'transferId': transferId,
+      'isDebtTransfer': isDebtTransfer ? 1 : 0,
     };
   }
 
@@ -84,6 +95,7 @@ class AppTransaction {
       plannedPaymentId: map['plannedPaymentId'],
       debtRepaymentId: map['debtRepaymentId'],
       transferId: map['transferId'],
+      isDebtTransfer: map['isDebtTransfer'] == 1,
     );
   }
 }

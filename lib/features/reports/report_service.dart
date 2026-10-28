@@ -27,9 +27,9 @@ class ReportSummary {
     double income = 0;
     double expense = 0;
     for (final tx in transactions) {
-      if (tx.type == TransactionType.income) {
+      if (tx.countsAsIncome) {
         income += tx.amount;
-      } else if (tx.type == TransactionType.expense) {
+      } else if (tx.countsAsExpense) {
         expense += tx.amount;
       }
     }
@@ -63,7 +63,9 @@ class ReportService {
   ) async {
     _iconFontLoaded ??=
         (FontLoader('KoinExportIcons')..addFont(
-              rootBundle.load('packages/phosphor_icons/lib/fonts/Phosphor-Fill.ttf'),
+              rootBundle.load(
+                'packages/phosphor_icons/lib/fonts/Phosphor-Fill.ttf',
+              ),
             ))
             .load();
     await _iconFontLoaded;
@@ -173,7 +175,9 @@ class ReportService {
 
     for (var tx in transactions) {
       String categoryName;
-      if (tx.type == TransactionType.transfer) {
+      if (tx.isDebtTransfer) {
+        categoryName = 'Loan';
+      } else if (tx.type == TransactionType.transfer) {
         categoryName = 'Transfer';
       } else {
         final category = categories.firstWhere(
@@ -216,7 +220,11 @@ class ReportService {
       rows.add([
         DateFormat('yyyy-MM-dd HH:mm').format(tx.date),
         tx.amount,
-        tx.type.name.toUpperCase(),
+        tx.isDebtTransfer
+            ? (tx.type == TransactionType.income
+                  ? 'LOAN_REPAYMENT'
+                  : 'LOAN_OUT')
+            : tx.type.name.toUpperCase(),
         _spreadsheetText(categoryName),
         _spreadsheetText(account.name),
         _spreadsheetText(toAccountName),
@@ -493,7 +501,9 @@ class ReportService {
                   children: [
                     _buildDataCell(DateFormat('MMM dd, HH:mm').format(tx.date)),
                     _buildIconCell(
-                      tx.type == TransactionType.transfer
+                      tx.isDebtTransfer
+                          ? 'Loan'
+                          : tx.type == TransactionType.transfer
                           ? 'Transfer'
                           : category.name,
                       PdfColor.fromHex(category.colorHex),

@@ -9,6 +9,31 @@ class FinancialValidationException implements Exception {
 
 /// One authority for money direction, validity, and available account funds.
 abstract final class TransactionRules {
+  static AppTransaction loanFunding(Debt debt, String transactionId) {
+    amount(debt.amount);
+    if (debt.type != DebtType.owedToMe ||
+        debt.currentAmount != 0 ||
+        debt.items.isNotEmpty ||
+        debt.accountId == null ||
+        debt.accountId!.isEmpty) {
+      throw const FinancialValidationException(
+        'Choose a source account for a new loan',
+      );
+    }
+    return AppTransaction(
+      id: transactionId,
+      note: 'Loan to ${debt.personName}',
+      amount: debt.amount,
+      // Installment start dates describe repayment, not when money is lent.
+      date: debt.totalInstallments > 0 ? DateTime.now() : debt.startDate,
+      type: TransactionType.expense,
+      categoryId: 'cat_others',
+      accountId: debt.accountId!,
+      debtRepaymentId: transactionId,
+      isDebtTransfer: true,
+    );
+  }
+
   static Debt debtEdit(
     Debt proposed, {
     Debt? previous,

@@ -48,6 +48,13 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
   int _suggestionRevision = 0;
   final _manualPurchaseIds = <String>{};
   bool _bnpl = false;
+  bool _existingDebt = false;
+  final _fundingTransactionId = const Uuid().v4();
+  final _newDebtId = const Uuid().v4();
+
+  bool get _isNewReceivable =>
+      widget.debt == null && !_bnpl && _selectedType == DebtType.owedToMe;
+  bool get _deductFromAccount => _isNewReceivable && !_existingDebt;
 
   @override
   void initState() {
@@ -176,6 +183,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         );
       }
     } finally {
+      if (mounted) {
+        ref.read(savingsSpendingApprovalsProvider).clear(_fundingTransactionId);
+      }
       if (mounted) setState(() => _saving = false);
     }
   }
@@ -200,7 +210,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         0;
     final notes = _notesController.text.trim();
     final isEdit = widget.debt != null;
-    final id = isEdit ? widget.debt!.id : const Uuid().v4();
+    final id = isEdit ? widget.debt!.id : _newDebtId;
     final currentAmount = isEdit ? widget.debt!.currentAmount : 0.0;
 
     final installmentsText = _installmentsController.text.trim();
@@ -235,7 +245,33 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     final preparedItems = _items.map((i) => i.copyWith(debtId: id)).toList();
     final preparedDebt = debt.copyWith(items: preparedItems);
 
-    await ref.read(debtsProvider.notifier).saveDebt(preparedDebt);
+    if (_deductFromAccount) {
+      final accounts = await ref.read(accountProvider.future);
+      final transactions = await ref.read(transactionProvider.future);
+      TransactionRules.account(
+        accountId: _selectedAccountId ?? '',
+        value: finalAmount,
+        isExpense: true,
+        accounts: accounts.where((account) => !account.isArchived).toList(),
+        transactions: transactions,
+      );
+      if (!mounted ||
+          !await confirmSavingsSpending(
+            context: context,
+            ref: ref,
+            accountId: _selectedAccountId!,
+            amount: finalAmount,
+            transactionId: _fundingTransactionId,
+          )) {
+        return;
+      }
+      if (!mounted) return;
+      await ref
+          .read(debtsProvider.notifier)
+          .createLoan(preparedDebt, transactionId: _fundingTransactionId);
+    } else {
+      await ref.read(debtsProvider.notifier).saveDebt(preparedDebt);
+    }
     HapticService.success();
 
     if (mounted) {
@@ -300,6 +336,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       _selectedCategoryId,
       _selectedFrequency,
       _bnpl,
+      _existingDebt,
       jsonEncode(_items.map((item) => item.toMap()).toList()),
     ),
     listenables: [
@@ -380,6 +417,39 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                   onChanged: (_) => setState(() {}),
                 ),
               _buildRecordTypeSelector(context, primaryColor),
+              if (_isNewReceivable) ...[
+                const Gap(20),
+                KoinChoiceControl(
+                  segments: const [
+                    KoinSegmentItem(label: 'Lend money'),
+                    KoinSegmentItem(label: 'Existing debt'),
+                  ],
+                  selectedIndex: _existingDebt ? 1 : 0,
+                  onChanged: (index) =>
+                      setState(() => _existingDebt = index == 1),
+                ),
+                const Gap(12),
+                if (_deductFromAccount) ...[
+                  SelectionTile(
+                    fallbackIcon: KoinIcons.wallet,
+                    label: 'Source account',
+                    selectedName: account?.name,
+                    selectedColor: account?.color,
+                    selectedIconCodePoint: account?.iconCodePoint,
+                    selectedLogoAsset: account?.logoAsset,
+                    placeholder: 'Choose an account',
+                    onTap: () => _openAccountPicker(context, accounts),
+                  ),
+                  const Gap(8),
+                ],
+                Text(
+                  _existingDebt
+                      ? 'Track money already owed without changing an account balance.'
+                      : 'Deduct the amount from this account and track it as a loan, separate from spending.',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppTheme.textLightColor(context)),
+                ),
+              ],
               const Gap(24),
               _fieldLabel(context, _bnpl ? 'Billing schedule' : 'Timeline'),
               const Gap(8),
@@ -423,17 +493,18 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 borderRadius: 16,
                 borderColor: AppTheme.fieldBorderColor(context),
                 children: [
-                  SelectionTile(
-                    asCard: false,
-                    fallbackIcon: KoinIcons.wallet,
-                    label: 'Linked account',
-                    selectedName: account?.name,
-                    selectedColor: account?.color,
-                    selectedIconCodePoint: account?.iconCodePoint,
-                    selectedLogoAsset: account?.logoAsset,
-                    placeholder: 'Choose an account',
-                    onTap: () => _openAccountPicker(context, accounts),
-                  ),
+                  if (!_deductFromAccount)
+                    SelectionTile(
+                      asCard: false,
+                      fallbackIcon: KoinIcons.wallet,
+                      label: 'Linked account',
+                      selectedName: account?.name,
+                      selectedColor: account?.color,
+                      selectedIconCodePoint: account?.iconCodePoint,
+                      selectedLogoAsset: account?.logoAsset,
+                      placeholder: 'Choose an account',
+                      onTap: () => _openAccountPicker(context, accounts),
+                    ),
                   SelectionTile(
                     asCard: false,
                     fallbackIcon: KoinIcons.squaresFour,
@@ -718,7 +789,9 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       context: context,
       ref: ref,
       selectedAccountId: _selectedAccountId,
-      subtitle: 'Where is this money from/going?',
+      subtitle: _deductFromAccount
+          ? 'Which account are you lending from?'
+          : 'Where is this money from/going?',
       accountsOverride: accounts,
     );
     if (id != null && mounted) {

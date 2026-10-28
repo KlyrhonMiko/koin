@@ -605,9 +605,7 @@ class DashboardScreen extends ConsumerWidget {
       );
     }
 
-    final expenses = transactions
-        .where((t) => t.type == TransactionType.expense)
-        .toList();
+    final expenses = transactions.where((t) => t.countsAsExpense).toList();
 
     return SpendingTrendChart(
       expenses: expenses,

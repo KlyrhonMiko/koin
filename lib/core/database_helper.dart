@@ -39,6 +39,15 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 48) {
+      final columns = await db.rawQuery('PRAGMA table_info(transactions)');
+      if (columns.isNotEmpty &&
+          !columns.any((column) => column['name'] == 'isDebtTransfer')) {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN isDebtTransfer INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+    }
     // Convert existing records before older upgrades seed new Phosphor records.
     if (oldVersion < 46) await PhosphorIconMigration.upgrade(db);
     if (oldVersion < 44) {
@@ -919,6 +928,7 @@ CREATE TABLE transactions (
   plannedPaymentId TEXT,
   debtRepaymentId TEXT,
   transferId TEXT,
+  isDebtTransfer INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE SET NULL,
   FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE SET NULL,
   FOREIGN KEY (toAccountId) REFERENCES accounts (id) ON DELETE SET NULL,
@@ -1241,7 +1251,7 @@ CREATE TABLE transactions (
     final args = <Object?>[];
     String slots(int count) => List.filled(count, '?').join(',');
     if (filter.type != null) {
-      clauses.add('type = ?');
+      clauses.add('type = ? AND isDebtTransfer = 0');
       args.add(filter.type!.name);
     }
     final query = filter.query.trim().toLowerCase();
@@ -1328,8 +1338,8 @@ CREATE TABLE transactions (
           ? <Map<String, Object?>>[]
           : await txn.rawQuery(
               '''
-        SELECT substr(date, 1, 10) AS day, SUM(CASE type
-          WHEN 'income' THEN amount WHEN 'expense' THEN -amount ELSE 0 END) AS total
+        SELECT substr(date, 1, 10) AS day, SUM(CASE WHEN isDebtTransfer = 1 THEN 0 ELSE CASE type
+          WHEN 'income' THEN amount WHEN 'expense' THEN -amount ELSE 0 END END) AS total
         FROM transactions WHERE ($baseWhere) AND substr(date, 1, 10) IN (${slots(days.length)})
         GROUP BY substr(date, 1, 10)
       ''',
@@ -1404,6 +1414,7 @@ CREATE TABLE transactions (
       plannedPaymentId: previous.plannedPaymentId,
       debtRepaymentId: previous.debtRepaymentId,
       transferId: previous.transferId,
+      isDebtTransfer: previous.isDebtTransfer,
     );
     await _syncSavingsRelease(
       txn,
@@ -1947,6 +1958,68 @@ CREATE TABLE transactions (
     });
   }
 
+  Future<AppTransaction> createLoan(
+    Debt debt, {
+    required String transactionId,
+    Map<String, int> approvedGoalCents = const {},
+  }) async {
+    final funding = TransactionRules.loanFunding(debt, transactionId);
+    final db = await instance.database;
+    return db.transaction((txn) async {
+      final saved = await txn.rawQuery(
+        '''SELECT t.* FROM transactions t JOIN debt_repayments r
+        ON r.id = t.debtRepaymentId WHERE t.id = ? AND r.debtId = ?''',
+        [transactionId, debt.id],
+      );
+      if (saved.isNotEmpty) return AppTransaction.fromMap(saved.single);
+      final existing = await txn.query(
+        'debts',
+        where: 'id = ?',
+        whereArgs: [debt.id],
+      );
+      if (existing.isNotEmpty) {
+        throw const FinancialValidationException('This loan already exists');
+      }
+      TransactionRules.account(
+        accountId: funding.accountId,
+        value: funding.amount,
+        isExpense: true,
+        accounts: (await txn.query(
+          'accounts',
+          where: 'id = ? AND isArchived = 0',
+          whereArgs: [funding.accountId],
+        )).map(Account.fromMap).toList(),
+        transactions: (await txn.query(
+          'transactions',
+          where: 'accountId = ? OR toAccountId = ?',
+          whereArgs: [funding.accountId, funding.accountId],
+        )).map(AppTransaction.fromMap),
+      );
+      await releaseSavingsForTransaction(
+        txn,
+        transactionId: funding.id,
+        accountId: funding.accountId,
+        debit: funding.amount,
+        approvedGoalCents: approvedGoalCents,
+      );
+      await txn.insert('debts', debt.toMap());
+      await txn.insert(
+        'debt_repayments',
+        DebtRepayment(
+          id: transactionId,
+          debtId: debt.id,
+          amount: debt.amount,
+          date: funding.date,
+          note: funding.note,
+          accountId: funding.accountId,
+          isIncrease: true,
+        ).toMap(),
+      );
+      await txn.insert('transactions', funding.toMap());
+      return funding;
+    });
+  }
+
   /// Atomically inserts or updates a debt and synchronizes all its itemized sub-purchases in a single transaction.
   Future<void> saveDebtWithItems(Debt debt, List<DebtItem> items) async {
     final db = await instance.database;
@@ -2066,6 +2139,14 @@ CREATE TABLE transactions (
   Future<void> deleteDebtRepayment(DebtRepayment repayment) async {
     final db = await instance.database;
     await db.transaction((txn) async {
+      final rows = await txn.query(
+        'debt_repayments',
+        where: 'id = ?',
+        whereArgs: [repayment.id],
+      );
+      if (rows.isEmpty) return;
+      repayment = DebtRepayment.fromMap(rows.single);
+      await validateDebtRepaymentRemoval(txn, repayment);
       await txn.delete(
         'debt_repayments',
         where: 'id = ?',
@@ -2102,6 +2183,28 @@ CREATE TABLE transactions (
       orderBy: 'date DESC',
     );
     return result.map((json) => DebtRepayment.fromMap(json)).toList();
+  }
+
+  Future<void> validateDebtRepaymentRemoval(
+    DatabaseExecutor txn,
+    DebtRepayment repayment,
+  ) async {
+    if (!repayment.isIncrease) return;
+    final rows = await txn.query(
+      'debts',
+      where: 'id = ?',
+      whereArgs: [repayment.debtId],
+    );
+    if (rows.isEmpty) return;
+    final debt = Debt.fromMap(rows.single);
+    if (TransactionRules.exceedsBalance(
+      debt.currentAmount,
+      debt.amount - repayment.amount,
+    )) {
+      throw const FinancialValidationException(
+        'Remove repayments before removing this loan amount',
+      );
+    }
   }
 
   // Forecasting Queries

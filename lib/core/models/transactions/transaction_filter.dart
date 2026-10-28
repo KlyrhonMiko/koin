@@ -107,7 +107,7 @@ class TransactionFilter {
     if (isEmpty) return true;
 
     // Type filter
-    if (type != null && tx.type != type) {
+    if (type != null && (tx.type != type || tx.isDebtTransfer)) {
       return false;
     }
 

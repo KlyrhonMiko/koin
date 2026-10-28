@@ -73,10 +73,10 @@ class DashboardStats {
           transaction.date.year == targetDate.year &&
           transaction.date.month == targetDate.month;
       // Hiding or excluding an account changes balance visibility, never history.
-      if (transaction.type == TransactionType.income) {
+      if (transaction.countsAsIncome) {
         allTimeInc += transaction.amount;
         if (inMonth) monthlyIncome += transaction.amount;
-      } else if (transaction.type == TransactionType.expense) {
+      } else if (transaction.countsAsExpense) {
         allTimeExp += transaction.amount;
         allTimeCatSpending[transaction.categoryId] =
             (allTimeCatSpending[transaction.categoryId] ?? 0) +

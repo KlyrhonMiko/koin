@@ -78,7 +78,15 @@ Start new users in PHP · Philippine Peso unless a currency is already saved. Ke
 
 Keep onboarding as one optional setup screen. Use a compact Koin logo/name row with a quiet Skip for now action, a clear introductory heading, and the existing explanatory copy. Group currency and account choices in one shared surface; allow selected names to wrap fully at large text sizes. Use open underlined name and balance inputs, persistent labels, and the shared prominent amount typography. Keep the savings explanation quiet and unboxed. Anchor Start tracking near the bottom on regular-height screens, and place it in the scrolling form when the keyboard, large text, or short landscape height needs the space. Preserve drafts through layout changes and keep initial balances separate from income.
 
+## IOU creation
+
+New “I am owed” records default to Lend money, with a required Source account directly below the choice control. Existing debt records an opening IOU without changing cash. Keep loan principal and repayments visible as Loan activity, separate from income, spending, and budget totals; repayments credit the selected receiving account. Editing an existing record must never repeat the original deduction.
+
+Credit details use a compact summary with 24px horizontal and 16px vertical padding. Place the remaining balance directly below the name, with totals or billing context and repayment progress grouped beneath it. Keep the shared amount typography, fit long amounts on one line, and let repayment labels wrap at large text sizes.
+
 ## Account editor
+
+Use one quiet “Swipe to browse” hint beside Templates. Avoid repeating instruction rows beneath each horizontal picker.
 
 Use open underlined name and balance inputs with persistent labels above, a 20px name and 28px balance, and live preview updates. Group Private account and Credit account in one quiet surface with a divider and native teal switches. Transfer fee has its own section with the shared Fixed amount / Percentage choice control, a labeled input with currency or percent units, and concise zero-fee guidance. Preserve account storage and validation.
 
