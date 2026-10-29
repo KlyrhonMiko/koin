@@ -152,6 +152,6 @@ class TransactionCategory {
   /// Returns whether [spent] exceeds the resolved budget.
   bool isOverBudget({required double spent, double totalIncome = 0.0}) {
     final b = resolvedBudget(totalIncome);
-    return b > 0 && spent > b;
+    return hasBudget && spent > b;
   }
 }

@@ -135,7 +135,7 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
     final amount = ref
         .read(settingsProvider)
         .currency
-        .tryParseInput(_amount.text);
+        .tryParseInput(_amount.text, originalValue: widget.initial?.amount);
     final valid = amount != null && amount.isFinite && amount >= 0.01;
     final base =
         widget.goal ??
@@ -222,7 +222,10 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                         final value = ref
                             .read(settingsProvider)
                             .currency
-                            .tryParseInput(text ?? '');
+                            .tryParseInput(
+                              text ?? '',
+                              originalValue: widget.initial?.amount,
+                            );
                         return value == null || !value.isFinite || value < 0.01
                             ? 'Enter an amount of at least 0.01'
                             : null;
@@ -371,9 +374,7 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                                     MediaQuery.disableAnimationsOf(context)
                                     ? Duration.zero
                                     : const Duration(milliseconds: 180),
-                                child: const Icon(
-                                  KoinIcons.caretDown,
-                                ),
+                                child: const Icon(KoinIcons.caretDown),
                               ),
                             ],
                           ),

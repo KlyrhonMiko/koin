@@ -113,6 +113,11 @@ class DatabaseSnapshot {
           'categoryId',
           if (version >= 40) 'transferId',
           if (version >= 48) 'isDebtTransfer',
+          if (version >= 49) ...[
+            'cashbackRule',
+            'cashbackReceivedAt',
+            'cashbackSourceId',
+          ],
         ],
         'categories': [
           'id',

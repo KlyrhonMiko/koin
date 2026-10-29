@@ -125,6 +125,32 @@ void main() {
     }
   }
 
+  testWidgets('saved expense does not flash false savings use while closing', (
+    tester,
+  ) async {
+    await providers
+        .read(savingsRepositoryProvider)
+        .updateSavingsGoal(goal.copyWith(currentAmount: 50));
+    await launch(tester, const AddTransactionScreen());
+    await fillExpense(tester, '40');
+    expect(find.textContaining('from savings'), findsNothing);
+    tester.widget<NumPad>(find.byType(NumPad)).onDone();
+    await pumpSave(tester);
+    expect(providers.read(dashboardStatsProvider).accountBalances['cash'], 60);
+    expect(
+      providers.read(savingsGoalsProvider).value!.single.currentAmount,
+      50,
+    );
+    expect(find.textContaining('from savings'), findsNothing);
+    suggester.completion.complete();
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.textContaining('from savings'), findsNothing);
+    }
+    await tester.pumpAndSettle();
+    expect(find.byType(AddTransactionScreen), findsNothing);
+  });
+
   testWidgets(
     'saved expense stays free of balance warnings through dismissal',
     (tester) async {

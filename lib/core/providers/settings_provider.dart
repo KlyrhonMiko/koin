@@ -17,6 +17,7 @@ class SettingsState {
   final String? voiceLocale;
   final String? voiceLocaleName;
   final bool setupCompleted;
+  final bool appProtectionEnabled;
   final bool? _hideBalance;
   bool get hideBalance => _hideBalance ?? false;
 
@@ -30,6 +31,7 @@ class SettingsState {
     this.voiceLocale,
     this.voiceLocaleName,
     this.setupCompleted = true,
+    this.appProtectionEnabled = false,
   });
 
   SettingsState copyWith({
@@ -43,6 +45,7 @@ class SettingsState {
     String? voiceLocaleName,
     bool clearVoiceLocale = false,
     bool? setupCompleted,
+    bool? appProtectionEnabled,
   }) {
     return SettingsState(
       currency: currency ?? this.currency,
@@ -56,6 +59,7 @@ class SettingsState {
           ? null
           : voiceLocaleName ?? this.voiceLocaleName,
       setupCompleted: setupCompleted ?? this.setupCompleted,
+      appProtectionEnabled: appProtectionEnabled ?? this.appProtectionEnabled,
     );
   }
 }
@@ -172,6 +176,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       voiceLocale: prefs.getString('voice_locale'),
       voiceLocaleName: prefs.getString('voice_locale_name'),
       setupCompleted: prefs.getBool('setup_completed') ?? true,
+      appProtectionEnabled: prefs.getBool('app_protection_enabled') ?? false,
     );
   }
 
@@ -179,6 +184,14 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_currencyCodeKey, currency.code);
     ref.invalidateSelf();
+  }
+
+  // Device authentication is deliberately excluded from portable backups.
+  Future<void> setAppProtection(bool enabled) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setBool('app_protection_enabled', enabled);
+    state = state.copyWith(appProtectionEnabled: enabled);
   }
 
   Future<void> setVoiceLocale(String? locale, {String? name}) async {

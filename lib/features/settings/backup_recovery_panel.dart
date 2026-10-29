@@ -116,9 +116,8 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
         final busy = status.busy || _acting;
         final colors = Theme.of(context).colorScheme;
         final latest = status.copies.isEmpty ? null : status.copies.first;
-        final supporting = Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant);
+        final supporting = Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: colors.onSurfaceVariant);
         const inset = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
         Widget divider() => Divider(
           height: 1,
@@ -170,6 +169,16 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
                           ? 'Your first copy will be saved on this device.'
                           : 'On this device · ${DateFormat.MMMd().add_jm().format(latest.createdAt)}',
                       style: supporting,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Local recovery only. Export a copy to another device for device-loss protection.',
+                      style: supporting,
+                    ),
+                    TextButton.icon(
+                      onPressed: busy ? null : () => _run(widget.onExport),
+                      icon: const Icon(KoinIcons.uploadSimple, size: 18),
+                      label: const Text('Export a backup'),
                     ),
                     if (status.localError) ...[
                       const SizedBox(height: 8),
@@ -261,11 +270,6 @@ class _BackupRecoveryPanelState extends ConsumerState<BackupRecoveryPanel> {
                     ),
                   ],
                 ],
-                action(
-                  'Export a backup',
-                  KoinIcons.uploadSimple,
-                  widget.onExport,
-                ),
                 action(
                   'Import a backup',
                   KoinIcons.downloadSimple,

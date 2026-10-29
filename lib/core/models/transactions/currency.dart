@@ -26,20 +26,33 @@ class Currency {
   /// Parses the dot-decimal input used by the app's numeric keypad and editors.
   /// Grouped comma input is accepted only when groups contain three digits.
   /// Trailing fractional zeroes remain compatible with older editor values.
-  double? tryParseInput(String text, {int? precision}) {
+  double? tryParseInput(String text, {int? precision, double? originalValue}) {
     final input = text.trim();
-    if (!RegExp(
-      r'^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$',
-    ).hasMatch(input)) {
+    if (!RegExp(r'^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$')
+        .hasMatch(input)) {
       return null;
     }
     final normalized = input.replaceAll(',', '');
     final fraction = normalized.contains('.')
         ? normalized.split('.').last.replaceFirst(RegExp(r'0+$'), '')
         : '';
-    if (fraction.length > (precision ?? decimalDigits)) return null;
     final value = double.tryParse(normalized);
+    // Relabeling currency must not force an unchanged historic amount to round.
+    if (fraction.length > (precision ?? decimalDigits) &&
+        value != originalValue) {
+      return null;
+    }
     return value != null && value.isFinite ? value : null;
+  }
+
+  int precisionFor(double? originalValue) {
+    // Supported currencies store cents or whole units, never binary float noise.
+    return decimalDigits == 0 &&
+            originalValue != null &&
+            originalValue.isFinite &&
+            originalValue != originalValue.truncateToDouble()
+        ? 2
+        : decimalDigits;
   }
 
   Map<String, dynamic> toMap() {

@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/core/widgets/inputs/app_input_focus.dart';
+import 'package:koin/core/widgets/app_privacy_gate.dart';
+
+import 'widgets/cashback_control.dart';
 
 const quickWindowChannel = MethodChannel('koin/quick_window');
 
@@ -85,7 +88,8 @@ class QuickEntryApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       theme: _theme(settings.themeColor, false),
       darkTheme: _theme(settings.themeColor, true),
-      builder: (context, child) => AppInputFocus(child: child!),
+      builder: (context, child) =>
+          AppInputFocus(child: AppPrivacyGate(child: child!)),
       home: KoinFormTheme(builder: (_) => const QuickEntryFlow()),
     );
   }
@@ -140,6 +144,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   bool _categorySuggested = false;
   String _expression = '';
   double _amount = 0;
+  CashbackRule _cashbackRule = CashbackRule.none;
   String? _categoryId;
   String? _accountId;
   String? _destinationId;
@@ -354,6 +359,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       _income = null;
     }
     _type = type;
+    if (type == TransactionType.income) {
+      _cashbackRule = CashbackRule.none;
+    }
     _pickerReturnStep = _Step.amount;
     _go(_Step.amount);
     _suggestCategory();
@@ -624,7 +632,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
         await ref
             .read(transactionProvider.notifier)
             .addTransfer(
-              transferTransaction: built.transferTransaction,
+              transferTransaction: built.transferTransaction.copyWith(
+                cashbackRule: _cashbackRule,
+              ),
               feeTransaction: built.feeTransaction,
             );
       } else {
@@ -639,6 +649,9 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 type: _type,
                 categoryId: _categoryId!,
                 accountId: _accountId!,
+                cashbackRule: _type == TransactionType.income
+                    ? CashbackRule.none
+                    : _cashbackRule,
               ),
             );
       }
@@ -1239,13 +1252,19 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 : (_transfer ? 'From account' : 'Account'),
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${format.format(displayBalance)}',
+                : account.name,
+            selectedNameDetail: account == null || displayBalance == null
+                ? null
+                : format.format(displayBalance),
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
             fallbackIcon: KoinIcons.wallet,
             placeholder: 'Select account',
             onTap: _openAccountPicker,
+            trailing: account != null && _type == TransactionType.expense
+                ? _cashbackControl()
+                : null,
           ),
           if (!_saving &&
               !_saved &&
@@ -1551,9 +1570,6 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     final category = categories.value!
         .where((c) => c.id == _categoryId)
         .firstOrNull;
-    final account = accounts.value!
-        .where((a) => a.id == _accountId)
-        .firstOrNull;
     final currency = ref.watch(settingsProvider).currency;
     final format = currency.formatter;
     return Column(
@@ -1576,10 +1592,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             ),
           ],
         ),
-        Text(
-          '${_transfer ? 'From' : 'Account'}: ${account?.name ?? 'Unavailable account'}',
-          style: TextStyle(color: AppTheme.textLightColor(context)),
-        ),
+        _accountDetails(accounts, currency),
         const SizedBox(height: 16),
         TextField(
           controller: _note,
@@ -1614,6 +1627,15 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     );
   }
 
+  Widget _cashbackControl() => CashbackControl(
+    amount: _amount,
+    currency: ref.watch(settingsProvider).currency,
+    rule: _cashbackRule,
+    onRuleChanged: (rule) => setState(() {
+      _cashbackRule = rule;
+    }),
+  );
+
   Widget _transferAccounts(
     AsyncValue<List<Account>> accounts,
     Currency currency,
@@ -1636,9 +1658,12 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
       label: receiving
           ? 'To account'
           : (sourceHasSavings ? 'From · Spendable' : 'From account'),
-      selectedName: account == null
+      selectedName: account?.name,
+      selectedNameDetail: account == null
           ? null
-          : '${account.name} • ${format.format(_displayAccountBalance(account, destination: receiving))}',
+          : format.format(
+              _displayAccountBalance(account, destination: receiving),
+            ),
       selectedColor: account?.color,
       selectedIconCodePoint: account?.iconCodePoint,
       selectedLogoAsset: account?.logoAsset,
@@ -1647,6 +1672,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
           : KoinIcons.arrowUpRight,
       placeholder: receiving ? 'Select receiving account' : 'Select account',
       onTap: () => _openAccountPicker(destination: receiving),
+      trailing: !receiving && account != null ? _cashbackControl() : null,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1790,6 +1816,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             hintText: 'What was this transfer for?',
           ),
         ),
+        const SizedBox(height: 12),
       ],
     );
   }

@@ -59,6 +59,10 @@ Koin checks for changes every 10 seconds while open and when moving between fore
 
 Password protection applies to the manual export you select. Automatic local recovery and folder copies retain their existing unencrypted format.
 
+On Android, **Settings → App protection** can require your existing device PIN, pattern, or password to reopen Koin after backgrounding. It also hides app previews and blocks screenshots while enabled. Set a device screen lock first. Koin does not store a separate PIN; this device preference is not included in exported backups.
+
+Category budgets use one recurring limit across months. Changing that limit also changes the allocation shown when viewing earlier months.
+
 ## Development
 
 Install Flutter 3.47 or later with Dart compatible with `^3.13.0` and the platform tooling for your target device. Dependencies are defined in [pubspec.yaml](pubspec.yaml).

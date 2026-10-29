@@ -292,44 +292,57 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 
   // ── Quick Actions ──
   Widget _buildQuickActions(BuildContext context, Debt debt, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildActionItem(
-          context,
-          icon: KoinIcons.plus,
-          label: 'Payment',
-          color: color,
-          onTap: () => _addRepayment(context, debt),
-        ),
-        _buildActionItem(
-          context,
-          icon: KoinIcons.arrowUp,
-          label: 'Increase',
-          color: color,
-          onTap: () => _addRepayment(context, debt, isIncrease: true),
-        ),
-        _buildActionItem(
-          context,
-          icon: KoinIcons.pencilSimple,
-          label: 'Edit',
-          color: AppTheme.textLightColor(context),
-          onTap: () {
-            HapticService.light();
-            Navigator.push(
-              context,
-              SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
-            );
-          },
-        ),
-        _buildActionItem(
-          context,
-          icon: KoinIcons.trash,
-          label: 'Delete',
-          color: AppTheme.expenseColor(context),
-          onTap: () => _showDeleteConfirmation(debt),
-        ),
-      ],
+    final actions = <Widget>[
+      _buildActionItem(
+        context,
+        icon: KoinIcons.plus,
+        label: 'Payment',
+        color: color,
+        onTap: () => _addRepayment(context, debt),
+      ),
+      _buildActionItem(
+        context,
+        icon: KoinIcons.arrowUp,
+        label: 'Increase',
+        color: color,
+        onTap: () => _addRepayment(context, debt, isIncrease: true),
+      ),
+      _buildActionItem(
+        context,
+        icon: KoinIcons.pencilSimple,
+        label: 'Edit',
+        color: AppTheme.textLightColor(context),
+        onTap: () {
+          HapticService.light();
+          Navigator.push(
+            context,
+            SlideUpRoute(page: AddEditDebtScreen(debt: debt)),
+          );
+        },
+      ),
+      _buildActionItem(
+        context,
+        icon: KoinIcons.trash,
+        label: 'Delete',
+        color: AppTheme.expenseColor(context),
+        onTap: () => _showDeleteConfirmation(debt),
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns =
+            constraints.maxWidth < 280 ||
+                MediaQuery.textScalerOf(context).scale(12) > 18
+            ? 2
+            : 4;
+        return Wrap(
+          runSpacing: 20,
+          children: [
+            for (final action in actions)
+              SizedBox(width: constraints.maxWidth / columns, child: action),
+          ],
+        );
+      },
     ).koinEntrance(context);
   }
 

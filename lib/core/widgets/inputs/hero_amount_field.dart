@@ -18,6 +18,7 @@ class HeroAmountField extends StatelessWidget {
   final Key? fieldKey;
   final FormFieldValidator<String>? validator;
   final Currency? currency;
+  final double? originalValue;
 
   const HeroAmountField({
     super.key,
@@ -30,6 +31,7 @@ class HeroAmountField extends StatelessWidget {
     this.fieldKey,
     this.validator,
     this.currency,
+    this.originalValue,
   });
 
   @override
@@ -62,44 +64,51 @@ class HeroAmountField extends StatelessWidget {
                   ),
                 ),
                 Flexible(
-                  child: IntrinsicWidth(
-                    child: TextFormField(
-                      key: fieldKey,
-                      controller: controller,
-                      validator: (text) {
-                        if (currency != null &&
-                            text != null &&
-                            text.trim().isNotEmpty &&
-                            currency!.tryParseInput(text) == null) {
-                          return currency!.decimalDigits == 0
-                              ? 'Enter a whole amount with valid number grouping'
-                              : 'Use at most ${currency!.decimalDigits} decimal places and valid number grouping';
-                        }
-                        return validator?.call(text);
-                      },
-                      textInputAction: TextInputAction.done,
-                      autofocus: autoFocus,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 48),
+                    child: IntrinsicWidth(
+                      child: TextFormField(
+                        key: fieldKey,
+                        controller: controller,
+                        validator: (text) {
+                          if (currency != null &&
+                              text != null &&
+                              text.trim().isNotEmpty &&
+                              currency!.tryParseInput(
+                                    text,
+                                    originalValue: originalValue,
+                                  ) ==
+                                  null) {
+                            return currency!.decimalDigits == 0
+                                ? 'Enter a whole amount with valid number grouping'
+                                : 'Use at most ${currency!.decimalDigits} decimal places and valid number grouping';
+                          }
+                          return validator?.call(text);
+                        },
+                        textInputAction: TextInputAction.done,
+                        autofocus: autoFocus,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textAlign: TextAlign.center,
+                        style: amountStyle,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          errorMaxLines: 3,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          fillColor: Colors.transparent,
+                          filled: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintStyle: amountStyle.copyWith(color: hintColor),
+                        ),
+                        onChanged: (text) {
+                          onChanged?.call(text);
+                        },
                       ),
-                      textAlign: TextAlign.center,
-                      style: amountStyle,
-                      decoration: InputDecoration(
-                        hintText: hintText,
-                        errorMaxLines: 3,
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        fillColor: Colors.transparent,
-                        filled: true,
-                        contentPadding: EdgeInsets.zero,
-                        hintStyle: amountStyle.copyWith(color: hintColor),
-                      ),
-                      onChanged: (text) {
-                        onChanged?.call(text);
-                      },
                     ),
                   ),
                 ),

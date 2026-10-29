@@ -112,7 +112,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.debt?.amount,
+            ) ??
         1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
     final targetType = _selectedType == DebtType.owedToMe
@@ -206,7 +209,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text.trim()) ??
+            .tryParseInput(
+              _amountController.text.trim(),
+              originalValue: widget.debt?.amount,
+            ) ??
         0;
     final notes = _notesController.text.trim();
     final isEdit = widget.debt != null;
@@ -404,12 +410,16 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                   controller: _amountController,
                   currencySymbol: currency.symbol,
                   currency: currency,
+                  originalValue: widget.debt?.amount,
                   primaryColor: primaryColor,
                   validator: (value) {
                     final amount = ref
                         .read(settingsProvider)
                         .currency
-                        .tryParseInput((value ?? ''));
+                        .tryParseInput(
+                          (value ?? ''),
+                          originalValue: widget.debt?.amount,
+                        );
                     return amount == null || !amount.isFinite || amount <= 0
                         ? 'Enter an amount greater than zero'
                         : null;
@@ -672,7 +682,10 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.debt?.amount,
+            ) ??
         0;
     final format = ref.watch(settingsProvider).currency.formatter;
     return Column(

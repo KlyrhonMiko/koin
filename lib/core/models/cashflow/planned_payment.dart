@@ -119,12 +119,24 @@ class PlannedPayment {
     if (today.isBefore(start)) {
       return 'Available from ${DateFormat.yMMMd().format(start)}';
     }
+    if (!isEligible(reference) && canProcess(reference)) {
+      return 'Overdue · ${DateFormat.yMMMd().format(nextDate)}';
+    }
     if (!isEligible(reference)) {
       return 'Ended ${DateFormat.yMMMd().format(endDate!)}';
     }
     return frequency == PaymentFrequency.flexible
         ? 'Available anytime'
         : DateFormat.yMMMd().format(nextDate);
+  }
+
+  /// Ending recurrence does not settle an unpaid occurrence already due.
+  bool canProcess([DateTime? at]) {
+    final reference = at ?? DateTime.now();
+    return isEligible(reference) ||
+        (frequency != PaymentFrequency.flexible &&
+            isEligible(nextDate) &&
+            daysUntilNext(reference) <= 0);
   }
 
   DateTime computePreviousDate() {

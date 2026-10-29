@@ -10,6 +10,7 @@ import 'planned_payment_provider.dart';
 import 'debt_provider.dart';
 
 class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
+  bool _reordering = false;
   CategoryRepository get _repository => ref.read(categoryRepositoryProvider);
 
   @override
@@ -79,10 +80,12 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
   Future<void> reorderCategories(
     int oldIndex,
     int newIndex,
-    TransactionType type,
-  ) async {
+    TransactionType type, {
+    List<String>? visibleIds,
+  }) async {
     final categories = state.value;
-    if (categories == null) return;
+    if (categories == null || _reordering) return;
+    final previousState = state;
 
     // Filter categories by type to reorder within that type
     final typeCategories = categories
@@ -92,13 +95,33 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
         .where((c) => c.type != type || c.isArchived)
         .toList();
 
-    final item = typeCategories.removeAt(oldIndex);
-    typeCategories.insert(newIndex, item);
+    final visible = typeCategories
+        .where(
+          (category) => visibleIds == null || visibleIds.contains(category.id),
+        )
+        .toList();
+    if (oldIndex < 0 ||
+        oldIndex >= visible.length ||
+        newIndex < 0 ||
+        newIndex >= visible.length) {
+      return;
+    }
+    final visibleSet = visible.map((category) => category.id).toSet();
+    final item = visible.removeAt(oldIndex);
+    visible.insert(newIndex, item);
+    var visibleIndex = 0;
+    final reordered = typeCategories
+        .map(
+          (category) => visibleSet.contains(category.id)
+              ? visible[visibleIndex++]
+              : category,
+        )
+        .toList();
 
     // Update positions for type categories
     final updatedTypeCategories = <TransactionCategory>[];
-    for (int i = 0; i < typeCategories.length; i++) {
-      updatedTypeCategories.add(typeCategories[i].copyWith(position: i));
+    for (int i = 0; i < reordered.length; i++) {
+      updatedTypeCategories.add(reordered[i].copyWith(position: i));
     }
 
     // Combine and sort to maintain state consistency
@@ -110,17 +133,22 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
       return a.position.compareTo(b.position);
     });
 
+    _reordering = true;
     state = AsyncValue.data(updatedAll);
 
     // Update database
     try {
       await _repository.updateCategoryPositions(updatedTypeCategories);
     } catch (e, stackTrace) {
+      if (identical(state.value, updatedAll)) state = previousState;
       dev.log(
         'Error updating category positions',
         error: e,
         stackTrace: stackTrace,
       );
+      rethrow;
+    } finally {
+      _reordering = false;
     }
   }
 }

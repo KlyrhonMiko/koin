@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'savings_plan.dart';
 
 class SavingsGoal {
@@ -118,7 +119,15 @@ class SavingsGoal {
 
   // Calculations
   int? get totalDays => endDate?.difference(startDate).inDays;
-  int? get remainingDays => endDate?.difference(DateTime.now()).inDays;
+  int? get remainingDays => remainingDaysAt(DateTime.now());
+
+  int? remainingDaysAt(DateTime reference) => endDate == null
+      ? null
+      : DateTime(endDate!.year, endDate!.month, endDate!.day)
+            .difference(
+              DateTime(reference.year, reference.month, reference.day),
+            )
+            .inDays;
   double? get remainingAmount =>
       targetAmount != null ? max(0.0, targetAmount! - currentAmount) : null;
 

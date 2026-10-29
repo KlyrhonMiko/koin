@@ -345,9 +345,13 @@ class DebtCard extends StatelessWidget {
                 ),
               ),
               const Gap(8),
-              GestureDetector(
-                onTap: () => AddRepaymentSheet.show(context, debt: debt),
-                child: Container(
+              IconButton(
+                tooltip: debt.type == DebtType.owedToMe
+                    ? 'Record received payment'
+                    : 'Record repayment',
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                onPressed: () => AddRepaymentSheet.show(context, debt: debt),
+                icon: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),

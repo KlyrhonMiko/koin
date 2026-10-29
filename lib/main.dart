@@ -5,6 +5,7 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/features.dart';
 import 'package:koin/core/widgets/app_startup.dart';
 import 'package:koin/core/widgets/app_window_theme.dart';
+import 'package:koin/core/widgets/app_privacy_gate.dart';
 import 'package:koin/core/widgets/inputs/app_input_focus.dart';
 import 'package:koin/core/services/quick_transaction_service.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
@@ -125,8 +126,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       theme: AppTheme.getTheme(settings.themeColor, false),
       darkTheme: AppTheme.getTheme(settings.themeColor, true),
       debugShowCheckedModeBanner: false,
-      builder: (context, child) =>
-          AppInputFocus(child: AppWindowTheme(child: child!)),
+      builder: (context, child) => AppInputFocus(
+        child: AppPrivacyGate(child: AppWindowTheme(child: child!)),
+      ),
       home: settings.setupCompleted
           ? const MainLayout()
           : const AccountSetupScreen(),

@@ -40,6 +40,39 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final stats = ref.watch(monthlyDashboardStatsProvider(_selectedMonth));
     final currency = settings.currency;
 
+    final transactions = ref.watch(transactionProvider);
+    final accounts = ref.watch(accountProvider);
+    if (transactions.hasError ||
+        accounts.hasError ||
+        transactions.isLoading ||
+        accounts.isLoading ||
+        !transactions.hasValue ||
+        !accounts.hasValue) {
+      final failed = transactions.hasError || accounts.hasError;
+      return Column(
+        children: [
+          _buildHeader(context),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: KoinSpacing.screenInset,
+            ),
+            child: _buildMonthToolbar(context),
+          ),
+          Expanded(
+            child: failed
+                ? KoinErrorState(
+                    message: 'Could not load budget spending.',
+                    onRetry: () {
+                      ref.invalidate(transactionProvider);
+                      ref.invalidate(accountProvider);
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
+    }
+
     final overview = ref.watch(monthlyBudgetOverviewProvider(_selectedMonth));
     final budgeted = overview.budgetedCategories;
     final unbudgeted = overview.unbudgetedCategories;
@@ -573,30 +606,31 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isOver
-                        ? AppTheme.errorContentColor(context)
-                              .withValues(alpha: 0.1)
-                        : AppTheme.surfaceLightColor(context),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: AnimatedCounter(
-                    value: double.tryParse(percent) ?? 0,
-                    formatter: (v) => '${v.toStringAsFixed(0)}%',
-                    style: TextStyle(
+                if (budget > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
                       color: isOver
                           ? AppTheme.errorContentColor(context)
-                          : AppTheme.textLightColor(context),
-                      fontWeight: KoinTypography.titleWeight,
-                      fontSize: KoinTypography.caption,
+                                .withValues(alpha: 0.1)
+                          : AppTheme.surfaceLightColor(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: AnimatedCounter(
+                      value: double.tryParse(percent) ?? 0,
+                      formatter: (v) => '${v.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        color: isOver
+                            ? AppTheme.errorContentColor(context)
+                            : AppTheme.textLightColor(context),
+                        fontWeight: KoinTypography.titleWeight,
+                        fontSize: KoinTypography.caption,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const Gap(8),
@@ -613,6 +647,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 ),
               ),
             ),
+            if (budget <= 0) ...[
+              const Gap(8),
+              Text(
+                'No income allocated · ${fmt.format(spent)} spent',
+                style: TextStyle(
+                  color: AppTheme.errorContentColor(context),
+                  fontSize: KoinTypography.small,
+                ),
+              ),
+            ],
           ],
         ),
       ),

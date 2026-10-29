@@ -6,6 +6,8 @@ The established app uses Outfit, teal accents, light and dark theme tokens, Phos
 
 All tooltips inherit the shared app tooltip theme: theme surface and text colors, a subtle outline, 12px corners, 16px horizontal and 12px vertical padding, and Outfit compact label text. Use the same treatment for full account amounts, action hints, navigation hints, and chart popups; avoid local tooltip styling.
 
+Enabled, selected switches use a white thumb in light mode on the selected accent track. Account settings inherit the same shared switch treatment.
+
 Use KoinTypography's entity-name, amount-input and summary styles. Entity names use 28px, weight 800 and -0.5 tracking; amount inputs use 48px, weight 700 and -2 tracking. Summary labels use 13px, weight 500; summary amounts use 38px, weight 700 and -1 tracking. Chart and compact badge labels use the shared 11px metadata roles.
 
 Use KoinShape for 16px field corners, 28px modal-sheet top corners and 28px summary-card corners. Keep circular quick actions and 24px portfolio cards as separate intentional component roles. Reports and forms use the shared joined choice control. Back actions use the Phosphor arrowLeft; delete actions use trash. Budgets use calculator, Activity uses chartBar, Home uses house, and Portfolio uses wallet.
@@ -89,6 +91,16 @@ Credit details use a compact summary with 24px horizontal and 16px vertical padd
 Use one quiet “Swipe to browse” hint beside Templates. Avoid repeating instruction rows beneath each horizontal picker.
 
 Use open underlined name and balance inputs with persistent labels above, a 20px name and 28px balance, and live preview updates. Group Private account and Credit account in one quiet surface with a divider and native teal switches. Transfer fee has its own section with the shared Fixed amount / Percentage choice control, a labeled input with currency or percent units, and concise zero-fee guidance. Preserve account storage and validation.
+
+Place functional account settings and transfer fees before the optional expandable Appearance section. Keep all templates, icons, colors, backgrounds, and patterns available there, preserving their state when collapsed. Cap the form at 560px and keep its preview at the actual account-grid card width. Rail-based main content is centered within 760px.
+
+## Adaptive entry and privacy
+
+Use a scrollable transaction form beside the keypad in short landscape windows when text scale allows it. At enlarged text sizes or other short layouts, let header, form, and keypad scroll together. Keep normal portrait entry compact. Planned-payment and income cards stack their amount, date, and full-width action when enlarged text or narrow widths need more room. Debt detail actions wrap into two columns under the same constraints. Interactive targets remain at least 48px while compact visuals may remain smaller.
+
+Show Portfolio's section names beneath its existing selector so the other sections are visible without opening it. Keep the local-recovery/device-loss distinction and Export backup action visible in backup status. Budget editing explains that the same recurring category limit applies to past months.
+
+Offer optional Android App protection in Settings using the existing device PIN, pattern, or password. Lock content after backgrounding and hide system previews/screenshots while protection is enabled. Preserve the mounted navigator and drafts behind the locked view. Keep this device-specific preference outside exported financial settings; use the same behavior in the main and Quick Entry engines.
 
 ## Audit follow-up behavior
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -23,8 +24,7 @@ void main() {
     // Load installed fonts for readable local preview artifacts when available.
     final fonts = {
       'PreviewSans': 'C:/Windows/Fonts/segoeui.ttf',
-      'MaterialIcons':
-          'C:/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+      'MaterialIcons': 'C:/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
     };
     for (final font in fonts.entries) {
       final file = File(font.value);
@@ -114,12 +114,10 @@ void main() {
                     as RenderRepaintBoundary)
                 .toImage();
         final data = await image.toByteData(format: ui.ImageByteFormat.png);
-        final dir = await Directory(
-          'build/backup-previews',
-        ).create(recursive: true);
-        await File(
-          '${dir.path}/${brightness.name}.png',
-        ).writeAsBytes(data!.buffer.asUint8List());
+        final dir = await Directory('build/backup-previews')
+            .create(recursive: true);
+        await File('${dir.path}/${brightness.name}.png')
+            .writeAsBytes(data!.buffer.asUint8List());
         image.dispose();
       });
     }
@@ -160,7 +158,8 @@ void main() {
         capture: true,
       );
       expect(find.text('Automatic backups'), findsOneWidget);
-      expect(find.text('Export a backup').hitTestable(), findsNothing);
+      expect(find.text('Export a backup').hitTestable(), findsOneWidget);
+      expect(find.textContaining('Local recovery only'), findsOneWidget);
     }
   });
 
@@ -198,7 +197,8 @@ void main() {
       final statusLeft = tester.getTopLeft(find.text('Automatic backups')).dx;
       final restoreLeft = tester.getTopLeft(find.text('Restore data')).dx;
       expect(statusLeft, closeTo(restoreLeft, 1));
-      expect(find.text('Export a backup').hitTestable(), findsNothing);
+      expect(find.text('Export a backup').hitTestable(), findsOneWidget);
+      expect(find.textContaining('Local recovery only'), findsOneWidget);
       await tester.tap(find.text('More backup options'));
       await tester.pumpAndSettle();
       expect(find.text('Export a backup').hitTestable(), findsOneWidget);

@@ -10,6 +10,8 @@ import 'package:koin/core/core.dart';
 import 'package:koin/features/categories/category_manager_screen.dart';
 import 'package:koin/features/transactions/widgets/voice_input_sheet.dart';
 
+import 'widgets/cashback_control.dart';
+
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final AppTransaction? editingTransaction;
   final TransactionType? initialType;
@@ -42,6 +44,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   String? _selectedAccountId;
   String? _selectedToAccountId;
   bool _isTransferFeePercentage = false;
+  CashbackRule _cashbackRule = CashbackRule.none;
   String _currentExpression = '';
   String _feeExpression = '';
   bool _editingFee = false;
@@ -71,6 +74,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _selectedToAccountId,
     _selectedDate,
     _isTransferFeePercentage,
+    _cashbackRule,
   );
 
   @override
@@ -114,6 +118,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _selectedCategoryId = tx.categoryId;
       _selectedAccountId = tx.accountId;
       _selectedToAccountId = tx.toAccountId;
+      _cashbackRule = tx.cashbackRule;
       _existingFee = ref
           .read(transactionProvider)
           .value
@@ -121,7 +126,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           .firstOrNull;
       if (_existingFee != null) {
         _feeController.text = _existingFee!.amount.toStringAsFixed(
-          ref.read(settingsProvider).currency.decimalDigits,
+          ref
+              .read(settingsProvider)
+              .currency
+              .precisionFor(_existingFee!.amount),
         );
         _feeExpression = _feeController.text;
       }
@@ -226,7 +234,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
         0.0;
     // SuggestionContext preserves the direction of a blank amount for category
     // matching while keeping the real zero available to transfer detection.
@@ -322,7 +333,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
         0.0;
     if (!amount.isFinite || amount <= 0) {
       HapticService.error();
@@ -342,6 +356,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             .tryParseInput(
               _feeController.text,
               precision: _isTransferFeePercentage ? 2 : null,
+              originalValue: _isTransferFeePercentage
+                  ? null
+                  : _existingFee?.amount,
             ) ??
         (_feeController.text.trim().isEmpty ? 0.0 : double.nan);
     if (isTransfer &&
@@ -358,7 +375,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ? amount * (enteredFee / 100)
                     : enteredFee)
                 .toStringAsFixed(
-                  ref.read(settingsProvider).currency.decimalDigits,
+                  ref
+                      .read(settingsProvider)
+                      .currency
+                      .precisionFor(_existingFee?.amount),
                 ),
           )
         : 0.0;
@@ -435,7 +455,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       }
 
       final draft = TransferDraft(
-        decimalDigits: ref.read(settingsProvider).currency.decimalDigits,
+        decimalDigits: ref
+            .read(settingsProvider)
+            .currency
+            .precisionFor(_existingFee?.amount),
         sourceAccountId: _selectedAccountId!,
         destinationAccountId: _selectedToAccountId!,
         rawAmount: amount,
@@ -491,6 +514,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         type: _selectedType,
         categoryId: _selectedCategoryId!,
         accountId: _selectedAccountId!,
+      );
+    }
+
+    if (_selectedType != TransactionType.income &&
+        widget.editingTransaction?.isDebtTransfer != true &&
+        widget.editingTransaction?.transferId == null) {
+      newTransaction = newTransaction.copyWith(
+        cashbackRule: _cashbackRule,
+        cashbackReceivedAt: () =>
+            _cashbackRule == CashbackRule.none ||
+                widget.editingTransaction?.date != _selectedDate
+            ? null
+            : widget.editingTransaction?.cashbackReceivedAt,
       );
     }
 
@@ -682,6 +718,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     HapticService.selection();
     setState(() {
       _selectedType = newType;
+      if (newType == TransactionType.income) {
+        _cashbackRule = CashbackRule.none;
+      }
       if (newType != TransactionType.transfer) {
         _editingFee = false;
         _feeFocusNode.unfocus();
@@ -765,55 +804,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           // The input area below reserves the larger of the keyboard and
           // keypad heights, so the scaffold must not subtract the inset again.
           resizeToAvoidBottomInset: false,
-          body: Column(
-            children: [
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) => Column(
-                    children: [
-                      Expanded(
-                        child: _buildHeader(
-                          context,
-                          animatedColor,
-                          currency,
-                          isDark,
-                        ),
-                      ),
-                      ConstrainedBox(
-                        key: const ValueKey('transaction-fields-section'),
-                        // Reserve the same viewport for every mode so the
-                        // amount stays in place when transfer fields are added.
-                        // Give the amount 24 more pixels by reclaiming the
-                        // unused space between the category card and keypad.
-                        constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 284).clamp(
-                            0.0,
-                            constraints.maxHeight * 0.55,
-                          ),
-                          maxHeight: (constraints.maxHeight - 284).clamp(
-                            0.0,
-                            constraints.maxHeight * 0.55,
-                          ),
-                        ),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(
-                            KoinSpacing.screenInset,
-                            8,
-                            KoinSpacing.screenInset,
-                            12,
-                          ),
-                          child: _buildFormSection(
-                            context,
-                            categories,
-                            animatedColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Stack(
+          body: LayoutBuilder(
+            builder: (context, viewport) {
+              final keypad = Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
                   SizedBox(width: double.infinity, height: keyboardHeight),
@@ -861,8 +854,128 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                     ),
                   ),
                 ],
-              ),
-            ],
+              );
+              if (viewport.maxWidth >= 600 &&
+                  viewport.maxWidth > viewport.maxHeight &&
+                  keyboardHeight == 0 &&
+                  mediaQuery.textScaler.scale(14) <= 21) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _buildHeader(
+                              context,
+                              animatedColor,
+                              currency,
+                              isDark,
+                              shrinkWrap: true,
+                            ),
+                            Padding(
+                              key: const ValueKey('transaction-fields-section'),
+                              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                              child: _buildFormSection(
+                                context,
+                                categories,
+                                animatedColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: viewport.maxWidth * 0.46,
+                      child: SingleChildScrollView(child: keypad),
+                    ),
+                  ],
+                );
+              }
+              if (viewport.maxHeight < 700 ||
+                  mediaQuery.textScaler.scale(14) > 21) {
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.only(bottom: keyboardHeight),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height:
+                            mediaQuery.padding.top +
+                            240 +
+                            mediaQuery.textScaler.scale(16) * 6,
+                        child: _buildHeader(
+                          context,
+                          animatedColor,
+                          currency,
+                          isDark,
+                        ),
+                      ),
+                      Padding(
+                        key: const ValueKey('transaction-fields-section'),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                        child: _buildFormSection(
+                          context,
+                          categories,
+                          animatedColor,
+                        ),
+                      ),
+                      Offstage(offstage: keyboardHeight > 0, child: keypad),
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => Column(
+                        children: [
+                          Expanded(
+                            child: _buildHeader(
+                              context,
+                              animatedColor,
+                              currency,
+                              isDark,
+                            ),
+                          ),
+                          ConstrainedBox(
+                            key: const ValueKey('transaction-fields-section'),
+                            // Keep room for the complete amount header, including
+                            // currency and savings/fee messages.
+                            constraints: BoxConstraints(
+                              minHeight: (constraints.maxHeight - 276).clamp(
+                                0.0,
+                                constraints.maxHeight * 0.55,
+                              ),
+                              maxHeight: (constraints.maxHeight - 276).clamp(
+                                0.0,
+                                constraints.maxHeight * 0.55,
+                              ),
+                            ),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                KoinSpacing.screenInset,
+                                8,
+                                KoinSpacing.screenInset,
+                                12,
+                              ),
+                              child: _buildFormSection(
+                                context,
+                                categories,
+                                animatedColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  keypad,
+                ],
+              );
+            },
           ),
         );
       },
@@ -876,8 +989,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     BuildContext context,
     Color typeColor,
     Currency currency,
-    bool isDark,
-  ) {
+    bool isDark, {
+    bool shrinkWrap = false,
+  }) {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -891,6 +1005,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ),
       ),
       child: Column(
+        mainAxisSize: shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
         children: [
           Gap(topPadding),
           // ── Top bar ──
@@ -903,95 +1018,108 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               children: [
                 // Back button
                 const KoinBackButton(),
-                const Spacer(),
+                const Gap(8),
                 // Date & Time chips
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Time chip
-                    PressableScale(
-                      enableHaptic: false,
-                      onTap: _pickTime,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context)
-                              .withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(
-                            color: AppTheme.fieldBorderColor(
-                              context,
-                              lightOpacity: 0.5,
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        // Time chip
+                        PressableScale(
+                          enableHaptic: false,
+                          onTap: _pickTime,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 32),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceColor(context)
+                                    .withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(11),
+                                border: Border.all(
+                                  color: AppTheme.fieldBorderColor(
+                                    context,
+                                    lightOpacity: 0.5,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    KoinIcons.clock,
+                                    size: 13,
+                                    color: AppTheme.textLightColor(context),
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    DateFormat('h:mm a').format(_selectedDate),
+                                    style: TextStyle(
+                                      fontSize: KoinTypography.small,
+                                      fontWeight: KoinTypography.labelWeight,
+                                      color: AppTheme.textColor(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              KoinIcons.clock,
-                              size: 13,
-                              color: AppTheme.textLightColor(context),
-                            ),
-                            const Gap(5),
-                            Text(
-                              DateFormat('h:mm a').format(_selectedDate),
-                              style: TextStyle(
-                                fontSize: KoinTypography.small,
-                                fontWeight: KoinTypography.labelWeight,
-                                color: AppTheme.textColor(context),
+                        // Date chip
+                        PressableScale(
+                          enableHaptic: false,
+                          onTap: _pickDate,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 32),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const Gap(6),
-                    // Date chip
-                    PressableScale(
-                      enableHaptic: false,
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor(context)
-                              .withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(
-                            color: AppTheme.fieldBorderColor(
-                              context,
-                              lightOpacity: 0.5,
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceColor(context)
+                                    .withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(11),
+                                border: Border.all(
+                                  color: AppTheme.fieldBorderColor(
+                                    context,
+                                    lightOpacity: 0.5,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    KoinIcons.calendarBlank,
+                                    size: 13,
+                                    color: AppTheme.textLightColor(context),
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    DateFormat('MMM d').format(_selectedDate),
+                                    style: TextStyle(
+                                      fontSize: KoinTypography.small,
+                                      fontWeight: KoinTypography.labelWeight,
+                                      color: AppTheme.textColor(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              KoinIcons.calendarBlank,
-                              size: 13,
-                              color: AppTheme.textLightColor(context),
-                            ),
-                            const Gap(5),
-                            Text(
-                              DateFormat('MMM d').format(_selectedDate),
-                              style: TextStyle(
-                                fontSize: KoinTypography.small,
-                                fontWeight: KoinTypography.labelWeight,
-                                color: AppTheme.textColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -1004,14 +1132,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
             child: _buildTypeSelector(context, typeColor),
           ),
-          const Gap(24),
+          const Gap(8),
           // ── Hero amount with voice button ──
-          Expanded(
+          Flexible(
+            fit: shrinkWrap ? FlexFit.loose : FlexFit.tight,
             child: LayoutBuilder(
               builder: (context, constraints) => Center(
                 child: SizedBox(
                   width: constraints.maxWidth,
                   child: Stack(
+                    alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
                       Semantics(
@@ -1020,7 +1150,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _selectNumericInput(fee: false),
-                          child: _buildHeroAmount(context, currency, typeColor),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: SizedBox(
+                              width: constraints.maxWidth,
+                              child: _buildHeroAmount(
+                                context,
+                                currency,
+                                typeColor,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       Positioned(
@@ -1079,7 +1219,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               ),
             ),
           ),
-          const Gap(16),
         ],
       ),
     );
@@ -1134,7 +1273,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         children: [
           // Currency label
           Positioned(
-            bottom: fontSize * KoinTypography.amountHeight + 4,
+            top: 0,
             left: 0,
             right: 0,
             child: Center(
@@ -1150,43 +1289,46 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
           ),
           // Main amount
-          SizedBox(
-            height: fontSize * KoinTypography.amountHeight,
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  currencySymbol,
-                  Text(
-                    _currentExpression.isEmpty ? '0' : _currentExpression,
-                    key: ValueKey(_currentExpression),
-                    style: KoinTypography.inputAmountStyle.copyWith(
-                      fontSize: fontSize,
-                      color: hasAmount
-                          ? typeColor
-                          : AppTheme.textLightColor(context),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, bottom: 28),
+            child: SizedBox(
+              height: fontSize * KoinTypography.amountHeight,
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    currencySymbol,
+                    Text(
+                      _currentExpression.isEmpty ? '0' : _currentExpression,
+                      key: ValueKey(_currentExpression),
+                      style: KoinTypography.inputAmountStyle.copyWith(
+                        fontSize: fontSize,
+                        color: hasAmount
+                            ? typeColor
+                            : AppTheme.textLightColor(context),
+                      ),
                     ),
-                  ),
-                  // Balance the leading symbol so the digits sit on the centerline.
-                  ExcludeSemantics(
-                    child: Opacity(opacity: 0, child: currencySymbol),
-                  ),
-                ],
+                    // Balance the leading symbol so the digits sit on the centerline.
+                    ExcludeSemantics(
+                      child: Opacity(opacity: 0, child: currencySymbol),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           // Supporting messages do not size or move the number.
           Positioned(
-            top: fontSize * KoinTypography.amountHeight + 4,
+            bottom: 0,
             left: 0,
             right: 0,
             child: SizedBox(
-              height: 32,
+              height: 24,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -1270,7 +1412,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
         0;
     final fee =
         ref
@@ -1279,10 +1424,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             .tryParseInput(
               _feeController.text,
               precision: _isTransferFeePercentage ? 2 : null,
+              originalValue: _isTransferFeePercentage
+                  ? null
+                  : _existingFee?.amount,
             ) ??
         0;
     final draft = TransferDraft(
-      decimalDigits: ref.read(settingsProvider).currency.decimalDigits,
+      decimalDigits: ref
+          .read(settingsProvider)
+          .currency
+          .precisionFor(_existingFee?.amount),
       sourceAccountId: _selectedAccountId ?? '',
       destinationAccountId: _selectedToAccountId ?? '',
       rawAmount: amount,
@@ -1305,6 +1456,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   String? _savingsUsageText(Currency currency) {
+    if (_savingTransaction || _transactionSaved) return null;
     if (_selectedType != TransactionType.expense) return null;
     final accounts = ref.watch(accountProvider).value ?? [];
     ref.watch(dashboardStatsProvider);
@@ -1314,7 +1466,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
         0;
     if (account == null ||
         account.isCredit ||
@@ -1352,7 +1507,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
         0;
     final fee =
         ref
@@ -1361,6 +1519,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             .tryParseInput(
               _feeController.text,
               precision: _isTransferFeePercentage ? 2 : null,
+              originalValue: _isTransferFeePercentage
+                  ? null
+                  : _existingFee?.amount,
             ) ??
         0;
     final debit = _selectedType == TransactionType.transfer
@@ -1739,6 +1900,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
+  bool get _canEarnCashback =>
+      _selectedType != TransactionType.income &&
+      widget.editingTransaction?.isDebtTransfer != true &&
+      widget.editingTransaction?.transferId == null &&
+      widget.editingTransaction?.cashbackSourceId == null;
+
+  Widget _buildCashbackControl(BuildContext context) => CashbackControl(
+    amount:
+        ref
+            .watch(settingsProvider)
+            .currency
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.editingTransaction?.amount,
+            ) ??
+        0,
+    currency: ref.watch(settingsProvider).currency,
+    rule: _cashbackRule,
+    onRuleChanged: (rule) => setState(() {
+      _cashbackRule = rule;
+    }),
+  );
+
   Widget _buildFeeUnitOption(
     BuildContext context, {
     required bool percentage,
@@ -1836,7 +2020,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             previous?.type == TransactionType.transfer)) {
       return balance +
           previous!.amount +
-          (_existingFee?.accountId == account.id ? _existingFee!.amount : 0);
+          (_existingFee?.accountId == account.id ? _existingFee!.amount : 0) -
+          (previous.cashbackCredit?.amount ?? 0);
     }
     return balance;
   }
@@ -1891,11 +2076,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 : label,
             selectedName: account == null || balance == null
                 ? null
-                : '${account.name} • ${currency.formatter.format(displayBalance)}',
+                : account.name,
+            selectedNameDetail: account == null || displayBalance == null
+                ? null
+                : currency.formatter.format(displayBalance),
             selectedColor: account?.color,
             selectedIconCodePoint: account?.iconCodePoint,
             selectedLogoAsset: account?.logoAsset,
             placeholder: 'Select account',
+            trailing: _canEarnCashback && account != null
+                ? _buildCashbackControl(context)
+                : null,
             onTap: () => _openAccountPicker(
               context,
               all,

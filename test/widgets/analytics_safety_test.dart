@@ -431,7 +431,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
       expect(categoryTile(tester).selectedName, 'Food');
-      expect(find.textContaining('Cash •'), findsOneWidget);
+      expect(find.widgetWithText(SelectionTile, 'Cash'), findsOneWidget);
       suggester.stubbedSuggestion = const CategorySuggestion(
         type: TransactionType.transfer,
         originAccountId: 'bank',
@@ -442,7 +442,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
       expect(find.text('Category'), findsOneWidget);
-      expect(find.textContaining('Cash •'), findsOneWidget);
+      expect(find.widgetWithText(SelectionTile, 'Cash'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -730,10 +730,7 @@ void main() {
             expect(amountText, findsOneWidget);
             final amountRect = tester.getRect(amountText);
             expect(amountRect.left, greaterThanOrEqualTo(cardRect.left + 23));
-            expect(
-              amountRect.right,
-              lessThanOrEqualTo(cardRect.right - 23),
-            );
+            expect(amountRect.right, lessThanOrEqualTo(cardRect.right - 23));
             expect(amountRect.bottom, lessThan(cardRect.bottom));
             expect(tester.takeException(), isNull);
             if (width == 390 && scale == 1) {

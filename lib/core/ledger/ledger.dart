@@ -7,6 +7,7 @@ import 'package:koin/core/models/models.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'transaction_rules.dart';
+import 'cashback_rules.dart';
 import 'savings_spending_approval.dart';
 
 /// Represents the outcome of voiding/deleting a transaction,
@@ -60,7 +61,10 @@ abstract class Ledger {
 
   Future<List<AppTransaction>> getTransactionFamily(String id) async =>
       (await getTransactions())
-          .where((tx) => tx.id == id || tx.transferId == id)
+          .where(
+            (tx) =>
+                tx.id == id || tx.transferId == id || tx.cashbackSourceId == id,
+          )
           .toList();
 
   Future<AppTransaction> recordTransaction(AppTransaction transaction);
@@ -139,8 +143,8 @@ class SqliteLedgerAdapter extends Ledger {
     final db = await _dbHelper.database;
     return (await db.query(
       'transactions',
-      where: 'id = ? OR transferId = ?',
-      whereArgs: [id, id],
+      where: 'id = ? OR transferId = ? OR cashbackSourceId = ?',
+      whereArgs: [id, id, id],
     )).map(AppTransaction.fromMap).toList();
   }
 
@@ -169,6 +173,7 @@ class SqliteLedgerAdapter extends Ledger {
         );
       }
       await txn.insert('transactions', transaction.toMap());
+      await _dbHelper.syncCashback(txn, transaction);
       return transaction;
     });
   }
@@ -251,7 +256,7 @@ class SqliteLedgerAdapter extends Ledger {
         + CASE WHEN type = 'transfer' AND toAccountId = ? THEN amount ELSE 0 END
       ), 0) AS delta FROM transactions
       WHERE (accountId = ? OR toAccountId = ?) AND julianday(date) <= julianday(?)
-      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?)'}
+      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?) AND (cashbackSourceId IS NULL OR cashbackSourceId != ?)'}
     ''',
       [
         accountId,
@@ -259,7 +264,7 @@ class SqliteLedgerAdapter extends Ledger {
         accountId,
         accountId,
         now,
-        if (excluding != null) ...[excluding, excluding],
+        if (excluding != null) ...[excluding, excluding, excluding],
       ],
     );
     final delta = (totals.single['delta'] as num).toDouble();
@@ -361,6 +366,17 @@ class SqliteLedgerAdapter extends Ledger {
 
       if (maps.isNotEmpty) {
         final transaction = AppTransaction.fromMap(maps.first);
+        if (transaction.cashbackSourceId != null) {
+          await txn.update(
+            'transactions',
+            {
+              'cashbackRule': CashbackRule.none.name,
+              'cashbackReceivedAt': null,
+            },
+            where: 'id = ?',
+            whereArgs: [transaction.cashbackSourceId],
+          );
+        }
 
         // 1. Roll back planned payment schedule if linked
         if (transaction.plannedPaymentId != null) {
@@ -431,6 +447,11 @@ class SqliteLedgerAdapter extends Ledger {
       // 3. Delete the transaction record
       await txn.delete(
         'transactions',
+        where: 'cashbackSourceId = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'transactions',
         where: 'transferId = ?',
         whereArgs: [id],
       );
@@ -480,7 +501,7 @@ class SqliteLedgerAdapter extends Ledger {
           'This payment was already processed. Refresh and try again.',
         );
       }
-      if (!current.isEligible(date)) {
+      if (!current.canProcess(date)) {
         throw const FinancialValidationException(
           'This schedule is not available on this date',
         );
@@ -667,6 +688,7 @@ class SqliteLedgerAdapter extends Ledger {
         transferTransaction.amount + (feeTransaction?.amount ?? 0),
       );
       await txn.insert('transactions', transferTransaction.toMap());
+      await _dbHelper.syncCashback(txn, transferTransaction);
       if (feeTransaction != null) {
         await txn.insert(
           'transactions',
@@ -717,20 +739,36 @@ class InMemoryLedgerAdapter extends Ledger {
 
   @override
   Future<AppTransaction> recordTransaction(AppTransaction transaction) async {
+    CashbackRules.validate(transaction);
+    if (_store.containsKey(transaction.id)) return _store[transaction.id]!;
     _store[transaction.id] = transaction;
+    _syncCashback(transaction);
     return transaction;
+  }
+
+  void _syncCashback(AppTransaction source) {
+    _store.removeWhere((_, tx) => tx.cashbackSourceId == source.id);
+    final credit = source.cashbackCredit;
+    if (credit != null) _store[credit.id] = credit;
   }
 
   @override
   Future<void> updateTransaction(AppTransaction transaction) async {
     final previous = _store[transaction.id];
     if (previous == null) return;
+    if (previous.cashbackSourceId != null) {
+      throw const FinancialValidationException(
+        'Edit cashback from its original transaction',
+      );
+    }
+    CashbackRules.validate(transaction);
     _store[transaction.id] = transaction.copyWith(
       plannedPaymentId: previous.plannedPaymentId,
       debtRepaymentId: previous.debtRepaymentId,
       transferId: previous.transferId,
       isDebtTransfer: previous.isDebtTransfer,
     );
+    _syncCashback(_store[transaction.id]!);
   }
 
   @override
@@ -746,6 +784,14 @@ class InMemoryLedgerAdapter extends Ledger {
   @override
   Future<TransactionVoidResult> voidTransaction(String id) async {
     final tx = _store.remove(id);
+    final source = _store[tx?.cashbackSourceId];
+    if (source != null) {
+      _store[source.id] = source.copyWith(
+        cashbackRule: CashbackRule.none,
+        cashbackReceivedAt: () => null,
+      );
+    }
+    _store.removeWhere((_, tx) => tx.cashbackSourceId == id);
     _store.removeWhere((_, tx) => tx.transferId == id);
     final result = TransactionVoidResult(
       transactionId: id,
@@ -817,7 +863,9 @@ class InMemoryLedgerAdapter extends Ledger {
     required AppTransaction transferTransaction,
     AppTransaction? feeTransaction,
   }) async {
+    CashbackRules.validate(transferTransaction);
     _store[transferTransaction.id] = transferTransaction;
+    _syncCashback(transferTransaction);
     if (feeTransaction != null) {
       _store[feeTransaction.id] = feeTransaction.copyWith(
         transferId: transferTransaction.id,

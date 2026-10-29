@@ -18,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
 
 /** A separate, temporary task; the full app opens only on an explicit user action. */
 class QuickEntryActivity : FlutterActivity() {
+    private var devicePrivacyBridge: DevicePrivacyBridge? = null
     private var channel: MethodChannel? = null
     private var contentHeightDp = 280.0
     private var heightAnimator: ValueAnimator? = null
@@ -81,6 +82,7 @@ class QuickEntryActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        devicePrivacyBridge = DevicePrivacyBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "koin/quick_window")
         channel?.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -116,7 +118,14 @@ class QuickEntryActivity : FlutterActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (devicePrivacyBridge?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        devicePrivacyBridge?.dispose()
+        devicePrivacyBridge = null
         heightAnimator?.cancel()
         heightAnimator = null
         channel?.setMethodCallHandler(null)

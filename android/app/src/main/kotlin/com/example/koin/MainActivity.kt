@@ -13,6 +13,7 @@ import android.graphics.drawable.ColorDrawable
 import androidx.core.view.WindowCompat
 
 class MainActivity : FlutterActivity() {
+    private var devicePrivacyBridge: DevicePrivacyBridge? = null
     private var backupFolderBridge: BackupFolderBridge? = null
     private var channel: MethodChannel? = null
     private var dartReady = false
@@ -53,6 +54,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        devicePrivacyBridge = DevicePrivacyBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         windowThemeChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "koin/window_theme")
         windowThemeChannel?.setMethodCallHandler { call, result ->
             if (call.method == "setTheme") {
@@ -132,11 +134,14 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (devicePrivacyBridge?.onActivityResult(requestCode, resultCode, data) == true) return
         if (backupFolderBridge?.onActivityResult(requestCode, resultCode, data) == true) return
         super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        devicePrivacyBridge?.dispose()
+        devicePrivacyBridge = null
         windowThemeChannel?.setMethodCallHandler(null)
         windowThemeChannel = null
         backupFolderBridge?.dispose()

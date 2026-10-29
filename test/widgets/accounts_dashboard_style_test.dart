@@ -348,6 +348,9 @@ void main() {
         await tester.enterText(balanceField, '1234567.89');
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Appearance'));
+        await tester.tap(find.text('Appearance'));
+        await tester.pumpAndSettle();
         final template = find.text(BankTemplate.templates.first.name).first;
         await tester.ensureVisible(template);
         await tester.tap(template);

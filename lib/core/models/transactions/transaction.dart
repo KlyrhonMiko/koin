@@ -1,5 +1,21 @@
 enum TransactionType { income, expense, transfer }
 
+enum CashbackRule {
+  none,
+  onePercent,
+  fixedFive;
+
+  double calculate(double amount) {
+    if (!amount.isFinite || amount <= 0) return 0;
+    return switch (this) {
+      none => 0,
+      // Round the percentage to centavos, including amounts below one peso.
+      onePercent => (((amount * 100).round() + 50) ~/ 100) / 100,
+      fixedFive => 5,
+    };
+  }
+}
+
 class AppTransaction {
   final String id;
   final String note;
@@ -12,6 +28,33 @@ class AppTransaction {
   final String? plannedPaymentId;
   final String? debtRepaymentId;
   final String? transferId;
+  final CashbackRule cashbackRule;
+  final DateTime? cashbackReceivedAt;
+  final String? cashbackSourceId;
+
+  bool get canEarnCashback =>
+      type != TransactionType.income &&
+      !isDebtTransfer &&
+      transferId == null &&
+      cashbackSourceId == null;
+
+  double get expectedCashback =>
+      canEarnCashback ? cashbackRule.calculate(amount) : 0;
+
+  /// Selecting cashback records a linked income entry with the transaction.
+  AppTransaction? get cashbackCredit => expectedCashback > 0
+      ? AppTransaction(
+          id: 'cashback:$id',
+          note: note.isEmpty ? 'Cashback' : 'Cashback: $note',
+          amount: expectedCashback,
+          // Preserve receipt dates from older records; new credits use the expense date.
+          date: cashbackReceivedAt ?? date,
+          type: TransactionType.income,
+          categoryId: 'cat_cashback',
+          accountId: accountId,
+          cashbackSourceId: id,
+        )
+      : null;
 
   /// Loan principal changes cash without counting as income or spending.
   final bool isDebtTransfer;
@@ -32,6 +75,9 @@ class AppTransaction {
     this.plannedPaymentId,
     this.debtRepaymentId,
     this.transferId,
+    this.cashbackRule = CashbackRule.none,
+    this.cashbackReceivedAt,
+    this.cashbackSourceId,
     this.isDebtTransfer = false,
   });
 
@@ -47,6 +93,9 @@ class AppTransaction {
     String? plannedPaymentId,
     String? debtRepaymentId,
     String? transferId,
+    CashbackRule? cashbackRule,
+    DateTime? Function()? cashbackReceivedAt,
+    String? cashbackSourceId,
     bool? isDebtTransfer,
   }) {
     return AppTransaction(
@@ -61,6 +110,11 @@ class AppTransaction {
       plannedPaymentId: plannedPaymentId ?? this.plannedPaymentId,
       debtRepaymentId: debtRepaymentId ?? this.debtRepaymentId,
       transferId: transferId ?? this.transferId,
+      cashbackRule: cashbackRule ?? this.cashbackRule,
+      cashbackReceivedAt: cashbackReceivedAt != null
+          ? cashbackReceivedAt()
+          : this.cashbackReceivedAt,
+      cashbackSourceId: cashbackSourceId ?? this.cashbackSourceId,
       isDebtTransfer: isDebtTransfer ?? this.isDebtTransfer,
     );
   }
@@ -78,6 +132,9 @@ class AppTransaction {
       'plannedPaymentId': plannedPaymentId,
       'debtRepaymentId': debtRepaymentId,
       'transferId': transferId,
+      'cashbackRule': cashbackRule.name,
+      'cashbackReceivedAt': cashbackReceivedAt?.toIso8601String(),
+      'cashbackSourceId': cashbackSourceId,
       'isDebtTransfer': isDebtTransfer ? 1 : 0,
     };
   }
@@ -95,6 +152,11 @@ class AppTransaction {
       plannedPaymentId: map['plannedPaymentId'],
       debtRepaymentId: map['debtRepaymentId'],
       transferId: map['transferId'],
+      cashbackRule: CashbackRule.values.byName(map['cashbackRule'] ?? 'none'),
+      cashbackReceivedAt: map['cashbackReceivedAt'] == null
+          ? null
+          : DateTime.parse(map['cashbackReceivedAt']),
+      cashbackSourceId: map['cashbackSourceId'],
       isDebtTransfer: map['isDebtTransfer'] == 1,
     );
   }

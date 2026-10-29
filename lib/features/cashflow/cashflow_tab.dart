@@ -112,9 +112,7 @@ class CashflowScheduleTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) => KoinEmptyState.sliver(
-    icon: _isIncome
-        ? KoinIcons.wallet
-        : KoinIcons.calendarDots,
+    icon: _isIncome ? KoinIcons.wallet : KoinIcons.calendarDots,
     title: _isIncome ? 'No recurring incomes' : 'No planned payments',
     subtitle: _isIncome
         ? 'Add regular income streams like salary or freelance retainers'
@@ -140,59 +138,57 @@ class CashflowScheduleTab extends ConsumerWidget {
     String? accountName,
     String currencySymbol,
   ) {
-    final catColor = category?.color ?? AppTheme.primaryColor(context);
-    final isOverdue = payment.isOverdue();
-    final isAvailable = payment.isEligible();
     final currency = ref.watch(settingsProvider).currency;
-
+    final available = payment.canProcess();
+    final overdue = payment.isOverdue();
+    final accent = category?.color ?? AppTheme.primaryColor(context);
+    final moneyColor = _isIncome
+        ? AppTheme.incomeContentColor(context)
+        : AppTheme.expenseContentColor(context);
+    final amount = FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        '${_isIncome ? '+' : '-'}${currency.formatter.format(payment.amount)}',
+        style: TextStyle(
+          color: moneyColor,
+          fontSize: KoinTypography.itemAmount,
+          fontWeight: KoinTypography.titleWeight,
+        ),
+      ),
+    );
     return PressableScale(
-      onTap: () {
-        HapticService.light();
-        Navigator.push(
-          context,
-          SlideUpRoute(
-            page: AddEditCashflowScreen(payment: payment, initialType: type),
-          ),
-        );
-      },
+      semanticLabel: 'Edit ${payment.title}',
+      onTap: () => Navigator.push(
+        context,
+        SlideUpRoute(
+          page: AddEditCashflowScreen(payment: payment, initialType: type),
+        ),
+      ),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isOverdue && !_isIncome
+            color: overdue && !_isIncome
                 ? AppTheme.errorContentColor(context).withValues(alpha: 0.3)
-                : AppTheme.textLightColor(context).withValues(alpha: 0.1),
-            width: isOverdue && !_isIncome ? 1.5 : 1,
+                : AppTheme.dividerColor(context),
           ),
-          boxShadow: [
-            AppTheme.boxShadow(
-              context,
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked =
+                constraints.maxWidth < 300 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+            final heading = Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    category != null
-                        ? IconUtils.getIcon(category.iconCodePoint)
-                        : KoinIcons.squaresFour,
-                    color: catColor,
-                    size: 24,
-                  ),
+                KoinIconBadge(
+                  icon: category == null
+                      ? KoinIcons.squaresFour
+                      : IconUtils.getIcon(category.iconCodePoint),
+                  color: accent,
+                  radius: 16,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -203,183 +199,121 @@ class CashflowScheduleTab extends ConsumerWidget {
                         payment.title,
                         style: const TextStyle(
                           fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.itemAmount,
-                          letterSpacing: -0.3,
+                          fontSize: KoinTypography.body,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          Icon(
-                            KoinIcons.arrowClockwise,
-                            size: 14,
-                            color: AppTheme.textLightColor(context),
-                          ),
-                          const SizedBox(width: 4),
                           Text(
                             payment.frequency.label.toUpperCase(),
                             style: TextStyle(
                               color: AppTheme.textLightColor(context),
-                              fontSize: KoinTypography.overline,
-                              fontWeight: KoinTypography.titleWeight,
-                              letterSpacing: 0.5,
+                              fontSize: KoinTypography.small,
                             ),
                           ),
-                          if (payment.isAutoProcess) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor(context)
-                                    .withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    KoinIcons.lightning,
-                                    size: 10,
-                                    color: AppTheme.primaryColor(context),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    'AUTO',
-                                    style: TextStyle(
-                                      color: AppTheme.primaryColor(context),
-                                      fontSize: KoinTypography.badgeLabel,
-                                      fontWeight: KoinTypography.titleWeight,
-                                    ),
-                                  ),
-                                ],
+                          if (payment.isAutoProcess)
+                            Text(
+                              'AUTO',
+                              style: TextStyle(
+                                color: AppTheme.contentColor(
+                                  context,
+                                  AppTheme.primaryColor(context),
+                                ),
+                                fontSize: KoinTypography.small,
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  '${_isIncome ? '+' : '-'}${currency.formatter.format(payment.amount)}',
-                  style: TextStyle(
-                    fontWeight: KoinTypography.titleWeight,
-                    fontSize: KoinTypography.itemAmount,
-                    letterSpacing: KoinTypography.itemTracking,
-                    color: _isIncome
-                        ? AppTheme.incomeContentColor(context)
-                        : AppTheme.expenseContentColor(context),
-                  ),
-                ),
+                if (!stacked) ...[
+                  const SizedBox(width: 12),
+                  Flexible(child: amount),
+                ],
               ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              height: 1,
-              color: AppTheme.textLightColor(context).withValues(alpha: 0.1),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            );
+            final date = Row(
               children: [
+                Icon(
+                  KoinIcons.calendarBlank,
+                  size: 20,
+                  color: AppTheme.textLightColor(context),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.backgroundColor(context),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          KoinIcons.calendarBlank,
-                          size: 14,
+                      Text(
+                        payment.frequency == PaymentFrequency.flexible
+                            ? 'Availability'
+                            : _isIncome
+                            ? 'Next income'
+                            : 'Next payment',
+                        style: TextStyle(
                           color: AppTheme.textLightColor(context),
+                          fontSize: KoinTypography.small,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              payment.frequency == PaymentFrequency.flexible
-                                  ? 'Availability'
-                                  : _isIncome
-                                  ? 'Next Income Date'
-                                  : 'Next Payment',
-                              style: TextStyle(
-                                color: AppTheme.textLightColor(context),
-                                fontSize: KoinTypography.overline,
-                                fontWeight: KoinTypography.supportingWeight,
-                              ),
-                            ),
-                            Text(
-                              payment.availabilityLabel(),
-                              style: const TextStyle(
-                                fontWeight: KoinTypography.titleWeight,
-                                fontSize: KoinTypography.caption,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        payment.availabilityLabel(),
+                        style: const TextStyle(
+                          fontWeight: KoinTypography.labelWeight,
+                          fontSize: KoinTypography.caption,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                InkWell(
-                  onTap: !isAvailable
-                      ? null
-                      : () {
-                          HapticService.light();
-                          PaymentConfirmationSheet.confirmAndProcess(
-                            context: context,
-                            ref: ref,
-                            payment: payment,
-                          );
-                        },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor(context),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        AppTheme.boxShadow(
-                          context,
-                          color: AppTheme.primaryColor(context)
-                              .withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      !isAvailable
-                          ? 'Unavailable'
-                          : _isIncome
-                          ? 'Collect Now'
-                          : 'Pay Now',
-                      style: TextStyle(
-                        color: Colors.white,
-
-                        fontSize: KoinTypography.caption,
-                        fontWeight: KoinTypography.titleWeight,
-                      ),
-                    ),
-                  ),
-                ),
               ],
-            ),
-          ],
+            );
+            final action = FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+              onPressed: available
+                  ? () {
+                      HapticService.light();
+                      PaymentConfirmationSheet.confirmAndProcess(
+                        context: context,
+                        ref: ref,
+                        payment: payment,
+                      );
+                    }
+                  : null,
+              child: Text(
+                !available
+                    ? 'Unavailable'
+                    : _isIncome
+                    ? 'Collect Now'
+                    : 'Pay Now',
+              ),
+            );
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                heading,
+                if (stacked) ...[const SizedBox(height: 12), amount],
+                const SizedBox(height: 16),
+                Divider(color: AppTheme.dividerColor(context)),
+                const SizedBox(height: 12),
+                if (stacked) ...[
+                  date,
+                  const SizedBox(height: 12),
+                  action,
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: date),
+                      const SizedBox(width: 12),
+                      action,
+                    ],
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

@@ -72,7 +72,12 @@ Future<DebtItem?> showAddPurchaseSheet({
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    final amt = currency.tryParseInput(amountStr) ?? 1.0;
+    final amt =
+        currency.tryParseInput(
+          amountStr,
+          originalValue: existingItem?.amount,
+        ) ??
+        1.0;
     final effectiveAmt = amt == 0.0 ? 1.0 : amt;
     final targetType = debtType == DebtType.owedToMe
         ? TransactionType.income
@@ -267,6 +272,7 @@ Future<DebtItem?> showAddPurchaseSheet({
                                     validator: (value) {
                                       final amount = currency.tryParseInput(
                                         (value ?? ''),
+                                        originalValue: existingItem?.amount,
                                       );
                                       return amount == null ||
                                               !amount.isFinite ||
@@ -470,7 +476,11 @@ Future<DebtItem?> showAddPurchaseSheet({
                               onPressed: () {
                                 if (!formKey.currentState!.validate()) return;
                                 final amt =
-                                    currency.tryParseInput(amountStr) ?? 0;
+                                    currency.tryParseInput(
+                                      amountStr,
+                                      originalValue: existingItem?.amount,
+                                    ) ??
+                                    0;
                                 final inst = monthlyBillingDay != null
                                     ? numberOfPayments()
                                     : int.tryParse(installmentsStr) ?? 1;

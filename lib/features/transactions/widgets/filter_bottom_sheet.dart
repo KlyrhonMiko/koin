@@ -173,6 +173,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     PressableScale(
                       onTap: _reset,
                       child: Container(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,

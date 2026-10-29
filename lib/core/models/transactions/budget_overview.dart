@@ -75,9 +75,9 @@ class BudgetOverview {
       final spent = categorySpending[cat.id] ?? 0.0;
       final progress = resBudget > 0
           ? (spent / resBudget).clamp(0.0, 1.0)
-          : 0.0;
+          : (spent > 0 ? 1.0 : 0.0);
       final remaining = (resBudget - spent).clamp(0.0, double.infinity);
-      final isOver = resBudget > 0 && spent > resBudget;
+      final isOver = spent > resBudget;
 
       sumBudget += resBudget;
       sumSpent += spent;

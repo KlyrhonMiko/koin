@@ -131,6 +131,10 @@ class TransactionTile extends StatelessWidget {
               ? accountName
               : '$categoryName • $accountName');
 
+    final cashbackSubtitle = transaction.expectedCashback > 0
+        ? 'Cashback ${currency.formatter.format(transaction.expectedCashback)}'
+        : null;
+
     final formattedAmount = currency.formatter.format(transaction.amount);
 
     final signedAmount = isTransfer
@@ -142,12 +146,14 @@ class TransactionTile extends StatelessWidget {
           onTap ??
           () {
             HapticService.light();
-            final editing = transaction.transferId == null
+            final parentId =
+                transaction.cashbackSourceId ?? transaction.transferId;
+            final editing = parentId == null
                 ? transaction
                 : ProviderScope.containerOf(context)
                           .read(transactionProvider)
                           .value
-                          ?.where((tx) => tx.id == transaction.transferId)
+                          ?.where((tx) => tx.id == parentId)
                           .firstOrNull ??
                       transaction;
             Navigator.push(
@@ -170,6 +176,7 @@ class TransactionTile extends StatelessWidget {
                     : displaySubtitle,
                 amount: signedAmount,
                 amountColor: typeColor,
+                cashbackSubtitle: cashbackSubtitle,
               )
             : Row(
                 children: [
@@ -206,6 +213,17 @@ class TransactionTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (cashbackSubtitle != null) ...[
+                          const Gap(3),
+                          Text(
+                            cashbackSubtitle,
+                            style: TextStyle(
+                              color: AppTheme.textLightColor(context),
+                              fontSize: KoinTypography.small,
+                              fontWeight: KoinTypography.supportingWeight,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -251,6 +269,7 @@ class TransactionTile extends StatelessWidget {
     required String subtitle,
     required String amount,
     required Color amountColor,
+    String? cashbackSubtitle,
   }) => KoinActivityRow(
     leading: KoinIconBadge(icon: icon, color: color),
     title: title,
@@ -264,13 +283,27 @@ class TransactionTile extends StatelessWidget {
         letterSpacing: KoinTypography.itemTracking,
       ),
     ),
-    subtitle: Text(
-      subtitle,
-      style: TextStyle(
-        color: AppTheme.textLightColor(context),
-        fontSize: KoinTypography.small,
-        fontWeight: KoinTypography.supportingWeight,
-      ),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: AppTheme.textLightColor(context),
+            fontSize: KoinTypography.small,
+            fontWeight: KoinTypography.supportingWeight,
+          ),
+        ),
+        if (cashbackSubtitle != null)
+          Text(
+            cashbackSubtitle,
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: KoinTypography.small,
+              fontWeight: KoinTypography.supportingWeight,
+            ),
+          ),
+      ],
     ),
   );
 }

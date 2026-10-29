@@ -62,6 +62,7 @@ class KoinSectionHeader extends StatelessWidget {
         },
         behavior: HitTestBehavior.opaque,
         child: Container(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.transparent,

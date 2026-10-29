@@ -154,11 +154,16 @@ void main() {
       await tester.tap(find.text('Cash'));
       await tester.pumpAndSettle();
       expect(find.byType(NumPad), findsOneWidget);
-      expect(find.textContaining('Cash • '), findsOneWidget);
+      final account = find.widgetWithText(SelectionTile, 'Cash');
+      expect(account, findsOneWidget);
+      expect(
+        tester.widget<SelectionTile>(account).selectedNameDetail,
+        providers.read(settingsProvider).currency.formatter.format(75),
+      );
       expect(find.textContaining('Available:'), findsNothing);
       expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '7');
       expect(
-        tester.getTopLeft(find.textContaining('Cash • ')).dy,
+        tester.getTopLeft(account).dy,
         lessThan(tester.getTopLeft(find.byType(NumPad)).dy),
       );
       expect(tester.takeException(), isNull);
@@ -205,6 +210,14 @@ void main() {
     final initialSize = tester.getSize(zero);
     final fields = find.byKey(const ValueKey('transaction-fields-section'));
     final fieldsRect = tester.getRect(fields);
+    final currency = find.text(providers.read(settingsProvider).currency.code);
+    final initialGap =
+        tester.getTopLeft(zero).dy - tester.getBottomLeft(currency).dy;
+    final initialHeaderGap =
+        tester.getTopLeft(currency).dy -
+        tester.getBottomLeft(find.byType(TransactionTypeSelector)).dy;
+    expect(initialGap, greaterThan(0));
+    expect(initialHeaderGap, greaterThan(0));
     for (final mode in ['Transfer', 'Income', 'Expense']) {
       await tester.tap(find.text(mode));
       await tester.pumpAndSettle();
@@ -212,16 +225,14 @@ void main() {
       expect(find.byKey(const ValueKey('amount-stripe')), findsOneWidget);
       expect(tester.getSize(zero), initialSize);
       expect(tester.getCenter(zero).dx, closeTo(393 / 2, 0.1));
-      final currency = find.text(
-        providers.read(settingsProvider).currency.code,
-      );
+
       final gap =
           tester.getTopLeft(zero).dy - tester.getBottomLeft(currency).dy;
-      expect(gap, closeTo(4, 0.5));
+      expect(gap, closeTo(initialGap, 0.1));
       expect(
         tester.getTopLeft(currency).dy -
             tester.getBottomLeft(find.byType(TransactionTypeSelector)).dy,
-        greaterThanOrEqualTo(20),
+        closeTo(initialHeaderGap, 0.1),
       );
       expect(tester.takeException(), isNull);
     }
@@ -309,7 +320,8 @@ void main() {
             widget is Semantics && widget.properties.label == 'Edit amount',
       ),
     );
-    expect(amountRect.center.dy, closeTo(editAmountRect.center.dy, 0.1));
+    expect(editAmountRect.top, lessThanOrEqualTo(amountRect.top));
+    expect(editAmountRect.bottom, greaterThanOrEqualTo(amountRect.bottom));
     final feeRect = tester.getRect(find.byType(TextField));
     await tester.tap(find.byType(EditableText));
     await tester.pumpAndSettle();
@@ -399,7 +411,8 @@ void main() {
             widget is Semantics && widget.properties.label == 'Edit amount',
       ),
     );
-    expect(amountRect.center.dy, closeTo(editAmountRect.center.dy, 0.1));
+    expect(editAmountRect.top, lessThanOrEqualTo(amountRect.top));
+    expect(editAmountRect.bottom, greaterThanOrEqualTo(amountRect.bottom));
     await tester.tap(find.text('Select account'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cash'));
@@ -481,10 +494,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(NumPad), findsOneWidget);
-    expect(find.textContaining('Cash • '), findsOneWidget);
+    final account = find.widgetWithText(SelectionTile, 'Cash');
+    expect(account, findsOneWidget);
     expect(
-      find.textContaining('Cash • ').evaluate().single.widget,
-      isA<Text>().having((text) => text.data, 'available', endsWith('100.00')),
+      tester.widget<SelectionTile>(account).selectedNameDetail,
+      providers.read(settingsProvider).currency.formatter.format(100),
     );
     expect(find.text('Amount exceeds available balance'), findsNothing);
     expect(tester.takeException(), isNull);

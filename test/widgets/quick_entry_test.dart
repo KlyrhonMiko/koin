@@ -356,8 +356,8 @@ void main() {
     await tap(tester, 'Cash');
     final label = find.text('Spendable · ${symbol}200.00 in savings');
     expect(label, findsOneWidget);
-    expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
-    expect(find.text('Cash • ${symbol}263.00'), findsNothing);
+    expect(find.text('${symbol}63.00'), findsOneWidget);
+    expect(find.text('${symbol}263.00'), findsNothing);
     final compactHeight = tester
         .getSize(find.ancestor(of: label, matching: find.byType(SelectionTile)))
         .height;
@@ -367,7 +367,7 @@ void main() {
         .updateGoal(goal.copyWith(includeInDashboardBalance: false));
     await tester.pumpAndSettle();
     expect(find.text('Spendable'), findsOneWidget);
-    expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
+    expect(find.text('${symbol}63.00'), findsOneWidget);
     expect(label, findsNothing);
     await providers
         .read(savingsGoalsProvider.notifier)
@@ -444,7 +444,7 @@ void main() {
       await tap(tester, 'Select category');
       await tap(tester, 'Food');
       await tap(tester, 'Edit');
-      expect(find.textContaining('Cash • '), findsOneWidget);
+      expect(find.text('Cash'), findsOneWidget);
       expect(find.textContaining('Available:'), findsNothing);
       await tap(tester, 'Next');
       expect(find.text('Food'), findsOneWidget);
@@ -750,8 +750,8 @@ void main() {
       await pickAccount(tester, 'Select account', 'Cash');
       await pickAccount(tester, 'Select receiving account', 'Bank');
       final symbol = providers.read(settingsProvider).currency.symbol;
-      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
-      expect(find.text('Bank • ${symbol}300.00'), findsOneWidget);
+      expect(find.text('${symbol}63.00'), findsOneWidget);
+      expect(find.text('${symbol}300.00'), findsOneWidget);
       expect(find.text('From · Spendable'), findsOneWidget);
       expect(find.textContaining('Source balance:'), findsNothing);
       expect(
@@ -759,8 +759,8 @@ void main() {
         lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
       );
       await amount(tester, '50');
-      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
-      expect(find.text('Bank • ${symbol}300.00'), findsOneWidget);
+      expect(find.text('${symbol}63.00'), findsOneWidget);
+      expect(find.text('${symbol}300.00'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('${symbol}50.00').first).dy,
         lessThan(tester.getTopLeft(find.text('From · Spendable')).dy),
@@ -771,8 +771,8 @@ void main() {
           .read(savingsGoalsProvider.notifier)
           .updateGoal(hidden.copyWith(includeInDashboardBalance: true));
       await tester.pumpAndSettle();
-      expect(find.text('Bank • ${symbol}400.00'), findsOneWidget);
-      expect(find.text('Cash • ${symbol}63.00'), findsOneWidget);
+      expect(find.text('${symbol}400.00'), findsOneWidget);
+      expect(find.text('${symbol}63.00'), findsOneWidget);
       await tap(tester, 'Save transfer');
       expect(
         (await providers.read(transactionProvider.future)).single.amount,
@@ -804,8 +804,8 @@ void main() {
       await tap(tester, 'Review');
       await tap(tester, 'Edit');
       expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '100');
-      expect(find.textContaining('Cash •'), findsOneWidget);
-      expect(find.textContaining('Bank •'), findsOneWidget);
+      expect(find.text('Cash'), findsOneWidget);
+      expect(find.text('Bank'), findsOneWidget);
       expect(await providers.read(transactionProvider.future), isEmpty);
     },
   );
@@ -844,8 +844,8 @@ void main() {
           '2',
         );
         await tester.pumpAndSettle();
-        expect(find.textContaining('Cash •'), findsOneWidget);
-        expect(find.textContaining('Bank •'), findsOneWidget);
+        expect(find.text('Cash'), findsOneWidget);
+        expect(find.text('Bank'), findsOneWidget);
         expect(find.textContaining('510.00'), findsOneWidget);
         expect(tester.takeException(), isNull);
         if (const bool.fromEnvironment('CAPTURE_TRANSFER')) {
@@ -905,6 +905,61 @@ void main() {
       20,
     );
   });
+  testWidgets('expense cashback records automatically in Quick Entry', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Expense');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await amount(tester, '1200');
+    await tap(tester, 'Select category');
+    await tap(tester, 'Food');
+    await tap(tester, 'Cashback');
+    await tap(tester, '1%');
+    expect(find.text('Cashback · ₱12.00'), findsOneWidget);
+    await tap(tester, 'Done');
+    await tap(tester, 'Save transaction');
+    final entries = await providers.read(transactionProvider.future);
+    expect(entries, hasLength(2));
+    final source = entries.singleWhere(
+      (t) => t.type == TransactionType.expense,
+    );
+    expect(entries.singleWhere((t) => t.cashbackSourceId != null).amount, 12);
+    expect(source.expectedCashback, 12);
+    expect(source.cashbackReceivedAt, isNull);
+    expect(
+      providers.read(dashboardStatsProvider).accountBalances['cash'],
+      3812,
+    );
+  });
+
+  testWidgets('received transfer cashback is credited once in Quick Entry', (
+    tester,
+  ) async {
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    await pickAccount(tester, 'Select account', 'Cash');
+    await pickAccount(tester, 'Select receiving account', 'Bank');
+    await amount(tester, '500');
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-transfer-fee')),
+      '20',
+    );
+    await tap(tester, 'Cashback');
+    await tap(tester, '₱5 fixed');
+    await tap(tester, 'Done');
+    await tap(tester, 'Save transfer');
+    final entries = await providers.read(transactionProvider.future);
+    expect(entries, hasLength(3));
+    expect(entries.singleWhere((tx) => tx.cashbackSourceId != null).amount, 5);
+    expect(
+      providers.read(dashboardStatsProvider).accountBalances['cash'],
+      4485,
+    );
+  });
+
   testWidgets('transfer warning includes fixed and percentage fees', (
     tester,
   ) async {
@@ -1077,7 +1132,7 @@ void main() {
       await tap(tester, '2');
       await tap(tester, '5');
       final accountSummary =
-          'Cash • ${providers.read(settingsProvider).currency.symbol}5,000.00';
+          '${providers.read(settingsProvider).currency.symbol}5,000.00';
       expect(find.text(accountSummary), findsOneWidget);
       expect(find.textContaining('Available:'), findsNothing);
       expect(
@@ -1121,7 +1176,7 @@ void main() {
     await tap(tester, 'Expense');
     expect(find.byType(NumPad), findsOneWidget);
     await pickAccount(tester, 'Select account', 'Cash');
-    expect(find.textContaining('Cash • '), findsOneWidget);
+    expect(find.text('Cash'), findsOneWidget);
     expect(find.textContaining('Available:'), findsNothing);
     await amount(tester, '6000');
     expect(find.text('Insufficient balance in Cash'), findsOneWidget);
@@ -1150,7 +1205,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Food'), findsOneWidget);
       expect(find.textContaining('Suggested from note'), findsOneWidget);
-      expect(find.text('Account: Cash'), findsOneWidget);
+      expect(find.text('Cash'), findsOneWidget);
       expect(suggester.requests.single.signedAmount, -125);
       expect(suggester.requests.single.currentAccountId, 'cash');
       await tap(tester, 'Save transaction');

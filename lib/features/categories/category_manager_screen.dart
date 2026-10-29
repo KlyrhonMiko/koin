@@ -127,6 +127,9 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                           ),
                   ),
                   IconButton(
+                    tooltip: _showSearch
+                        ? 'Close category search'
+                        : 'Search categories',
                     icon: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
@@ -139,9 +142,7 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                         ),
                       ),
                       child: Icon(
-                        _showSearch
-                            ? KoinIcons.x
-                            : KoinIcons.magnifyingGlass,
+                        _showSearch ? KoinIcons.x : KoinIcons.magnifyingGlass,
                         size: 18,
                         color: AppTheme.textColor(context),
                       ),
@@ -260,24 +261,43 @@ class _CategoryListState extends ConsumerState<CategoryList>
       ),
       physics: const BouncingScrollPhysics(),
       itemCount: widget.categories.length,
-      onReorderItem: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) async {
         HapticService.medium();
-        ref
-            .read(categoriesProvider.notifier)
-            .reorderCategories(oldIndex, newIndex, widget.type);
+        try {
+          await ref
+              .read(categoriesProvider.notifier)
+              .reorderCategories(
+                oldIndex,
+                newIndex,
+                widget.type,
+                visibleIds: widget.categories
+                    .map((category) => category.id)
+                    .toList(),
+              );
+        } catch (_) {
+          if (context.mounted) {
+            KoinSnackBar.error(
+              context,
+              'Could not save category order',
+              subtitle: 'Your previous order was restored. Try again.',
+            );
+          }
+        }
       },
       proxyDecorator: koinReorderProxyDecorator,
       header: Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Row(
           children: [
-            Text(
-              '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
-              style: TextStyle(
-                fontSize: KoinTypography.compact,
-                fontWeight: KoinTypography.labelWeight,
-                color: AppTheme.textLightColor(context),
-                letterSpacing: 0.3,
+            Expanded(
+              child: Text(
+                '${widget.categories.length} ${widget.categories.length == 1 ? 'Category' : 'Categories'}',
+                style: TextStyle(
+                  fontSize: KoinTypography.compact,
+                  fontWeight: KoinTypography.labelWeight,
+                  color: AppTheme.textLightColor(context),
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ],
@@ -325,14 +345,16 @@ class _CategoryListState extends ConsumerState<CategoryList>
                     ),
                   ),
                   const Gap(10),
-                  Text(
-                    'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
-                    style: TextStyle(
-                      fontWeight: KoinTypography.labelWeight,
-                      fontSize: KoinTypography.compact,
-                      color: widget.type == TransactionType.expense
-                          ? AppTheme.expenseColor(context)
-                          : AppTheme.incomeColor(context),
+                  Flexible(
+                    child: Text(
+                      'Add ${widget.type == TransactionType.expense ? 'Expense' : 'Income'} Category',
+                      style: TextStyle(
+                        fontWeight: KoinTypography.labelWeight,
+                        fontSize: KoinTypography.compact,
+                        color: widget.type == TransactionType.expense
+                            ? AppTheme.expenseColor(context)
+                            : AppTheme.incomeColor(context),
+                      ),
                     ),
                   ),
                 ],

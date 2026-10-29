@@ -13,6 +13,7 @@ import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
 import 'package:koin/core/ledger/transaction_rules.dart';
+import 'package:koin/core/ledger/cashback_rules.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -39,6 +40,23 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 49) {
+      final columns = await db.rawQuery('PRAGMA table_info(transactions)');
+      for (final entry in {
+        'cashbackRule': "TEXT NOT NULL DEFAULT 'none'",
+        'cashbackReceivedAt': 'TEXT',
+        'cashbackSourceId': 'TEXT',
+      }.entries) {
+        if (!columns.any((column) => column['name'] == entry.key)) {
+          await db.execute(
+            'ALTER TABLE transactions ADD COLUMN ${entry.key} ${entry.value}',
+          );
+        }
+      }
+      await db.execute(
+        'CREATE UNIQUE INDEX IF NOT EXISTS transaction_cashback_source ON transactions(cashbackSourceId)',
+      );
+    }
     if (oldVersion < 48) {
       final columns = await db.rawQuery('PRAGMA table_info(transactions)');
       if (columns.isNotEmpty &&
@@ -547,7 +565,7 @@ END
         + CASE WHEN type = 'transfer' AND toAccountId = ? THEN amount ELSE 0 END
       ), 0) AS delta FROM transactions
       WHERE (accountId = ? OR toAccountId = ?) AND julianday(date) <= julianday(?)
-      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?)'}
+      ${excluding == null ? '' : 'AND id != ? AND (transferId IS NULL OR transferId != ?) AND (cashbackSourceId IS NULL OR cashbackSourceId != ?)'}
       ''',
       [
         accountId,
@@ -555,7 +573,7 @@ END
         accountId,
         accountId,
         DateTime.now().toIso8601String(),
-        if (excluding != null) ...[excluding, excluding],
+        if (excluding != null) ...[excluding, excluding, excluding],
       ],
     );
     final balance =
@@ -928,6 +946,9 @@ CREATE TABLE transactions (
   plannedPaymentId TEXT,
   debtRepaymentId TEXT,
   transferId TEXT,
+  cashbackRule TEXT NOT NULL DEFAULT 'none',
+  cashbackReceivedAt TEXT,
+  cashbackSourceId TEXT,
   isDebtTransfer INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE SET NULL,
   FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE SET NULL,
@@ -937,6 +958,9 @@ CREATE TABLE transactions (
 )
 ''');
 
+    await db.execute(
+      'CREATE UNIQUE INDEX transaction_cashback_source ON transactions(cashbackSourceId)',
+    );
     await _createSavingsTables(db);
     await _createSavingsSpendingLinks(db);
     await _createPlannedPaymentsTable(db);
@@ -1230,8 +1254,43 @@ CREATE TABLE transactions (
   // Transactions commands
   Future<AppTransaction> insertTransaction(AppTransaction transaction) async {
     final db = await instance.database;
-    await db.insert('transactions', transaction.toMap());
+    await db.transaction((txn) async {
+      CashbackRules.validate(transaction);
+      await txn.insert('transactions', transaction.toMap());
+      await syncCashback(txn, transaction);
+    });
     return transaction;
+  }
+
+  Future<void> syncCashback(DatabaseExecutor txn, AppTransaction source) async {
+    CashbackRules.validate(source);
+    final credit = source.cashbackCredit;
+    if (credit == null) {
+      await txn.delete(
+        'transactions',
+        where: 'cashbackSourceId = ?',
+        whereArgs: [source.id],
+      );
+      return;
+    }
+    await txn.insert(
+      'categories',
+      TransactionCategory(
+        id: 'cat_cashback',
+        name: 'Cashback & Rewards',
+        iconCodePoint: KoinIcons.money.codePoint,
+        colorHex: '#00A884',
+        type: TransactionType.income,
+      ).toMap(),
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+    final changed = await txn.update(
+      'transactions',
+      credit.toMap(),
+      where: 'cashbackSourceId = ?',
+      whereArgs: [source.id],
+    );
+    if (changed == 0) await txn.insert('transactions', credit.toMap());
   }
 
   Future<List<AppTransaction>> getTransactions() async {
@@ -1409,6 +1468,11 @@ CREATE TABLE transactions (
     if (rows.isEmpty) return 0;
 
     final previous = AppTransaction.fromMap(rows.first);
+    if (previous.cashbackSourceId != null) {
+      throw const FinancialValidationException(
+        'Edit cashback from its original transaction',
+      );
+    }
     // Editing financial fields must not detach the originating domain record.
     final updated = transaction.copyWith(
       plannedPaymentId: previous.plannedPaymentId,
@@ -1482,6 +1546,7 @@ CREATE TABLE transactions (
         );
       }
     }
+    await syncCashback(txn, updated);
     return await txn.update(
       'transactions',
       updated.toMap(),

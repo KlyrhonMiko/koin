@@ -31,7 +31,11 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    await acceptRecordedTransactions([recorded]);
+    if (recorded.cashbackCredit != null) ref.invalidate(categoriesProvider);
+    await acceptRecordedTransactions(
+      await _ledger.getTransactionFamily(recorded.id),
+      familyId: recorded.id,
+    );
   }
 
   Future<void> acceptRecordedTransactions(
@@ -49,7 +53,9 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
         (tx) =>
             !ids.contains(tx.id) &&
             (familyId == null ||
-                (tx.id != familyId && tx.transferId != familyId)),
+                (tx.id != familyId &&
+                    tx.transferId != familyId &&
+                    tx.cashbackSourceId != familyId)),
       ),
       ...recorded,
     ]..sort(TransactionPage.compare);
@@ -64,18 +70,24 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
       transferTransaction: transferTransaction,
       feeTransaction: feeTransaction,
     );
+    if (transferTransaction.cashbackCredit != null) {
+      ref.invalidate(categoriesProvider);
+    }
     ref.read(savingsSpendingApprovalsProvider).clear(transferTransaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    await acceptRecordedTransactions([
-      result.transferTransaction,
-      if (result.feeTransaction != null) result.feeTransaction!,
-    ], familyId: transferTransaction.id);
+    await acceptRecordedTransactions(
+      await _ledger.getTransactionFamily(transferTransaction.id),
+      familyId: transferTransaction.id,
+    );
     return result;
   }
 
   Future<void> updateTransaction(AppTransaction transaction) async {
     await _ledger.updateTransaction(transaction);
+    if (transaction.cashbackCredit != null) {
+      ref.invalidate(categoriesProvider);
+    }
     ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
@@ -97,6 +109,9 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
     AppTransaction? fee,
   ) async {
     await _ledger.updateTransfer(transaction, fee);
+    if (transaction.cashbackCredit != null) {
+      ref.invalidate(categoriesProvider);
+    }
     ref.read(savingsSpendingApprovalsProvider).clear(transaction.id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
@@ -107,12 +122,22 @@ class TransactionNotifier extends AsyncNotifier<List<AppTransaction>> {
   }
 
   Future<void> deleteTransaction(String id) async {
+    final deleted = state.value?.where((tx) => tx.id == id).firstOrNull;
     final result = await _ledger.voidTransaction(id);
     ref.invalidate(savingsGoalsProvider);
     ref.invalidate(savingsLogsProvider);
-    if (state.value != null) {
+    if (deleted?.cashbackSourceId != null) {
+      await loadTransactions(showLoading: false);
+    } else if (state.value != null) {
       state = AsyncData(
-        state.value!.where((tx) => tx.id != id && tx.transferId != id).toList(),
+        state.value!
+            .where(
+              (tx) =>
+                  tx.id != id &&
+                  tx.transferId != id &&
+                  tx.cashbackSourceId != id,
+            )
+            .toList(),
       );
     } else {
       await loadTransactions(showLoading: false);

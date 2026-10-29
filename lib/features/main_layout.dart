@@ -131,7 +131,14 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                         ],
                       ),
                     ),
-                    Expanded(child: pages),
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 760),
+                          child: pages,
+                        ),
+                      ),
+                    ),
                   ],
                 )
               : pages,

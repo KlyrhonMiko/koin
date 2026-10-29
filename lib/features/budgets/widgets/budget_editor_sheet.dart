@@ -193,6 +193,14 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                             fontSize: KoinTypography.caption,
                           ),
                         ),
+                        const Gap(6),
+                        Text(
+                          'Repeats every month. Changes also apply to past months.',
+                          style: TextStyle(
+                            color: AppTheme.textLightColor(context),
+                            fontSize: KoinTypography.small,
+                          ),
+                        ),
                       ],
                     ),
                   ),

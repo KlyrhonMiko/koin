@@ -252,7 +252,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 final textScale = MediaQuery.textScalerOf(context);
                 final controlHeight =
                     (textScale.scale(KoinTypography.caption) + 24).clamp(
-                      48.0,
+                      56.0,
                       double.infinity,
                     );
                 final stacked =
@@ -552,9 +552,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 });
               },
               icon: Icon(
-                _showPieChart
-                    ? KoinIcons.chartBar
-                    : KoinIcons.chartDonut,
+                _showPieChart ? KoinIcons.chartBar : KoinIcons.chartDonut,
                 size: 18,
               ),
               label: Text(_showPieChart ? 'Trend' : 'Categories'),

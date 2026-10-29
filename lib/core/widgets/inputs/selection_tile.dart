@@ -17,6 +17,7 @@ class SelectionTile extends StatelessWidget {
   final String placeholder;
   final VoidCallback onTap;
   final Widget? trailing;
+  final String? selectedNameDetail;
   final bool asCard;
   final double minHeight;
   final int? selectedNameMaxLines;
@@ -32,6 +33,7 @@ class SelectionTile extends StatelessWidget {
     required this.placeholder,
     required this.onTap,
     this.trailing,
+    this.selectedNameDetail,
     this.asCard = true,
     this.minHeight = 0,
     this.selectedNameMaxLines = 1,
@@ -63,7 +65,7 @@ class SelectionTile extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: asCard ? 14 : 12,
+              vertical: selectedNameDetail != null ? 8 : (asCard ? 14 : 12),
             ),
             child: Row(
               children: [
@@ -87,9 +89,10 @@ class SelectionTile extends StatelessWidget {
                             lightOpacity: asCard ? 0.7 : 0.65,
                           ),
                           letterSpacing: asCard ? null : 0.3,
+                          height: selectedNameDetail != null ? 1.2 : null,
                         ),
                       ),
-                      const Gap(2),
+                      Gap(selectedNameDetail != null ? 0 : 2),
                       Text(
                         selectedName ?? placeholder,
                         style: TextStyle(
@@ -99,6 +102,7 @@ class SelectionTile extends StatelessWidget {
                           fontWeight: hasSelection
                               ? KoinTypography.titleWeight
                               : KoinTypography.supportingWeight,
+                          height: selectedNameDetail != null ? 1.25 : null,
                           color: hasSelection
                               ? AppTheme.textColor(context)
                               : AppTheme.fieldHintColor(
@@ -111,15 +115,27 @@ class SelectionTile extends StatelessWidget {
                             ? TextOverflow.visible
                             : TextOverflow.ellipsis,
                       ),
+                      if (selectedNameDetail != null) ...[
+                        Text(
+                          selectedNameDetail!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.supportingWeight,
+                            height: 1.2,
+                            color: AppTheme.textLightColor(context),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
                 ?trailing,
                 Icon(
                   KoinIcons.caretRight,
-                  color: AppTheme.textLightColor(
-                    context,
-                  ).withValues(alpha: 0.4),
+                  color: AppTheme.textLightColor(context)
+                      .withValues(alpha: 0.4),
                   size: asCard ? 20 : 22,
                 ),
               ],

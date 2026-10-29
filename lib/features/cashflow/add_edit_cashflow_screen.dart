@@ -100,7 +100,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.payment?.amount,
+            ) ??
         0;
     try {
       final suggestion = await ref
@@ -185,7 +188,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         ref
             .read(settingsProvider)
             .currency
-            .tryParseInput(_amountController.text) ??
+            .tryParseInput(
+              _amountController.text,
+              originalValue: widget.payment?.amount,
+            ) ??
         0.0;
     if (!amount.isFinite || amount <= 0) {
       HapticService.error();
@@ -358,6 +364,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
           controller: _amountController,
           currencySymbol: currency.symbol,
           currency: currency,
+          originalValue: widget.payment?.amount,
           primaryColor: primaryColor,
           onChanged: (_) {
             setState(() {});

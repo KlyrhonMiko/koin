@@ -83,39 +83,46 @@ class IconPaletteGrid extends StatelessWidget {
       semanticLabel: IconUtils.labelFor(code),
       selected: isSelected,
       onTap: () => _handleTap(icon, code),
-      child: AnimatedScale(
-        scale: isSelected ? 1.1 : 1.0,
-        duration: KoinMotion.duration(context, KoinMotion.feedback),
-        curve: KoinMotion.curve,
-        child: AnimatedContainer(
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 200),
-          ),
-          width: itemSize,
-          height: itemSize,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? activeColor.withValues(alpha: 0.12)
-                : shape == BoxShape.circle
-                ? AppTheme.dividerColor(context).withValues(alpha: 0.1)
-                : AppTheme.surfaceLightColor(context),
-            shape: shape,
-            borderRadius: shape == BoxShape.circle
-                ? null
-                : BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? activeColor : AppTheme.dividerColor(context),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              color: isSelected
-                  ? activeColor
-                  : AppTheme.textLightColor(context).withValues(alpha: 0.5),
-              size: 22,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        child: Center(
+          child: AnimatedScale(
+            scale: isSelected ? 1.1 : 1.0,
+            duration: KoinMotion.duration(context, KoinMotion.feedback),
+            curve: KoinMotion.curve,
+            child: AnimatedContainer(
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 200),
+              ),
+              width: itemSize,
+              height: itemSize,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? activeColor.withValues(alpha: 0.12)
+                    : shape == BoxShape.circle
+                    ? AppTheme.dividerColor(context).withValues(alpha: 0.1)
+                    : AppTheme.surfaceLightColor(context),
+                shape: shape,
+                borderRadius: shape == BoxShape.circle
+                    ? null
+                    : BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected
+                      ? activeColor
+                      : AppTheme.dividerColor(context),
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: isSelected
+                      ? activeColor
+                      : AppTheme.textLightColor(context).withValues(alpha: 0.5),
+                  size: 22,
+                ),
+              ),
             ),
           ),
         ),
@@ -156,7 +163,9 @@ class IconPaletteGrid extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
+          crossAxisCount: ((MediaQuery.sizeOf(context).width - 72) / 58)
+              .floor()
+              .clamp(1, crossAxisCount),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
         ),

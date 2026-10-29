@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -20,6 +21,7 @@ import 'backup_password_sheet.dart';
 import 'package:koin/core/maintenance/backup_encryption.dart';
 
 import 'package:koin/core/core.dart';
+import 'package:koin/core/services/device_privacy.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -30,6 +32,39 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _maintenanceBusy = false;
+  bool _privacyBusy = false;
+
+  Future<void> _setProtection(bool enabled) async {
+    if (_privacyBusy) return;
+    setState(() => _privacyBusy = true);
+    final privacy = ref.read(devicePrivacyProvider);
+    try {
+      if (!await privacy.authenticate()) return;
+      privacy.authenticated = true;
+      await privacy.setProtected(enabled);
+      await ref.read(settingsProvider.notifier).setAppProtection(enabled);
+    } on PlatformException catch (error) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          error.code == 'screen_lock_required'
+              ? 'Set a device screen lock first'
+              : 'Could not change app protection',
+          subtitle: 'Use a device PIN, pattern or password, then try again.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not change app protection',
+          subtitle: 'Your setting was not changed. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _privacyBusy = false);
+    }
+  }
 
   Future<void> _runMaintenanceAction(Future<void> Function() action) async {
     if (_maintenanceBusy) return;
@@ -316,11 +351,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Haptic feedback',
                     subtitle: 'Vibrations for selections and action results',
                     icon: KoinIcons.vibrate,
-                    trailing: Switch(
-                      value: settings.hapticsEnabled,
-                      onChanged: (enabled) => ref
-                          .read(settingsProvider.notifier)
-                          .setHapticsEnabled(enabled),
+                    trailing: Semantics(
+                      label: 'Haptic feedback',
+                      child: Switch(
+                        value: settings.hapticsEnabled,
+                        onChanged: (enabled) => ref
+                            .read(settingsProvider.notifier)
+                            .setHapticsEnabled(enabled),
+                      ),
                     ),
                   ),
                   KoinSettingTile(
@@ -332,6 +370,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: KoinIcons.microphone,
                     onTap: () => VoiceLanguageSheet.show(context),
                   ),
+                  if (ref.watch(devicePrivacyProvider).supported)
+                    KoinSettingTile(
+                      title: 'App protection',
+                      subtitle: 'Require your device PIN, pattern or password. Hide previews and block screenshots.',
+                      icon: KoinIcons.lockSimple,
+                      trailing: Semantics(
+                        label: 'App protection',
+                        child: Switch(
+                          value: settings.appProtectionEnabled,
+                          onChanged: _privacyBusy ? null : _setProtection,
+                        ),
+                      ),
+                    ),
                   KoinSettingTile(
                     title: 'Manage archived items',
                     subtitle: 'Archive or restore accounts and categories',

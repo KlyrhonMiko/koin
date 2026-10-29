@@ -79,14 +79,6 @@ class UpcomingTimeline {
     final today = DateTime(reference.year, reference.month, reference.day);
 
     for (final p in payments) {
-      if (p.endDate != null &&
-          DateTime(
-            p.endDate!.year,
-            p.endDate!.month,
-            p.endDate!.day,
-          ).isBefore(today)) {
-        continue;
-      }
       final isFlex = p.frequency == PaymentFrequency.flexible;
       if (!p.isEligible(isFlex ? reference : p.nextDate)) {
         continue;

@@ -266,6 +266,12 @@ class AppTheme {
               onError: foregroundFor(errorColor),
             ),
       scaffoldBackgroundColor: backgroundColor,
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (isDarkMode || states.contains(WidgetState.disabled)) return null;
+          return states.contains(WidgetState.selected) ? Colors.white : null;
+        }),
+      ),
       tooltipTheme: TooltipThemeData(
         preferBelow: false,
         verticalOffset: 12,

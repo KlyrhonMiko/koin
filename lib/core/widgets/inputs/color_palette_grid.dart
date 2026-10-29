@@ -79,47 +79,52 @@ class ColorPaletteGrid extends StatelessWidget {
           'Color #${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
       selected: isSelected,
       onTap: () => _handleTap(index, color),
-      child: AnimatedScale(
-        scale: isSelected ? 1.08 : 1.0,
-        duration: KoinMotion.duration(context, KoinMotion.feedback),
-        curve: KoinMotion.curve,
-        child: AnimatedContainer(
-          duration: KoinMotion.duration(
-            context,
-            const Duration(milliseconds: 200),
-          ),
-          width: itemSize,
-          height: itemSize,
-          decoration: BoxDecoration(
-            color: color,
-            shape: shape,
-            borderRadius: shape == BoxShape.circle
-                ? null
-                : BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? Colors.white : Colors.transparent,
-              width: shape == BoxShape.circle ? 3 : 2.5,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        child: Center(
+          child: AnimatedScale(
+            scale: isSelected ? 1.08 : 1.0,
+            duration: KoinMotion.duration(context, KoinMotion.feedback),
+            curve: KoinMotion.curve,
+            child: AnimatedContainer(
+              duration: KoinMotion.duration(
+                context,
+                const Duration(milliseconds: 200),
+              ),
+              width: itemSize,
+              height: itemSize,
+              decoration: BoxDecoration(
+                color: color,
+                shape: shape,
+                borderRadius: shape == BoxShape.circle
+                    ? null
+                    : BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  width: shape == BoxShape.circle ? 3 : 2.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        AppTheme.boxShadow(
+                          context,
+                          color: color.withValues(alpha: 0.45),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: isSelected
+                  ? const Center(
+                      child: Icon(
+                        KoinIcons.check,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    )
+                  : null,
             ),
-            boxShadow: isSelected
-                ? [
-                    AppTheme.boxShadow(
-                      context,
-                      color: color.withValues(alpha: 0.45),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
           ),
-          child: isSelected
-              ? const Center(
-                  child: Icon(
-                    KoinIcons.check,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                )
-              : null,
         ),
       ),
     );
@@ -158,7 +163,9 @@ class ColorPaletteGrid extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
+          crossAxisCount: ((MediaQuery.sizeOf(context).width - 72) / 58)
+              .floor()
+              .clamp(1, crossAxisCount),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
         ),

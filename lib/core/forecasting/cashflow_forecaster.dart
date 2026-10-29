@@ -349,7 +349,9 @@ class CashflowForecaster {
     var forecastedInflow = variableInflow;
     var forecastedOutflow = variableOutflow;
     for (final payment in plannedPayments) {
-      if (payment.endDate != null && _day(payment.endDate!).isBefore(start)) {
+      if (payment.frequency == PaymentFrequency.flexible &&
+          payment.endDate != null &&
+          _day(payment.endDate!).isBefore(start)) {
         continue;
       }
       final amount = payment.amount * _paymentCount(payment, end);
@@ -388,7 +390,9 @@ class CashflowForecaster {
           currentBaseline +
           (variableInflow - variableOutflow) * (i + 1) / dates.length;
       for (final payment in plannedPayments) {
-        if (payment.endDate != null && _day(payment.endDate!).isBefore(start)) {
+        if (payment.frequency == PaymentFrequency.flexible &&
+            payment.endDate != null &&
+            _day(payment.endDate!).isBefore(start)) {
           continue;
         }
         final amount = payment.amount * _paymentCount(payment, through);

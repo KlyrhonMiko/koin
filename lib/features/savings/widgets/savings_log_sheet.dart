@@ -104,7 +104,10 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
     final amount = ref
         .read(settingsProvider)
         .currency
-        .tryParseInput(_evaluatedResult);
+        .tryParseInput(
+          _evaluatedResult,
+          originalValue: widget.log?.amount.abs(),
+        );
     final available = _availableBalance();
     String? error;
     if (amount == null || !amount.isFinite || amount <= 0) {
@@ -178,7 +181,13 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         _currentExpression.isNotEmpty && _currentExpression != '0';
     final primaryColor = AppTheme.primaryColor(context);
     final parsedAmount =
-        ref.read(settingsProvider).currency.tryParseInput(_evaluatedResult) ??
+        ref
+            .read(settingsProvider)
+            .currency
+            .tryParseInput(
+              _evaluatedResult,
+              originalValue: widget.log?.amount.abs(),
+            ) ??
         0;
     final accountId = widget.goal.linkedAccountId;
     final available = accountId == null

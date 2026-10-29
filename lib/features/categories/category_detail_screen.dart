@@ -188,15 +188,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     children: [
                       const KoinBackButton(),
                       const Gap(16),
-                      Text(
-                        widget.category != null
-                            ? 'Edit Category'
-                            : 'New Category',
-                        style: TextStyle(
-                          fontSize: KoinTypography.screenTitle,
-                          fontWeight: KoinTypography.headingWeight,
-                          letterSpacing: KoinTypography.headingTracking,
-                          color: AppTheme.textColor(context),
+                      Expanded(
+                        child: Text(
+                          widget.category != null
+                              ? 'Edit Category'
+                              : 'New Category',
+                          style: TextStyle(
+                            fontSize: KoinTypography.screenTitle,
+                            fontWeight: KoinTypography.headingWeight,
+                            letterSpacing: KoinTypography.headingTracking,
+                            color: AppTheme.textColor(context),
+                          ),
                         ),
                       ),
                     ],

@@ -93,7 +93,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final targetAmount = ref
         .read(settingsProvider)
         .currency
-        .tryParseInput(_amountController.text);
+        .tryParseInput(
+          _amountController.text,
+          originalValue: widget.goal?.targetAmount,
+        );
 
     final goal = SavingsGoal(
       id: widget.goal?.id ?? const Uuid().v4(),
@@ -145,7 +148,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final amount = ref
         .read(settingsProvider)
         .currency
-        .tryParseInput(_amountController.text);
+        .tryParseInput(
+          _amountController.text,
+          originalValue: widget.goal?.targetAmount,
+        );
     if (amount == null || amount <= 0 || _totalDays <= 0) return 'â€”';
     final settings = ref.read(settingsProvider);
     final fmt = settings.currency.formatter;
@@ -193,7 +199,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final amount = ref
         .read(settingsProvider)
         .currency
-        .tryParseInput(_amountController.text);
+        .tryParseInput(
+          _amountController.text,
+          originalValue: widget.goal?.targetAmount,
+        );
     final showEstimate =
         !_isStash &&
         _hasDeadline &&
@@ -247,6 +256,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                 controller: _amountController,
                 currencySymbol: currency.symbol,
                 currency: currency,
+                originalValue: widget.goal?.targetAmount,
                 primaryColor: primaryColor,
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
@@ -256,7 +266,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                   final target = ref
                       .read(settingsProvider)
                       .currency
-                      .tryParseInput(value ?? '');
+                      .tryParseInput(
+                        value ?? '',
+                        originalValue: widget.goal?.targetAmount,
+                      );
                   return target == null || !target.isFinite || target <= 0
                       ? 'Enter an amount greater than zero'
                       : null;
@@ -269,10 +282,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                 key: const ValueKey('savings_type_selector'),
                 segments: const [
                   KoinSegmentItem(label: 'Goal', icon: KoinIcons.flag),
-                  KoinSegmentItem(
-                    label: 'Savings',
-                    icon: KoinIcons.piggyBank,
-                  ),
+                  KoinSegmentItem(label: 'Savings', icon: KoinIcons.piggyBank),
                 ],
                 selectedIndex: _isStash ? 1 : 0,
                 onChanged: (index) => setState(() => _isStash = index == 1),
@@ -392,7 +402,10 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                       targetAmount: ref
                           .read(settingsProvider)
                           .currency
-                          .tryParseInput(_amountController.text),
+                          .tryParseInput(
+                            _amountController.text,
+                            originalValue: widget.goal?.targetAmount,
+                          ),
                       currentAmount: widget.goal?.currentAmount ?? 0,
                       startDate: _startDate,
                       endDate: _isStash || !_hasDeadline ? null : _endDate,

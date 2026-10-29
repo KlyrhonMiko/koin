@@ -222,6 +222,14 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                     ),
                   ],
                 ),
+                const Gap(6),
+                Text(
+                  'Accounts · Savings · Credit & IOUs · Planned · Incomes',
+                  style: TextStyle(
+                    fontSize: KoinTypography.small,
+                    color: AppTheme.textLightColor(context),
+                  ),
+                ),
               ],
             ),
           ),

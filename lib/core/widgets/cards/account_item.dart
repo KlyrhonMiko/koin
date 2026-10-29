@@ -277,7 +277,7 @@ class AccountItem extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const Gap(KoinSpacing.labelGap),
+                          const Gap(2),
                           isPrivate
                               ? Text(
                                   '••••••',
