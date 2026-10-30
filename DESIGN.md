@@ -86,6 +86,8 @@ New “I am owed” records default to Lend money, with a required Source accoun
 
 Credit details use a compact summary with 24px horizontal and 16px vertical padding. Place the remaining balance directly below the name, with totals or billing context and repayment progress grouped beneath it. Keep the shared amount typography, fit long amounts on one line, and let repayment labels wrap at large text sizes.
 
+Credit & IOU list cards match the other portfolio items: a 15px semibold name in the primary text color, then the shared 17px semibold amount 4px below. Use the remaining balance as the main amount, with the semantic income/expense foreground and a 12px regular neutral “left” suffix. Center the repayment action at the trailing edge: a solid primary-accent 32px rounded square with 10px corners and an 18px plus icon, using the shared onPrimary foreground and pressed feedback. Keep its actual tap target at least 48px. Show the original total beneath the amount only after partial repayment, and group any due date with that supporting text. Settled cards retain the original amount and place a quiet 12px regular Paid off status beside the name with an 8px gap, without a separate status row. Preserve shared portfolio surfaces, icons, padding, navigation, and swipe deletion.
+
 ## Account editor
 
 Use one quiet “Swipe to browse” hint beside Templates. Avoid repeating instruction rows beneath each horizontal picker. Appearance carousels use the full screen width on phones and the centered 600px editor viewport on wider screens. Put the 20px content inset inside each horizontal scroll view so templates, icons, colors, backgrounds, and decoration previews clip at the viewport edge. Keep ordinary editor content capped at 560px.

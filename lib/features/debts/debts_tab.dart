@@ -224,77 +224,115 @@ class DebtCard extends StatelessWidget {
       child: Container(
         padding: PortfolioCardStyle.padding,
         decoration: PortfolioCardStyle.decoration(context),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compact =
-                constraints.maxWidth < 240 ||
-                MediaQuery.textScalerOf(context).scale(1) > 1.2;
-            return Row(
-              children: [
-                // Leading Icon/Avatar
-                Container(
-                  width: PortfolioCardStyle.iconSize,
-                  height: PortfolioCardStyle.iconSize,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(
-                      PortfolioCardStyle.iconRadius,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      debt.isPurchaseAccount
-                          ? KoinIcons.shoppingBag
-                          : isSettled
-                          ? KoinIcons.check
-                          : debt.type == DebtType.owedToMe
-                          ? KoinIcons.arrowDown
-                          : KoinIcons.arrowUp,
-                      color: color,
-                      size: 24,
-                    ),
-                  ),
+        child: Row(
+          children: [
+            // Leading Icon/Avatar
+            Container(
+              width: PortfolioCardStyle.iconSize,
+              height: PortfolioCardStyle.iconSize,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(
+                  PortfolioCardStyle.iconRadius,
                 ),
-                const Gap(16),
-                // Texts
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              child: Center(
+                child: Icon(
+                  debt.isPurchaseAccount
+                      ? KoinIcons.shoppingBag
+                      : isSettled
+                      ? KoinIcons.check
+                      : debt.type == DebtType.owedToMe
+                      ? KoinIcons.arrowDown
+                      : KoinIcons.arrowUp,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+            ),
+            const Gap(16),
+            // Texts
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        debt.personName,
-                        style: PortfolioCardStyle.label(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Gap(4),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+                      Flexible(
                         child: Text(
-                          currencyFormat.format(debt.amount),
-                          style: PortfolioCardStyle.amount(context),
+                          debt.personName,
+                          style: TextStyle(
+                            color: AppTheme.textColor(context),
+                            fontSize: KoinTypography.body,
+                            fontWeight: KoinTypography.titleWeight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (compact) ...[
+                      if (isSettled) ...[
                         const Gap(8),
-                        _buildStatus(context, color),
+                        Text(
+                          'Paid off',
+                          style: TextStyle(
+                            color: settledColor,
+                            fontSize: KoinTypography.small,
+                            fontWeight: KoinTypography.supportingWeight,
+                          ),
+                        ),
                       ],
                     ],
                   ),
-                ),
-                if (!compact) ...[
-                  const Gap(12),
-                  Flexible(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: _buildStatus(context, color),
+                  const Gap(4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
+                      TextSpan(
+                        text: currencyFormat.format(
+                          isSettled ? debt.amount : debt.remainingAmount,
+                        ),
+                        children: [
+                          if (!isSettled)
+                            TextSpan(
+                              text: ' left',
+                              style: TextStyle(
+                                color: AppTheme.textLightColor(context),
+                                fontSize: KoinTypography.small,
+                                fontWeight: KoinTypography.supportingWeight,
+                              ),
+                            ),
+                        ],
+                      ),
+                      style: PortfolioCardStyle.amount(
+                        context,
+                        foreground: isSettled ? null : color,
+                      ),
                     ),
                   ),
+                  if (!isSettled && debt.currentAmount > 0) ...[
+                    const Gap(4),
+                    Text(
+                      'of ${currencyFormat.format(debt.amount)}',
+                      style: PortfolioCardStyle.label(context),
+                    ),
+                  ],
+                  if (!isSettled && debt.dueDate != null) ...[
+                    const Gap(4),
+                    Text(
+                      _formatDueDate(debt.dueDate!),
+                      style: PortfolioCardStyle.label(context).copyWith(
+                        color: debt.isOverdue()
+                            ? AppTheme.errorContentColor(context)
+                            : null,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            );
-          },
+              ),
+            ),
+            if (!isSettled) ...[const Gap(12), _buildRepaymentAction(context)],
+          ],
         ),
       ),
     );
@@ -308,75 +346,23 @@ class DebtCard extends StatelessWidget {
     return content;
   }
 
-  Widget _buildStatus(BuildContext context, Color color) {
-    final isSettled = debt.isSettled;
-    final remaining = debt.remainingAmount;
-    final settledColor = AppTheme.incomeContentColor(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (isSettled)
-          Text(
-            'Paid off',
-            style: TextStyle(
-              color: settledColor,
-              fontSize: KoinTypography.small,
-              fontWeight: KoinTypography.labelWeight,
-            ),
-          )
-        else ...[
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${currencyFormat.format(remaining)} left',
-                    style: TextStyle(
-                      color: color,
-
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.labelWeight,
-                    ),
-                  ),
-                ),
-              ),
-              const Gap(8),
-              IconButton(
-                tooltip: debt.type == DebtType.owedToMe
-                    ? 'Record received payment'
-                    : 'Record repayment',
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                onPressed: () => AddRepaymentSheet.show(context, debt: debt),
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(KoinIcons.plus, size: 14, color: color),
-                ),
-              ),
-            ],
-          ),
-          if (debt.dueDate != null) ...[
-            const Gap(4),
-            Text(
-              _formatDueDate(debt.dueDate!),
-              style: TextStyle(
-                fontSize: KoinTypography.overline,
-                fontWeight: KoinTypography.supportingWeight,
-                color: debt.isOverdue()
-                    ? AppTheme.errorContentColor(context)
-                    : AppTheme.textLightColor(context).withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        ],
-      ],
+  Widget _buildRepaymentAction(BuildContext context) {
+    return IconButton.filled(
+      tooltip: debt.type == DebtType.owedToMe
+          ? 'Record received payment'
+          : 'Record repayment',
+      style: IconButton.styleFrom(
+        backgroundColor: AppTheme.primaryColor(context),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        fixedSize: const Size.square(32),
+        minimumSize: const Size.square(32),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.padded,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      onPressed: () => AddRepaymentSheet.show(context, debt: debt),
+      icon: Icon(KoinIcons.plus, size: 18),
     );
   }
 
