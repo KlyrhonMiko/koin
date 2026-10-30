@@ -202,6 +202,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _feeExpression = _feeController.text;
   }
 
+  void _swapTransferAccounts() {
+    HapticService.light();
+    setState(() {
+      final previousSourceId = _selectedAccountId;
+      _selectedAccountId = _selectedToAccountId;
+      _selectedToAccountId = previousSourceId;
+      _updateTransferFee(
+        _accountById(ref.read(accountProvider).value ?? [], _selectedAccountId),
+      );
+    });
+    _runAutoCategorization();
+  }
+
   void _selectNumericInput({required bool fee}) {
     _noteFocusNode.unfocus();
     if (fee) {
@@ -1747,152 +1760,185 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               ),
             ],
           ),
-          child: Column(
+          child: Stack(
+            alignment: Alignment.centerRight,
             children: [
-              _buildSourceAccount(
-                context,
-                ref.watch(settingsProvider).currency,
-              ),
-              Divider(
-                height: 1,
-                indent: 64,
-                color: AppTheme.fieldBorderColor(context, lightOpacity: 0.5),
-              ),
-              AnimatedSwitcher(
-                key: ValueKey(MediaQuery.disableAnimationsOf(context)),
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                switchInCurve: const Cubic(0.23, 1, 0.32, 1),
-                switchOutCurve: const Cubic(0.23, 1, 0.32, 1),
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                layoutBuilder: (currentChild, previousChildren) => Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    for (final child in previousChildren)
-                      IgnorePointer(child: ExcludeSemantics(child: child)),
-                    ?currentChild,
-                  ],
-                ),
-                child: KeyedSubtree(
-                  key: ValueKey(_selectedType == TransactionType.transfer),
-                  child: _selectedType == TransactionType.transfer
-                      ? _buildDestinationAccount(context)
-                      : Builder(
-                          builder: (context) {
-                            Widget child = SelectionTile(
-                              minHeight: 72,
-                              asCard: false,
-                              fallbackIcon: KoinIcons.squaresFour,
-                              label: 'Category',
-                              selectedName: _categoryById(
-                                categories,
-                                _selectedCategoryId,
-                              )?.name,
-                              selectedColor: _categoryById(
-                                categories,
-                                _selectedCategoryId,
-                              )?.color,
-                              selectedIconCodePoint: _categoryById(
-                                categories,
-                                _selectedCategoryId,
-                              )?.iconCodePoint,
-                              placeholder: 'Select category',
-                              onTap: () =>
-                                  _openCategoryPicker(context, categories),
-                              trailing: Container(
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceLightColor(context),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: IconButton(
-                                  tooltip: 'Manage categories',
-                                  onPressed: () {
-                                    HapticService.light();
-                                    Navigator.push(
-                                      context,
-                                      SlideUpRoute(
-                                        page: const CategoryManagerScreen(),
+              Column(
+                children: [
+                  _buildSourceAccount(
+                    context,
+                    ref.watch(settingsProvider).currency,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 64,
+                    endIndent: _selectedType == TransactionType.transfer
+                        ? 64
+                        : 0,
+                    color: AppTheme.fieldBorderColor(
+                      context,
+                      lightOpacity: 0.5,
+                    ),
+                  ),
+                  AnimatedSwitcher(
+                    key: ValueKey(MediaQuery.disableAnimationsOf(context)),
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    switchInCurve: const Cubic(0.23, 1, 0.32, 1),
+                    switchOutCurve: const Cubic(0.23, 1, 0.32, 1),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      alignment: Alignment.topCenter,
+                      children: [
+                        for (final child in previousChildren)
+                          IgnorePointer(child: ExcludeSemantics(child: child)),
+                        ?currentChild,
+                      ],
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_selectedType == TransactionType.transfer),
+                      child: _selectedType == TransactionType.transfer
+                          ? _buildDestinationAccount(context)
+                          : Builder(
+                              builder: (context) {
+                                Widget child = SelectionTile(
+                                  minHeight: 72,
+                                  asCard: false,
+                                  fallbackIcon: KoinIcons.squaresFour,
+                                  label: 'Category',
+                                  selectedName: _categoryById(
+                                    categories,
+                                    _selectedCategoryId,
+                                  )?.name,
+                                  selectedColor: _categoryById(
+                                    categories,
+                                    _selectedCategoryId,
+                                  )?.color,
+                                  selectedIconCodePoint: _categoryById(
+                                    categories,
+                                    _selectedCategoryId,
+                                  )?.iconCodePoint,
+                                  placeholder: 'Select category',
+                                  onTap: () =>
+                                      _openCategoryPicker(context, categories),
+                                  trailing: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceLightColor(
+                                        context,
                                       ),
-                                    );
-                                  },
-                                  icon: Icon(
-                                    KoinIcons.slidersHorizontal,
-                                    size: 18,
-                                    color: AppTheme.textLightColor(context),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: IconButton(
+                                      tooltip: 'Manage categories',
+                                      onPressed: () {
+                                        HapticService.light();
+                                        Navigator.push(
+                                          context,
+                                          SlideUpRoute(
+                                            page: const CategoryManagerScreen(),
+                                          ),
+                                        );
+                                      },
+                                      icon: Icon(
+                                        KoinIcons.slidersHorizontal,
+                                        size: 18,
+                                        color: AppTheme.textLightColor(context),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 36,
+                                        minHeight: 36,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                    ),
                                   ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 36,
-                                    minHeight: 36,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ),
-                            );
+                                );
 
-                            if (_autoCatKey > 0) {
-                              child = child
-                                  .koinAnimate(
-                                    context,
-                                    autoPlay: !MediaQuery.disableAnimationsOf(
-                                      context,
-                                    ),
-                                    onInit: KoinMotion.onInit(context),
-                                    key: ValueKey(_autoCatKey),
-                                  )
-                                  .shimmer(
-                                    duration: 400.ms,
-                                    color: AppTheme.primaryColor(context)
-                                        .withValues(alpha: 0.2),
-                                  )
-                                  .scale(
-                                    duration: 150.ms,
-                                    curve: Curves.easeOut,
-                                    begin: const Offset(1, 1),
-                                    end: const Offset(1.02, 1.02),
-                                  )
-                                  .then()
-                                  .scale(
-                                    duration: 250.ms,
-                                    curve: Curves.easeOutBack,
-                                    begin: const Offset(1.02, 1.02),
-                                    end: const Offset(1, 1),
-                                  );
-                            }
-                            final suggestedCategory = _categoryById(
-                              categories,
-                              _pendingCategorySuggestion?.categoryId,
-                            );
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                child,
-                                if (suggestedCategory != null)
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      _suggesterCoordinator.cancel();
-                                      setState(() {
-                                        _selectedCategoryId =
-                                            suggestedCategory.id;
-                                        _manualCategory = true;
-                                        _pendingCategorySuggestion = null;
-                                      });
-                                    },
-                                    icon: const Icon(
-                                      KoinIcons.sparkle,
-                                      size: 18,
-                                    ),
-                                    label: Text(
-                                      'Use suggested category: ${suggestedCategory.name}',
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                ),
+                                if (_autoCatKey > 0) {
+                                  child = child
+                                      .koinAnimate(
+                                        context,
+                                        autoPlay:
+                                            !MediaQuery.disableAnimationsOf(
+                                              context,
+                                            ),
+                                        onInit: KoinMotion.onInit(context),
+                                        key: ValueKey(_autoCatKey),
+                                      )
+                                      .shimmer(
+                                        duration: 400.ms,
+                                        color: AppTheme.primaryColor(context)
+                                            .withValues(alpha: 0.2),
+                                      )
+                                      .scale(
+                                        duration: 150.ms,
+                                        curve: Curves.easeOut,
+                                        begin: const Offset(1, 1),
+                                        end: const Offset(1.02, 1.02),
+                                      )
+                                      .then()
+                                      .scale(
+                                        duration: 250.ms,
+                                        curve: Curves.easeOutBack,
+                                        begin: const Offset(1.02, 1.02),
+                                        end: const Offset(1, 1),
+                                      );
+                                }
+                                final suggestedCategory = _categoryById(
+                                  categories,
+                                  _pendingCategorySuggestion?.categoryId,
+                                );
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    child,
+                                    if (suggestedCategory != null)
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          _suggesterCoordinator.cancel();
+                                          setState(() {
+                                            _selectedCategoryId =
+                                                suggestedCategory.id;
+                                            _manualCategory = true;
+                                            _pendingCategorySuggestion = null;
+                                          });
+                                        },
+                                        icon: const Icon(
+                                          KoinIcons.sparkle,
+                                          size: 18,
+                                        ),
+                                        label: Text(
+                                          'Use suggested category: ${suggestedCategory.name}',
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ],
               ),
+              if (_selectedType == TransactionType.transfer)
+                PositionedDirectional(
+                  end: 8,
+                  child: IconButton(
+                    tooltip: 'Swap accounts',
+                    onPressed:
+                        !_savingTransaction &&
+                            _selectedAccountId != null &&
+                            _selectedToAccountId != null
+                        ? _swapTransferAccounts
+                        : null,
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    icon: const Icon(KoinIcons.arrowsDownUp, size: 22),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1945,6 +1991,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           _selectNumericInput(fee: true);
         },
         style: TextButton.styleFrom(
+          overlayColor: AppTheme.primaryColor(context),
           minimumSize: const Size(44, 44),
           padding: const EdgeInsets.symmetric(horizontal: 8),
           foregroundColor: selected ? color : AppTheme.textLightColor(context),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'dart:ui';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -21,10 +19,7 @@ class CustomReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
-  DateTimeRange _dateRange = DateTimeRange(
-    start: DateTime.now().subtract(const Duration(days: 30)),
-    end: DateTime.now(),
-  );
+  DateTimeRange _dateRange = DateRangeSelector.lastDaysRange(30);
   TransactionType? _selectedType;
   final Set<String> _selectedCategoryIds = {};
   final Set<String> _selectedAccountIds = {};
@@ -56,6 +51,12 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
+      bottomNavigationBar: _buildExportActions(
+        context,
+        categories,
+        accounts,
+        currencySymbol,
+      ).koinEntrance(context),
       body: SafeArea(
         bottom: false,
         child: Stack(
@@ -65,14 +66,14 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                 KoinSpacing.screenInset,
                 16,
                 KoinSpacing.screenInset,
-                _stackExportActions(context) ? 280 : 140,
+                16,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children:
                     [
                           _buildHeader(context),
-                          const Gap(32),
+                          const Gap(KoinSpacing.sectionGap),
                           if (!_reportReady) ...[
                             _buildSummaryCard(context, ref, currencySymbol),
                             const Gap(24),
@@ -124,12 +125,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                         ),
               ),
             ),
-            _buildExportActions(
-              context,
-              categories,
-              accounts,
-              currencySymbol,
-            ).koinEntrance(context),
             if (_isExporting)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -464,40 +459,35 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         isPdf: true,
       ),
     );
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              KoinSpacing.screenInset,
-              16,
-              KoinSpacing.screenInset,
-              40,
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          KoinSpacing.screenInset,
+          16,
+          KoinSpacing.screenInset,
+          12,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.backgroundColor(context),
+          border: Border(
+            top: BorderSide(
+              color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
             ),
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundColor(context).withValues(alpha: 0.8),
-              border: Border(
-                top: BorderSide(
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-            child: _stackExportActions(context)
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [csv, const Gap(12), pdf],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: csv),
-                      const Gap(12),
-                      Expanded(child: pdf),
-                    ],
-                  ),
           ),
         ),
+        child: _stackExportActions(context)
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [csv, const Gap(12), pdf],
+              )
+            : Row(
+                children: [
+                  Expanded(child: csv),
+                  const Gap(12),
+                  Expanded(child: pdf),
+                ],
+              ),
       ),
     );
   }

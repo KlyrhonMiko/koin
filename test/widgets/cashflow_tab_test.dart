@@ -57,9 +57,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Netflix Subscription'), findsOneWidget);
-      expect(find.text('MONTHLY'), findsOneWidget);
-      expect(find.text('AUTO'), findsOneWidget);
-      expect(find.text('Pay Now'), findsOneWidget);
+      expect(find.text('Monthly · Automatic'), findsOneWidget);
+      expect(find.text('Make payment'), findsOneWidget);
     });
 
     testWidgets('renders recurring incomes list items and receive action', (
@@ -95,8 +94,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Design Client Retainer'), findsOneWidget);
-      expect(find.text('MONTHLY'), findsOneWidget);
-      expect(find.text('Collect Now'), findsOneWidget);
+      expect(find.text('Monthly'), findsOneWidget);
+      expect(find.text('Collect income'), findsOneWidget);
     });
 
     testWidgets('renders clean empty state when no items exist', (

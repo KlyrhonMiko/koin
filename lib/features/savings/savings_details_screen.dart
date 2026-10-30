@@ -375,7 +375,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       key: const ValueKey('savings_balance'),
       shapeStyle: SummaryShapeStyle.savings,
       borderRadius: KoinShape.summary,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -465,6 +465,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                   onPressed: () =>
                       SavingsRoutineCard.editPlan(context, ref, goal),
                   style: TextButton.styleFrom(
+                    overlayColor: AppTheme.primaryColor(context),
                     foregroundColor: AppTheme.textLightColor(context),
                     textStyle: const TextStyle(
                       fontFamily: KoinTypography.fontFamily,
@@ -767,11 +768,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          KoinIcons.lockSimple,
-                          size: 12,
-                          color: textColor,
-                        ),
+                        Icon(KoinIcons.lockSimple, size: 12, color: textColor),
                         const Gap(4),
                         Flexible(
                           child: Text(
@@ -780,11 +777,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                           ),
                         ),
                         const Gap(4),
-                        Icon(
-                          KoinIcons.info,
-                          size: 14,
-                          color: textColor,
-                        ),
+                        Icon(KoinIcons.info, size: 14, color: textColor),
                       ],
                     ),
                   ),

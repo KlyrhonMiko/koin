@@ -35,6 +35,7 @@ class KoinQuickAction extends StatelessWidget {
             tooltip: tooltip,
             onPressed: onPressed,
             style: IconButton.styleFrom(
+              overlayColor: AppTheme.primaryColor(context),
               fixedSize: Size.square(size),
               backgroundColor: AppTheme.surfaceColor(context),
               foregroundColor: color,

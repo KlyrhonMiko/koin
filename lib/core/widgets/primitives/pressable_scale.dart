@@ -25,7 +25,7 @@ class PressableScale extends StatefulWidget {
     super.key,
     required this.child,
     required this.onTap,
-    this.pressedScale = 0.96,
+    this.pressedScale = 0.97,
     this.enableHaptic = true,
     this.hapticLevel = HapticLevel.light,
     this.semanticLabel,
@@ -48,13 +48,13 @@ class _PressableScaleState extends State<PressableScale>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
-      reverseDuration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 140),
     );
     _scaleAnim = Tween<double>(begin: 1.0, end: widget.pressedScale).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeInOut,
-        reverseCurve: Curves.easeOutBack,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeOutCubic,
       ),
     );
   }

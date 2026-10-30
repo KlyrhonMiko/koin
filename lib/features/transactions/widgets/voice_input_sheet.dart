@@ -226,11 +226,6 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   // ═══════════════════════════════════════════════════════
   Future<void> _editCategory() async {
     _parseRevision++;
-    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (hadFocus) {
-      await Future.delayed(const Duration(milliseconds: 150));
-    }
     if (!mounted) return;
     final categories = ref.read(categoriesProvider).value ?? [];
 
@@ -256,11 +251,6 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
   Future<void> _editAccount() async {
     _parseRevision++;
-    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (hadFocus) {
-      await Future.delayed(const Duration(milliseconds: 150));
-    }
     if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
@@ -282,11 +272,6 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
 
   Future<void> _editToAccount() async {
     _parseRevision++;
-    final hadFocus = FocusManager.instance.primaryFocus?.hasFocus ?? false;
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (hadFocus) {
-      await Future.delayed(const Duration(milliseconds: 150));
-    }
     if (!mounted) return;
     final accounts = ref.read(accountProvider).value ?? [];
 
@@ -639,6 +624,7 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
                 ref.read(voiceInputProvider.notifier).startListening();
               },
               style: OutlinedButton.styleFrom(
+                overlayColor: AppTheme.primaryColor(context),
                 minimumSize: const Size(0, 52),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,

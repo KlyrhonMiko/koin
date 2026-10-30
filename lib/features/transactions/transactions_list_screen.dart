@@ -63,11 +63,11 @@ class TransactionsListScreen extends ConsumerWidget {
                 return ListView.builder(
                   key: const ValueKey('transactions_list_builder'),
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     KoinSpacing.screenInset,
                     16,
                     KoinSpacing.screenInset,
-                    100,
+                    KoinSpacing.bottomClearance(context),
                   ),
                   itemCount: rows.length + (history?.next != null ? 1 : 0),
                   itemBuilder: (context, rowIndex) {
@@ -96,9 +96,9 @@ class TransactionsListScreen extends ConsumerWidget {
                         key: ValueKey('day_${group.dateKey}'),
                         padding: EdgeInsets.fromLTRB(
                           0,
-                          rowIndex == 0 ? 16 : 36,
+                          rowIndex == 0 ? 8 : 24,
                           0,
-                          12,
+                          8,
                         ),
                         child: Row(
                           children: [

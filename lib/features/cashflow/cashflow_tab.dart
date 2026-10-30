@@ -21,10 +21,7 @@ class CashflowScheduleTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paymentsAsync = ref.watch(plannedPaymentProvider);
-    final settings = ref.watch(settingsProvider);
-    final currency = settings.currency;
     final categories = ref.watch(categoriesProvider).value ?? [];
-    final accounts = ref.watch(accountProvider).value ?? [];
 
     return paymentsAsync.when(
       data: (allPayments) {
@@ -45,11 +42,11 @@ class CashflowScheduleTab extends ConsumerWidget {
           backgroundColor: AppTheme.surfaceColor(context),
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               KoinSpacing.screenInset,
               12,
               KoinSpacing.screenInset,
-              100,
+              KoinSpacing.bottomClearance(context),
             ),
             itemCount: payments.length + 1,
             itemBuilder: (context, index) {
@@ -59,13 +56,8 @@ class CashflowScheduleTab extends ConsumerWidget {
 
               final payment = payments[index];
               final category = categories
-                  .where((c) => c.id == payment.categoryId)
+                  .where((category) => category.id == payment.categoryId)
                   .firstOrNull;
-
-              final account = accounts
-                  .where((a) => a.id == payment.accountId)
-                  .firstOrNull;
-
               final tile = Padding(
                 padding: const EdgeInsets.only(bottom: KoinSpacing.cardGap),
                 child: SwipeToDeleteTile(
@@ -85,14 +77,7 @@ class CashflowScheduleTab extends ConsumerWidget {
                         .read(plannedPaymentProvider.notifier)
                         .deletePlannedPayment(payment.id);
                   },
-                  child: _buildCard(
-                    context,
-                    ref,
-                    payment,
-                    category,
-                    account?.name,
-                    currency.symbol,
-                  ),
+                  child: _buildCard(context, ref, payment, category),
                 ),
               );
 
@@ -135,28 +120,23 @@ class CashflowScheduleTab extends ConsumerWidget {
     WidgetRef ref,
     PlannedPayment payment,
     TransactionCategory? category,
-    String? accountName,
-    String currencySymbol,
   ) {
     final currency = ref.watch(settingsProvider).currency;
     final available = payment.canProcess();
     final overdue = payment.isOverdue();
-    final accent = category?.color ?? AppTheme.primaryColor(context);
     final moneyColor = _isIncome
         ? AppTheme.incomeContentColor(context)
         : AppTheme.expenseContentColor(context);
-    final amount = FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerLeft,
-      child: Text(
-        '${_isIncome ? '+' : '-'}${currency.formatter.format(payment.amount)}',
-        style: TextStyle(
-          color: moneyColor,
-          fontSize: KoinTypography.itemAmount,
-          fontWeight: KoinTypography.titleWeight,
-        ),
-      ),
+    final metadataStyle = PortfolioCardStyle.label(context).copyWith(
+      fontSize: KoinTypography.small,
+      fontWeight: KoinTypography.supportingWeight,
     );
+    final cadence = [
+      if (payment.frequency != PaymentFrequency.flexible)
+        payment.frequency.label,
+      if (payment.isAutoProcess) 'Automatic',
+    ].join(' · ');
+
     return PressableScale(
       semanticLabel: 'Edit ${payment.title}',
       onTap: () => Navigator.push(
@@ -166,82 +146,29 @@ class CashflowScheduleTab extends ConsumerWidget {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: overdue && !_isIncome
-                ? AppTheme.errorContentColor(context).withValues(alpha: 0.3)
-                : AppTheme.dividerColor(context),
-          ),
+        padding: PortfolioCardStyle.padding,
+        decoration: PortfolioCardStyle.decoration(context).copyWith(
+          border: overdue && !_isIncome
+              ? Border.all(
+                  color: AppTheme.errorContentColor(context)
+                      .withValues(alpha: 0.3),
+                )
+              : null,
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final stacked =
-                constraints.maxWidth < 300 ||
-                MediaQuery.textScalerOf(context).scale(14) > 18;
-            final heading = Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 KoinIconBadge(
                   icon: category == null
                       ? KoinIcons.squaresFour
                       : IconUtils.getIcon(category.iconCodePoint),
-                  color: accent,
-                  radius: 16,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        payment.title,
-                        style: const TextStyle(
-                          fontWeight: KoinTypography.titleWeight,
-                          fontSize: KoinTypography.body,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            payment.frequency.label.toUpperCase(),
-                            style: TextStyle(
-                              color: AppTheme.textLightColor(context),
-                              fontSize: KoinTypography.small,
-                            ),
-                          ),
-                          if (payment.isAutoProcess)
-                            Text(
-                              'AUTO',
-                              style: TextStyle(
-                                color: AppTheme.contentColor(
-                                  context,
-                                  AppTheme.primaryColor(context),
-                                ),
-                                fontSize: KoinTypography.small,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (!stacked) ...[
-                  const SizedBox(width: 12),
-                  Flexible(child: amount),
-                ],
-              ],
-            );
-            final date = Row(
-              children: [
-                Icon(
-                  KoinIcons.calendarBlank,
-                  size: 20,
-                  color: AppTheme.textLightColor(context),
+                  color: category?.color ?? AppTheme.primaryColor(context),
+                  size: 32,
+                  iconSize: 18,
+                  radius: 10,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -249,30 +176,69 @@ class CashflowScheduleTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        payment.frequency == PaymentFrequency.flexible
-                            ? 'Availability'
-                            : _isIncome
-                            ? 'Next income'
-                            : 'Next payment',
+                        payment.title,
                         style: TextStyle(
-                          color: AppTheme.textLightColor(context),
-                          fontSize: KoinTypography.small,
+                          color: AppTheme.textColor(context),
+                          fontSize: KoinTypography.body,
+                          fontWeight: KoinTypography.titleWeight,
                         ),
                       ),
-                      Text(
-                        payment.availabilityLabel(),
-                        style: const TextStyle(
-                          fontWeight: KoinTypography.labelWeight,
-                          fontSize: KoinTypography.caption,
-                        ),
+                      const SizedBox(height: 4),
+                      OverflowBar(
+                        alignment: MainAxisAlignment.spaceBetween,
+                        overflowAlignment: OverflowBarAlignment.start,
+                        spacing: 12,
+                        overflowSpacing: 2,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${_isIncome ? '+' : '-'}${currency.formatter.format(payment.amount)}',
+                              style: PortfolioCardStyle.amount(context)
+                                  .copyWith(color: moneyColor),
+                            ),
+                          ),
+                          Text(
+                            payment.availabilityLabel(),
+                            semanticsLabel:
+                                payment.frequency == PaymentFrequency.flexible
+                                ? null
+                                : '${_isIncome ? 'Next income' : 'Next payment'}: ${payment.availabilityLabel()}',
+                            style: metadataStyle.copyWith(
+                              color: overdue && !_isIncome
+                                  ? AppTheme.errorContentColor(context)
+                                  : AppTheme.textLightColor(context),
+                            ),
+                          ),
+                        ],
                       ),
+                      if (cadence.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(cadence, style: metadataStyle),
+                      ],
                     ],
                   ),
                 ),
               ],
-            );
-            final action = FilledButton(
-              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: ValueKey('cashflow-action-${payment.id}'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor(context),
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                textStyle: KoinTypography.choiceLabelStyle,
+                minimumSize: const Size.fromHeight(48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(KoinShape.field),
+                ),
+              ),
               onPressed: available
                   ? () {
                       HapticService.light();
@@ -283,37 +249,19 @@ class CashflowScheduleTab extends ConsumerWidget {
                       );
                     }
                   : null,
-              child: Text(
+              icon: Icon(
+                _isIncome ? KoinIcons.arrowDown : KoinIcons.arrowUp,
+                size: 18,
+              ),
+              label: Text(
                 !available
                     ? 'Unavailable'
                     : _isIncome
-                    ? 'Collect Now'
-                    : 'Pay Now',
+                    ? 'Collect income'
+                    : 'Make payment',
               ),
-            );
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                heading,
-                if (stacked) ...[const SizedBox(height: 12), amount],
-                const SizedBox(height: 16),
-                Divider(color: AppTheme.dividerColor(context)),
-                const SizedBox(height: 12),
-                if (stacked) ...[
-                  date,
-                  const SizedBox(height: 12),
-                  action,
-                ] else
-                  Row(
-                    children: [
-                      Expanded(child: date),
-                      const SizedBox(width: 12),
-                      action,
-                    ],
-                  ),
-              ],
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -323,7 +271,6 @@ class CashflowScheduleTab extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: KoinAddButton(
-        borderRadius: 20,
         label: _isIncome ? 'Add New Income' : 'Add New Payment',
         onPressed: () {
           HapticService.medium();

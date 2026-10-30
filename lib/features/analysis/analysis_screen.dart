@@ -101,11 +101,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       KoinSpacing.screenInset,
                       0,
                       KoinSpacing.screenInset,
-                      100,
+                      KoinSpacing.bottomClearance(context),
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate(
@@ -116,7 +116,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                 categories,
                                 currency,
                               ),
-                              const Gap(32),
+                              const Gap(KoinSpacing.sectionGap),
                               Row(
                                 children: [
                                   Text(
@@ -131,7 +131,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                                   ),
                                 ],
                               ),
-                              const Gap(16),
+                              const Gap(KoinSpacing.sectionTitleGap),
                               _buildTopCategoriesList(
                                 context,
                                 ref,
@@ -193,7 +193,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           children: [
             KoinSummaryCard(
               shapeStyle: SummaryShapeStyle.analysis,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               topRightAction: KoinVisibilityButton(
                 hidden: hideAmount,
                 subject: 'spending',
@@ -557,6 +557,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               ),
               label: Text(_showPieChart ? 'Trend' : 'Categories'),
               style: TextButton.styleFrom(
+                overlayColor: AppTheme.primaryColor(context),
                 foregroundColor: AppTheme.textLightColor(context),
                 minimumSize: const Size(48, 48),
               ),

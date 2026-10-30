@@ -33,17 +33,16 @@ class AccountsTab extends ConsumerWidget {
         }
         return LayoutBuilder(
           builder: (context, constraints) {
-            final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
             final width = constraints.maxWidth - KoinSpacing.screenInset * 2;
-            final columns = width < 280 || largeText ? 1 : 2;
+            final columns = AccountCardLayout.columnsFor(context, width);
             final cardWidth =
                 (width - KoinSpacing.cardGap * (columns - 1)) / columns;
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 KoinSpacing.screenInset,
                 12,
                 KoinSpacing.screenInset,
-                100,
+                KoinSpacing.bottomClearance(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

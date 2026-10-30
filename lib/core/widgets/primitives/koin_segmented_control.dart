@@ -172,6 +172,7 @@ class _SegmentTrack extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => onChanged(index),
                   style: TextButton.styleFrom(
+                    overlayColor: AppTheme.primaryColor(context),
                     foregroundColor: compact
                         ? (index == selectedIndex
                               ? selectedColor

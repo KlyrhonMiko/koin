@@ -10,12 +10,20 @@ import 'card_background_shapes.dart';
 
 /// Dashboard account styling, also used by the portfolio and editable preview.
 class AccountCardLayout extends StatelessWidget {
+  static int columnsFor(BuildContext context, double availableWidth) {
+    final cardWidth = (availableWidth - KoinSpacing.cardGap) / 2;
+    final nameWidth =
+        MediaQuery.textScalerOf(context).scale(KoinTypography.caption) * 4.5;
+    // Padding, avatar, gap, and the privacy control must leave a readable name.
+    return cardWidth >= 32 + 24 + 8 + 36 + nameWidth ? 2 : 1;
+  }
+
   /// Includes padding, both text rows, their gap, and the neutral card border.
   static double minimumHeight(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
-    return 34 +
+    return 26 +
         scaler.scale(KoinTypography.caption) * 2.5 +
-        8 +
+        4 +
         scaler.scale(KoinTypography.sectionTitle) * 1.25;
   }
 
@@ -38,6 +46,8 @@ class AccountCardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nameRowHeight =
+        MediaQuery.textScalerOf(context).scale(KoinTypography.caption) * 2.5;
     final colored = account.cardColor != null || account.logoAsset != null;
     final baseColor = account.cardColor ?? account.color;
     final foreground = colored
@@ -78,16 +88,13 @@ class AccountCardLayout extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  height:
-                      MediaQuery.textScalerOf(context)
-                          .scale(KoinTypography.caption) *
-                      2.5,
+                  height: nameRowHeight,
                   child: Row(
                     children: [
                       Container(
@@ -124,13 +131,18 @@ class AccountCardLayout extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Gap(8),
+                const Gap(4),
                 amount,
                 ?footer,
               ],
             ),
           ),
-          if (action != null) Positioned(top: 4, right: 4, child: action!),
+          if (action != null)
+            Positioned(
+              top: (12 + (nameRowHeight - 48) / 2).clamp(0.0, double.infinity),
+              right: 4,
+              child: action!,
+            ),
         ],
       ),
     );

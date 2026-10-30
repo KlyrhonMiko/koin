@@ -124,8 +124,7 @@ class _ArchiveManagerScreenState extends ConsumerState<ArchiveManagerScreen> {
         return const Center(child: CircularProgressIndicator());
       }
       final width = constraints.maxWidth - KoinSpacing.screenInset * 2;
-      final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
-      final columns = width < 280 || largeText ? 1 : 2;
+      final columns = AccountCardLayout.columnsFor(context, width);
       final height =
           AccountCardLayout.minimumHeight(context) +
           (accounts.any((a) => !a.excludeFromTotal && _savingsAmount(a) > 0)

@@ -16,7 +16,7 @@ class CategoryItem extends StatelessWidget {
     required this.onTap,
     this.leading,
     this.trailing,
-    this.margin = const EdgeInsets.only(bottom: 10),
+    this.margin = const EdgeInsets.only(bottom: 8),
   });
 
   final TransactionCategory category;
@@ -37,12 +37,13 @@ class CategoryItem extends StatelessWidget {
         border: Border.all(color: AppTheme.dividerColor(context)),
       ),
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.fromLTRB(14, 8, 16, 8),
       child: Row(
         children: [
           if (leading != null) ...[leading!, const Gap(8)],
           Container(
-            padding: const EdgeInsets.all(11),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               color: category.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),

@@ -4,6 +4,8 @@ import 'package:gap/gap.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
+import 'pressable_scale.dart';
+
 /// Standardized section header with title, optional subtitle, and interactive action button.
 class KoinSectionHeader extends StatelessWidget {
   final String title;
@@ -55,12 +57,13 @@ class KoinSectionHeader extends StatelessWidget {
   Widget? _buildAction(BuildContext context) {
     if (trailing != null) return trailing;
     if (actionLabel != null && onActionTap != null) {
-      return GestureDetector(
+      return PressableScale(
+        semanticLabel: actionLabel,
+        enableHaptic: false,
         onTap: () {
           HapticService.light();
           onActionTap!();
         },
-        behavior: HitTestBehavior.opaque,
         child: Container(
           constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -68,24 +71,26 @@ class KoinSectionHeader extends StatelessWidget {
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                actionLabel!,
-                style: TextStyle(
-                  fontSize: KoinTypography.caption,
-                  fontWeight: KoinTypography.titleWeight,
+          child: ExcludeSemantics(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  actionLabel!,
+                  style: TextStyle(
+                    fontSize: KoinTypography.caption,
+                    fontWeight: KoinTypography.titleWeight,
+                    color: AppTheme.textLightColor(context),
+                  ),
+                ),
+                const Gap(4),
+                Icon(
+                  KoinIcons.caretRight,
+                  size: 10,
                   color: AppTheme.textLightColor(context),
                 ),
-              ),
-              const Gap(4),
-              Icon(
-                KoinIcons.caretRight,
-                size: 10,
-                color: AppTheme.textLightColor(context),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

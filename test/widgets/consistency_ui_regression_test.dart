@@ -204,7 +204,7 @@ void main() {
     );
     expect(
       tester.getTopLeft(summary).dy - tester.getBottomLeft(amount).dy,
-      closeTo(16, 1),
+      closeTo(12, 1),
     );
     expect(
       tester.getTopLeft(amount).dx,

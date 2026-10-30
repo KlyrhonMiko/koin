@@ -142,14 +142,13 @@ class _MonthDialogState extends State<_MonthDialog> {
               child: TextButton.icon(
                 onPressed: () => setState(() => _choosingYear = !_choosingYear),
                 style: TextButton.styleFrom(
+                  overlayColor: AppTheme.primaryColor(context),
                   foregroundColor: AppTheme.textColor(context),
                   minimumSize: const Size(48, 48),
                 ),
                 label: Text('$_year'),
                 icon: Icon(
-                  _choosingYear
-                      ? KoinIcons.caretUp
-                      : KoinIcons.caretDown,
+                  _choosingYear ? KoinIcons.caretUp : KoinIcons.caretDown,
                 ),
                 iconAlignment: IconAlignment.end,
               ),
@@ -312,6 +311,7 @@ class _SelectionGrid extends StatelessWidget {
               selected: index == selected,
               child: TextButton(
                 style: TextButton.styleFrom(
+                  overlayColor: AppTheme.primaryColor(context),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   foregroundColor: index == selected
                       ? (primaryColor.computeLuminance() > 0.179

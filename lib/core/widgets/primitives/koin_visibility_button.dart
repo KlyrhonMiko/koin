@@ -1,5 +1,6 @@
 import 'package:koin/core/icons.dart';
 import 'package:flutter/material.dart';
+import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
 /// Visibility presentation only: summary and account preferences stay separate.
@@ -31,8 +32,7 @@ class KoinVisibilityButton extends StatelessWidget {
     constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
     iconSize: iconSize,
     color: color.withValues(alpha: hidden ? 0.6 : 0.9),
-    icon: Icon(
-      hidden ? KoinIcons.eyeSlash : KoinIcons.eye,
-    ),
+    highlightColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
+    icon: Icon(hidden ? KoinIcons.eyeSlash : KoinIcons.eye),
   );
 }

@@ -90,7 +90,7 @@ void main() {
           isTrue,
         );
         expect(
-          find.text(currency.compactFormatter.format(100000)),
+          find.text(currency.formatter.format(100000)),
           findsOneWidget,
         );
         final masks = find.byWidgetPredicate(

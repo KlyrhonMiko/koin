@@ -161,8 +161,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
   ) {
     return Padding(
       padding: EdgeInsets.only(
-        top: MediaQuery.paddingOf(context).top + 16,
-        bottom: 16,
+        top: MediaQuery.paddingOf(context).top + 12,
+        bottom: 8,
         left: KoinSpacing.screenInset,
         right: KoinSpacing.screenInset,
       ),
@@ -205,9 +205,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: AppTheme.textColor(context),
-                              fontSize: KoinTypography.summaryAmount,
+                              fontSize: KoinTypography.formTitle,
                               fontWeight: KoinTypography.headingWeight,
-                              letterSpacing: KoinTypography.amountTracking,
+                              letterSpacing: KoinTypography.headingTracking,
                               height: 1.2,
                             ),
                           );
@@ -222,7 +222,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen>
                     ),
                   ],
                 ),
-                const Gap(6),
+                const Gap(4),
                 Text(
                   'Accounts · Savings · Credit & IOUs · Planned · Incomes',
                   style: TextStyle(

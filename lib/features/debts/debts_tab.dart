@@ -43,11 +43,11 @@ class DebtsTab extends ConsumerWidget {
         }
 
         return ReorderableListView.builder(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             KoinSpacing.screenInset,
             12,
             KoinSpacing.screenInset,
-            100,
+            KoinSpacing.bottomClearance(context),
           ),
           header: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,7 +117,7 @@ class DebtsTab extends ConsumerWidget {
         : AppTheme.primaryColor(context);
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       topRightAction: KoinVisibilityButton(
         hidden: hideAmount,
         subject: 'net balance',

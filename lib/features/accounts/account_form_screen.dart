@@ -523,8 +523,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final contentWidth = width >= 840 ? (width - 96).clamp(0.0, 760.0) : width;
     final availableWidth = contentWidth - KoinSpacing.screenInset * 2;
-    final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
-    final columns = availableWidth < 280 || largeText ? 1 : 2;
+    final columns = AccountCardLayout.columnsFor(context, availableWidth);
     return (availableWidth - KoinSpacing.cardGap * (columns - 1)) / columns;
   }
 
@@ -600,8 +599,11 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             height: AccountCardLayout.minimumHeight(context) + 8 + labelHeight,
             child: ListView.separated(
               controller: _cardShapeScrollController,
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
               scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.hardEdge,
               itemCount: 9,
               separatorBuilder: (_, _) => const Gap(KoinSpacing.cardGap),
               itemBuilder: (context, index) {
@@ -755,6 +757,49 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         fontSize: KoinTypography.sectionTitle,
         fontWeight: KoinTypography.titleWeight,
       ),
+    ),
+  );
+
+  Widget _appearanceHeading(
+    BuildContext context,
+    IconData icon,
+    String label, {
+    String? hint,
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: KoinSpacing.screenInset),
+    child: Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: AppTheme.primaryColor(context).withValues(alpha: 0.7),
+        ),
+        const Gap(6),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.textLightColor(context),
+              fontSize: KoinTypography.caption,
+              fontWeight: KoinTypography.labelWeight,
+            ),
+          ),
+        ),
+        if (hint != null) ...[
+          const Gap(8),
+          Flexible(
+            fit: FlexFit.tight,
+            child: Text(
+              hint,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: KoinTypography.overline,
+                color: AppTheme.textLightColor(context),
+              ),
+            ),
+          ),
+        ],
+      ],
     ),
   );
 
@@ -957,6 +1002,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     key: const ValueKey('account_interest_frequency_field'),
                     onPressed: _selectInterestFrequency,
                     style: TextButton.styleFrom(
+                      overlayColor: AppTheme.primaryColor(context),
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(0, 48),
                       foregroundColor: AppTheme.textColor(context),
@@ -1294,188 +1340,183 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: KoinSpacing.screenInset,
-          vertical: 20,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints: const BoxConstraints(maxWidth: 600),
             child: Column(
               children: [
-                // Account preview
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Center(
-                      child: SizedBox(
-                        width: _accountCardWidth(context),
-                        child: _buildAccountPreview(
-                          context,
-                          currency,
-                          shapeType: selectedCardShape,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const Gap(24),
-                _buildAccountFields(context, currency),
-                if (isEditing) _buildCashbackSummary(context, currency),
-                const Gap(32),
-
-                _sectionLabel(context, 'Account settings'),
-                const Gap(12),
-                Material(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(KoinShape.field),
-                  clipBehavior: Clip.antiAlias,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   child: Column(
                     children: [
-                      _settingRow(
-                        context,
-                        title: 'Private account',
-                        hint: 'Hide balance and exclude from totals.',
-                        value: excludeFromTotal,
-                        onChanged: (value) {
-                          HapticService.light();
-                          setState(() => excludeFromTotal = value);
+                      // Account preview
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Center(
+                            child: SizedBox(
+                              width: _accountCardWidth(context),
+                              child: _buildAccountPreview(
+                                context,
+                                currency,
+                                shapeType: selectedCardShape,
+                              ),
+                            ),
+                          );
                         },
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(
-                          height: 1,
-                          color: AppTheme.fieldBorderColor(context),
-                        ),
-                      ),
-                      _settingRow(
-                        context,
-                        title: 'Credit account',
-                        value: isCredit,
-                        onChanged: _setCredit,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(
-                          height: 1,
-                          color: AppTheme.fieldBorderColor(context),
-                        ),
-                      ),
-                      _settingRow(
-                        context,
-                        title: 'Interest',
-                        hint: isCredit
-                            ? 'Available for deposit accounts.'
-                            : null,
-                        value: _dailyInterestEnabled && !isCredit,
-                        onChanged: isCredit
-                            ? null
-                            : (value) {
+                      const Gap(24),
+                      _buildAccountFields(context, currency),
+                      if (isEditing) _buildCashbackSummary(context, currency),
+                      const Gap(32),
+
+                      _sectionLabel(context, 'Account settings'),
+                      const Gap(12),
+                      Material(
+                        color: AppTheme.surfaceColor(context),
+                        borderRadius: BorderRadius.circular(KoinShape.field),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            _settingRow(
+                              context,
+                              title: 'Private account',
+                              hint: 'Hide balance and exclude from totals.',
+                              value: excludeFromTotal,
+                              onChanged: (value) {
                                 HapticService.light();
-                                setState(() => _dailyInterestEnabled = value);
+                                setState(() => excludeFromTotal = value);
                               },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Divider(
+                                height: 1,
+                                color: AppTheme.fieldBorderColor(context),
+                              ),
+                            ),
+                            _settingRow(
+                              context,
+                              title: 'Credit account',
+                              value: isCredit,
+                              onChanged: _setCredit,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Divider(
+                                height: 1,
+                                color: AppTheme.fieldBorderColor(context),
+                              ),
+                            ),
+                            _settingRow(
+                              context,
+                              title: 'Interest',
+                              hint: isCredit
+                                  ? 'Available for deposit accounts.'
+                                  : null,
+                              value: _dailyInterestEnabled && !isCredit,
+                              onChanged: isCredit
+                                  ? null
+                                  : (value) {
+                                      HapticService.light();
+                                      setState(
+                                        () => _dailyInterestEnabled = value,
+                                      );
+                                    },
+                            ),
+                          ],
+                        ),
                       ),
+                      _buildInterestReveal(
+                        context,
+                        key: const ValueKey('account_interest_reveal'),
+                        visible: _dailyInterestEnabled && !isCredit,
+                        builder: (context) =>
+                            _buildInterestFields(context, currency),
+                      ),
+                      const Gap(32),
+                      _sectionLabel(context, 'Transfer fee'),
+                      const Gap(16),
+                      KoinChoiceControl(
+                        segments: const [
+                          KoinSegmentItem(label: 'Fixed amount'),
+                          KoinSegmentItem(label: 'Percentage'),
+                        ],
+                        selectedIndex: isTransferFeePercentage ? 1 : 0,
+                        onChanged: (index) => setState(
+                          () => isTransferFeePercentage = index == 1,
+                        ),
+                      ),
+                      const Gap(20),
+                      _fieldLabel(
+                        context,
+                        isTransferFeePercentage ? 'Fee rate' : 'Fee amount',
+                      ),
+                      TextField(
+                        key: const ValueKey('account_transfer_fee_field'),
+                        controller: transferFeeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        style: TextStyle(
+                          fontSize: KoinTypography.cardAmount,
+                          fontWeight: KoinTypography.titleWeight,
+                          color: AppTheme.textColor(context),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '0.00',
+                          prefixText: isTransferFeePercentage
+                              ? null
+                              : '${currency.symbol} ',
+                          suffixText: isTransferFeePercentage ? '%' : null,
+                          filled: false,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          border: const UnderlineInputBorder(),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppTheme.fieldBorderColor(context),
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppTheme.primaryColor(context),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(8),
+                      _fieldLabel(context, 'Set to 0 for no fee.'),
+                      const Gap(40),
                     ],
                   ),
                 ),
-                _buildInterestReveal(
-                  context,
-                  key: const ValueKey('account_interest_reveal'),
-                  visible: _dailyInterestEnabled && !isCredit,
-                  builder: (context) => _buildInterestFields(context, currency),
-                ),
-                const Gap(32),
-                _sectionLabel(context, 'Transfer fee'),
-                const Gap(16),
-                KoinChoiceControl(
-                  segments: const [
-                    KoinSegmentItem(label: 'Fixed amount'),
-                    KoinSegmentItem(label: 'Percentage'),
-                  ],
-                  selectedIndex: isTransferFeePercentage ? 1 : 0,
-                  onChanged: (index) =>
-                      setState(() => isTransferFeePercentage = index == 1),
-                ),
-                const Gap(20),
-                _fieldLabel(
-                  context,
-                  isTransferFeePercentage ? 'Fee rate' : 'Fee amount',
-                ),
-                TextField(
-                  key: const ValueKey('account_transfer_fee_field'),
-                  controller: transferFeeController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textInputAction: TextInputAction.done,
-                  style: TextStyle(
-                    fontSize: KoinTypography.cardAmount,
-                    fontWeight: KoinTypography.titleWeight,
-                    color: AppTheme.textColor(context),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0.00',
-                    prefixText: isTransferFeePercentage
-                        ? null
-                        : '${currency.symbol} ',
-                    suffixText: isTransferFeePercentage ? '%' : null,
-                    filled: false,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: const UnderlineInputBorder(),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(
-                        color: AppTheme.fieldBorderColor(context),
-                      ),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(
-                        color: AppTheme.primaryColor(context),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                const Gap(8),
-                _fieldLabel(context, 'Set to 0 for no fee.'),
-                const Gap(40),
 
                 ExpansionTile(
                   title: const Text('Appearance'),
                   subtitle: const Text(
                     'Templates, icons, colors and decoration',
                   ),
-                  tilePadding: EdgeInsets.zero,
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
                   maintainState: true,
                   children: [
                     // ── Templates Section ──
-                    Row(
-                      children: [
-                        Icon(
-                          KoinIcons.cards,
-                          size: 16,
-                          color: AppTheme.primaryColor(context)
-                              .withValues(alpha: 0.7),
-                        ),
-                        const Gap(6),
-                        Text(
-                          'Templates',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context)
-                                .withValues(alpha: 0.7),
-                            fontSize: KoinTypography.caption,
-                            fontWeight: KoinTypography.labelWeight,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'Swipe to browse',
-                          style: TextStyle(
-                            fontSize: KoinTypography.overline,
-                            color: AppTheme.textLightColor(context),
-                          ),
-                        ),
-                      ],
+                    _appearanceHeading(
+                      context,
+                      KoinIcons.cards,
+                      'Templates',
+                      hint: 'Swipe to browse',
                     ),
                     const Gap(12),
                     SizedBox(
@@ -1486,8 +1527,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               1.5,
                       child: ListView.builder(
                         controller: _templateScrollController,
+                        padding: const EdgeInsets.fromLTRB(
+                          KoinSpacing.screenInset,
+                          4,
+                          KoinSpacing.screenInset,
+                          0,
+                        ),
                         scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
+                        clipBehavior: Clip.hardEdge,
                         itemCount: BankTemplate.templates.length + 1,
                         itemBuilder: (context, index) {
                           if (index == 0) {
@@ -1648,109 +1695,64 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children:
                                   [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              KoinIcons.image,
-                                              size: 16,
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.7),
-                                            ),
-                                            const Gap(6),
-                                            Text(
-                                              'Icon',
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.7),
-                                                fontSize:
-                                                    KoinTypography.caption,
-                                                fontWeight:
-                                                    KoinTypography.labelWeight,
-                                                letterSpacing: 0.3,
-                                              ),
-                                            ),
-                                          ],
+                                        _appearanceHeading(
+                                          context,
+                                          KoinIcons.image,
+                                          'Icon',
                                         ),
                                         const Gap(12),
-                                        IconPaletteGrid(
-                                          icons: icons,
-                                          selectedCodePoint: selectedIcon,
-                                          activeColor: selectedColor,
-                                          isScrollableRow: true,
-                                          shape: BoxShape.circle,
-                                          scrollController:
-                                              _iconScrollController,
-                                          onCodePointSelected: (code) =>
-                                              setState(
-                                                () => selectedIcon = code,
-                                              ),
+                                        ClipRect(
+                                          child: IconPaletteGrid(
+                                            icons: icons,
+                                            selectedCodePoint: selectedIcon,
+                                            activeColor: selectedColor,
+                                            isScrollableRow: true,
+                                            scrollPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      KoinSpacing.screenInset,
+                                                ),
+                                            shape: BoxShape.circle,
+                                            scrollController:
+                                                _iconScrollController,
+                                            onCodePointSelected: (code) =>
+                                                setState(
+                                                  () => selectedIcon = code,
+                                                ),
+                                          ),
                                         ),
                                         const Gap(24),
 
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              KoinIcons.palette,
-                                              size: 16,
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.7),
-                                            ),
-                                            const Gap(6),
-                                            Text(
-                                              'Color',
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.7),
-                                                fontSize:
-                                                    KoinTypography.caption,
-                                                fontWeight:
-                                                    KoinTypography.labelWeight,
-                                                letterSpacing: 0.3,
-                                              ),
-                                            ),
-                                          ],
+                                        _appearanceHeading(
+                                          context,
+                                          KoinIcons.palette,
+                                          'Color',
                                         ),
                                         const Gap(12),
-                                        ColorPaletteGrid(
-                                          colors: colors,
-                                          selectedColor: selectedColor,
-                                          isScrollableRow: true,
-                                          shape: BoxShape.circle,
-                                          scrollController:
-                                              _colorScrollController,
-                                          onColorSelected: (c) =>
-                                              setState(() => selectedColor = c),
+                                        ClipRect(
+                                          child: ColorPaletteGrid(
+                                            colors: colors,
+                                            selectedColor: selectedColor,
+                                            isScrollableRow: true,
+                                            scrollPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      KoinSpacing.screenInset,
+                                                ),
+                                            shape: BoxShape.circle,
+                                            scrollController:
+                                                _colorScrollController,
+                                            onColorSelected: (c) => setState(
+                                              () => selectedColor = c,
+                                            ),
+                                          ),
                                         ),
                                         const Gap(24),
 
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              KoinIcons.imageSquare,
-                                              size: 16,
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.7),
-                                            ),
-                                            const Gap(6),
-                                            Text(
-                                              'Card Background',
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.7),
-                                                fontSize:
-                                                    KoinTypography.caption,
-                                                fontWeight:
-                                                    KoinTypography.labelWeight,
-                                                letterSpacing: 0.3,
-                                              ),
-                                            ),
-                                          ],
+                                        _appearanceHeading(
+                                          context,
+                                          KoinIcons.imageSquare,
+                                          'Card Background',
                                         ),
                                         const Gap(12),
                                         SizedBox(
@@ -1758,8 +1760,12 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                           child: ListView(
                                             controller:
                                                 _cardColorScrollController,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal:
+                                                  KoinSpacing.screenInset,
+                                            ),
                                             scrollDirection: Axis.horizontal,
-                                            clipBehavior: Clip.none,
+                                            clipBehavior: Clip.hardEdge,
                                             children: [
                                               GestureDetector(
                                                 onTap: () {
@@ -1989,30 +1995,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                           ? Column(
                               children:
                                   [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              KoinIcons.stack,
-                                              size: 16,
-                                              color: AppTheme.primaryColor(
-                                                context,
-                                              ).withValues(alpha: 0.7),
-                                            ),
-                                            const Gap(6),
-                                            Text(
-                                              'Card Decoration',
-                                              style: TextStyle(
-                                                color: AppTheme.textLightColor(
-                                                  context,
-                                                ).withValues(alpha: 0.7),
-                                                fontSize:
-                                                    KoinTypography.caption,
-                                                fontWeight:
-                                                    KoinTypography.labelWeight,
-                                                letterSpacing: 0.3,
-                                              ),
-                                            ),
-                                          ],
+                                        _appearanceHeading(
+                                          context,
+                                          KoinIcons.stack,
+                                          'Card Decoration',
                                         ),
                                         const Gap(12),
                                         _buildCardDecorationPicker(
@@ -2048,10 +2034,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   ],
                 ),
                 const Gap(24),
-                KoinPrimaryButton(
-                  isLoading: _saving,
-                  label: isEditing ? 'Save Changes' : 'Create Account',
-                  onPressed: _saveAccount,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KoinSpacing.screenInset,
+                  ),
+                  child: KoinPrimaryButton(
+                    isLoading: _saving,
+                    label: isEditing ? 'Save Changes' : 'Create Account',
+                    onPressed: _saveAccount,
+                  ),
                 ),
                 const Gap(24),
               ],

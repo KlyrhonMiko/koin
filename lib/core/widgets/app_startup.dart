@@ -69,6 +69,12 @@ class _AppStartupState extends State<AppStartup> {
     // Keep startup independent of downloaded fonts and database providers.
     ThemeData theme(Brightness brightness) => ThemeData(
       useMaterial3: true,
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: const Color(0x1A00D09E),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(overlayColor: const Color(0xFF00D09E)),
+      ),
       fontFamily: KoinTypography.fontFamily,
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(

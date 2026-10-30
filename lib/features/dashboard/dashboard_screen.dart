@@ -11,6 +11,8 @@ import 'package:koin/features/dashboard/widgets/budget_progress_card.dart';
 import 'package:koin/features/dashboard/widgets/upcoming_entry_tile.dart';
 import 'package:koin/features/settings/settings_screen.dart';
 import 'package:koin/features/transactions/transactions.dart';
+import 'package:koin/core/providers/effective_transaction_clock_provider.dart';
+import 'package:koin/core/widgets/cards/account_card_layout.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -38,6 +40,7 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settings.currency;
     final automaticPayments = ref.watch(automaticPaymentsProvider);
     final accountsAsync = ref.watch(accountProvider);
+    final now = ref.watch(effectiveTransactionClockProvider);
     if (!transactionsAsync.hasValue || !accountsAsync.hasValue) {
       final failed = transactionsAsync.hasError || accountsAsync.hasError;
       void retry() {
@@ -56,11 +59,11 @@ class DashboardScreen extends ConsumerWidget {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               KoinSpacing.screenInset,
               16,
               KoinSpacing.screenInset,
-              100,
+              KoinSpacing.bottomClearance(context),
             ),
             children: [
               _buildHeader(context),
@@ -99,11 +102,11 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: AppTheme.surfaceColor(context),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             KoinSpacing.screenInset,
             16,
             KoinSpacing.screenInset,
-            20,
+            KoinSpacing.bottomClearance(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,17 +178,21 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      const Gap(16),
+                      const Gap(12),
                       _buildBalanceCard(context, ref, stats, settings),
-                      const Gap(16),
+                      const Gap(12),
                       _buildQuickActions(context, ref),
-                      const Gap(20),
-                      _buildAccountsList(context, ref, stats, currency),
-                      const Gap(24),
+                      if (stats.accounts.any(
+                        (account) => !account.isArchived,
+                      )) ...[
+                        const Gap(12),
+                        _buildAccountsList(context, ref, stats, currency),
+                      ],
+                      const Gap(12),
                       _buildUpcomingPayments(context, ref, currency),
-                      const Gap(KoinSpacing.sectionGap),
+                      const Gap(12),
                       _buildBudgetSection(context, ref, currency),
-                      const Gap(32),
+                      const Gap(12),
                       KoinSectionHeader(
                         title: 'Spending Overview',
                         actionLabel: 'Full Analysis',
@@ -194,14 +201,14 @@ class DashboardScreen extends ConsumerWidget {
                           ref.read(navigationProvider.notifier).setIndex(1);
                         },
                       ),
-                      const Gap(16),
+                      const Gap(4),
                       _buildChartSection(
                         context,
-                        stats,
                         currency,
                         transactionsAsync.value ?? [],
+                        now,
                       ),
-                      const Gap(32),
+                      const Gap(12),
                       KoinSectionHeader(
                         title: 'Recent Transactions',
                         actionLabel: 'View All',
@@ -210,14 +217,14 @@ class DashboardScreen extends ConsumerWidget {
                           ref.read(navigationProvider.notifier).setIndex(1);
                         },
                       ),
-                      const Gap(12),
+                      const Gap(4),
                       _buildRecentTransactions(
                         context,
                         ref,
                         transactionsAsync,
                         currency,
+                        now,
                       ),
-                      const Gap(100),
                     ]
                     .koinAnimate(
                       context,
@@ -317,7 +324,7 @@ class DashboardScreen extends ConsumerWidget {
         : 'Spent $monthlyAmount more than earned this month';
 
     return KoinSummaryCard(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       borderRadius: KoinShape.summary,
       shapeStyle: SummaryShapeStyle.dashboard,
       topRightAction: KoinVisibilityButton(
@@ -354,7 +361,7 @@ class DashboardScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const Gap(16),
+          const Gap(12),
           SizedBox(
             width: double.infinity,
             child: SizedBox(
@@ -381,7 +388,7 @@ class DashboardScreen extends ConsumerWidget {
                     ),
             ),
           ),
-          const Gap(16),
+          const Gap(12),
           Text(
             monthlySummary,
             style: TextStyle(
@@ -534,8 +541,10 @@ class DashboardScreen extends ConsumerWidget {
         const Gap(8),
         LayoutBuilder(
           builder: (context, constraints) {
-            final largeText = MediaQuery.textScalerOf(context).scale(13) > 19.5;
-            final columns = constraints.maxWidth < 280 || largeText ? 1 : 2;
+            final columns = AccountCardLayout.columnsFor(
+              context,
+              constraints.maxWidth,
+            );
             final cardWidth =
                 (constraints.maxWidth - KoinSpacing.cardGap * (columns - 1)) /
                 columns;
@@ -593,24 +602,35 @@ class DashboardScreen extends ConsumerWidget {
   // ─── Chart Section ────────────────────────────────────────────────
   Widget _buildChartSection(
     BuildContext context,
-    DashboardStats stats,
     Currency currency,
     List<AppTransaction> transactions,
+    DateTime now,
   ) {
-    if (stats.totalIncome == 0 && stats.totalExpense == 0) {
-      return const KoinEmptyState(
-        icon: KoinIcons.chartPie,
-        title: 'No data for chart yet',
-        subtitle: 'Add transactions to see your spending trend',
+    final week = AnalysisPeriod.week.dateRange(now);
+    final expenses = transactions
+        .where(
+          (tx) =>
+              tx.countsAsExpense &&
+              !tx.date.isAfter(now) &&
+              !tx.date.isBefore(week.start) &&
+              !tx.date.isAfter(week.end),
+        )
+        .toList();
+    if (expenses.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          'No spending this week',
+          style: TextStyle(color: AppTheme.textLightColor(context)),
+        ),
       );
     }
-
-    final expenses = transactions.where((t) => t.countsAsExpense).toList();
 
     return SpendingTrendChart(
       expenses: expenses,
       currency: currency,
       filterIndex: 0, // Weekly trend for dashboard
+      baseDate: now,
     );
   }
 
@@ -637,7 +657,7 @@ class DashboardScreen extends ConsumerWidget {
           actionLabel: 'Manage',
           onActionTap: manageBudgets,
         ),
-        const Gap(14),
+        const Gap(4),
         BudgetProgressCard(
           overview: overview,
           currency: currency,
@@ -653,10 +673,15 @@ class DashboardScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<AppTransaction>> transactionsAsync,
     Currency currency,
+    DateTime now,
   ) {
     return transactionsAsync.when(
       data: (transactions) {
-        if (transactions.isEmpty) {
+        final recent = transactions
+            .where((tx) => !tx.date.isAfter(now))
+            .take(10)
+            .toList();
+        if (recent.isEmpty) {
           return const KoinEmptyState(
             icon: KoinIcons.receipt,
             title: 'No recent transactions',
@@ -664,20 +689,18 @@ class DashboardScreen extends ConsumerWidget {
           );
         }
 
-        final recent = transactions.take(10).toList();
         final categories = ref.watch(categoriesProvider).value ?? [];
         final accounts = ref.watch(accountProvider).value ?? [];
-        final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
-        final yesterday = today.subtract(const Duration(days: 1));
+        final yesterday = DateTime(now.year, now.month, now.day - 1);
+        final weekStart = AnalysisPeriod.week.dateRange(now).start;
 
         // Group transactions by date label
         String getDateLabel(DateTime date) {
           final d = DateTime(date.year, date.month, date.day);
           if (d == today) return 'Today';
           if (d == yesterday) return 'Yesterday';
-          final diff = today.difference(d).inDays;
-          if (diff < 7) return 'This Week';
+          if (!d.isBefore(weekStart)) return 'This Week';
           return DateFormat.yMMMd().format(date);
         }
 
@@ -792,7 +815,7 @@ class DashboardScreen extends ConsumerWidget {
             Navigator.push(context, SlideUpRoute(page: const UpcomingScreen()));
           },
         ),
-        const Gap(16),
+        const Gap(4),
         timeline.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(24),
@@ -805,6 +828,7 @@ class DashboardScreen extends ConsumerWidget {
           data: (timeline) => timeline.isEmpty
               ? _buildEmptyUpcoming(context, ref)
               : Column(
+                  spacing: 8,
                   children: timeline.take(3).map((entry) {
                     final category = categories
                         .where((c) => c.id == entry.categoryId)
@@ -814,6 +838,7 @@ class DashboardScreen extends ConsumerWidget {
                       key: ValueKey(entry.id),
                       entry: entry,
                       currency: currency,
+                      margin: EdgeInsets.zero,
                       category: category,
                       onPayPayment: (payment) =>
                           PaymentConfirmationSheet.confirmAndProcess(

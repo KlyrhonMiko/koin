@@ -119,76 +119,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const Gap(24),
 
-              // App Branding Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.summaryGradient(context),
-                  borderRadius: BorderRadius.circular(24),
-                ),
+              // Keep identity secondary to the settings themselves.
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(1),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(21),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: 88,
-                          height: 88,
-                          fit: BoxFit.cover,
-                          semanticLabel: 'Koin app icon',
-                        ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 48,
+                        height: 48,
+                        semanticLabel: 'Koin app icon',
                       ),
                     ),
-                    const Gap(20),
+                    const Gap(12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Koin',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: KoinTypography.summaryAmount,
-                              fontWeight: KoinTypography.headingWeight,
-                              letterSpacing: KoinTypography.amountTracking,
-                            ),
+                          Wrap(
+                            spacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                'Koin',
+                                style: TextStyle(
+                                  color: AppTheme.textColor(context),
+                                  fontSize: KoinTypography.sectionTitle,
+                                  fontWeight: KoinTypography.headingWeight,
+                                ),
+                              ),
+                              Text(
+                                'v1.1.3',
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context),
+                                  fontSize: KoinTypography.caption,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Gap(4),
                           Text(
                             'Personal Finance Tracker',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppTheme.textLightColor(context),
                               fontSize: KoinTypography.caption,
-                              fontWeight: KoinTypography.supportingWeight,
-                            ),
-                          ),
-                          const Gap(12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'v1.1.3',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: KoinTypography.overline,
-                                fontWeight: KoinTypography.labelWeight,
-                              ),
                             ),
                           ),
                         ],
@@ -197,8 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ],
                 ),
               ),
-              const Gap(32),
-
+              const Gap(KoinSpacing.sectionGap),
               // ── Appearance ──
               const FormSectionTitle.subhead(
                 title: 'Appearance',

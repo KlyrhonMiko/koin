@@ -75,6 +75,15 @@ class KoinSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelStyle = DefaultTextStyle.of(context).style
+        .merge(KoinTypography.summaryLabelStyle);
+    final labelHeight =
+        MediaQuery.textScalerOf(context).scale(labelStyle.fontSize!) *
+        (labelStyle.height ?? 1);
+    final actionTop =
+        (padding.resolve(Directionality.of(context)).top +
+                (labelHeight - 48) / 2)
+            .clamp(0.0, double.infinity);
     final effectiveGradient = gradient ?? AppTheme.summaryGradient(context);
     final effectiveGlow = glowColor ?? AppTheme.primaryColor(context);
 
@@ -110,7 +119,7 @@ class KoinSummaryCard extends StatelessWidget {
           Padding(padding: padding, child: child),
           if (topRightAction != null)
             // Center the 48px tap target on the label's first text line.
-            Positioned(top: 10, right: 20, child: topRightAction!),
+            Positioned(top: actionTop, right: 20, child: topRightAction!),
         ],
       ),
     );

@@ -213,9 +213,17 @@ class AppTheme {
 
     final brightness = isDarkMode ? Brightness.dark : Brightness.light;
     final baseTheme = isDarkMode ? ThemeData.dark() : ThemeData.light();
+    final tapOverlay = WidgetStateProperty.resolveWith<Color?>(
+      (states) => states.contains(WidgetState.pressed)
+          ? primaryColor.withValues(alpha: 0.1)
+          : null,
+    );
 
     return ThemeData(
       useMaterial3: true,
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: primaryColor.withValues(alpha: 0.1),
       actionIconTheme: ActionIconThemeData(
         backButtonIconBuilder: (_) => const Icon(KoinIcons.arrowLeft),
         closeButtonIconBuilder: (_) => const Icon(KoinIcons.x),
@@ -267,11 +275,24 @@ class AppTheme {
             ),
       scaffoldBackgroundColor: backgroundColor,
       switchTheme: SwitchThemeData(
+        overlayColor: tapOverlay,
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (isDarkMode || states.contains(WidgetState.disabled)) return null;
           return states.contains(WidgetState.selected) ? Colors.white : null;
         }),
       ),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(overlayColor: tapOverlay),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(overlayColor: onPrimary),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(overlayColor: tapOverlay),
+      ),
+      tabBarTheme: TabBarThemeData(overlayColor: tapOverlay),
+      checkboxTheme: CheckboxThemeData(overlayColor: tapOverlay),
+      radioTheme: RadioThemeData(overlayColor: tapOverlay),
       tooltipTheme: TooltipThemeData(
         preferBelow: false,
         verticalOffset: 12,
@@ -423,6 +444,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
+          overlayColor: onPrimary,
           backgroundColor: primaryColor,
           foregroundColor: onPrimary,
           elevation: 0,
@@ -440,6 +462,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
+          overlayColor: primaryColor,
           foregroundColor: _contentColorOn(primaryColor, surfaceLightColor),
           textStyle: TextStyle(
             fontFamily: KoinTypography.fontFamily,
@@ -510,6 +533,7 @@ class AppTheme {
         foregroundColor: onPrimary,
         elevation: isDarkMode ? 0 : 8,
         highlightElevation: isDarkMode ? 2 : 12,
+        splashColor: onPrimary.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       dialogTheme: DialogThemeData(

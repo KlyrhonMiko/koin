@@ -31,9 +31,9 @@ class KoinSummaryContent extends StatelessWidget {
           ],
         ),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 12),
       amount,
-      if (footer != null) ...[const SizedBox(height: 16), footer!],
+      if (footer != null) ...[const SizedBox(height: 12), footer!],
     ],
   );
 }

@@ -78,6 +78,7 @@ class ForecastSummary extends StatelessWidget {
                 final details = TextButton(
                   onPressed: () => _showDetails(context, format),
                   style: TextButton.styleFrom(
+                    overlayColor: AppTheme.primaryColor(context),
                     foregroundColor: AppTheme.textLightColor(context),
                     minimumSize: const Size(48, 48),
                     padding: const EdgeInsets.symmetric(horizontal: 8),

@@ -58,7 +58,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                   child: const KoinSectionHeader(title: 'Savings & goals'),
                 ),
               ),
@@ -105,7 +105,12 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 124),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    0,
+                    20,
+                    KoinSpacing.bottomClearance(context),
+                  ),
                   child: KoinAddButton(
                     label: 'Add savings / goal',
                     onPressed: () => Navigator.push(
@@ -135,7 +140,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final hideAmount = settings.hideBalance;
     Widget card = KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.savings,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       topRightAction: KoinVisibilityButton(
         hidden: hideAmount,
         subject: 'total saved',

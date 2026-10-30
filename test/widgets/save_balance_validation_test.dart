@@ -218,6 +218,117 @@ void main() {
     });
   }
 
+  testWidgets(
+    'swapping transfer accounts updates fees and saves the direction',
+    (tester) async {
+      await providers.read(accountProvider.future);
+      await providers
+          .read(accountProvider.notifier)
+          .updateAccount(account.copyWith(transferFeeAmount: 5));
+      await providers
+          .read(accountProvider.notifier)
+          .updateAccount(
+            account.copyWith(
+              id: 'bank',
+              name: 'Bank',
+              initialBalance: 100,
+              transferFeeAmount: 2,
+              isTransferFeePercentage: true,
+            ),
+          );
+      await launch(
+        tester,
+        const AddTransactionScreen(initialType: TransactionType.transfer),
+      );
+      final swap = find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == 'Swap accounts',
+      );
+      expect(tester.widget<IconButton>(swap).onPressed, isNull);
+      tester.widget<NumPad>(find.byType(NumPad)).onValueChanged('50', '50');
+      await tester.pump();
+      await tester.tap(find.text('Select account'));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cash'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<IconButton>(swap).onPressed, isNull);
+      await tester.tap(find.text('Select destination'));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bank'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '5',
+      );
+
+      Future<void> swapAccounts() async {
+        await tester.tap(swap);
+        await tester.pumpAndSettle();
+      }
+
+      await swapAccounts();
+      final rows = tester
+          .widgetList<SelectionTile>(find.byType(SelectionTile))
+          .toList();
+      final accountRows = find.byType(SelectionTile);
+      expect(
+        tester.getRect(accountRows.last).top -
+            tester.getRect(accountRows.first).bottom,
+        closeTo(1, 0.01),
+      );
+      expect(
+        tester.getRect(swap).right,
+        lessThanOrEqualTo(tester.getRect(accountRows.first).right),
+      );
+      expect(
+        tester.getCenter(swap).dy,
+        closeTo(
+          (tester.getRect(accountRows.first).bottom +
+                  tester.getRect(accountRows.last).top) /
+              2,
+          1,
+        ),
+      );
+      expect(rows.first.selectedName, 'Bank');
+      expect(rows.last.selectedName, startsWith('Cash'));
+      expect(tester.getSize(swap).shortestSide, greaterThanOrEqualTo(48));
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '2',
+      );
+      final symbol = providers.read(settingsProvider).currency.symbol;
+      expect(
+        find.text('Deducted ${symbol}51.00 · Receives ${symbol}50.00'),
+        findsOneWidget,
+      );
+      await swapAccounts();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '5',
+      );
+      expect(
+        find.text('Deducted ${symbol}55.00 · Receives ${symbol}50.00'),
+        findsOneWidget,
+      );
+      await swapAccounts();
+      tester.widget<NumPad>(find.byType(NumPad)).onDone();
+      await pumpSave(tester);
+      await tester.pumpAndSettle();
+      final entries = providers.read(transactionProvider).value!;
+      final transfer = entries.singleWhere(
+        (tx) => tx.type == TransactionType.transfer,
+      );
+      expect(transfer.accountId, 'bank');
+      expect(transfer.toAccountId, 'cash');
+      expect(transfer.amount, 50);
+      final fee = entries.singleWhere((tx) => tx.transferId == transfer.id);
+      expect(fee.accountId, 'bank');
+      expect(fee.amount, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('main transfer accepts the exact remaining cents', (
     tester,
   ) async {

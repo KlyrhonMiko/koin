@@ -22,6 +22,7 @@ class ColorPaletteGrid extends StatelessWidget {
   final BoxShape shape;
   final double itemSize;
   final ScrollController? scrollController;
+  final EdgeInsetsGeometry scrollPadding;
 
   const ColorPaletteGrid({
     super.key,
@@ -36,6 +37,7 @@ class ColorPaletteGrid extends StatelessWidget {
     this.shape = BoxShape.rectangle,
     this.itemSize = 44,
     this.scrollController,
+    this.scrollPadding = EdgeInsets.zero,
   }) : assert(
          hexColors != null || colors != null,
          'Either hexColors or colors must be provided',
@@ -139,6 +141,7 @@ class ColorPaletteGrid extends StatelessWidget {
         height: itemSize + 8,
         child: ListView.builder(
           controller: scrollController,
+          padding: scrollPadding,
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           itemCount: resolved.length,

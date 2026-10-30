@@ -7,6 +7,22 @@ import 'package:koin/core/utils/haptic_utils.dart';
 import 'package:koin/core/widgets/primitives/pressable_scale.dart';
 
 class DateRangeSelector extends StatefulWidget {
+  static DateTimeRange lastDaysRange(int days, {DateTime? now}) {
+    final at = now ?? DateTime.now();
+    return DateTimeRange(
+      start: DateTime(at.year, at.month, at.day - days + 1),
+      end: DateTime(at.year, at.month, at.day),
+    );
+  }
+
+  static int inclusiveDays(DateTimeRange range) =>
+      DateTime.utc(range.end.year, range.end.month, range.end.day)
+          .difference(
+            DateTime.utc(range.start.year, range.start.month, range.start.day),
+          )
+          .inDays +
+      1;
+
   final DateTimeRange? initialDateRange;
   final Function(DateTimeRange?) onChanged;
   final bool showClearButton;
@@ -52,7 +68,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
       _dateRange!.end.day,
     );
 
-    final diffDays = end.difference(start).inDays;
+    final diffDays = DateRangeSelector.inclusiveDays(_dateRange!) - 1;
 
     if (end.isAtSameMomentAs(today) || end.isAfter(today)) {
       if (diffDays == 6) {
@@ -79,22 +95,13 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
       _selectedPreset = index;
       switch (index) {
         case 0:
-          _dateRange = DateTimeRange(
-            start: DateTime(now.year, now.month, now.day - 6),
-            end: now,
-          );
+          _dateRange = DateRangeSelector.lastDaysRange(7, now: now);
           break;
         case 1:
-          _dateRange = DateTimeRange(
-            start: DateTime(now.year, now.month, now.day - 29),
-            end: now,
-          );
+          _dateRange = DateRangeSelector.lastDaysRange(30, now: now);
           break;
         case 2:
-          _dateRange = DateTimeRange(
-            start: DateTime(now.year, now.month, now.day - 89),
-            end: now,
-          );
+          _dateRange = DateRangeSelector.lastDaysRange(90, now: now);
           break;
         case 3:
           _dateRange = DateTimeRange(start: DateTime(now.year, 1, 1), end: now);
@@ -170,6 +177,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
+                overlayColor: AppTheme.primaryColor(context),
                 foregroundColor: primary,
                 textStyle: const TextStyle(
                   fontWeight: KoinTypography.titleWeight,
@@ -279,7 +287,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${_dateRange!.duration.inDays}d',
+                  '${DateRangeSelector.inclusiveDays(_dateRange!)}d',
                   style: TextStyle(
                     color: AppTheme.primaryColor(context),
                     fontSize: KoinTypography.overline,
@@ -346,17 +354,15 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
                   border: isSelected
                       ? null
                       : Border.all(
-                          color: AppTheme.dividerColor(
-                            context,
-                          ).withValues(alpha: 0.5),
+                          color: AppTheme.dividerColor(context)
+                              .withValues(alpha: 0.5),
                         ),
                   boxShadow: isSelected
                       ? [
                           AppTheme.boxShadow(
                             context,
-                            color: AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.25),
+                            color: AppTheme.primaryColor(context)
+                                .withValues(alpha: 0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),

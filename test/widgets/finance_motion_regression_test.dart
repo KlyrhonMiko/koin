@@ -99,7 +99,7 @@ void main() {
         find.byWidgetPredicate(
           (widget) =>
               widget is Text &&
-              widget.style?.fontSize == KoinTypography.summaryAmount,
+              widget.style?.fontSize == KoinTypography.formTitle,
         ),
       );
       expect(heading.data, 'Incomes');

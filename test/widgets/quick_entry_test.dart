@@ -874,6 +874,91 @@ void main() {
     );
   }
 
+  testWidgets('transfer swap reverses accounts and uses the new sender fee', (
+    tester,
+  ) async {
+    await providers.read(accountProvider.future);
+    final accounts = providers.read(accountProvider).value!;
+    await providers
+        .read(accountProvider.notifier)
+        .updateAccount(accounts.first.copyWith(transferFeeAmount: 5));
+    await providers
+        .read(accountProvider.notifier)
+        .updateAccount(
+          accounts.last.copyWith(
+            initialBalance: 1000,
+            transferFeeAmount: 2,
+            isTransferFeePercentage: true,
+          ),
+        );
+    await launch(tester);
+    await tap(tester, 'Add transaction');
+    await tap(tester, 'Transfer');
+    final swap = find.byWidgetPredicate(
+      (widget) => widget is IconButton && widget.tooltip == 'Swap accounts',
+    );
+    expect(tester.widget<IconButton>(swap).onPressed, isNull);
+    await tap(tester, 'Select account');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Cash');
+    expect(tester.widget<IconButton>(swap).onPressed, isNull);
+    await tap(tester, 'Select receiving account');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Bank');
+    await tap(tester, '5');
+    await tap(tester, '0');
+    await tester.ensureVisible(swap);
+    await tester.tap(swap);
+    await tester.pumpAndSettle();
+    final rows = tester
+        .widgetList<SelectionTile>(find.byType(SelectionTile))
+        .toList();
+    final accountRows = find.byType(SelectionTile);
+    expect(
+      tester.getRect(accountRows.last).top -
+          tester.getRect(accountRows.first).bottom,
+      closeTo(1, 0.01),
+    );
+    expect(
+      tester.getRect(swap).right,
+      lessThanOrEqualTo(tester.getRect(accountRows.first).right),
+    );
+    expect(
+      tester.getCenter(swap).dy,
+      closeTo(
+        (tester.getRect(accountRows.first).bottom +
+                tester.getRect(accountRows.last).top) /
+            2,
+        1,
+      ),
+    );
+    expect(rows.first.selectedName, 'Bank');
+    expect(rows.last.selectedName, 'Cash');
+    expect(tester.widget<NumPad>(find.byType(NumPad)).initialValue, '50');
+    await tap(tester, 'Review');
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('quick-transfer-fee')))
+          .controller!
+          .text,
+      '2.0',
+    );
+    await tap(tester, 'Save transfer');
+    final entries = await providers.read(transactionProvider.future);
+    final transfer = entries.singleWhere(
+      (tx) => tx.type == TransactionType.transfer,
+    );
+    expect(transfer.accountId, 'bank');
+    expect(transfer.toAccountId, 'cash');
+    expect(transfer.amount, 50);
+    final fee = entries.singleWhere((tx) => tx.transferId == transfer.id);
+    expect(fee.accountId, 'bank');
+    expect(fee.amount, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('transfer receives full amount and records the fee atomically', (
     tester,
   ) async {

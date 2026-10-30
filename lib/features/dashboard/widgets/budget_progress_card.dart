@@ -44,6 +44,7 @@ class BudgetProgressCard extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
       children: [
         for (final metrics in previewBudgets)
           _buildBudgetCard(context, metrics),
@@ -81,7 +82,6 @@ class BudgetProgressCard extends StatelessWidget {
         onManage();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),

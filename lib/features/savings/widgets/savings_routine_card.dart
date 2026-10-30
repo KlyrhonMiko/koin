@@ -26,6 +26,7 @@ class SavingsRoutineCard extends ConsumerWidget {
     );
     final edit = TextButton(
       style: TextButton.styleFrom(
+        overlayColor: AppTheme.primaryColor(context),
         padding: EdgeInsets.zero,
         minimumSize: const Size(64, 48),
         alignment: Alignment.centerRight,

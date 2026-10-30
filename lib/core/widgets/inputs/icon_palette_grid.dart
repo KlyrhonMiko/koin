@@ -22,6 +22,7 @@ class IconPaletteGrid extends StatelessWidget {
   final double itemSize;
   final BoxShape shape;
   final ScrollController? scrollController;
+  final EdgeInsetsGeometry scrollPadding;
 
   const IconPaletteGrid({
     super.key,
@@ -37,6 +38,7 @@ class IconPaletteGrid extends StatelessWidget {
     this.itemSize = 44,
     this.shape = BoxShape.rectangle,
     this.scrollController,
+    this.scrollPadding = EdgeInsets.zero,
   }) : assert(
          icons != null || iconCodes != null,
          'Either icons or iconCodes must be provided',
@@ -139,6 +141,7 @@ class IconPaletteGrid extends StatelessWidget {
         height: itemSize + 8,
         child: ListView.builder(
           controller: scrollController,
+          padding: scrollPadding,
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           itemCount: count,

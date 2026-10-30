@@ -12,6 +12,7 @@ class UpcomingEntryTile extends StatelessWidget {
   final TransactionCategory? category;
   final Future<void> Function(PlannedPayment payment)? onPayPayment;
   final void Function(Debt debt)? onRepayDebt;
+  final EdgeInsetsGeometry margin;
 
   const UpcomingEntryTile({
     super.key,
@@ -20,6 +21,7 @@ class UpcomingEntryTile extends StatelessWidget {
     this.category,
     this.onPayPayment,
     this.onRepayDebt,
+    this.margin = const EdgeInsets.only(bottom: 12),
   });
 
   @override
@@ -47,9 +49,7 @@ class UpcomingEntryTile extends StatelessWidget {
     } else {
       iconBgColor = amountColor;
       iconWidget = Icon(
-        entry.isExpense
-            ? KoinIcons.arrowUp
-            : KoinIcons.arrowDown,
+        entry.isExpense ? KoinIcons.arrowUp : KoinIcons.arrowDown,
         color: amountColor,
         size: 20,
       );
@@ -69,7 +69,7 @@ class UpcomingEntryTile extends StatelessWidget {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: margin,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor(context),
@@ -120,9 +120,8 @@ class UpcomingEntryTile extends StatelessWidget {
                             vertical: 1.5,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(
-                              context,
-                            ).withValues(alpha: 0.1),
+                            color: AppTheme.primaryColor(context)
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

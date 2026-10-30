@@ -404,8 +404,7 @@ class _PaymentConfirmationSheetState
                   autoPlay: !MediaQuery.disableAnimationsOf(context),
                   onInit: KoinMotion.onInit(context),
                 )
-                .fadeIn(delay: 100.ms, duration: 300.ms)
-                .slideY(begin: 0.1, curve: Curves.easeOutCubic),
+                .fadeIn(duration: KoinMotion.feedback),
 
             const Gap(16),
 
@@ -426,8 +425,7 @@ class _PaymentConfirmationSheetState
                   autoPlay: !MediaQuery.disableAnimationsOf(context),
                   onInit: KoinMotion.onInit(context),
                 )
-                .fadeIn(delay: 200.ms, duration: 300.ms)
-                .slideY(begin: 0.15, curve: Curves.easeOutCubic),
+                .fadeIn(duration: KoinMotion.feedback),
           ],
         ),
       ),

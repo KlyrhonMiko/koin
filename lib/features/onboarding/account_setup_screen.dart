@@ -323,6 +323,7 @@ class _AccountSetupScreenState extends ConsumerState<AccountSetupScreen> {
             TextButton(
               onPressed: _saving ? null : _skip,
               style: TextButton.styleFrom(
+                overlayColor: AppTheme.primaryColor(context),
                 minimumSize: const Size(48, 48),
                 foregroundColor: AppTheme.textLightColor(context),
               ),

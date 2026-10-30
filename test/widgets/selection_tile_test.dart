@@ -30,9 +30,42 @@ void main() {
       expect(find.text('Select Category'), findsOneWidget);
 
       await tester.tap(find.byType(SelectionTile));
+      expect(tapped, isTrue);
       await tester.pumpAndSettle();
 
       expect(tapped, isTrue);
+    });
+
+    testWidgets('waits for a visible keyboard before opening the picker', (
+      tester,
+    ) async {
+      var tapped = false;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.getTheme(Colors.blue, false),
+          home: Scaffold(
+            body: SelectionTile(
+              fallbackIcon: KoinIcons.squaresFour,
+              label: 'Category',
+              selectedName: null,
+              selectedColor: null,
+              selectedIconCodePoint: null,
+              placeholder: 'Select Category',
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(SelectionTile));
+      expect(tapped, isFalse);
+      await tester.pump(const Duration(milliseconds: 149));
+      expect(tapped, isFalse);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(tapped, isTrue);
+      await tester.pumpAndSettle();
     });
 
     testWidgets(

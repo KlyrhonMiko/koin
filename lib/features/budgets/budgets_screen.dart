@@ -103,11 +103,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       backgroundColor: AppTheme.surfaceColor(context),
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
+                        padding: EdgeInsets.fromLTRB(
                           KoinSpacing.screenInset,
                           16,
                           KoinSpacing.screenInset,
-                          100,
+                          KoinSpacing.bottomClearance(context),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,7 +140,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               KoinTypography.headingTracking,
                                         ),
                                       ),
-                                      const Gap(12),
+                                      const Gap(8),
                                       ...budgeted.asMap().entries.map((entry) {
                                         final index = entry.key;
                                         final category = entry.value;
@@ -291,6 +291,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                               'Manage Categories',
                                             ),
                                             style: TextButton.styleFrom(
+                                              overlayColor:
+                                                  AppTheme.primaryColor(
+                                                    context,
+                                                  ),
                                               foregroundColor:
                                                   AppTheme.textLightColor(
                                                     context,
@@ -436,7 +440,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final isOver = totalSpent > totalBudget;
     return KoinSummaryCard(
       shapeStyle: SummaryShapeStyle.budgets,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       topRightAction: KoinVisibilityButton(
         hidden: hideAmount,
         subject: 'budget',
@@ -520,7 +524,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           border: index == 0
               ? null

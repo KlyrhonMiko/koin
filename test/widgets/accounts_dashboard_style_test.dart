@@ -351,6 +351,20 @@ void main() {
         await tester.ensureVisible(find.text('Appearance'));
         await tester.tap(find.text('Appearance'));
         await tester.pumpAndSettle();
+        final appearance = find.widgetWithText(ExpansionTile, 'Appearance');
+        final carousels = find.descendant(
+          of: appearance,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is ListView && widget.scrollDirection == Axis.horizontal,
+          ),
+        );
+        for (final carousel in carousels.evaluate()) {
+          final bounds = tester.getRect(find.byWidget(carousel.widget));
+          final viewportWidth = width.clamp(0.0, 600.0);
+          expect(bounds.width, viewportWidth);
+          expect(bounds.left, (width - viewportWidth) / 2);
+        }
         final template = find.text(BankTemplate.templates.first.name).first;
         await tester.ensureVisible(template);
         await tester.tap(template);

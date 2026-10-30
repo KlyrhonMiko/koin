@@ -53,13 +53,12 @@ class SelectionTile extends StatelessWidget {
         child: InkWell(
           onTap: () async {
             HapticService.light();
-            final hadFocus =
-                FocusManager.instance.primaryFocus?.hasFocus ?? false;
+            final keyboardVisible = View.of(context).viewInsets.bottom > 0;
             FocusManager.instance.primaryFocus?.unfocus();
-            if (hadFocus) {
+            if (keyboardVisible) {
               await Future.delayed(const Duration(milliseconds: 150));
             }
-            onTap();
+            if (context.mounted) onTap();
           },
           borderRadius: BorderRadius.circular(asCard ? 16 : 18),
           child: Padding(

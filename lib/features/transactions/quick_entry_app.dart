@@ -1682,17 +1682,51 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             color: AppTheme.surfaceLightColor(context),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
+          child: Stack(
+            alignment: Alignment.centerRight,
             children: [
-              accountRow(source, false),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(
-                  height: 1,
-                  color: AppTheme.dividerColor(context),
+              Column(
+                children: [
+                  accountRow(source, false),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      height: 1,
+                      endIndent: 48,
+                      color: AppTheme.dividerColor(context),
+                    ),
+                  ),
+                  accountRow(destination, true),
+                ],
+              ),
+              PositionedDirectional(
+                end: 8,
+                child: IconButton(
+                  tooltip: 'Swap accounts',
+                  onPressed: !_saving && source != null && destination != null
+                      ? () {
+                          HapticService.light();
+                          setState(() {
+                            final previousSourceId = _accountId;
+                            _accountId = _destinationId;
+                            _destinationId = previousSourceId;
+                            _fee.text = destination.transferFeeAmount == 0
+                                ? ''
+                                : destination.transferFeeAmount.toString();
+                            _feePercentage =
+                                destination.isTransferFeePercentage;
+                            _error = null;
+                          });
+                          _suggestCategory();
+                        }
+                      : null,
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  icon: const Icon(KoinIcons.arrowsDownUp, size: 22),
                 ),
               ),
-              accountRow(destination, true),
             ],
           ),
         ),

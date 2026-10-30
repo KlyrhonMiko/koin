@@ -75,9 +75,13 @@ abstract final class KoinShape {
 
 abstract final class KoinSpacing {
   static const screenInset = 20.0;
-  static const sectionGap = 32.0;
-  static const sectionTitleGap = 16.0;
+  static const sectionGap = 20.0;
+  static const sectionTitleGap = 8.0;
   static const cardGap = 12.0;
   static const labelGap = 4.0;
   static const summaryInset = 28.0;
+
+  /// Scaffold supplies the rendered navigation height when its body extends.
+  static double bottomClearance(BuildContext context) =>
+      MediaQuery.paddingOf(context).bottom + 12;
 }
