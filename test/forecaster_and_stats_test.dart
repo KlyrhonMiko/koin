@@ -196,6 +196,8 @@ void main() {
       final stats = DashboardStats.calculate(
         accounts: accounts,
         transactions: transactions,
+        referenceDate: DateTime(2026, 10, 15),
+        asOf: DateTime(2026, 10, 15),
       );
 
       expect(stats.totalIncome, 200.0);

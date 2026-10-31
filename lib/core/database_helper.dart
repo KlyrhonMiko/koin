@@ -1377,18 +1377,32 @@ CREATE TABLE transactions (
     final pageArgs = <Object?>[...args];
     if (after != null) {
       final date = after.date.toIso8601String();
-      pageWhere.add(
-        '(julianday(date) < julianday(?) OR (julianday(date) = julianday(?) AND (date < ? OR (date = ? AND id < ?))))',
-      );
+      const nextDate =
+          '(julianday(date) < julianday(?) OR (julianday(date) = julianday(?) AND (date < ? OR (date = ? AND id < ?))))';
+      if (filter.isAmountSort) {
+        final comparison =
+            filter.sortOrder == TransactionSortOrder.amountAscending
+            ? '>'
+            : '<';
+        pageWhere.add('(amount $comparison ? OR (amount = ? AND $nextDate))');
+        pageArgs.addAll([after.amount, after.amount]);
+      } else {
+        pageWhere.add(nextDate);
+      }
       pageArgs.addAll([date, date, date, date, after.id]);
     }
+    final amountOrder = switch (filter.sortOrder) {
+      TransactionSortOrder.newestFirst => '',
+      TransactionSortOrder.amountAscending => 'amount ASC, ',
+      TransactionSortOrder.amountDescending => 'amount DESC, ',
+    };
     final db = await database;
     return db.transaction((txn) async {
       final rows = await txn.query(
         'transactions',
         where: pageWhere.join(' AND '),
         whereArgs: pageArgs,
-        orderBy: 'julianday(date) DESC, date DESC, id DESC',
+        orderBy: '${amountOrder}julianday(date) DESC, date DESC, id DESC',
         limit: limit + 1,
       );
       final items = rows.take(limit).map(AppTransaction.fromMap).toList();
@@ -1411,7 +1425,11 @@ CREATE TABLE transactions (
             row['day'] as String: (row['total'] as num).toDouble(),
         },
         next: rows.length > limit
-            ? TransactionCursor(items.last.date, items.last.id)
+            ? TransactionCursor(
+                items.last.date,
+                items.last.id,
+                amount: items.last.amount,
+              )
             : null,
       );
     });

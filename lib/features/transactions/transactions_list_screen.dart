@@ -17,6 +17,9 @@ class TransactionsListScreen extends ConsumerWidget {
     final history = ref.watch(transactionHistoryProvider).value;
 
     final filter = ref.watch(transactionFilterProvider);
+    final amountSorted = ref
+        .watch(effectiveTransactionFilterProvider)
+        .isAmountSort;
     final filterNotifier = ref.read(transactionFilterProvider.notifier);
     final categories = ref.watch(categoriesProvider).value ?? [];
     final accountsAsync = ref.watch(accountProvider);
@@ -167,10 +170,13 @@ class TransactionsListScreen extends ConsumerWidget {
                             accounts: accounts,
                             currency: currency,
                             activityStyle: true,
+                            showDate: amountSorted,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ).koinEntrance(context, token: 'tx_${tx.id}'),
-                        if (row.index < group.transactions.length - 1)
+                        if (amountSorted
+                            ? rowIndex < rows.length - 1
+                            : row.index < group.transactions.length - 1)
                           Padding(
                             padding: const EdgeInsets.only(left: 54),
                             child: Divider(

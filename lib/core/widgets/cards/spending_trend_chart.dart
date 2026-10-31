@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:koin/core/icons.dart';
+
 import 'package:koin/core/utils/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -8,11 +10,137 @@ import 'package:koin/core/models/models.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
 
+List<MapEntry<DateTime, double>> _spendingTrendAmounts(
+  List<AppTransaction> expenses,
+  int filterIndex,
+  DateTime baseDate,
+) {
+  final start = AnalysisPeriod.fromIndex(filterIndex).dateRange(baseDate).start;
+  final count = filterIndex == 0
+      ? 7
+      : filterIndex == 2
+      ? 12
+      : DateTime(baseDate.year, baseDate.month + 1, 0).day;
+  final totals = <DateTime, double>{
+    for (var i = 0; i < count; i++)
+      (filterIndex == 2
+              ? DateTime(start.year, i + 1)
+              : DateTime(start.year, start.month, start.day + i)):
+          0,
+  };
+  for (final transaction in expenses) {
+    final date = transaction.date;
+    final key = filterIndex == 2
+        ? DateTime(date.year, date.month)
+        : DateTime(date.year, date.month, date.day);
+    if (totals.containsKey(key)) {
+      totals[key] = totals[key]! + transaction.amount;
+    }
+  }
+  return totals.entries.toList();
+}
+
+DateTimeRange _spendingTrendRange(DateTime start, int filterIndex) {
+  final end = filterIndex == 2
+      ? DateTime(start.year, start.month + 1)
+      : DateTime(start.year, start.month, start.day + 1);
+  return DateTimeRange(
+    start: start,
+    end: end.subtract(const Duration(microseconds: 1)),
+  );
+}
+
+class SpendingAmountsButton extends StatelessWidget {
+  final List<AppTransaction> expenses;
+  final Currency currency;
+  final int filterIndex;
+  final DateTime? baseDate;
+  final ValueChanged<DateTimeRange>? onPeriodSelected;
+
+  const SpendingAmountsButton({
+    super.key,
+    required this.expenses,
+    required this.currency,
+    required this.filterIndex,
+    this.baseDate,
+    this.onPeriodSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    style: TextButton.styleFrom(
+      foregroundColor: AppTheme.textLightColor(context),
+      overlayColor: AppTheme.primaryColor(context),
+      minimumSize: const Size(48, 48),
+    ),
+    child: const Text('View amounts'),
+    onPressed: () {
+      final amounts = _spendingTrendAmounts(
+        expenses,
+        filterIndex,
+        baseDate ?? DateTime.now(),
+      );
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * .65,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Spending amounts',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: amounts.length,
+                    itemBuilder: (context, index) => ListTile(
+                      title: Text(
+                        filterIndex == 2
+                            ? DateFormat.yMMM().format(amounts[index].key)
+                            : DateFormat.yMMMEd().format(amounts[index].key),
+                      ),
+                      subtitle: Text(
+                        currency.formatter.format(amounts[index].value),
+                      ),
+                      trailing: onPeriodSelected == null
+                          ? null
+                          : const Icon(KoinIcons.caretRight),
+                      onTap: onPeriodSelected == null
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              onPeriodSelected!(
+                                _spendingTrendRange(
+                                  amounts[index].key,
+                                  filterIndex,
+                                ),
+                              );
+                            },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class SpendingTrendChart extends StatefulWidget {
   final List<AppTransaction> expenses;
   final Currency currency;
   final int filterIndex;
   final DateTime? baseDate;
+  final ValueChanged<DateTimeRange>? onPeriodSelected;
 
   const SpendingTrendChart({
     super.key,
@@ -20,6 +148,7 @@ class SpendingTrendChart extends StatefulWidget {
     required this.currency,
     required this.filterIndex,
     this.baseDate,
+    this.onPeriodSelected,
   });
 
   @override
@@ -54,161 +183,84 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
           fontWeight: KoinTypography.labelWeight,
         );
 
-    Map<String, double> dailyTotals = {};
-    for (var tx in widget.expenses) {
-      String dateKey = DateFormat('yyyy-MM-dd').format(tx.date);
-      dailyTotals[dateKey] = (dailyTotals[dateKey] ?? 0) + tx.amount;
-    }
-
-    var sortedDaily =
-        dailyTotals.entries
-            .map((e) => MapEntry(DateTime.parse(e.key), e.value))
-            .toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
-
-    DateTime endDate = widget.baseDate ?? DateTime.now();
-
-    List<BarChartGroupData> barGroups = [];
-    List<String> bottomLabels = [];
-    final dates = <DateTime>[];
-    double maxY = 0;
-
-    if (widget.filterIndex == 0) {
-      // Week
-      final startOfWeek = endDate.subtract(Duration(days: endDate.weekday - 1));
-
-      // Find maxY first
-      for (int i = 0; i < 7; i++) {
-        DateTime currentDate = startOfWeek.add(Duration(days: i));
-        String dateKey = DateFormat('yyyy-MM-dd').format(currentDate);
-        double y = dailyTotals[dateKey] ?? 0;
-        if (y > maxY) maxY = y;
-      }
-      maxY = maxY * 1.2;
-      if (maxY == 0) maxY = 100;
-
-      for (int i = 0; i < 7; i++) {
-        DateTime currentDate = startOfWeek.add(Duration(days: i));
-        String dateKey = DateFormat('yyyy-MM-dd').format(currentDate);
-        double y = dailyTotals[dateKey] ?? 0;
-
-        barGroups.add(
-          BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: y,
-                color: AppTheme.primaryColor(context),
-                width: 16,
-                borderRadius: BorderRadius.circular(6),
-                backDrawRodData: BackgroundBarChartRodData(
-                  show: true,
-                  toY: maxY,
-                  color: AppTheme.dividerColor(context).withValues(alpha: 0.2),
-                ),
+    final amounts = _spendingTrendAmounts(
+      widget.expenses,
+      widget.filterIndex,
+      widget.baseDate ?? DateTime.now(),
+    );
+    final dates = amounts.map((entry) => entry.key).toList();
+    final peak = amounts.fold(
+      0.0,
+      (maximum, entry) => math.max(maximum, entry.value),
+    );
+    double maxY = peak * (widget.filterIndex == 0 ? 1.2 : 1.1);
+    if (maxY == 0) maxY = 100;
+    final bottomLabels = dates
+        .map(
+          (date) => widget.filterIndex == 0
+              ? DateFormat('E').format(date).substring(0, 1)
+              : DateFormat(widget.filterIndex == 2 ? 'MMM' : 'd').format(date),
+        )
+        .toList();
+    final barGroups = [
+      for (var i = 0; i < amounts.length; i++)
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: amounts[i].value,
+              color: AppTheme.primaryColor(context),
+              width: widget.filterIndex == 0
+                  ? 16
+                  : widget.filterIndex == 2
+                  ? 12
+                  : 4,
+              // Small daily amounts must not be forced into rounded dots.
+              borderRadius: widget.filterIndex == 0
+                  ? BorderRadius.circular(6)
+                  : widget.filterIndex == 2
+                  ? BorderRadius.circular(4)
+                  : const BorderRadius.vertical(top: Radius.circular(1)),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: widget.filterIndex == 0,
+                toY: maxY,
+                color: AppTheme.dividerColor(context).withValues(alpha: .2),
               ),
-            ],
-          ),
-        );
-        bottomLabels.add(DateFormat('E').format(currentDate).substring(0, 1));
-        dates.add(currentDate);
-      }
-    } else if (widget.filterIndex == 2) {
-      // Year - group by month
-      Map<int, double> monthlyTotals = {};
-      for (var tx in widget.expenses) {
-        monthlyTotals[tx.date.month] =
-            (monthlyTotals[tx.date.month] ?? 0) + tx.amount;
-      }
-
-      for (int i = 1; i <= 12; i++) {
-        double y = monthlyTotals[i] ?? 0;
-        if (y > maxY) maxY = y;
-      }
-      maxY = maxY * 1.2;
-      if (maxY == 0) maxY = 100;
-
-      for (int i = 1; i <= 12; i++) {
-        double y = monthlyTotals[i] ?? 0;
-        barGroups.add(
-          BarChartGroupData(
-            x: i - 1,
-            barRods: [
-              BarChartRodData(
-                toY: y,
-                color: AppTheme.primaryColor(context),
-                width: 12,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-          ),
-        );
-        bottomLabels.add(DateFormat('MMM').format(DateTime(2020, i, 1)));
-        dates.add(DateTime(endDate.year, i, 1));
-      }
-    } else {
-      // Keep zero days so horizontal distance represents elapsed time.
-      sortedDaily = List.generate(
-        DateTime(endDate.year, endDate.month + 1, 0).day,
-        (i) {
-          final date = DateTime(endDate.year, endDate.month, i + 1);
-          return MapEntry(
-            date,
-            dailyTotals[DateFormat('yyyy-MM-dd').format(date)] ?? 0,
-          );
-        },
-      );
-      for (int i = 0; i < sortedDaily.length; i++) {
-        if (sortedDaily[i].value > maxY) maxY = sortedDaily[i].value;
-      }
-      maxY = maxY * 1.2;
-      if (maxY == 0) maxY = 100;
-
-      for (int i = 0; i < sortedDaily.length; i++) {
-        var entry = sortedDaily[i];
-        dates.add(entry.key);
-        barGroups.add(
-          BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: entry.value,
-                color: AppTheme.primaryColor(context),
-                width: widget.filterIndex == 1 ? 8 : 4,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-          ),
-        );
-        bottomLabels.add(
-          DateFormat(widget.filterIndex == 1 ? 'd' : 'MMM d').format(entry.key),
-        );
-      }
-    }
+            ),
+          ],
+        ),
+    ];
 
     final rough = maxY / 4;
     final power = math
         .pow(10, (math.log(rough) / math.ln10).floor())
         .toDouble();
     final fraction = rough / power;
-    final interval =
-        (fraction <= 1
-            ? 1
-            : fraction <= 2
-            ? 2
-            : fraction <= 5
-            ? 5
-            : 10) *
-        power;
-    maxY = (maxY / interval).ceil() * interval;
-    final total = widget.expenses.fold(0.0, (sum, tx) => sum + tx.amount);
-    final chart = Semantics(
+    final step = widget.filterIndex != 0
+        ? (fraction >= 5
+              ? 5
+              : fraction >= 2
+              ? 2
+              : 1)
+        : (fraction <= 1
+              ? 1
+              : fraction <= 2
+              ? 2
+              : fraction <= 5
+              ? 5
+              : 10);
+    final interval = step * power;
+    if (widget.filterIndex == 0) {
+      maxY = (maxY / interval).ceil() * interval;
+    }
+    final total = amounts.fold(0.0, (sum, entry) => sum + entry.value);
+    return Semantics(
       label:
-          'Spending trend. Total ${widget.currency.formatter.format(total)}. Use View amounts for dates and values.',
+          'Spending trend. Total ${widget.currency.formatter.format(total)}. ${widget.onPeriodSelected == null ? 'Touch a bar for its date and amount.' : 'Tap a bar to view its spending transactions. View amounts offers the same details as a list.'}',
       child: ExcludeSemantics(
         child: Container(
-          height: 192,
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+          height: 240,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor(context),
             borderRadius: BorderRadius.circular(32),
@@ -260,10 +312,17 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                       if (index < 0 || index >= bottomLabels.length) {
                         return const SizedBox.shrink();
                       }
-                      // Avoid crowding on non-weekly filters
-                      if (widget.filterIndex != 0 &&
-                          index % 2 != 0 &&
-                          bottomLabels.length > 7) {
+                      if (widget.filterIndex == 1 &&
+                          !{
+                            1,
+                            7,
+                            14,
+                            21,
+                            bottomLabels.length,
+                          }.contains(index + 1)) {
+                        return const SizedBox.shrink();
+                      }
+                      if (widget.filterIndex == 2 && index.isOdd) {
                         return const SizedBox.shrink();
                       }
 
@@ -309,6 +368,15 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
               borderData: FlBorderData(show: false),
               barTouchData: BarTouchData(
                 touchCallback: (FlTouchEvent event, barTouchResponse) {
+                  final index = barTouchResponse?.spot?.touchedBarGroupIndex;
+                  if (event is FlTapUpEvent &&
+                      index != null &&
+                      index >= 0 &&
+                      index < dates.length) {
+                    widget.onPeriodSelected?.call(
+                      _spendingTrendRange(dates[index], widget.filterIndex),
+                    );
+                  }
                   final previousIndex = _touchedGroupIndex;
                   setState(() {
                     if (!event.isInterestedForInteractions ||
@@ -360,6 +428,11 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                           text: widget.currency.formatter.format(originalY),
                           style: tooltipTextStyle,
                         ),
+                        if (widget.onPeriodSelected != null)
+                          TextSpan(
+                            text: '\nTap to view transactions',
+                            style: tooltipTextStyle,
+                          ),
                       ],
                     );
                   },
@@ -395,57 +468,6 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
           ),
         ),
       ),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        chart,
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              showDragHandle: true,
-              builder: (context) => SafeArea(
-                child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height * .65,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Spending amounts',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: dates.length,
-                          itemBuilder: (context, index) => ListTile(
-                            title: Text(
-                              widget.filterIndex == 2
-                                  ? DateFormat.yMMM().format(dates[index])
-                                  : DateFormat.yMMMEd().format(dates[index]),
-                            ),
-                            subtitle: Text(
-                              widget.currency.formatter.format(
-                                barGroups[index].barRods.first.toY,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            child: const Text('View amounts'),
-          ),
-        ),
-      ],
     );
   }
 }

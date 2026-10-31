@@ -41,6 +41,7 @@ class KoinEntityNameField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         floatingLabelBehavior: FloatingLabelBehavior.always,
+        floatingLabelAlignment: FloatingLabelAlignment.center,
         labelStyle: TextStyle(
           color: AppTheme.textLightColor(context),
           fontSize: KoinTypography.caption,

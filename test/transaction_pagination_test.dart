@@ -151,6 +151,61 @@ void main() {
     },
   );
 
+  for (final order in [
+    TransactionSortOrder.amountAscending,
+    TransactionSortOrder.amountDescending,
+  ]) {
+    test(
+      'amount ordering paginates all matches with stable ties: $order',
+      () async {
+        final filter = TransactionFilter(
+          sortOrder: order,
+          type: TransactionType.expense,
+          accountIds: {'default_account'},
+          minAmount: 35,
+          maxAmount: 65,
+        );
+        final found = <AppTransaction>[];
+        TransactionCursor? cursor;
+        do {
+          final actual = await page(filter, after: cursor, limit: 73);
+          final memory = TransactionPage.fromTransactions(
+            source,
+            filter: filter,
+            categoryNamesById: names,
+            after: cursor,
+            limit: 73,
+          );
+          expect(
+            actual.items.map((tx) => tx.id),
+            memory.items.map((tx) => tx.id),
+          );
+          expect(actual.dayTotals, memory.dayTotals);
+          found.addAll(actual.items);
+          cursor = actual.next;
+        } while (cursor != null);
+        expect(found.length, source.where((tx) => filter.matches(tx)).length);
+        expect(found.map((tx) => tx.id).toSet().length, found.length);
+        final amounts = found.map((tx) => tx.amount).toList();
+        final ascending = [...amounts]..sort();
+        expect(
+          amounts,
+          order == TransactionSortOrder.amountAscending
+              ? ascending
+              : ascending.reversed,
+        );
+        for (var i = 1; i < found.length; i++) {
+          if (found[i].amount == found[i - 1].amount) {
+            expect(
+              TransactionPage.compare(found[i - 1], found[i]),
+              lessThanOrEqualTo(0),
+            );
+          }
+        }
+      },
+    );
+  }
+
   test(
     'ordinary saves and edits do not reload the complete analytics history',
     () async {

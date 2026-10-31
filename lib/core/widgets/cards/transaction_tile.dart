@@ -31,6 +31,7 @@ class TransactionTile extends StatelessWidget {
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
   final bool showTime;
+  final bool showDate;
   final bool activityStyle;
 
   const TransactionTile({
@@ -46,6 +47,7 @@ class TransactionTile extends StatelessWidget {
       vertical: 14,
     ),
     this.showTime = true,
+    this.showDate = false,
     this.activityStyle = false,
   });
 
@@ -63,6 +65,7 @@ class TransactionTile extends StatelessWidget {
       vertical: 14,
     ),
     bool showTime = true,
+    bool showDate = false,
     bool activityStyle = false,
   }) {
     final cat = categories
@@ -87,6 +90,7 @@ class TransactionTile extends StatelessWidget {
       onTap: onTap,
       padding: padding,
       showTime: showTime,
+      showDate: showDate,
       activityStyle: activityStyle,
     );
   }
@@ -141,6 +145,10 @@ class TransactionTile extends StatelessWidget {
         ? formattedAmount
         : '${isIncome ? '+' : '-'}$formattedAmount';
 
+    final dateLabel = showDate
+        ? DateFormat.yMMMd().add_jm().format(transaction.date)
+        : DateFormat.jm().format(transaction.date);
+
     return PressableScale(
       enableHaptic: onTap != null,
       onTap:
@@ -173,7 +181,7 @@ class TransactionTile extends StatelessWidget {
                 color: color,
                 title: displayTitle,
                 subtitle: showTime
-                    ? '$displaySubtitle · ${DateFormat.jm().format(transaction.date)}'
+                    ? '$displaySubtitle · $dateLabel'
                     : displaySubtitle,
                 amount: signedAmount,
                 amountColor: typeColor,
@@ -245,7 +253,7 @@ class TransactionTile extends StatelessWidget {
                       if (showTime) ...[
                         const Gap(2),
                         Text(
-                          DateFormat.jm().format(transaction.date),
+                          dateLabel,
                           style: TextStyle(
                             color: AppTheme.textLightColor(context)
                                 .withValues(alpha: 0.6),

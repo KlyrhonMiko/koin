@@ -55,17 +55,18 @@ class TransactionHistoryNotifier extends AsyncNotifier<TransactionHistory> {
     );
     try {
       final categories = await ref.read(categoriesProvider.future);
+      final filter = ref.read(effectiveTransactionFilterProvider);
       final page = await ref
           .read(ledgerProvider)
           .getTransactionPage(
-            filter: ref.read(effectiveTransactionFilterProvider),
+            filter: filter,
             after: current.next,
             categoryNamesById: {for (final c in categories) c.id: c.name},
           );
       if (!ref.mounted || revision != _revision) return;
       final items = {
         for (final tx in [...current.items, ...page.items]) tx.id: tx,
-      }.values.toList()..sort(TransactionPage.compare);
+      }.values.toList()..sort(filter.sortOrder.compare);
       state = AsyncData(
         TransactionHistory(
           items: items,
@@ -93,28 +94,43 @@ final transactionHistoryProvider =
       TransactionHistoryNotifier.new,
     );
 
-final pagedTransactionRowsProvider = Provider(
-  (ref) => ref
-      .watch(transactionHistoryProvider)
-      .whenData(
-        (history) => [
-          for (final group in TransactionGroup.groupTransactions(
-            history.items,
-          )) ...[
-            (
-              group: TransactionGroup(
-                dateKey: group.dateKey,
-                date: group.date,
-                transactions: group.transactions,
-                dailyTotal:
-                    history.dayTotals[TransactionPage.dayKey(group.date)] ??
-                    group.dailyTotal,
-              ),
-              index: -1,
+final pagedTransactionRowsProvider = Provider((ref) {
+  final amountSorted = ref
+      .watch(effectiveTransactionFilterProvider)
+      .isAmountSort;
+  return ref.watch(transactionHistoryProvider).whenData((history) {
+    if (amountSorted) {
+      return [
+        for (final tx in history.items)
+          (
+            group: TransactionGroup(
+              dateKey: TransactionPage.dayKey(tx.date),
+              date: tx.date,
+              transactions: [tx],
+              dailyTotal: 0,
             ),
-            for (var i = 0; i < group.transactions.length; i++)
-              (group: group, index: i),
-          ],
-        ],
-      ),
-);
+            index: 0,
+          ),
+      ];
+    }
+    return [
+      for (final group in TransactionGroup.groupTransactions(
+        history.items,
+      )) ...[
+        (
+          group: TransactionGroup(
+            dateKey: group.dateKey,
+            date: group.date,
+            transactions: group.transactions,
+            dailyTotal:
+                history.dayTotals[TransactionPage.dayKey(group.date)] ??
+                group.dailyTotal,
+          ),
+          index: -1,
+        ),
+        for (var i = 0; i < group.transactions.length; i++)
+          (group: group, index: i),
+      ],
+    ];
+  });
+});

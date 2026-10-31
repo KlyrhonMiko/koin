@@ -14,6 +14,7 @@ class KoinSelectableOption extends StatelessWidget {
     required this.accentColor,
     this.leading,
     this.compact = false,
+    this.horizontalPadding = 14,
   });
   final String label;
   final bool selected;
@@ -21,6 +22,7 @@ class KoinSelectableOption extends StatelessWidget {
   final Color accentColor;
   final Widget? leading;
   final bool compact;
+  final double horizontalPadding;
 
   @override
   Widget build(BuildContext context) => Tooltip(
@@ -41,7 +43,7 @@ class KoinSelectableOption extends StatelessWidget {
             curve: Curves.easeOutCubic,
             constraints: const BoxConstraints(minHeight: 48),
             padding: EdgeInsets.symmetric(
-              horizontal: 14,
+              horizontal: horizontalPadding,
               vertical: compact ? 9 : 0,
             ),
             decoration: BoxDecoration(
@@ -63,11 +65,7 @@ class KoinSelectableOption extends StatelessWidget {
               mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
               children: [
                 if (compact && selected) ...[
-                  Icon(
-                    KoinIcons.checkCircle,
-                    size: 15,
-                    color: accentColor,
-                  ),
+                  Icon(KoinIcons.checkCircle, size: 15, color: accentColor),
                   const SizedBox(width: 6),
                 ] else if (leading != null) ...[
                   leading!,
@@ -94,11 +92,7 @@ class KoinSelectableOption extends StatelessWidget {
                 ),
                 if (!compact && selected) ...[
                   const SizedBox(width: 4),
-                  Icon(
-                    KoinIcons.checkCircle,
-                    size: 14,
-                    color: accentColor,
-                  ),
+                  Icon(KoinIcons.checkCircle, size: 14, color: accentColor),
                 ],
               ],
             ),

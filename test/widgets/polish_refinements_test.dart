@@ -587,11 +587,21 @@ void main() {
     await mount(
       tester,
       Scaffold(
-        body: SpendingTrendChart(
-          expenses: expenses,
-          currency: Currency.defaultCurrency,
-          filterIndex: 1,
-          baseDate: now,
+        body: Column(
+          children: [
+            SpendingAmountsButton(
+              expenses: expenses,
+              currency: Currency.defaultCurrency,
+              filterIndex: 1,
+              baseDate: now,
+            ),
+            SpendingTrendChart(
+              expenses: expenses,
+              currency: Currency.defaultCurrency,
+              filterIndex: 1,
+              baseDate: now,
+            ),
+          ],
         ),
       ),
     );
@@ -599,6 +609,10 @@ void main() {
     expect(data.barGroups, hasLength(31));
     expect(data.barGroups[15].barRods.single.toY, 0);
     expect(data.barGroups.last.barRods.single.toY, 10);
+    final plot = tester.getRect(find.byType(SpendingTrendChart));
+    final action = tester.getRect(find.byType(SpendingAmountsButton));
+    expect(plot.height, 240);
+    expect(action.bottom, lessThanOrEqualTo(plot.top));
     await tester.tap(find.text('View amounts'));
     await tester.pumpAndSettle();
     expect(find.text('Spending amounts'), findsOneWidget);

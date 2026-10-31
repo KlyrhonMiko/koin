@@ -185,6 +185,13 @@ void main() {
         ),
       );
 
+  Future<void> selectTotalsRange(WidgetTester tester, String label) async {
+    final option = find.text(label == 'Selected period' ? 'Period' : label);
+    await tester.ensureVisible(option);
+    await tester.tap(option);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> capture(WidgetTester tester, String name) async {
     if (Platform.environment['KOIN_CAPTURE_ANALYTICS'] != '1') return;
     await tester.pump();
@@ -325,7 +332,16 @@ void main() {
         scale: layout.scale,
         dark: layout.dark,
       );
-      await tester.ensureVisible(find.text('Categories'));
+      await tester.scrollUntilVisible(
+        find.text('Categories'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Categories')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Categories'));
       await tester.pumpAndSettle();
       final pie = tester.widget<PieChart>(find.byType(PieChart));
@@ -539,12 +555,9 @@ void main() {
       tester,
     ) async {
       await launch(tester, const AnalysisScreen(), scale: scale);
-      expect(find.text('Spending Trend'), findsOneWidget);
+      expect(find.text('Trend'), findsOneWidget);
       if (scale == 1) {
-        expect(
-          tester.getTopLeft(find.text('Spending Trend')).dy,
-          lessThan(844),
-        );
+        expect(tester.getTopLeft(find.text('Trend')).dy, lessThan(844));
         await capture(tester, 'analysis-compact-forecast');
       }
       await tester.scrollUntilVisible(
@@ -583,111 +596,260 @@ void main() {
     });
   }
 
-  testWidgets('detached period control keeps the spending card full width', (
-    tester,
-  ) async {
-    final now = DateTime.now();
-    await container
-        .read(ledgerProvider)
-        .updateTransaction(
-          AppTransaction(
-            id: 'expense',
-            amount: 300,
-            date: now,
-            accountId: 'cash',
-            categoryId: 'food',
-            type: TransactionType.expense,
-          ),
-        );
-    await container
-        .read(ledgerProvider)
-        .recordTransaction(
-          AppTransaction(
-            id: 'previous-expense',
-            amount: 2650,
-            date: DateTime(now.year, now.month - 1, 1),
-            accountId: 'cash',
-            categoryId: 'food',
-            type: TransactionType.expense,
-          ),
-        );
-    for (final width in [390.0, 320.0]) {
-      await launch(tester, const AnalysisScreen(), width: width, dark: true);
-      final card = find.byType(KoinSummaryCard);
-      final cardRect = tester.getRect(card);
-      expect(cardRect.width, width - 2 * KoinSpacing.screenInset);
+  testWidgets(
+    'amounts action belongs above the graph and categories keep the normal gap',
+    (tester) async {
+      await launch(tester, const AnalysisScreen());
+      await tester.ensureVisible(find.text('Top Categories'));
+      await tester.pumpAndSettle();
+      final plot = tester.getRect(find.byType(SpendingTrendChart));
+      final action = tester.getRect(find.byType(SpendingAmountsButton));
+      expect(tester.getTopLeft(find.text('Trend')).dx, plot.left);
+      expect(plot.height, 240);
+      expect(action.bottom, lessThanOrEqualTo(plot.top));
       expect(
-        find.descendant(of: card, matching: find.text('Wk')),
+        tester.getTopLeft(find.text('Top Categories')).dy - plot.bottom,
+        closeTo(KoinSpacing.sectionGap, 1),
+      );
+      expect(
+        tester
+            .widget<SpendingTrendChart>(find.byType(SpendingTrendChart))
+            .onPeriodSelected,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<SpendingAmountsButton>(find.byType(SpendingAmountsButton))
+            .onPeriodSelected,
+        isNotNull,
+      );
+      await tester.ensureVisible(find.text('View amounts'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('View amounts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Spending amounts'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'income follows the period while all-time totals stay cumulative and private',
+    (tester) async {
+      final now = DateTime.now();
+      for (final (id, amount, date, type) in [
+        ('income', 100.0, now, TransactionType.income),
+        (
+          'old-income',
+          200.0,
+          DateTime(now.year, now.month - 1, 1),
+          TransactionType.income,
+        ),
+        (
+          'old-expense',
+          30.0,
+          DateTime(now.year, now.month - 1, 1),
+          TransactionType.expense,
+        ),
+      ]) {
+        await container
+            .read(ledgerProvider)
+            .recordTransaction(
+              AppTransaction(
+                id: id,
+                amount: amount,
+                date: date,
+                type: type,
+                accountId: 'cash',
+                categoryId: 'food',
+              ),
+            );
+      }
+      await launch(tester, const AnalysisScreen());
+      expect(find.text('Income'), findsOneWidget);
+      expect(find.text(r'$100.00'), findsOneWidget);
+      await selectTotalsRange(tester, 'All time');
+      expect(find.text(r'$300.00'), findsOneWidget);
+      expect(find.text(r'$50.00'), findsOneWidget);
+      await tester.tap(find.byTooltip('Previous month'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$300.00'), findsOneWidget);
+      expect(find.text(r'$50.00'), findsOneWidget);
+      await selectTotalsRange(tester, 'Selected period');
+      expect(find.text(r'$200.00'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(KoinSummaryCard),
+          matching: find.text(r'$30.00'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Hide amounts'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$200.00'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(KoinSummaryCard),
+          matching: find.text(r'$30.00'),
+        ),
         findsNothing,
       );
-      expect(
-        tester.getRect(find.text('Yr')).right,
-        lessThanOrEqualTo(cardRect.right),
-      );
-      final labelRect = tester.getRect(find.text('Total Spent'));
-      if (width == 390) {
-        final amount = find.descendant(
-          of: card,
-          matching: find.text(r'$300.00'),
+      expect(find.text('****'), findsNWidgets(2));
+      await selectTotalsRange(tester, 'All time');
+      expect(find.text(r'$300.00'), findsNothing);
+      expect(find.text(r'$50.00'), findsNothing);
+      expect(find.text('****'), findsNWidgets(2));
+      await tester.tap(find.byTooltip('Show amounts'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$300.00'), findsOneWidget);
+      expect(find.text(r'$50.00'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      'income-only totals fit narrow screens and large text (dark=$dark)',
+      (tester) async {
+        await container.read(ledgerProvider).voidTransaction('expense');
+        await container
+            .read(ledgerProvider)
+            .recordTransaction(
+              AppTransaction(
+                id: 'income',
+                amount: 9876543210.12,
+                date: DateTime.now(),
+                type: TransactionType.income,
+                accountId: 'cash',
+                categoryId: 'food',
+              ),
+            );
+        await launch(
+          tester,
+          const AnalysisScreen(),
+          width: 320,
+          scale: 2,
+          dark: dark,
         );
-        final amountRect = tester.getRect(amount);
-        expect(amountRect.left - cardRect.left, closeTo(24, 1));
-        expect(amountRect.top - labelRect.bottom, lessThanOrEqualTo(16));
-        final comparison = find.text('88.7% less than previous month');
-        expect(comparison, findsOneWidget);
+        await selectTotalsRange(tester, 'All time');
+        expect(find.text('Income'), findsOneWidget);
+        expect(find.text('Spent'), findsOneWidget);
+        expect(find.text(r'$9,876,543,210.12'), findsOneWidget);
+        expect(find.byType(BarChart), findsNothing);
+        expect(tester.takeException(), isNull);
+        await capture(tester, 'income-totals-large-$dark');
+      },
+    );
+  }
+
+  testWidgets(
+    'cash-flow figures share the card above independent period controls',
+    (tester) async {
+      final now = DateTime.now();
+      await container
+          .read(ledgerProvider)
+          .updateTransaction(
+            AppTransaction(
+              id: 'expense',
+              amount: 300,
+              date: now,
+              accountId: 'cash',
+              categoryId: 'food',
+              type: TransactionType.expense,
+            ),
+          );
+      await container
+          .read(ledgerProvider)
+          .recordTransaction(
+            AppTransaction(
+              id: 'previous-expense',
+              amount: 2650,
+              date: DateTime(now.year, now.month - 1, 1),
+              accountId: 'cash',
+              categoryId: 'food',
+              type: TransactionType.expense,
+            ),
+          );
+      for (final width in [390.0, 320.0]) {
+        await launch(tester, const AnalysisScreen(), width: width, dark: true);
+        final card = find.byType(KoinSummaryCard);
+        final cardRect = tester.getRect(card);
+        expect(cardRect.width, width - 2 * KoinSpacing.screenInset);
         expect(
-          tester.getTopLeft(comparison).dy,
-          greaterThan(
+          find.descendant(of: card, matching: find.text('Wk')),
+          findsNothing,
+        );
+        expect(
+          tester.getRect(find.text('Yr')).right,
+          lessThanOrEqualTo(cardRect.right),
+        );
+        final labelRect = tester.getRect(find.text('Spent'));
+        if (width == 390) {
+          final amount = find.descendant(
+            of: card,
+            matching: find.text(r'$300.00'),
+          );
+          final amountRect = tester.getRect(amount);
+          expect(amountRect.left, greaterThan(cardRect.center.dx));
+          final incomeRect = tester.getRect(
+            find.byKey(const ValueKey('analysis-income-total')),
+          );
+          final spentRect = tester.getRect(
+            find.byKey(const ValueKey('analysis-spent-total')),
+          );
+          expect(incomeRect.top, closeTo(spentRect.top, 1));
+          expect(incomeRect.width, closeTo(spentRect.width, 1));
+          expect(amountRect.top - labelRect.bottom, lessThanOrEqualTo(16));
+          const comparison = '88.7% less than previous month';
+          expect(find.text(comparison), findsNothing);
+          expect(find.byTooltip(comparison), findsOneWidget);
+          expect(find.byType(SegmentedButton<bool>), findsNothing);
+          expect(find.text('Cash flow'), findsNothing);
+          expect(
             tester
-                .getBottomLeft(
-                  find.descendant(of: card, matching: find.text(r'$300.00')),
+                .getTopLeft(
+                  find.text(AnalysisPeriod.fromIndex(1).formatPeriod(now)),
                 )
                 .dy,
-          ),
-        );
-        expect(
-          tester
-              .getTopLeft(
-                find.text(AnalysisPeriod.fromIndex(1).formatPeriod(now)),
-              )
-              .dy,
-          greaterThan(cardRect.bottom),
-        );
-        expect(cardRect.height, lessThan(175));
+            greaterThan(cardRect.bottom),
+          );
+          expect(cardRect.height, lessThan(140));
+          expect(cardRect.bottom - amountRect.bottom, greaterThanOrEqualTo(24));
+          expect(find.byType(PopupMenuButton<bool>), findsNothing);
+        }
+        await capture(tester, 'detached-selector-dark-$width');
+        expect(tester.takeException(), isNull);
       }
-      await capture(tester, 'detached-selector-dark-$width');
+      await tester.tap(find.text('Wk'));
+      await tester.pumpAndSettle();
+      expect(container.read(settingsProvider).analysisFilterIndex, 0);
+      tester.view.physicalSize = const Size(377, 844);
+      await tester.pumpAndSettle();
+      final weekLabel = find.byWidgetPredicate(
+        (widget) => widget is Text && (widget.data?.contains('–') ?? false),
+      );
+      expect(weekLabel, findsOneWidget);
+      expect(tester.getSize(weekLabel).height, lessThanOrEqualTo(21));
+      await capture(tester, 'spending-toolbar-week');
+      await tester.tap(find.text('Mo'));
+      await tester.pumpAndSettle();
+      expect(container.read(settingsProvider).analysisFilterIndex, 1);
+      await tester.tap(find.byTooltip('Hide amounts'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(KoinSummaryCard),
+          matching: find.text(r'$300.00'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('****'), findsNWidgets(2));
+      expect(container.read(settingsProvider).hideBalance, isTrue);
+      await tester.tap(find.byTooltip('Show amounts'));
+      await tester.pumpAndSettle();
+      expect(container.read(settingsProvider).hideBalance, isFalse);
       expect(tester.takeException(), isNull);
-    }
-    await tester.tap(find.text('Wk'));
-    await tester.pumpAndSettle();
-    expect(container.read(settingsProvider).analysisFilterIndex, 0);
-    tester.view.physicalSize = const Size(377, 844);
-    await tester.pumpAndSettle();
-    final weekLabel = find.byWidgetPredicate(
-      (widget) => widget is Text && (widget.data?.contains('–') ?? false),
-    );
-    expect(weekLabel, findsOneWidget);
-    expect(tester.getSize(weekLabel).height, lessThanOrEqualTo(21));
-    await capture(tester, 'spending-toolbar-week');
-    await tester.tap(find.text('Mo'));
-    await tester.pumpAndSettle();
-    expect(container.read(settingsProvider).analysisFilterIndex, 1);
-    await tester.tap(find.byTooltip('Hide spending'));
-    await tester.pumpAndSettle();
-    expect(
-      find.descendant(
-        of: find.byType(KoinSummaryCard),
-        matching: find.text(r'$300.00'),
-      ),
-      findsNothing,
-    );
-    expect(find.text('****'), findsOneWidget);
-    expect(container.read(settingsProvider).hideBalance, isTrue);
-    await tester.tap(find.byTooltip('Show spending'));
-    await tester.pumpAndSettle();
-    expect(container.read(settingsProvider).hideBalance, isFalse);
-    expect(tester.takeException(), isNull);
-  });
+    },
+  );
 
   testWidgets(
     'large spending totals stay inside the summary at all text sizes',

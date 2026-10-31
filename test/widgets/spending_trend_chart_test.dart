@@ -47,6 +47,10 @@ void main() {
     bool reduced = false,
     double width = 390,
     double scale = 1,
+    int filterIndex = 0,
+    DateTime? baseDate,
+    List<AppTransaction>? transactions,
+    ValueChanged<DateTimeRange>? onPeriodSelected,
   }) async {
     tester.view.physicalSize = Size(width, 500);
     tester.view.devicePixelRatio = 1;
@@ -66,10 +70,11 @@ void main() {
                 child: RepaintBoundary(
                   key: boundaryKey,
                   child: SpendingTrendChart(
-                    expenses: expenses(amount),
+                    expenses: transactions ?? expenses(amount),
                     currency: currency,
-                    filterIndex: 0,
-                    baseDate: base,
+                    filterIndex: filterIndex,
+                    baseDate: baseDate ?? base,
+                    onPeriodSelected: onPeriodSelected,
                   ),
                 ),
               ),
@@ -113,6 +118,51 @@ void main() {
     },
   );
 
+  testWidgets(
+    'taps select the exact day or month while scrubbing stays on the graph',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final filter in [0, 1, 2]) {
+        final selected = <DateTimeRange>[];
+        await launch(
+          tester,
+          200,
+          filterIndex: filter,
+          onPeriodSelected: selected.add,
+        );
+        await tester.pumpAndSettle();
+        final chart = tester.widget<BarChart>(find.byType(BarChart)).data;
+        final plot = tester.getRect(find.byType(BarChartLeaf));
+        final index = filter == 0
+            ? 1
+            : filter == 1
+            ? 12
+            : 9;
+        final point = Offset(
+          plot.left + (index + .5) * plot.width / chart.barGroups.length,
+          plot.bottom - 5,
+        );
+        final gesture = await tester.startGesture(point);
+        await tester.pump(const Duration(milliseconds: 150));
+        expect(selected, isEmpty);
+        await gesture.moveBy(const Offset(0, -30));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(selected, isEmpty);
+        await tester.tapAt(point);
+        await tester.pumpAndSettle();
+        expect(selected, hasLength(1));
+        expect(selected.single.start, DateTime(2026, 10, filter == 2 ? 1 : 13));
+        expect(
+          selected.single.end.add(const Duration(microseconds: 1)),
+          filter == 2 ? DateTime(2026, 11) : DateTime(2026, 10, 14),
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('reduced motion shows final spending immediately', (
     tester,
   ) async {
@@ -127,6 +177,154 @@ void main() {
       Duration.zero,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'monthly dates stay readable and small amounts stay proportional',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final (year, month, days, width, scale) in [
+        (2025, 2, 28, 320.0, 1.0),
+        (2024, 2, 29, 320.0, 2.0),
+        (2026, 4, 30, 390.0, 1.0),
+        (2026, 10, 31, 390.0, 2.0),
+      ]) {
+        await launch(
+          tester,
+          100,
+          width: width,
+          scale: scale,
+          filterIndex: 1,
+          baseDate: DateTime(year, month),
+          transactions: [
+            for (final (day, amount) in [(1, 1.0), (days, 100.0)])
+              AppTransaction(
+                id: '$day',
+                amount: amount,
+                date: DateTime(year, month, day),
+                type: TransactionType.expense,
+                categoryId: 'food',
+                accountId: 'cash',
+              ),
+          ],
+        );
+        await tester.pumpAndSettle();
+        final chart = tester.widget<BarChart>(find.byType(BarChart)).data;
+        expect(chart.barGroups, hasLength(days));
+        expect(chart.barGroups[14].barRods.single.toY, 0);
+        expect(chart.barGroups.first.barRods.single.toY, 1);
+        expect(chart.barGroups.last.barRods.single.toY, 100);
+        expect(chart.maxY, inInclusiveRange(100, 125));
+        final rod = chart.barGroups.first.barRods.single;
+        final minimumHeight =
+            rod.borderRadius!.topLeft.y + rod.borderRadius!.bottomLeft.y;
+        final actualHeight =
+            tester.getSize(find.byType(BarChartLeaf)).height / chart.maxY;
+        expect(minimumHeight, lessThanOrEqualTo(actualHeight));
+        final labels = [1, 7, 14, 21, days];
+        for (var i = 0; i < labels.length - 1; i++) {
+          final current = tester.getRect(find.text('${labels[i]}'));
+          final next = tester.getRect(find.text('${labels[i + 1]}'));
+          expect(current.right, lessThan(next.left));
+        }
+        expect(find.text('3'), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets('month and year use the top of the plot', (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final filter in [1, 2]) {
+      for (final peak in [3.15, 1992.0, 6240.0, 987654.32]) {
+        await launch(
+          tester,
+          peak,
+          filterIndex: filter,
+          transactions: [
+            AppTransaction(
+              id: 'first',
+              amount: peak / 2,
+              date: DateTime(2026, filter == 1 ? 10 : 1, 1),
+              type: TransactionType.expense,
+              categoryId: 'food',
+              accountId: 'cash',
+            ),
+            AppTransaction(
+              id: 'last',
+              amount: peak,
+              date: DateTime(2026, filter == 1 ? 10 : 12, 31),
+              type: TransactionType.expense,
+              categoryId: 'food',
+              accountId: 'cash',
+            ),
+          ],
+        );
+        await tester.pumpAndSettle();
+        final data = tester.widget<BarChart>(find.byType(BarChart)).data;
+        expect(data.barGroups.last.barRods.single.toY, peak);
+        final plot = tester.getRect(find.byType(BarChartLeaf));
+        final topOfPeak = plot.top + plot.height * (1 - peak / data.maxY);
+        final card = tester.getRect(find.byType(SpendingTrendChart));
+        expect(topOfPeak - card.top, lessThan(40));
+        expect(tester.takeException(), isNull);
+      }
+    }
+  });
+
+  testWidgets('week, month, and year buckets agree across a month boundary', (
+    tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final transactions = [
+      for (final (day, amount) in [
+        (DateTime(2026, 10, 31), 100.0),
+        (DateTime(2026, 11, 1), 200.0),
+        (DateTime(2026, 11, 1), 50.0),
+      ])
+        AppTransaction(
+          id: '$day-$amount',
+          amount: amount,
+          date: day,
+          type: TransactionType.expense,
+          categoryId: 'food',
+          accountId: 'cash',
+        ),
+    ];
+    for (final filter in [0, 1, 2]) {
+      await launch(
+        tester,
+        100,
+        filterIndex: filter,
+        baseDate: DateTime(2026, 11, 1),
+        transactions: transactions,
+      );
+      await tester.pumpAndSettle();
+      final bars = tester
+          .widget<BarChart>(find.byType(BarChart))
+          .data
+          .barGroups;
+      if (filter == 0) {
+        expect(bars, hasLength(7));
+        expect(bars[5].barRods.single.toY, 100);
+        expect(bars[6].barRods.single.toY, 250);
+      } else if (filter == 1) {
+        expect(bars, hasLength(30));
+        expect(bars.first.barRods.single.toY, 250);
+        expect(
+          bars.skip(1).every((bar) => bar.barRods.single.toY == 0),
+          isTrue,
+        );
+      } else {
+        expect(bars, hasLength(12));
+        expect(bars[9].barRods.single.toY, 100);
+        expect(bars[10].barRods.single.toY, 250);
+      }
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets(

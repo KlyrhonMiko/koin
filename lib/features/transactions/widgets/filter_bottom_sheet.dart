@@ -137,66 +137,81 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: KoinSpacing.screenInset,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Filters',
-                      style: TextStyle(
-                        fontSize: KoinTypography.screenTitle,
-                        fontWeight: KoinTypography.headingWeight,
-                        color: AppTheme.textColor(context),
-                        letterSpacing: KoinTypography.headingTracking,
-                      ),
-                    ),
-                    if (filterCount > 0) ...[
-                      const Gap(10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$filterCount',
-                          style: TextStyle(
-                            color: primary,
-                            fontSize: KoinTypography.small,
-                            fontWeight: KoinTypography.headingWeight,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 4,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Filters',
+                            style: TextStyle(
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.headingWeight,
+                              color: AppTheme.textColor(context),
+                              letterSpacing: KoinTypography.headingTracking,
+                            ),
                           ),
-                        ),
+                          if (filterCount > 0) ...[
+                            const Gap(10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '$filterCount',
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: KoinTypography.small,
+                                  fontWeight: KoinTypography.headingWeight,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PressableScale(
+                            onTap: _reset,
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppTheme.dividerColor(context)
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Text(
+                                'Reset All',
+                                style: TextStyle(
+                                  color: AppTheme.textLightColor(context),
+                                  fontWeight: KoinTypography.titleWeight,
+                                  fontSize: KoinTypography.caption,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                    const Spacer(),
-                    PressableScale(
-                      onTap: _reset,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 48),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppTheme.dividerColor(context)
-                                .withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          'Reset All',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontWeight: KoinTypography.titleWeight,
-                            fontSize: KoinTypography.caption,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               )
               .koinAnimate(
@@ -237,10 +252,53 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 KoinSpacing.screenInset,
                 20,
                 KoinSpacing.screenInset,
-                100,
+                KoinSpacing.sectionGap,
               ),
               children:
                   [
+                        const FormSectionTitle.subhead(
+                          title: 'Sort order',
+                          icon: KoinIcons.arrowsDownUp,
+                        ),
+                        const Gap(12),
+                        Wrap(
+                          key: const ValueKey('transaction-sort-options'),
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final (order, label) in [
+                              (TransactionSortOrder.newestFirst, 'Newest'),
+                              (
+                                TransactionSortOrder.amountAscending,
+                                'Lowest amount',
+                              ),
+                              (
+                                TransactionSortOrder.amountDescending,
+                                'Highest amount',
+                              ),
+                            ])
+                              Semantics(
+                                inMutuallyExclusiveGroup: true,
+                                child: KoinSelectableOption(
+                                  label: label,
+                                  selected: _filter.sortOrder == order,
+                                  compact: true,
+                                  horizontalPadding: 8,
+                                  accentColor: primary,
+                                  onTap: () {
+                                    HapticService.selection();
+                                    setState(() {
+                                      _filter = _filter.copyWith(
+                                        sortOrder: order,
+                                      );
+                                    });
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                        const Gap(KoinSpacing.sectionGap),
+
                         // Transaction Type
                         const FormSectionTitle.subhead(
                           title: 'Transaction Type',

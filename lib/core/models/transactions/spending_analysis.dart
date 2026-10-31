@@ -41,6 +41,7 @@ enum AnalysisPeriod {
           59,
           59,
           999,
+          999,
         );
         return DateTimeRange(start: start, end: end);
 
@@ -54,12 +55,13 @@ enum AnalysisPeriod {
           59,
           59,
           999,
+          999,
         );
         return DateTimeRange(start: start, end: end);
 
       case AnalysisPeriod.year:
         final start = DateTime(baseDate.year, 1, 1);
-        final end = DateTime(baseDate.year, 12, 31, 23, 59, 59, 999);
+        final end = DateTime(baseDate.year, 12, 31, 23, 59, 59, 999, 999);
         return DateTimeRange(start: start, end: end);
     }
   }
@@ -151,6 +153,9 @@ class SpendingAnalysis {
   final DateTimeRange currentDateRange;
   final DateTimeRange previousDateRange;
   final double totalExpense;
+  final double totalIncome;
+  final double allTimeIncome;
+  final double allTimeExpense;
   final double? previousExpense;
   final double trendPercentage;
   final bool isIncrease;
@@ -164,6 +169,9 @@ class SpendingAnalysis {
     required this.currentDateRange,
     required this.previousDateRange,
     required this.totalExpense,
+    required this.totalIncome,
+    required this.allTimeIncome,
+    required this.allTimeExpense,
     required this.previousExpense,
     required this.trendPercentage,
     required this.isIncrease,
@@ -177,14 +185,28 @@ class SpendingAnalysis {
     required List<AppTransaction> transactions,
     required DateTime baseDate,
     required AnalysisPeriod period,
+    DateTime? asOf,
   }) {
     final currentRange = period.dateRange(baseDate);
     final prevRange = period.previousDateRange(baseDate);
 
-    final now = DateTime.now();
-    final expenseTransactions = transactions.where(
-      (t) => t.countsAsExpense && !t.date.isAfter(now),
-    );
+    final now = asOf ?? DateTime.now();
+    final completed = transactions.where((t) => !t.date.isAfter(now));
+    final expenseTransactions = completed.where((t) => t.countsAsExpense);
+    double totalIncome = 0;
+    double allTimeIncome = 0;
+    double allTimeExpense = 0;
+    for (final transaction in completed) {
+      if (transaction.countsAsIncome) {
+        allTimeIncome += transaction.amount;
+        if (!transaction.date.isBefore(currentRange.start) &&
+            !transaction.date.isAfter(currentRange.end)) {
+          totalIncome += transaction.amount;
+        }
+      } else if (transaction.countsAsExpense) {
+        allTimeExpense += transaction.amount;
+      }
+    }
 
     // Current period transactions
     final currentExpenses = expenseTransactions.where((t) {
@@ -239,6 +261,9 @@ class SpendingAnalysis {
       currentDateRange: currentRange,
       previousDateRange: prevRange,
       totalExpense: currentTotal,
+      totalIncome: totalIncome,
+      allTimeIncome: allTimeIncome,
+      allTimeExpense: allTimeExpense,
       previousExpense: prevTotal > 0 ? prevTotal : null,
       trendPercentage: trendPercent,
       isIncrease: isTrendIncrease,

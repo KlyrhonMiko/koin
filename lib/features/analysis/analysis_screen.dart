@@ -4,9 +4,11 @@ import 'package:gap/gap.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/core/providers/effective_transaction_clock_provider.dart';
 import 'package:intl/intl.dart';
 
 import 'widgets/forecast_summary.dart';
+import 'widgets/spending_transactions_sheet.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -20,6 +22,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   bool _isInitialized = false;
   int _touchedPieIndex = -1;
   bool _showPieChart = false;
+  bool _showAllTimeTotals = false;
   DateTime _baseDate = DateTime.now();
 
   @override
@@ -50,7 +53,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         setState(() => _baseDate = next);
       }
     });
-    ref.watch(calendarDayProvider);
+    final asOf = ref.watch(effectiveTransactionClockProvider);
     final transactionsAsync = ref.watch(transactionProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final categories = categoriesAsync.value ?? [];
@@ -73,6 +76,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               transactions: transactions,
               baseDate: _baseDate,
               period: period,
+              asOf: asOf,
             );
             final filteredTransactions = analysis.filteredTransactions;
 
@@ -191,61 +195,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KoinSummaryCard(
-              shapeStyle: SummaryShapeStyle.analysis,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              topRightAction: KoinVisibilityButton(
-                hidden: hideAmount,
-                subject: 'spending',
-                onPressed: () => ref
-                    .read(settingsProvider.notifier)
-                    .setHideBalance(!hideAmount),
-              ),
-              child: KoinSummaryContent(
-                label: 'Total Spent',
-                currencyCode: currency.code,
-                amount: SizedBox(
-                  width: double.infinity,
-                  child: hideAmount
-                      ? const SizedBox(
-                          height: 42,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              '****',
-                              semanticsLabel: 'Spending hidden',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 30,
-                                fontWeight: KoinTypography.supportingWeight,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        )
-                      : FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedCounter(
-                            value: analysis.totalExpense,
-                            formatter: currency.formatter.format,
-                            duration: const Duration(milliseconds: 1000),
-                            style: KoinTypography.summaryAmountStyle,
-                          ),
-                        ),
-                ),
-                footer:
-                    analysis.previousExpense == null ||
-                        analysis.previousExpense == 0
-                    ? null
-                    : hideAmount
-                    ? const Text(
-                        'Spending comparison hidden',
-                        style: KoinTypography.summaryLabelStyle,
-                      )
-                    : _buildTrendBadge(analysis),
-              ),
-            ),
+            _buildFlowSummary(context, analysis, currency, hideAmount),
             const Gap(12),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -310,31 +260,189 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Widget _buildTrendBadge(SpendingAnalysis analysis) {
-    if (analysis.previousExpense == null || analysis.previousExpense == 0) {
-      return const SizedBox.shrink();
-    }
-
-    return Text.rich(
-      TextSpan(
+  Widget _buildFlowSummary(
+    BuildContext context,
+    SpendingAnalysis analysis,
+    Currency currency,
+    bool hidden,
+  ) {
+    final income = _showAllTimeTotals
+        ? analysis.allTimeIncome
+        : analysis.totalIncome;
+    final spent = _showAllTimeTotals
+        ? analysis.allTimeExpense
+        : analysis.totalExpense;
+    final comparison =
+        !_showAllTimeTotals &&
+            !hidden &&
+            analysis.previousExpense != null &&
+            analysis.previousExpense != 0
+        ? '${analysis.trendPercentage.toStringAsFixed(1)}% '
+              '${analysis.isIncrease ? 'more' : 'less'} than previous ${analysis.period.name}'
+        : null;
+    return KoinSummaryCard(
+      shapeStyle: SummaryShapeStyle.analysis,
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextSpan(
-            text: '${analysis.trendPercentage.toStringAsFixed(1)}% ',
-            style: const TextStyle(fontWeight: KoinTypography.titleWeight),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 4,
+                  children: [
+                    _buildTotalsRangeOption('Period', false),
+                    _buildTotalsRangeOption('All time', true),
+                  ],
+                ),
+              ),
+              const Gap(12),
+              KoinVisibilityButton(
+                hidden: hidden,
+                subject: 'amounts',
+                onPressed: () =>
+                    ref.read(settingsProvider.notifier).setHideBalance(!hidden),
+              ),
+            ],
           ),
-          TextSpan(
-            text:
-                '${analysis.isIncrease ? 'more' : 'less'} than previous ${['week', 'month', 'year'][_selectedFilterIndex]}',
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final scaler = MediaQuery.textScalerOf(context);
+              final columnWidth = (constraints.maxWidth - 20) / 2;
+              final needsFullWidth = [income, spent].any((value) {
+                final painter = TextPainter(
+                  text: TextSpan(
+                    text: hidden ? '****' : currency.formatter.format(value),
+                    style: KoinTypography.summaryAmountStyle.copyWith(
+                      fontFamily: KoinTypography.fontFamily,
+                      fontSize: KoinTypography.cardAmount,
+                    ),
+                  ),
+                  textDirection: Directionality.of(context),
+                  textScaler: scaler,
+                )..layout();
+                final tooWide = painter.width > columnWidth;
+                painter.dispose();
+                return tooWide;
+              });
+              final incomeMetric = _buildFlowTotal(
+                'Income',
+                income,
+                currency,
+                hidden,
+              );
+              final spentMetric = _buildFlowTotal(
+                'Spent',
+                spent,
+                currency,
+                hidden,
+                comparison: comparison,
+              );
+              if (scaler.scale(13) > 18 || needsFullWidth) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [incomeMetric, const Gap(16), spentMetric],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: incomeMetric),
+                  const Gap(20),
+                  Expanded(child: spentMetric),
+                ],
+              );
+            },
           ),
         ],
       ),
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.9),
-        fontSize: KoinTypography.small,
-        fontWeight: KoinTypography.labelWeight,
-        height: 1.4,
+    );
+  }
+
+  Widget _buildTotalsRangeOption(String label, bool allTime) {
+    final selected = _showAllTimeTotals == allTime;
+    return Semantics(
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: TextButton(
+        onPressed: () {
+          if (selected) return;
+          HapticService.selection();
+          setState(() => _showAllTimeTotals = allTime);
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white,
+          overlayColor: Colors.white,
+          padding: const EdgeInsets.all(8),
+          minimumSize: const Size(48, 48),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: KoinTypography.summaryLabelStyle.copyWith(
+                color: selected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: .72),
+                fontWeight: selected
+                    ? KoinTypography.titleWeight
+                    : KoinTypography.labelWeight,
+              ),
+            ),
+            const Gap(4),
+            SizedBox(
+              width: 16,
+              height: 2,
+              child: ColoredBox(
+                color: selected ? Colors.white : Colors.transparent,
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildFlowTotal(
+    String label,
+    double value,
+    Currency currency,
+    bool hidden, {
+    String? comparison,
+  }) {
+    final metric = Column(
+      key: ValueKey('analysis-${label.toLowerCase()}-total'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: KoinTypography.summaryLabelStyle),
+        const Gap(4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: hidden
+              ? Text(
+                  '****',
+                  semanticsLabel: '$label hidden',
+                  style: KoinTypography.summaryAmountStyle.copyWith(
+                    fontSize: KoinTypography.formTitle,
+                  ),
+                )
+              : AnimatedCounter(
+                  value: value,
+                  formatter: currency.formatter.format,
+                  duration: const Duration(milliseconds: 400),
+                  style: KoinTypography.summaryAmountStyle.copyWith(
+                    fontSize: KoinTypography.formTitle,
+                  ),
+                ),
+        ),
+      ],
+    );
+    return comparison == null
+        ? metric
+        : Tooltip(message: comparison, child: metric);
   }
 
   Widget _buildForecast(BuildContext context, Currency currency) {
@@ -529,40 +637,69 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
   ) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                _showPieChart ? 'Spending by Category' : 'Spending Trend',
-                style: TextStyle(
-                  fontSize: KoinTypography.sectionTitle,
-                  fontWeight: KoinTypography.headingWeight,
-                  color: AppTheme.textColor(context),
-                  letterSpacing: KoinTypography.headingTracking,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final heading = Text(
+              _showPieChart ? 'Categories' : 'Trend',
+              style: TextStyle(
+                fontSize: KoinTypography.sectionTitle,
+                fontWeight: KoinTypography.headingWeight,
+                color: AppTheme.textColor(context),
+                letterSpacing: KoinTypography.headingTracking,
+              ),
+            );
+            final actions = <Widget>[
+              if (!_showPieChart)
+                SpendingAmountsButton(
+                  expenses: analysis.filteredTransactions,
+                  currency: currency,
+                  filterIndex: _selectedFilterIndex,
+                  baseDate: _baseDate,
+                  onPeriodSelected: (range) =>
+                      SpendingTransactionsSheet.show(context, range),
+                ),
+              TextButton.icon(
+                onPressed: () {
+                  HapticService.selection();
+                  setState(() {
+                    _showPieChart = !_showPieChart;
+                    _touchedPieIndex = -1;
+                  });
+                },
+                icon: Icon(
+                  _showPieChart ? KoinIcons.chartBar : KoinIcons.chartDonut,
+                  size: 18,
+                ),
+                label: Text(_showPieChart ? 'Trend' : 'Categories'),
+                style: TextButton.styleFrom(
+                  overlayColor: AppTheme.primaryColor(context),
+                  foregroundColor: AppTheme.textLightColor(context),
+                  minimumSize: const Size(48, 48),
                 ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                HapticService.selection();
-                setState(() {
-                  _showPieChart = !_showPieChart;
-                  _touchedPieIndex = -1;
-                });
-              },
-              icon: Icon(
-                _showPieChart ? KoinIcons.chartBar : KoinIcons.chartDonut,
-                size: 18,
+            ];
+            if (constraints.maxWidth < 320 ||
+                MediaQuery.textScalerOf(context).scale(13) > 18) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  heading,
+                  Wrap(alignment: WrapAlignment.end, children: actions),
+                ],
+              );
+            }
+            return SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  heading,
+                  Wrap(alignment: WrapAlignment.end, children: actions),
+                ],
               ),
-              label: Text(_showPieChart ? 'Trend' : 'Categories'),
-              style: TextButton.styleFrom(
-                overlayColor: AppTheme.primaryColor(context),
-                foregroundColor: AppTheme.textLightColor(context),
-                minimumSize: const Size(48, 48),
-              ),
-            ),
-          ],
+            );
+          },
         ),
         const Gap(8),
         // The surface stays opaque while only the graph content fades through.
@@ -621,6 +758,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       currency: currency,
                       filterIndex: _selectedFilterIndex,
                       baseDate: _baseDate,
+                      onPeriodSelected: (range) =>
+                          SpendingTransactionsSheet.show(context, range),
                     ),
                   ),
           ),

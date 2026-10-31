@@ -312,7 +312,8 @@ void main() {
   testWidgets(
     'cashback credit opens its source; account shows total and monthly cashback',
     (tester) async {
-      final pending = purchase(rule: CashbackRule.fixedFive);
+      final pending = purchase(rule: CashbackRule.fixedFive)
+          .copyWith(date: DateTime.now());
       final received = purchase(rule: CashbackRule.onePercent)
           .copyWith(id: 'received', cashbackReceivedAt: () => DateTime.now());
       await setup([

@@ -626,11 +626,24 @@ class DashboardScreen extends ConsumerWidget {
       );
     }
 
-    return SpendingTrendChart(
-      expenses: expenses,
-      currency: currency,
-      filterIndex: 0, // Weekly trend for dashboard
-      baseDate: now,
+    return Column(
+      children: [
+        SpendingTrendChart(
+          expenses: expenses,
+          currency: currency,
+          filterIndex: 0,
+          baseDate: now,
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SpendingAmountsButton(
+            expenses: expenses,
+            currency: currency,
+            filterIndex: 0,
+            baseDate: now,
+          ),
+        ),
+      ],
     );
   }
 

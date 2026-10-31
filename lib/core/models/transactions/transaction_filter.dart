@@ -3,6 +3,21 @@ import 'package:intl/intl.dart';
 
 import 'transaction.dart';
 
+enum TransactionSortOrder {
+  newestFirst,
+  amountAscending,
+  amountDescending;
+
+  int compare(AppTransaction a, AppTransaction b) {
+    if (this != newestFirst) {
+      final amount = a.amount.compareTo(b.amount);
+      if (amount != 0) return this == amountAscending ? amount : -amount;
+    }
+    final date = b.date.compareTo(a.date);
+    return date == 0 ? b.id.compareTo(a.id) : date;
+  }
+}
+
 class TransactionFilter {
   final String query;
   final DateTimeRange? dateRange;
@@ -11,6 +26,7 @@ class TransactionFilter {
   final double? minAmount;
   final double? maxAmount;
   final TransactionType? type;
+  final TransactionSortOrder sortOrder;
 
   const TransactionFilter({
     this.query = '',
@@ -20,6 +36,7 @@ class TransactionFilter {
     this.minAmount,
     this.maxAmount,
     this.type,
+    this.sortOrder = TransactionSortOrder.newestFirst,
   });
 
   TransactionFilter copyWith({
@@ -30,6 +47,7 @@ class TransactionFilter {
     double? minAmount,
     double? maxAmount,
     TransactionType? type,
+    TransactionSortOrder? sortOrder,
     bool clearDateRange = false,
     bool clearMinAmount = false,
     bool clearMaxAmount = false,
@@ -43,8 +61,11 @@ class TransactionFilter {
       minAmount: clearMinAmount ? null : (minAmount ?? this.minAmount),
       maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
       type: clearType ? null : (type ?? this.type),
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
+
+  bool get isAmountSort => sortOrder != TransactionSortOrder.newestFirst;
 
   bool get isEmpty =>
       query.isEmpty &&
@@ -53,10 +74,12 @@ class TransactionFilter {
       accountIds.isEmpty &&
       minAmount == null &&
       maxAmount == null &&
-      type == null;
+      type == null &&
+      !isAmountSort;
 
   /// Whether only the search query differs (used to debounce search alone).
   bool hasSameCriteria(TransactionFilter other) =>
+      sortOrder == other.sortOrder &&
       dateRange == other.dateRange &&
       type == other.type &&
       minAmount == other.minAmount &&
@@ -68,7 +91,7 @@ class TransactionFilter {
 
   /// The count of non-query filters actively applied.
   int get activeFilterCount {
-    int count = 0;
+    int count = isAmountSort ? 1 : 0;
     if (type != null) count++;
     if (dateRange != null) count++;
     count += categoryIds.length;
@@ -104,6 +127,13 @@ class TransactionFilter {
     }
     if (minAmount != null || maxAmount != null) {
       parts.add('Amount ${minAmount ?? 0}–${maxAmount ?? 'any'}');
+    }
+    if (isAmountSort) {
+      parts.add(
+        sortOrder == TransactionSortOrder.amountAscending
+            ? 'Amount: low to high'
+            : 'Amount: high to low',
+      );
     }
     return parts.join(' • ');
   }
@@ -178,8 +208,10 @@ class TransactionFilter {
     Map<String, String>? categoryNamesById,
   }) {
     if (isEmpty) return transactions.toList();
-    return transactions
+    final result = transactions
         .where((tx) => matches(tx, categoryNamesById: categoryNamesById))
         .toList();
+    if (isAmountSort) result.sort(sortOrder.compare);
+    return result;
   }
 }
