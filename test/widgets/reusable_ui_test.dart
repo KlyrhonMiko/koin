@@ -156,6 +156,46 @@ void main() {
   );
 
   testWidgets(
+    'wrapped selection keeps its icon and does not move neighboring tiles',
+    (tester) async {
+      var selected = false;
+      await tester.pumpWidget(
+        host(
+          StatefulBuilder(
+            builder: (context, setState) => Wrap(
+              spacing: 10,
+              children: [
+                KoinSelectableOption(
+                  label: 'Cash',
+                  selected: selected,
+                  wrapContent: true,
+                  accentColor: Colors.teal,
+                  leading: const KoinAccountAvatar(
+                    iconCodePoint: 0,
+                    color: Colors.teal,
+                  ),
+                  onTap: () => setState(() => selected = !selected),
+                ),
+                const Text('Next tile'),
+              ],
+            ),
+          ),
+        ),
+      );
+      final tile = find.byType(KoinSelectableOption);
+      final before = tester.getRect(tile);
+      final neighbor = tester.getRect(find.text('Next tile'));
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(tile), before);
+      expect(tester.getRect(find.text('Next tile')), neighbor);
+      expect(find.byType(KoinAccountAvatar), findsOneWidget);
+      expect(find.byIcon(KoinIcons.checkCircle), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'progress respects reduced motion and avatar recovers from missing logo',
     (tester) async {
       await tester.pumpWidget(
@@ -181,7 +221,10 @@ void main() {
             .value,
         1,
       );
-      expect(find.byIcon(IconUtils.getIcon(KoinIcons.wallet.codePoint)), findsOneWidget);
+      expect(
+        find.byIcon(IconUtils.getIcon(KoinIcons.wallet.codePoint)),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

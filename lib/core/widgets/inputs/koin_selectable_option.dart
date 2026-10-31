@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/motion_policy.dart';
 
-/// Shared multi-select presentation for report grids and filter chips.
+/// Shared multi-select presentation for report tiles and filter chips.
 /// The owning feature retains the selection set and haptic policy.
 class KoinSelectableOption extends StatelessWidget {
   const KoinSelectableOption({
@@ -14,6 +14,7 @@ class KoinSelectableOption extends StatelessWidget {
     required this.accentColor,
     this.leading,
     this.compact = false,
+    this.wrapContent = false,
     this.horizontalPadding = 14,
   });
   final String label;
@@ -22,6 +23,7 @@ class KoinSelectableOption extends StatelessWidget {
   final Color accentColor;
   final Widget? leading;
   final bool compact;
+  final bool wrapContent;
   final double horizontalPadding;
 
   @override
@@ -44,7 +46,7 @@ class KoinSelectableOption extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 48),
             padding: EdgeInsets.symmetric(
               horizontal: horizontalPadding,
-              vertical: compact ? 9 : 0,
+              vertical: wrapContent ? 12 : (compact ? 9 : 0),
             ),
             decoration: BoxDecoration(
               color: selected
@@ -54,7 +56,7 @@ class KoinSelectableOption extends StatelessWidget {
                   : AppTheme.surfaceColor(context),
               borderRadius: BorderRadius.circular(compact ? 12 : 16),
               border: Border.all(
-                width: selected ? 1.5 : 1,
+                width: selected || wrapContent ? 1.5 : 1,
                 color: selected
                     ? accentColor.withValues(alpha: compact ? 0.4 : 1)
                     : AppTheme.dividerColor(context)
@@ -62,7 +64,9 @@ class KoinSelectableOption extends StatelessWidget {
               ),
             ),
             child: Row(
-              mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+              mainAxisSize: compact || wrapContent
+                  ? MainAxisSize.min
+                  : MainAxisSize.max,
               children: [
                 if (compact && selected) ...[
                   Icon(KoinIcons.checkCircle, size: 15, color: accentColor),
@@ -72,7 +76,7 @@ class KoinSelectableOption extends StatelessWidget {
                   SizedBox(width: compact ? 6 : 10),
                 ],
                 Flexible(
-                  fit: compact ? FlexFit.loose : FlexFit.tight,
+                  fit: compact || wrapContent ? FlexFit.loose : FlexFit.tight,
                   child: Text(
                     label,
                     maxLines: compact ? 1 : 2,
@@ -84,15 +88,21 @@ class KoinSelectableOption extends StatelessWidget {
                       fontSize: compact
                           ? KoinTypography.small
                           : KoinTypography.caption,
-                      fontWeight: selected
+                      fontWeight: selected && !wrapContent
                           ? KoinTypography.titleWeight
                           : KoinTypography.labelWeight,
                     ),
                   ),
                 ),
-                if (!compact && selected) ...[
-                  const SizedBox(width: 4),
-                  Icon(KoinIcons.checkCircle, size: 14, color: accentColor),
+                if (wrapContent || (!compact && selected)) ...[
+                  SizedBox(width: wrapContent ? 8 : 4),
+                  Icon(
+                    selected ? KoinIcons.checkCircle : KoinIcons.circle,
+                    size: wrapContent ? 18 : 14,
+                    color: selected
+                        ? accentColor
+                        : AppTheme.textLightColor(context),
+                  ),
                 ],
               ],
             ),

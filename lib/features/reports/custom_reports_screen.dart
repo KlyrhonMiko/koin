@@ -73,20 +73,6 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                 children:
                     [
                           _buildHeader(context),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () => setState(() {
-                                _dateRange = DateRangeSelector.lastDaysRange(
-                                  30,
-                                );
-                                _selectedType = null;
-                                _selectedCategoryIds.clear();
-                                _selectedAccountIds.clear();
-                              }),
-                              child: const Text('Reset filters'),
-                            ),
-                          ),
                           const Gap(KoinSpacing.sectionGap),
                           if (!_reportReady) ...[
                             _buildSummaryCard(context, ref, currencySymbol),
@@ -111,32 +97,46 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                             _buildPreview(context, categories, accounts),
                           ],
                           const Gap(KoinSpacing.sectionGap),
-                          const KoinSectionHeader(
+                          KoinSectionHeader(
                             title: 'Transaction Type',
                             subtitle: 'Filter by income or expense',
+                            trailing: Tooltip(
+                              message: 'Reset filters',
+                              child: TextButton(
+                                onPressed: () => setState(() {
+                                  _dateRange = DateRangeSelector.lastDaysRange(
+                                    30,
+                                  );
+                                  _selectedType = null;
+                                  _selectedCategoryIds.clear();
+                                  _selectedAccountIds.clear();
+                                }),
+                                child: const Text('Reset'),
+                              ),
+                            ),
                           ),
                           const Gap(12),
                           _buildTypeSelector(context),
                           const Gap(KoinSpacing.sectionGap),
-                          const KoinSectionHeader(
+                          KoinSectionHeader(
                             title: 'Categories',
-                            subtitle: 'Narrow down by spending categories',
+                            subtitle: _selectedCategoryIds.isEmpty
+                                ? 'All categories included'
+                                : _selectedCategoryIds.length == 1
+                                ? '1 category selected'
+                                : '${_selectedCategoryIds.length} categories selected',
+                            trailing: _selectedCategoryIds.isEmpty
+                                ? null
+                                : Tooltip(
+                                    message: 'Include all categories',
+                                    child: TextButton(
+                                      onPressed: () =>
+                                          setState(_selectedCategoryIds.clear),
+                                      child: const Text('Include all'),
+                                    ),
+                                  ),
                           ),
                           const Gap(12),
-                          Text(
-                            _selectedCategoryIds.isEmpty
-                                ? 'All categories included'
-                                : '${_selectedCategoryIds.length} categories selected',
-                          ),
-                          if (_selectedCategoryIds.isNotEmpty)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: () =>
-                                    setState(_selectedCategoryIds.clear),
-                                child: const Text('Include all categories'),
-                              ),
-                            ),
                           _buildCategorySelector(
                             context,
                             categories
@@ -148,25 +148,25 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                                 .toList(),
                           ),
                           const Gap(KoinSpacing.sectionGap),
-                          const KoinSectionHeader(
+                          KoinSectionHeader(
                             title: 'Accounts',
-                            subtitle: 'Select specific accounts to include',
+                            subtitle: _selectedAccountIds.isEmpty
+                                ? 'All accounts included'
+                                : _selectedAccountIds.length == 1
+                                ? '1 account selected'
+                                : '${_selectedAccountIds.length} accounts selected',
+                            trailing: _selectedAccountIds.isEmpty
+                                ? null
+                                : Tooltip(
+                                    message: 'Include all accounts',
+                                    child: TextButton(
+                                      onPressed: () =>
+                                          setState(_selectedAccountIds.clear),
+                                      child: const Text('Include all'),
+                                    ),
+                                  ),
                           ),
                           const Gap(12),
-                          Text(
-                            _selectedAccountIds.isEmpty
-                                ? 'All accounts included'
-                                : '${_selectedAccountIds.length} accounts selected',
-                          ),
-                          if (_selectedAccountIds.isNotEmpty)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: () =>
-                                    setState(_selectedAccountIds.clear),
-                                child: const Text('Include all accounts'),
-                              ),
-                            ),
                           _buildAccountSelector(context, accounts),
                         ]
                         .koinAnimate(
@@ -426,23 +426,22 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     List<TransactionCategory> categories,
   ) {
     if (categories.isEmpty) return const SizedBox.shrink();
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: categories.length,
-      gridDelegate: _optionGrid(context),
-      itemBuilder: (context, index) {
-        final cat = categories[index];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: categories.map((cat) {
         final isSelected = _selectedCategoryIds.contains(cat.id);
         return KoinSelectableOption(
           label: cat.name,
           selected: isSelected,
+          wrapContent: true,
           accentColor: AppTheme.primaryColor(context),
           leading: KoinIconBadge(
             icon: IconUtils.getIcon(cat.iconCodePoint),
             color: cat.color,
-            size: 26,
-            iconSize: 14,
+            size: 28,
+            iconSize: 16,
+            radius: 8,
           ),
           onTap: () {
             HapticService.light();
@@ -455,35 +454,39 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             });
           },
         );
-      },
+      }).toList(),
     );
   }
 
   Widget _buildAccountSelector(BuildContext context, List<Account> accounts) {
     if (accounts.isEmpty) return const SizedBox.shrink();
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: accounts.length,
-      gridDelegate: _optionGrid(context),
-      itemBuilder: (context, index) {
-        final acc = accounts[index];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: accounts.map((acc) {
         final isSelected = _selectedAccountIds.contains(acc.id);
         return KoinSelectableOption(
           label: acc.name,
           selected: isSelected,
-          accentColor: AppTheme.secondaryColor(context),
+          wrapContent: true,
+          accentColor: AppTheme.primaryColor(context),
           leading: Container(
-            padding: const EdgeInsets.all(6),
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: acc.color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              color: acc.logoAsset == null
+                  ? acc.color.withValues(alpha: 0.12)
+                  : null,
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: KoinAccountAvatar(
-              iconCodePoint: acc.iconCodePoint,
-              logoAsset: acc.logoAsset,
-              color: acc.color,
-              size: 14,
+            child: Center(
+              child: KoinAccountAvatar(
+                iconCodePoint: acc.iconCodePoint,
+                logoAsset: acc.logoAsset,
+                color: acc.color,
+                size: acc.logoAsset == null ? 18 : 28,
+                radius: 8,
+              ),
             ),
           ),
           onTap: () {
@@ -497,20 +500,7 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
             });
           },
         );
-      },
-    );
-  }
-
-  SliverGridDelegate _optionGrid(BuildContext context) {
-    final scaler = MediaQuery.textScalerOf(context);
-    return SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount:
-          MediaQuery.sizeOf(context).width < 380 || scaler.scale(13) > 18
-          ? 1
-          : 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      mainAxisExtent: 24 + scaler.scale(13) * 2.8,
+      }).toList(),
     );
   }
 
