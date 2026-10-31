@@ -58,7 +58,7 @@ class KoinActivityRow extends StatelessWidget {
                     children: [
                       Expanded(child: heading),
                       const SizedBox(width: 12),
-                      Flexible(fit: FlexFit.tight, child: amount),
+                      amount,
                     ],
                   ),
                 const SizedBox(height: 4),
