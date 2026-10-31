@@ -24,7 +24,7 @@ class AddRepaymentSheet extends ConsumerStatefulWidget {
     bool isIncrease = false,
   }) {
     HapticService.medium();
-    return showModalBottomSheet(
+    return showEditorBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -43,6 +43,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
   final _noteFocusNode = FocusNode();
   String? _selectedAccountId;
   bool _accountInitialized = false;
+  String? _openingAccountId;
   String _currentExpression = '';
   bool _saving = false;
   bool _saved = false;
@@ -96,6 +97,7 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
       } else {
         _selectedAccountId = accounts.first.id;
       }
+      _openingAccountId = _selectedAccountId;
       _accountInitialized = true;
     }
 
@@ -113,11 +115,8 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
               .watch(dashboardStatsProvider)
               .accountBalances[selectedAccount.id] ??
           selectedAccount.initialBalance;
-      final balanceStr = balance == balance.toInt()
-          ? balance.toInt().toString()
-          : balance.toStringAsFixed(2);
       displayAccountName =
-          '${selectedAccount.name} • ${settings.currency.symbol}$balanceStr';
+          '${selectedAccount.name} · ${settings.currency.formatter.format(balance)}';
     }
 
     final hasAmount =
@@ -125,260 +124,328 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
 
     final isAccountRequired = !widget.isIncrease;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final editingNote = _noteFocusNode.hasFocus;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return UnsavedChangesGuard(
+      title: 'Discard repayment changes?',
+      draft: () => (
+        _currentExpression,
+        _noteController.text,
+        _selectedAccountId == _openingAccountId ? null : _selectedAccountId,
       ),
-      child: KoinSheetSurface(
-        padding: EdgeInsets.fromLTRB(
-          0,
-          16,
-          0,
-          _noteFocusNode.hasFocus
-              ? (MediaQuery.of(context).padding.bottom + 24)
-              : 0,
+      listenables: [_noteController],
+      isSaving: () => _saving,
+      canLeave: () => _saved,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        color: AppTheme.backgroundColor(context),
-        shadows: [
-          AppTheme.boxShadow(
-            context,
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 32,
-            offset: const Offset(0, -8),
-          ),
-        ],
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const KoinBottomSheetHandle(),
-            const Gap(24),
-
-            // ── Title ──
-            Text(
-              widget.isIncrease ? 'Increase Credit' : 'Log Payment',
-              style: TextStyle(
-                fontSize: KoinTypography.screenTitle,
-                fontWeight: KoinTypography.headingWeight,
-                color: AppTheme.textColor(context),
-                letterSpacing: KoinTypography.headingTracking,
-              ),
+        child: KoinSheetSurface(
+          padding: const EdgeInsets.only(top: 16),
+          color: AppTheme.backgroundColor(context),
+          shadows: [
+            AppTheme.boxShadow(
+              context,
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+              blurRadius: 32,
+              offset: const Offset(0, -8),
             ),
-
-            const Gap(24),
-
-            // ── Amount Input Display ──
-            Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KoinSpacing.screenInset,
-                  ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        settings.currency.code,
-                        style: TextStyle(
-                          fontSize: KoinTypography.overline,
-                          fontWeight: KoinTypography.headingWeight,
-                          color: color.withValues(alpha: 0.5),
-                          letterSpacing: KoinTypography.overlineTracking,
-                        ),
-                      ),
-                      const Gap(4),
-                      KoinCalculatorAmount(
-                        symbol: settings.currency.symbol,
-                        expression: _currentExpression,
-                        color: AppTheme.contentColor(context, color),
-                        amountColor: hasAmount
-                            ? AppTheme.contentColor(context, color)
-                            : AppTheme.textLightColor(context),
-                        result: _amountController.text,
-                      ),
-                      if (!widget.isIncrease) ...[
-                        const Gap(12),
-                        Text(
-                          'Remaining Credit: ${settings.currency.formatter.format(widget.debt.remainingAmount)}',
-                          style: TextStyle(
-                            fontSize: KoinTypography.compact,
-                            fontWeight: KoinTypography.supportingWeight,
-                            color: AppTheme.textLightColor(context)
-                                .withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                      const Gap(16),
-                      Container(
-                        width: 48,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: color.withValues(alpha: 0.15),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                .koinAnimate(
-                  context,
-                  autoPlay: !MediaQuery.disableAnimationsOf(context),
-                  onInit: KoinMotion.onInit(context),
-                )
-                .fadeIn(duration: 300.ms)
-                .slideY(begin: 0.05, curve: Curves.easeOutCubic),
-            const Gap(32),
-
-            // ── Account & Note Fields ──
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: KoinSpacing.screenInset,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor(context),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppTheme.dividerColor(context)
-                        .withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    SelectionTile(
-                      asCard: false,
-                      fallbackIcon: KoinIcons.wallet,
-                      label: isAccountRequired
-                          ? 'Account'
-                          : 'Account (Optional)',
-                      selectedName: displayAccountName,
-                      selectedColor: selectedAccount?.color,
-                      selectedIconCodePoint: selectedAccount?.iconCodePoint,
-                      selectedLogoAsset: selectedAccount?.logoAsset,
-                      placeholder: isAccountRequired
-                          ? 'Select Account'
-                          : 'None (Balance only)',
-                      onTap: () => _openAccountPicker(context, accounts),
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppTheme.dividerColor(context)
-                          .withValues(alpha: 0.5),
-                      indent: 64,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppTheme.surfaceLightColor(context),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              KoinIcons.note,
-                              size: 18,
-                              color: AppTheme.textLightColor(context),
-                            ),
-                          ),
-                          const Gap(12),
-                          Expanded(
-                            child: TextField(
-                              controller: _noteController,
-                              focusNode: _noteFocusNode,
-                              onTap: () => HapticService.light(),
-                              onTapOutside: (_) =>
-                                  FocusManager.instance.primaryFocus?.unfocus(),
-                              style: TextStyle(
-                                fontWeight: KoinTypography.supportingWeight,
-                                fontSize: KoinTypography.body,
-                                color: AppTheme.textColor(context),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Add a note...',
-                                hintStyle: TextStyle(
-                                  color: AppTheme.textLightColor(context)
-                                      .withValues(alpha: 0.4),
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: KoinTypography.body,
-                                ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                filled: false,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                ),
-                              ),
+                          const KoinBottomSheetHandle(),
+                          const Gap(24),
+
+                          // ── Title ──
+                          Text(
+                            widget.isIncrease
+                                ? 'Increase balance'
+                                : widget.debt.type == DebtType.owedToMe
+                                ? 'Repayment received'
+                                : 'Make payment',
+                            style: TextStyle(
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.headingWeight,
+                              color: AppTheme.textColor(context),
+                              letterSpacing: KoinTypography.headingTracking,
                             ),
                           ),
+
+                          const Gap(24),
+
+                          // ── Amount Input Display ──
+                          Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: KoinSpacing.screenInset,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      settings.currency.code,
+                                      style: TextStyle(
+                                        fontSize: KoinTypography.overline,
+                                        fontWeight:
+                                            KoinTypography.headingWeight,
+                                        color: color.withValues(alpha: 0.5),
+                                        letterSpacing:
+                                            KoinTypography.overlineTracking,
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    KoinCalculatorAmount(
+                                      symbol: settings.currency.symbol,
+                                      expression: _currentExpression,
+                                      color: AppTheme.contentColor(
+                                        context,
+                                        color,
+                                      ),
+                                      amountColor: hasAmount
+                                          ? AppTheme.contentColor(
+                                              context,
+                                              color,
+                                            )
+                                          : AppTheme.textLightColor(context),
+                                      result: _amountController.text,
+                                    ),
+                                    if (!widget.isIncrease) ...[
+                                      const Gap(12),
+                                      Text(
+                                        'Remaining balance: ${settings.currency.formatter.format(widget.debt.remainingAmount)}',
+                                        style: TextStyle(
+                                          fontSize: KoinTypography.compact,
+                                          fontWeight:
+                                              KoinTypography.supportingWeight,
+                                          color: AppTheme.textLightColor(
+                                            context,
+                                          ).withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                    ],
+                                    const Gap(16),
+                                    Container(
+                                      width: 48,
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(2),
+                                        color: color.withValues(alpha: 0.15),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                              )
+                              .fadeIn(duration: 300.ms)
+                              .slideY(begin: 0.05, curve: Curves.easeOutCubic),
+                          const Gap(32),
+
+                          // ── Account & Note Fields ──
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: KoinSpacing.screenInset,
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceColor(context),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppTheme.dividerColor(context)
+                                      .withValues(alpha: 0.5),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  SelectionTile(
+                                    asCard: false,
+                                    fallbackIcon: KoinIcons.wallet,
+                                    label: isAccountRequired
+                                        ? 'Account'
+                                        : 'Account (Optional)',
+                                    selectedName: displayAccountName,
+                                    selectedColor: selectedAccount?.color,
+                                    selectedIconCodePoint:
+                                        selectedAccount?.iconCodePoint,
+                                    selectedLogoAsset:
+                                        selectedAccount?.logoAsset,
+                                    placeholder: isAccountRequired
+                                        ? 'Select Account'
+                                        : 'None (Balance only)',
+                                    onTap: _saving
+                                        ? null
+                                        : () => _openAccountPicker(context),
+                                  ),
+                                  Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: AppTheme.dividerColor(context)
+                                        .withValues(alpha: 0.5),
+                                    indent: 64,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.surfaceLightColor(
+                                              context,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            KoinIcons.note,
+                                            size: 18,
+                                            color: AppTheme.textLightColor(
+                                              context,
+                                            ),
+                                          ),
+                                        ),
+                                        const Gap(12),
+                                        Expanded(
+                                          child: TextField(
+                                            enabled: !_saving,
+                                            controller: _noteController,
+                                            focusNode: _noteFocusNode,
+                                            onTap: () => HapticService.light(),
+                                            onTapOutside: (_) => FocusManager
+                                                .instance
+                                                .primaryFocus
+                                                ?.unfocus(),
+                                            style: TextStyle(
+                                              fontWeight: KoinTypography
+                                                  .supportingWeight,
+                                              fontSize: KoinTypography.body,
+                                              color: AppTheme.textColor(
+                                                context,
+                                              ),
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: 'Add a note...',
+                                              hintStyle: TextStyle(
+                                                color: AppTheme.textLightColor(
+                                                  context,
+                                                ).withValues(alpha: 0.4),
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: KoinTypography.body,
+                                              ),
+                                              border: InputBorder.none,
+                                              enabledBorder: InputBorder.none,
+                                              focusedBorder: InputBorder.none,
+                                              filled: false,
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 20,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ).koinEntrance(context),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ).koinEntrance(context),
-
-            if (!_noteFocusNode.hasFocus) ...[
-              const Gap(16),
-              NumPad(
-                enabled: !_saving,
-                decimalDigits: settings.currency.decimalDigits,
-                compact: true,
-                initialValue: _currentExpression,
-                onValueChanged: (expression, result) {
-                  setState(() {
-                    _currentExpression = expression;
-                    _amountController.text = result;
-                  });
-                },
-                onDone: _submit,
-              ),
-            ],
-
-            if (_noteFocusNode.hasFocus) ...[
-              const Gap(32),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: KoinSpacing.screenInset,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _saving ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: AppTheme.foregroundFor(color),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      widget.isIncrease
-                          ? 'Confirm Increase'
-                          : 'Confirm Payment',
-                      style: const TextStyle(
-                        fontSize: KoinTypography.itemTitle,
-                        fontWeight: KoinTypography.titleWeight,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
+                      if (!editingNote)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: NumPad(
+                            enabled: !_saving,
+                            doneLabel: _saving
+                                ? 'Saving…'
+                                : widget.isIncrease
+                                ? 'Confirm increase'
+                                : 'Confirm payment',
+                            decimalDigits: settings.currency.decimalDigits,
+                            compact: true,
+                            initialValue: _currentExpression,
+                            onValueChanged: (expression, result) {
+                              setState(() {
+                                _currentExpression = expression;
+                                _amountController.text = result;
+                              });
+                            },
+                            onDone: _submit,
+                          ),
+                        ),
+                    ],
                   ),
-                ).koinEntrance(context),
+                ),
               ),
+              if (editingNote) _buildConfirmFooter(color),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildConfirmFooter(Color color) => SafeArea(
+    top: false,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(
+        KoinSpacing.screenInset,
+        12,
+        KoinSpacing.screenInset,
+        16,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _saving ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: AppTheme.foregroundFor(color),
+            minimumSize: const Size.fromHeight(56),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: Text(
+            _saving
+                ? 'Saving…'
+                : widget.isIncrease
+                ? 'Confirm Increase'
+                : 'Confirm Payment',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: KoinTypography.itemTitle,
+              fontWeight: KoinTypography.titleWeight,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Future<void> _submit() async {
     if (_saving) return;
@@ -511,15 +578,14 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
     KoinSnackBar.success(
       context,
       widget.isIncrease ? 'Credit Increased' : 'Payment Logged',
-      subtitle: 'Transaction added to ${selectedAccount?.name ?? 'Account'}',
+      subtitle: selectedAccount == null
+          ? 'Balance updated without an account transaction'
+          : 'Transaction recorded in ${selectedAccount.name}',
     );
     Navigator.pop(context);
   }
 
-  Future<void> _openAccountPicker(
-    BuildContext context,
-    List<Account> accounts,
-  ) async {
+  Future<void> _openAccountPicker(BuildContext context) async {
     final id = await showAccountPickerSheet(
       context: context,
       ref: ref,
@@ -530,7 +596,6 @@ class AddRepaymentSheetState extends ConsumerState<AddRepaymentSheet> {
           : 'Choose the account for this payment',
       allowNone: widget.isIncrease,
       noneLabel: 'No Account (Balance only)',
-      accountsOverride: accounts,
     );
     if (id != null && mounted) {
       setState(() => _selectedAccountId = id.isEmpty ? null : id);

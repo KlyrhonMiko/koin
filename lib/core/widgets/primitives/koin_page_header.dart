@@ -32,7 +32,9 @@ class KoinPageHeader extends StatelessWidget {
               ?subtitle,
               Text(
                 title,
-                maxLines: 1,
+                maxLines: MediaQuery.textScalerOf(context).scale(16) > 22
+                    ? 2
+                    : 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: KoinTypography.screenTitle,
@@ -46,6 +48,21 @@ class KoinPageHeader extends StatelessWidget {
         ),
         ?trailing,
       ],
+    ),
+  );
+}
+
+/// Keeps secondary routes aligned with the main app's readable viewport.
+class KoinContentWidth extends StatelessWidget {
+  const KoinContentWidth({super.key, required this.child, this.maxWidth = 760});
+  final Widget child;
+  final double maxWidth;
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
     ),
   );
 }

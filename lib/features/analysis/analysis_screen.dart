@@ -921,6 +921,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         final percent = item.percentage;
 
         return PressableScale(
+          enableHaptic: false,
           onTap: () {
             HapticService.light();
             ref

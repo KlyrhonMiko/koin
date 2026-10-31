@@ -77,6 +77,7 @@ class BudgetProgressCard extends StatelessWidget {
     );
 
     return PressableScale(
+      enableHaptic: false,
       onTap: () {
         HapticService.light();
         onManage();

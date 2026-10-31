@@ -143,6 +143,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: KoinSheetSurface(
+        scrollable: true,
         color: AppTheme.surfaceColor(context),
 
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),

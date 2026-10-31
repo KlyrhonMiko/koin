@@ -19,6 +19,7 @@ class HeroAmountField extends StatelessWidget {
   final FormFieldValidator<String>? validator;
   final Currency? currency;
   final double? originalValue;
+  final FocusNode? focusNode;
 
   const HeroAmountField({
     super.key,
@@ -32,6 +33,7 @@ class HeroAmountField extends StatelessWidget {
     this.validator,
     this.currency,
     this.originalValue,
+    this.focusNode,
   });
 
   @override
@@ -70,6 +72,7 @@ class HeroAmountField extends StatelessWidget {
                       child: TextFormField(
                         key: fieldKey,
                         controller: controller,
+                        focusNode: focusNode,
                         validator: (text) {
                           if (currency != null &&
                               text != null &&

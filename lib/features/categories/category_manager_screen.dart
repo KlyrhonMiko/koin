@@ -114,11 +114,12 @@ class _CategoryManagerScreenState extends ConsumerState<CategoryManagerScreen>
                   Expanded(
                     child: _showSearch
                         ? _buildSearchField(context)
-                        : Center(
+                        : Align(
+                            alignment: Alignment.centerLeft,
                             child: Text(
                               'Manage Categories',
                               style: TextStyle(
-                                fontSize: KoinTypography.sectionTitle,
+                                fontSize: KoinTypography.screenTitle,
                                 fontWeight: KoinTypography.headingWeight,
                                 letterSpacing: KoinTypography.headingTracking,
                                 color: AppTheme.textColor(context),
@@ -307,6 +308,7 @@ class _CategoryListState extends ConsumerState<CategoryList>
         children: [
           const Gap(6),
           PressableScale(
+            enableHaptic: false,
             onTap: () {
               HapticService.medium();
               Navigator.push(

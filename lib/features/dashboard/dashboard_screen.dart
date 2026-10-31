@@ -194,7 +194,7 @@ class DashboardScreen extends ConsumerWidget {
                       _buildBudgetSection(context, ref, currency),
                       const Gap(12),
                       KoinSectionHeader(
-                        title: 'Spending Overview',
+                        title: 'Spending this week',
                         actionLabel: 'Full Analysis',
                         onActionTap: () {
                           ref.read(activityTabProvider.notifier).setIndex(0);

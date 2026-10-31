@@ -234,7 +234,9 @@ class _ArchiveManagerScreenState extends ConsumerState<ArchiveManagerScreen> {
               ),
             ),
             SwitchListTile(
-              title: const Text('Show archived items'),
+              title: Text(
+                _archivedOnly ? 'Archived items only' : 'Active items only',
+              ),
               value: _archivedOnly,
               onChanged: (value) => setState(() => _archivedOnly = value),
             ),

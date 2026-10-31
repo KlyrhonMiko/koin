@@ -1,6 +1,8 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:koin/core/core.dart';
 
 /// A stable set of drop slots: cards preview the order without moving the
@@ -230,56 +232,94 @@ class _AccountReorderGridState extends State<AccountReorderGrid>
                 child: SizedBox(
                   width: widget.cardWidth,
                   height: widget.cardHeight,
-                  child: LongPressDraggable<String>(
-                    data: item.id,
-                    maxSimultaneousDrags: _draggedId == null ? 1 : 0,
-                    hapticFeedbackOnStart: false,
-                    onDragStarted: () => _start(item.id),
-                    onDragUpdate: (details) {
-                      _pointer = details.globalPosition;
-                      _autoScroller!.startAutoScrollIfNecessary(
-                        Rect.fromCenter(
-                          center: details.globalPosition,
-                          width: 48,
-                          height: 48,
+                  child: CallbackShortcuts(
+                    bindings: {
+                      if (order.indexOf(item.id) > 0)
+                        const SingleActivator(
+                          LogicalKeyboardKey.arrowUp,
+                          alt: true,
+                        ): () => widget.onReorder(
+                          item.id,
+                          order.indexOf(item.id) - 1,
                         ),
-                      );
-                      _previewAt(details.globalPosition);
+                      if (order.indexOf(item.id) < order.length - 1)
+                        const SingleActivator(
+                          LogicalKeyboardKey.arrowDown,
+                          alt: true,
+                        ): () => widget.onReorder(
+                          item.id,
+                          order.indexOf(item.id) + 1,
+                        ),
                     },
-                    onDragEnd: (details) => _finish(details, item.child),
-                    feedback: SizedBox(
-                      width: widget.cardWidth,
-                      height: widget.cardHeight,
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(
-                          begin: 1,
-                          end: MediaQuery.disableAnimationsOf(context)
-                              ? 1
-                              : 1.03,
-                        ),
-                        duration: KoinMotion.duration(
-                          context,
-                          const Duration(milliseconds: 160),
-                        ),
-                        curve: _curve,
-                        builder: (context, scale, child) => Transform.scale(
-                          scale: scale,
-                          child: Material(
-                            color: Colors.transparent,
-                            elevation: 12,
-                            borderRadius: BorderRadius.circular(
-                              KoinShape.field,
+                    child: Semantics(
+                      customSemanticsActions: {
+                        if (order.indexOf(item.id) > 0)
+                          const CustomSemanticsAction(
+                            label: 'Move before previous account',
+                          ): () => widget.onReorder(
+                            item.id,
+                            order.indexOf(item.id) - 1,
+                          ),
+                        if (order.indexOf(item.id) < order.length - 1)
+                          const CustomSemanticsAction(
+                            label: 'Move after next account',
+                          ): () => widget.onReorder(
+                            item.id,
+                            order.indexOf(item.id) + 1,
+                          ),
+                      },
+                      child: LongPressDraggable<String>(
+                        data: item.id,
+                        maxSimultaneousDrags: _draggedId == null ? 1 : 0,
+                        hapticFeedbackOnStart: false,
+                        onDragStarted: () => _start(item.id),
+                        onDragUpdate: (details) {
+                          _pointer = details.globalPosition;
+                          _autoScroller!.startAutoScrollIfNecessary(
+                            Rect.fromCenter(
+                              center: details.globalPosition,
+                              width: 48,
+                              height: 48,
                             ),
-                            child: child,
+                          );
+                          _previewAt(details.globalPosition);
+                        },
+                        onDragEnd: (details) => _finish(details, item.child),
+                        feedback: SizedBox(
+                          width: widget.cardWidth,
+                          height: widget.cardHeight,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(
+                              begin: 1,
+                              end: MediaQuery.disableAnimationsOf(context)
+                                  ? 1
+                                  : 1.03,
+                            ),
+                            duration: KoinMotion.duration(
+                              context,
+                              const Duration(milliseconds: 160),
+                            ),
+                            curve: _curve,
+                            builder: (context, scale, child) => Transform.scale(
+                              scale: scale,
+                              child: Material(
+                                color: Colors.transparent,
+                                elevation: 12,
+                                borderRadius: BorderRadius.circular(
+                                  KoinShape.field,
+                                ),
+                                child: child,
+                              ),
+                            ),
+                            child: IgnorePointer(child: item.child),
                           ),
                         ),
-                        child: IgnorePointer(child: item.child),
+                        childWhenDragging: _placeholder(context),
+                        child: _draggedId == item.id
+                            ? _placeholder(context)
+                            : item.child,
                       ),
                     ),
-                    childWhenDragging: _placeholder(context),
-                    child: _draggedId == item.id
-                        ? _placeholder(context)
-                        : item.child,
                   ),
                 ),
               ),

@@ -7,6 +7,8 @@ class KoinEntityNameField extends StatelessWidget {
     this.fieldKey,
     required this.controller,
     required this.hintText,
+    this.label = 'Name',
+    this.focusNode,
     this.validator,
     this.onChanged,
     this.textCapitalization = TextCapitalization.sentences,
@@ -15,6 +17,8 @@ class KoinEntityNameField extends StatelessWidget {
   final Key? fieldKey;
   final TextEditingController controller;
   final String hintText;
+  final String label;
+  final FocusNode? focusNode;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final TextCapitalization textCapitalization;
@@ -27,6 +31,7 @@ class KoinEntityNameField extends StatelessWidget {
     return TextFormField(
       key: fieldKey,
       controller: controller,
+      focusNode: focusNode,
       validator: validator,
       onChanged: onChanged,
       textAlign: TextAlign.center,
@@ -34,11 +39,15 @@ class KoinEntityNameField extends StatelessWidget {
       textInputAction: TextInputAction.next,
       style: style,
       decoration: InputDecoration(
+        labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        labelStyle: TextStyle(
+          color: AppTheme.textLightColor(context),
+          fontSize: KoinTypography.caption,
+        ),
         hintText: hintText,
         hintMaxLines: 2,
-        hintStyle: style.copyWith(
-          color: AppTheme.fieldHintColor(context, lightOpacity: 0.4),
-        ),
+        hintStyle: style.copyWith(color: AppTheme.fieldHintColor(context)),
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,

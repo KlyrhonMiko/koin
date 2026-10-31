@@ -30,6 +30,41 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     with TickerProviderStateMixin {
   final _noteController = TextEditingController();
+  final _amountValidationKey = GlobalKey();
+  final _accountValidationKey = GlobalKey();
+  final _categoryValidationKey = GlobalKey();
+  final _destinationValidationKey = GlobalKey();
+  final _accountValidationFocus = FocusNode();
+  final _categoryValidationFocus = FocusNode();
+  final _destinationValidationFocus = FocusNode();
+  String? _invalidField;
+
+  void _requireField(String field, GlobalKey key, {FocusNode? focus}) {
+    setState(() => _invalidField = field);
+    _showErrorSnackbar(
+      'Check $field',
+      subtitle: field == 'Amount'
+          ? 'Enter an amount greater than zero'
+          : 'Choose $field for this transaction',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = key.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          duration: KoinMotion.duration(
+            context,
+            const Duration(milliseconds: 160),
+          ),
+          alignment: .3,
+        );
+      }
+      focus?.requestFocus();
+      if (field == 'Amount') _selectNumericInput(fee: false);
+    });
+  }
+
   late final String _transactionId =
       widget.editingTransaction?.id ?? const Uuid().v4();
   final _amountController = TextEditingController();
@@ -155,6 +190,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _noteFocusNode.dispose();
     _feeFocusNode.dispose();
     _noteController.dispose();
+    _accountValidationFocus.dispose();
+    _categoryValidationFocus.dispose();
+    _destinationValidationFocus.dispose();
     _amountController.dispose();
     _feeController.dispose();
     _colorAnimController.dispose();
@@ -330,17 +368,35 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final categorySuggester = ref.read(categorySuggesterProvider);
     final isTransfer = _selectedType == TransactionType.transfer;
 
-    if (_amountController.text.isEmpty ||
-        (!isTransfer && _selectedCategoryId == null) ||
-        _selectedAccountId == null ||
-        (isTransfer && _selectedToAccountId == null)) {
-      HapticService.error();
-      _showErrorSnackbar(
-        'Please fill all required fields',
-        subtitle: 'Amount, Category, and Account are mandatory',
+    if (_amountController.text.isEmpty) {
+      _requireField('Amount', _amountValidationKey);
+      return;
+    }
+    if (_selectedAccountId == null) {
+      _requireField(
+        'Account',
+        _accountValidationKey,
+        focus: _accountValidationFocus,
       );
       return;
     }
+    if (isTransfer && _selectedToAccountId == null) {
+      _requireField(
+        'Destination',
+        _destinationValidationKey,
+        focus: _destinationValidationFocus,
+      );
+      return;
+    }
+    if (!isTransfer && _selectedCategoryId == null) {
+      _requireField(
+        'Category',
+        _categoryValidationKey,
+        focus: _categoryValidationFocus,
+      );
+      return;
+    }
+    setState(() => _invalidField = null);
 
     final amount =
         ref
@@ -352,11 +408,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ) ??
         0.0;
     if (!amount.isFinite || amount <= 0) {
-      HapticService.error();
-      _showErrorSnackbar(
-        'Enter a valid amount',
-        subtitle: 'The amount must be greater than zero',
-      );
+      _requireField('Amount', _amountValidationKey);
       return;
     }
 
@@ -1025,7 +1077,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: KoinSpacing.screenInset,
-              vertical: 4,
             ),
             child: Row(
               children: [
@@ -1137,7 +1188,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               ],
             ),
           ),
-          const Gap(4),
           // ── Type selector ──
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -1279,6 +1329,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
 
     return Padding(
+      key: _amountValidationKey,
       padding: const EdgeInsets.symmetric(horizontal: KoinSpacing.screenInset),
       child: Stack(
         clipBehavior: Clip.none,
@@ -1804,6 +1855,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           : Builder(
                               builder: (context) {
                                 Widget child = SelectionTile(
+                                  key: _categoryValidationKey,
+                                  focusNode: _categoryValidationFocus,
+                                  errorText:
+                                      _invalidField == 'Category' &&
+                                          _selectedCategoryId == null
+                                      ? 'Choose a category'
+                                      : null,
                                   minHeight: 72,
                                   asCard: false,
                                   fallbackIcon: KoinIcons.squaresFour,
@@ -1821,8 +1879,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                     _selectedCategoryId,
                                   )?.iconCodePoint,
                                   placeholder: 'Select category',
-                                  onTap: () =>
-                                      _openCategoryPicker(context, categories),
+                                  onTap: () => _openCategoryPicker(context),
                                   trailing: Container(
                                     decoration: BoxDecoration(
                                       color: AppTheme.surfaceLightColor(
@@ -2020,6 +2077,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ? null
             : balances[account.id] ?? account.initialBalance;
         return SelectionTile(
+          key: _destinationValidationKey,
+          focusNode: _destinationValidationFocus,
+          errorText:
+              _invalidField == 'Destination' && _selectedToAccountId == null
+              ? 'Choose a destination account'
+              : null,
           minHeight: 72,
           asCard: false,
           fallbackIcon: KoinIcons.wallet,
@@ -2113,6 +2176,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SelectionTile(
+            key: _accountValidationKey,
+            focusNode: _accountValidationFocus,
+            errorText: _invalidField == 'Account' && _selectedAccountId == null
+                ? 'Choose an account'
+                : null,
             minHeight: 72,
             asCard: false,
             fallbackIcon: KoinIcons.wallet,
@@ -2163,16 +2231,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   // ═══════════════════════════════════════════════════════
   // Pickers
   // ═══════════════════════════════════════════════════════
-  Future<void> _openCategoryPicker(
-    BuildContext context,
-    List<TransactionCategory> categories,
-  ) async {
+  Future<void> _openCategoryPicker(BuildContext context) async {
     final id = await showCategoryPickerSheet(
       context: context,
       ref: ref,
       selectedCategoryId: _selectedCategoryId,
       type: _selectedType,
-      categoriesOverride: categories,
       indicatorColor: _getTypeColor(context),
     );
     if (id != null && mounted) {
@@ -2202,7 +2266,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       selectedAccountId: selectedId,
       title: title,
       subtitle: subtitle,
-      accountsOverride: accounts,
       excludeAccountId: excludeAccountId,
       emptyMessage: 'No other accounts available',
       useSpendableBalance:

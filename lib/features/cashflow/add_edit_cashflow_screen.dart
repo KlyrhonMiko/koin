@@ -27,6 +27,29 @@ class AddEditCashflowScreen extends ConsumerStatefulWidget {
 class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _saving = false;
+  final _nameFocus = FocusNode();
+  final _amountFocus = FocusNode();
+  final _categoryFocus = FocusNode();
+  final _accountFocus = FocusNode();
+  final _categoryKey = GlobalKey();
+  final _accountKey = GlobalKey();
+  String? _invalidField;
+  void _requireSelection(String field, GlobalKey key, FocusNode focus) {
+    setState(() => _invalidField = field);
+    final target = key.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
+        duration: KoinMotion.duration(
+          context,
+          const Duration(milliseconds: 160),
+        ),
+        alignment: .3,
+      );
+    }
+    focus.requestFocus();
+  }
+
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _notesController;
@@ -72,6 +95,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _nameFocus.dispose();
+    _amountFocus.dispose();
+    _categoryFocus.dispose();
+    _accountFocus.dispose();
     _titleController.dispose();
     _amountController.dispose();
     _notesController.dispose();
@@ -159,6 +186,11 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
 
   Future<void> _savePaymentImpl() async {
     if (!_formKey.currentState!.validate()) {
+      if (_titleController.text.trim().isEmpty) {
+        _nameFocus.requestFocus();
+      } else {
+        _amountFocus.requestFocus();
+      }
       HapticService.error();
       return;
     }
@@ -204,6 +236,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     }
 
     if (_selectedCategoryId == null) {
+      _requireSelection('Category', _categoryKey, _categoryFocus);
       HapticService.error();
       KoinSnackBar.error(
         context,
@@ -214,6 +247,7 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
     }
 
     if (_selectedAccountId == null) {
+      _requireSelection('Account', _accountKey, _accountFocus);
       HapticService.error();
       KoinSnackBar.error(
         context,
@@ -346,6 +380,10 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
       children: [
         KoinEntityNameField(
           controller: _titleController,
+          focusNode: _nameFocus,
+          label: _isIncome ? 'Income name' : 'Payment name',
+          validator: (value) =>
+              value == null || value.trim().isEmpty ? 'Enter a name' : null,
           textCapitalization: TextCapitalization.sentences,
           hintText: _isIncome ? 'Name your income' : 'Name your payment',
           onChanged: (_) {
@@ -362,6 +400,16 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
         ),
         HeroAmountField(
           controller: _amountController,
+          focusNode: _amountFocus,
+          validator: (value) {
+            final amount = ref
+                .read(settingsProvider)
+                .currency
+                .tryParseInput(value ?? '');
+            return amount == null || amount <= 0
+                ? 'Enter an amount greater than zero'
+                : null;
+          },
           currencySymbol: currency.symbol,
           currency: currency,
           originalValue: widget.payment?.amount,
@@ -518,6 +566,13 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                 children: [
                   SelectionTile(
                     asCard: false,
+                    key: _categoryKey,
+                    focusNode: _categoryFocus,
+                    errorText:
+                        _invalidField == 'Category' &&
+                            _selectedCategoryId == null
+                        ? 'Choose a category'
+                        : null,
                     fallbackIcon: KoinIcons.squaresFour,
                     label: 'Category',
                     selectedName: category?.name,
@@ -529,6 +584,12 @@ class _AddEditCashflowScreenState extends ConsumerState<AddEditCashflowScreen> {
                   SelectionTile(
                     asCard: false,
                     fallbackIcon: KoinIcons.wallet,
+                    key: _accountKey,
+                    focusNode: _accountFocus,
+                    errorText:
+                        _invalidField == 'Account' && _selectedAccountId == null
+                        ? 'Choose an account'
+                        : null,
                     label: _isIncome ? 'Receiving account' : 'Payment account',
                     selectedName: account?.name,
                     selectedColor: account?.color,

@@ -136,7 +136,6 @@ class AccountsTab extends ConsumerWidget {
                           currency: currency,
                           animationSessionKey: animationSessionKey,
                           onTap: () {
-                            HapticService.light();
                             Navigator.push(
                               context,
                               SlideUpRoute(

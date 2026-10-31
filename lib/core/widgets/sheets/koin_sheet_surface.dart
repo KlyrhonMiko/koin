@@ -12,6 +12,7 @@ class KoinSheetSurface extends StatelessWidget {
     this.shadows,
     this.constraints,
     this.height,
+    this.scrollable = false,
   });
 
   final Widget child;
@@ -20,6 +21,7 @@ class KoinSheetSurface extends StatelessWidget {
   final List<BoxShadow>? shadows;
   final BoxConstraints? constraints;
   final double? height;
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -33,6 +35,6 @@ class KoinSheetSurface extends StatelessWidget {
       ),
       boxShadow: shadows,
     ),
-    child: child,
+    child: scrollable ? SingleChildScrollView(child: child) : child,
   );
 }

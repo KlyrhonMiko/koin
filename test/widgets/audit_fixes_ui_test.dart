@@ -834,8 +834,8 @@ void main() {
         'Updated food',
       );
       repository.pending = Completer<void>();
-      await tester.ensureVisible(find.text('Update Category'));
-      await tester.tap(find.text('Update Category'));
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.tap(find.text('Save changes'));
       await tester.pump();
       final navigator = tester.state<NavigatorState>(
         find.byType(Navigator).first,
@@ -857,8 +857,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Updated food'), findsWidgets);
       repository.pending = null;
-      await tester.ensureVisible(find.text('Update Category'));
-      await tester.tap(find.text('Update Category'));
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
       expect(find.text('Open editor'), findsOneWidget);
       expect((await repository.getCategories()).single.name, 'Updated food');

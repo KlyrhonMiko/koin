@@ -181,7 +181,13 @@ class _SavingsPlanEditorState extends ConsumerState<SavingsPlanEditor> {
                       context,
                       SavingsPlanEditResult(
                         SavingsPlan(
-                          amount: double.parse(_amount.text),
+                          amount: ref
+                              .read(settingsProvider)
+                              .currency
+                              .tryParseInput(
+                                _amount.text,
+                                originalValue: widget.initial?.amount,
+                              )!,
                           frequency: _frequency,
                           startDate: _date,
                         ),

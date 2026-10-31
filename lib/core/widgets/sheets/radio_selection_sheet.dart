@@ -15,121 +15,155 @@ Future<T?> showRadioSelectionSheet<T>({
   Key Function(T)? itemKey,
   bool showCheckmark = false,
   bool compact = false,
-}) => showModalBottomSheet<T>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
-  backgroundColor: AppTheme.surfaceColor(context),
-  builder: (sheetContext) => SafeArea(
-    top: false,
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: Center(
+}) {
+  var query = '';
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: AppTheme.surfaceColor(context),
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setState) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: SafeArea(
+          top: false,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              key: contentKey,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(4, 0, 4, compact ? 8 : 12),
-                  child: Text(
-                    title,
-                    style: Theme.of(sheetContext).textTheme.titleLarge
-                        ?.copyWith(
-                          fontSize: compact ? KoinTypography.sectionTitle : 22,
-                          fontWeight: compact
-                              ? KoinTypography.titleWeight
-                              : KoinTypography.headingWeight,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    key: contentKey,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(4, 0, 4, compact ? 8 : 12),
+                        child: Text(
+                          title,
+                          style: Theme.of(sheetContext).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize: compact
+                                    ? KoinTypography.sectionTitle
+                                    : 22,
+                                fontWeight: compact
+                                    ? KoinTypography.titleWeight
+                                    : KoinTypography.headingWeight,
+                              ),
                         ),
+                      ),
+                      if (options.length > 8)
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Search options',
+                          ),
+                          onChanged: (text) => setState(() => query = text),
+                        ),
+                      for (final option in options.where(
+                        (option) =>
+                            label(option)
+                                .toLowerCase()
+                                .contains(query.toLowerCase()),
+                      ))
+                        Semantics(
+                          selected: option == selected,
+                          inMutuallyExclusiveGroup: true,
+                          child: ListTile(
+                            key: itemKey?.call(option),
+                            selected: option == selected,
+                            selectedColor: AppTheme.textColor(sheetContext),
+                            selectedTileColor: showCheckmark && !compact
+                                ? AppTheme.primaryColor(sheetContext)
+                                      .withValues(alpha: 0.08)
+                                : null,
+                            shape: showCheckmark
+                                ? RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  )
+                                : null,
+                            minTileHeight: compact ? 48 : 64,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                            ),
+                            title: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    label(option),
+                                    style: Theme.of(sheetContext)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          fontSize: compact
+                                              ? KoinTypography.body
+                                              : null,
+                                          fontWeight: option == selected
+                                              ? compact
+                                                    ? KoinTypography.titleWeight
+                                                    : FontWeight.w700
+                                              : FontWeight.w500,
+                                        ),
+                                  ),
+                                ),
+                                if (compact &&
+                                    showCheckmark &&
+                                    option == selected)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12),
+                                    child: Icon(
+                                      KoinIcons.check,
+                                      size: 20,
+                                      color:
+                                          accentColor ??
+                                          AppTheme.primaryColor(sheetContext),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: compact && showCheckmark
+                                ? null
+                                : showCheckmark
+                                ? option == selected
+                                      ? Icon(
+                                          KoinIcons.check,
+                                          color: AppTheme.primaryColor(
+                                            sheetContext,
+                                          ),
+                                        )
+                                      : null
+                                : Icon(
+                                    option == selected
+                                        ? KoinIcons.radioButton
+                                        : KoinIcons.circle,
+                                    color: option == selected
+                                        ? accentColor ??
+                                              AppTheme.primaryColor(
+                                                sheetContext,
+                                              )
+                                        : AppTheme.textLightColor(sheetContext),
+                                    size: 24,
+                                  ),
+                            onTap: () {
+                              HapticService.selection();
+                              Navigator.pop(sheetContext, option);
+                            },
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                for (final option in options)
-                  Semantics(
-                    selected: option == selected,
-                    inMutuallyExclusiveGroup: true,
-                    child: ListTile(
-                      key: itemKey?.call(option),
-                      selected: option == selected,
-                      selectedColor: AppTheme.textColor(sheetContext),
-                      selectedTileColor: showCheckmark && !compact
-                          ? AppTheme.primaryColor(sheetContext)
-                                .withValues(alpha: 0.08)
-                          : null,
-                      shape: showCheckmark
-                          ? RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            )
-                          : null,
-                      minTileHeight: compact ? 48 : 64,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              label(option),
-                              style: Theme.of(sheetContext).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    fontSize: compact
-                                        ? KoinTypography.body
-                                        : null,
-                                    fontWeight: option == selected
-                                        ? compact
-                                              ? KoinTypography.titleWeight
-                                              : FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
-                            ),
-                          ),
-                          if (compact && showCheckmark && option == selected)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 12),
-                              child: Icon(
-                                KoinIcons.check,
-                                size: 20,
-                                color:
-                                    accentColor ??
-                                    AppTheme.primaryColor(sheetContext),
-                              ),
-                            ),
-                        ],
-                      ),
-                      trailing: compact && showCheckmark
-                          ? null
-                          : showCheckmark
-                          ? option == selected
-                                ? Icon(
-                                    KoinIcons.check,
-                                    color: AppTheme.primaryColor(sheetContext),
-                                  )
-                                : null
-                          : Icon(
-                              option == selected
-                                  ? KoinIcons.radioButton
-                                  : KoinIcons.circle,
-                              color: option == selected
-                                  ? accentColor ??
-                                        AppTheme.primaryColor(sheetContext)
-                                  : AppTheme.textLightColor(sheetContext),
-                              size: 24,
-                            ),
-                      onTap: () {
-                        HapticService.selection();
-                        Navigator.pop(sheetContext, option);
-                      },
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     ),
-  ),
-);
+  );
+}

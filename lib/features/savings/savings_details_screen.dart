@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:uuid/uuid.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/savings/add_savings_goal_screen.dart';
+import 'package:koin/features/transactions/add_transaction_screen.dart';
 import 'package:koin/features/savings/widgets/savings_log_sheet.dart';
 
 import 'widgets/savings_routine_card.dart';
@@ -69,6 +70,14 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       release: release,
       linkedAccount: linkedAccount,
       linkedBalance: linkedBalance,
+      initialAmount: log == null && !release && goal.savingsPlan != null
+          ? goal.savingsPlan!
+                .progress(
+                  ref.read(savingsLogsProvider(goal.id)).value ?? [],
+                  DateTime.now(),
+                )
+                .amountDue
+          : null,
       onSave: (amount) =>
           _saveLog(goal: goal, existingLog: log, amount: amount),
     );
@@ -93,14 +102,50 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
   Widget _buildScreen(BuildContext context) {
     final goalsAsync = ref.watch(computedSavingsGoalsProvider);
-    final goal = goalsAsync.when(
-      data: (goals) => goals.firstWhere(
-        (g) => g.id == widget.goal.id,
-        orElse: () => widget.goal,
-      ),
-      loading: () => widget.goal,
-      error: (error, stack) => widget.goal,
-    );
+    if (goalsAsync.hasError || !goalsAsync.hasValue || goalsAsync.isLoading) {
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: KoinPageHeader(title: 'Savings'),
+              ),
+              Expanded(
+                child: goalsAsync.hasError
+                    ? KoinErrorState(
+                        message: 'Could not refresh savings. Balances are unavailable.',
+                        onRetry: () => ref.invalidate(savingsGoalsProvider),
+                      )
+                    : const Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final goal = goalsAsync.requireValue
+        .where((g) => g.id == widget.goal.id)
+        .firstOrNull;
+    if (goal == null) {
+      return const Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: KoinPageHeader(title: 'Savings'),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text('This savings item is no longer available.'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final logsAsync = ref.watch(savingsLogsProvider(goal.id));
     final settings = ref.watch(settingsProvider);
@@ -122,116 +167,107 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  const KoinBackButton(),
-                  const Gap(8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.name,
-                          style: TextStyle(
-                            fontSize: KoinTypography.screenTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.itemTracking,
-                            color: AppTheme.textColor(context),
-                          ),
-                          maxLines:
-                              MediaQuery.textScalerOf(context).scale(18) > 24
-                              ? 2
-                              : 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (linkedAccount != null) ...[
-                          const Gap(3),
-                          _buildLinkedAccount(context, linkedAccount),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (goalsAsync.hasError)
+      body: KoinContentWidth(
+        maxWidth: 760,
+        child: SafeArea(
+          child: Column(
+            children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Details could not be refreshed. Showing saved details.',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => ref.invalidate(savingsGoalsProvider),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                    sliver: SliverToBoxAdapter(
+                    const KoinBackButton(),
+                    const Gap(8),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildGaugeHeader(context, goal, currencyFormat),
-                          const Gap(20),
-                          _buildQuickActions(
-                            context,
-                            goal,
-                            linkedAccount,
-                            linkedBalance,
-                          ),
-                          if (linkedBalance != null &&
-                              goal.currentAmount > linkedBalance)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Text(
-                                'Reserved savings exceed the account balance. Release savings to match your spending.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: AppTheme.expenseContentColor(context),
-                                  fontSize: KoinTypography.caption,
-                                ),
-                              ),
+                          Text(
+                            goal.name,
+                            style: TextStyle(
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.headingWeight,
+                              letterSpacing: KoinTypography.itemTracking,
+                              color: AppTheme.textColor(context),
                             ),
-                          if (!goal.isStash && goal.hasTarget) ...[
-                            const Gap(24),
-                            _buildGoalDetails(context, goal, currencyFormat),
-                          ] else if (goal.isStash) ...[
-                            const Gap(24),
-                            SavingsRoutineCard(goal: goal),
+                            maxLines:
+                                MediaQuery.textScalerOf(context).scale(18) > 24
+                                ? 2
+                                : 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (linkedAccount != null) ...[
+                            const Gap(3),
+                            _buildLinkedAccount(context, linkedAccount),
                           ],
                         ],
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: _buildActivitySection(
-                      context,
-                      goal,
-                      logsAsync,
-                      currencyFormat,
-                      linkedAccount,
-                      linkedBalance,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildGaugeHeader(context, goal, currencyFormat),
+                            const Gap(20),
+                            _buildQuickActions(
+                              context,
+                              goal,
+                              linkedAccount,
+                              linkedBalance,
+                            ),
+                            if (linkedBalance != null &&
+                                goal.currentAmount > linkedBalance)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Text(
+                                  'Reserved savings exceed the account balance. Release savings to match your spending.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppTheme.expenseContentColor(
+                                      context,
+                                    ),
+                                    fontSize: KoinTypography.caption,
+                                  ),
+                                ),
+                              ),
+                            if (!goal.isStash && goal.hasTarget) ...[
+                              const Gap(24),
+                              _buildGoalDetails(context, goal, currencyFormat),
+                            ] else if (goal.isStash) ...[
+                              const Gap(24),
+                              SavingsRoutineCard(goal: goal),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: _buildActivitySection(
+                        context,
+                        goal,
+                        logsAsync,
+                        currencyFormat,
+                        linkedAccount,
+                        linkedBalance,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -671,6 +707,7 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
                     .deleteLog(logs[index]);
               },
               child: PressableScale(
+                enableHaptic: false,
                 onTap: () {
                   HapticService.light();
                   _showAddLogSheet(
@@ -746,6 +783,30 @@ class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _activityEntryBody(context, log, money),
+        TextButton(
+          onPressed: () {
+            final transaction = ref
+                .read(transactionProvider)
+                .value
+                ?.where((tx) => tx.id == log.transactionId)
+                .firstOrNull;
+            if (transaction == null) {
+              KoinSnackBar.info(
+                context,
+                'Transaction is unavailable',
+                subtitle: 'Open transaction history and try again.',
+              );
+            } else {
+              Navigator.push(
+                context,
+                SlideUpRoute(
+                  page: AddTransactionScreen(editingTransaction: transaction),
+                ),
+              );
+            }
+          },
+          child: const Text('View transaction'),
+        ),
         Padding(
           padding: const EdgeInsets.only(left: 54, bottom: 14),
           child: Column(

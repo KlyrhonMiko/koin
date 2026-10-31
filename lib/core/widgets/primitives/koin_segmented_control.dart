@@ -140,77 +140,101 @@ class _SegmentTrack extends StatelessWidget {
         : color;
     const radius = BorderRadius.all(Radius.circular(KoinShape.field));
 
-    return Container(
-      height: vertical
-          ? height * segments.length + segments.length - 1
-          : height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor(context),
-        borderRadius: radius,
-      ),
-      foregroundDecoration: BoxDecoration(
-        borderRadius: radius,
-        border: Border.all(color: borderColor),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Flex(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        direction: vertical ? Axis.vertical : Axis.horizontal,
-        children: [
-          for (var index = 0; index < segments.length; index++) ...[
-            if (index > 0)
-              SizedBox(
-                width: vertical ? double.infinity : 1,
-                height: vertical ? 1 : double.infinity,
-                child: ColoredBox(color: borderColor),
-              ),
-            Expanded(
-              child: Semantics(
-                selected: index == selectedIndex,
-                inMutuallyExclusiveGroup: true,
-                child: TextButton(
-                  onPressed: () => onChanged(index),
-                  style: TextButton.styleFrom(
-                    overlayColor: AppTheme.primaryColor(context),
-                    foregroundColor: compact
-                        ? (index == selectedIndex
-                              ? selectedColor
-                              : AppTheme.textLightColor(context))
-                        : color,
-                    backgroundColor: primary.withValues(
-                      alpha:
-                          0.14 *
-                          (1.0 - (index - position).abs()).clamp(0.0, 1.0),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size(0, height),
-                    shape: const RoundedRectangleBorder(),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (segments[index].icon != null &&
-                          scaler.scale(16) <= 20) ...[
-                        Icon(segments[index].icon, size: compact ? 16 : 20),
-                        SizedBox(width: compact ? 6 : 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          segments[index].label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: labelStyle,
-                        ),
-                      ),
-                    ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth / segments.length - 16;
+        final stacked =
+            vertical ||
+            segments.any((segment) {
+              final painter = TextPainter(
+                text: TextSpan(
+                  text: segment.label,
+                  style: labelStyle.copyWith(
+                    fontFamily: KoinTypography.fontFamily,
                   ),
                 ),
-              ),
-            ),
-          ],
-        ],
-      ),
+                textDirection: Directionality.of(context),
+                textScaler: scaler,
+              )..layout();
+              final width =
+                  painter.width +
+                  (segment.icon != null && scaler.scale(16) <= 20 ? 28 : 0);
+              painter.dispose();
+              return width > available;
+            });
+        return Container(
+          height: stacked
+              ? height * segments.length + segments.length - 1
+              : height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: radius,
+          ),
+          foregroundDecoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: borderColor),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Flex(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            direction: stacked ? Axis.vertical : Axis.horizontal,
+            children: [
+              for (var index = 0; index < segments.length; index++) ...[
+                if (index > 0)
+                  SizedBox(
+                    width: stacked ? double.infinity : 1,
+                    height: stacked ? 1 : double.infinity,
+                    child: ColoredBox(color: borderColor),
+                  ),
+                Expanded(
+                  child: Semantics(
+                    selected: index == selectedIndex,
+                    inMutuallyExclusiveGroup: true,
+                    child: TextButton(
+                      onPressed: () => onChanged(index),
+                      style: TextButton.styleFrom(
+                        overlayColor: AppTheme.primaryColor(context),
+                        foregroundColor: compact
+                            ? (index == selectedIndex
+                                  ? selectedColor
+                                  : AppTheme.textLightColor(context))
+                            : color,
+                        backgroundColor: primary.withValues(
+                          alpha:
+                              0.14 *
+                              (1.0 - (index - position).abs()).clamp(0.0, 1.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size(0, height),
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (segments[index].icon != null &&
+                              scaler.scale(16) <= 20) ...[
+                            Icon(segments[index].icon, size: compact ? 16 : 20),
+                            SizedBox(width: compact ? 6 : 8),
+                          ],
+                          Flexible(
+                            child: Text(
+                              segments[index].label,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: labelStyle,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

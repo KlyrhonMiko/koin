@@ -205,6 +205,17 @@ class TransactionsListScreen extends ConsumerWidget {
     final primary = AppTheme.primaryColor(context);
     final hasFilters = !filter.isEmpty;
     final filterCount = filter.activeFilterCount;
+    final summary = filter.describe(
+      categories: {
+        for (final c
+            in ref.watch(categoriesProvider).value ?? <TransactionCategory>[])
+          c.id: c.name,
+      },
+      accounts: {
+        for (final a in ref.watch(accountProvider).value ?? <Account>[])
+          a.id: a.name,
+      },
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -242,7 +253,7 @@ class TransactionsListScreen extends ConsumerWidget {
                 Expanded(
                   child: KoinSearchField(
                     value: filter.query,
-                    hintText: 'Search transactions...',
+                    hintText: 'Search notes or categories',
                     onChanged: filterNotifier.setQuery,
                   ),
                 ),
@@ -256,6 +267,7 @@ class TransactionsListScreen extends ConsumerWidget {
 
                 // Filter button
                 PressableScale(
+                  enableHaptic: false,
                   semanticLabel: 'Filter transactions',
                   onTap: () {
                     HapticService.light();
@@ -323,7 +335,7 @@ class TransactionsListScreen extends ConsumerWidget {
           ),
 
           // ── Active filter summary strip ──
-          if (hasFilters && filter.summaryText.isNotEmpty)
+          if (hasFilters && summary.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child:
@@ -337,41 +349,22 @@ class TransactionsListScreen extends ConsumerWidget {
                           const Gap(6),
                           Expanded(
                             child: Text(
-                              filter.summaryText,
+                              summary,
                               style: TextStyle(
                                 color: AppTheme.textLightColor(context)
                                     .withValues(alpha: 0.7),
                                 fontSize: KoinTypography.overline,
                                 fontWeight: KoinTypography.labelWeight,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const Gap(8),
-                          GestureDetector(
-                            onTap: () {
-                              HapticService.light();
-                              filterNotifier.clearFilters();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Clear',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontSize: KoinTypography.overline,
-                                  fontWeight: KoinTypography.titleWeight,
-                                ),
-                              ),
+                          TextButton(
+                            onPressed: filterNotifier.clearFilters,
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
                             ),
+                            child: const Text('Clear'),
                           ),
                         ],
                       )

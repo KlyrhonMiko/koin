@@ -1,8 +1,20 @@
 # Koin interface
 
+## Polish refinements — 31 October 2026
+
+When editing a repayment note with the software keyboard open, pin Confirm Payment / Confirm Increase in a safe-area footer above the keyboard. Scroll the form separately; let the action height grow with scaled text rather than clipping it to a fixed height.
+
+Financial entry sheets scroll within available height, including keyboard insets. Confirm actions retain their draft until persistence succeeds; pending writes block dismissal and field editing. Keep keypad confirmation labels on one line within the existing key width. Omit the check icon for longer labels and fit the text when necessary. Joined choices stack when scaled labels cannot fit horizontally. Entity name inputs retain visible labels. Account/category pickers support search, selected semantics, loading, retry, and empty-state creation.
+
+Category editors keep Save in the safe-area footer and put optional appearance controls in a disclosure. Confirm budget removal before changing an expense category to income. Secondary headers align left; settings and details use a centered 760px content limit, while category forms use 560px. Preserve responsive phone navigation and account privacy/inclusion behavior.
+
+Monthly trend charts include every calendar date, including zero spending. Keep Trend and Categories at the same overall height and offer View amounts with full dates and values. Reports explicitly name all-selection, reconcile categories with transaction type, offer reset and a small preview, and explain total volume. Backup import validates and unlocks a separate copy before showing its identity and requesting replacement confirmation.
+
 The established app uses Outfit, teal accents, light and dark theme tokens, Phosphor icons (regular by default; filled for selected navigation, entity/category icons, and the dashboard greeting sun/moon), patterned summary cards, and rounded grouped surfaces. Visibility controls retain Koin's original Material rounded eye and eye-off icons by user preference. Use shared components across savings surfaces.
 
 ## Shared consistency rules
+
+Upcoming cards keep the title and subtitle together on the left, with the amount at the far right centered vertically beside both lines. Do not split title and amount into equal-width columns. Stack the amount below the title only when text size or the amount width makes the compact row too tight.
 
 All tooltips inherit the shared app tooltip theme: theme surface and text colors, a subtle outline, 12px corners, 16px horizontal and 12px vertical padding, and Outfit compact label text. Use the same treatment for full account amounts, action hints, navigation hints, and chart popups; avoid local tooltip styling.
 

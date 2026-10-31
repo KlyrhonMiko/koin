@@ -111,8 +111,10 @@ void main() {
         historyDays: history.observedDays,
       );
       final start = DateTime(now.year, now.month, now.day);
-      final days = CashflowForecaster.horizonEnd(horizon, now)
-          .difference(start).inDays;
+      final days = CashflowForecaster.horizonEnd(
+        horizon,
+        now,
+      ).difference(start).inDays;
       expect(result.forecastedInflow, closeTo(4600 * days / 21, 0.001));
       expect(result.forecastedOutflow, closeTo(2600 * days / 21, 0.001));
     }
@@ -186,54 +188,52 @@ void main() {
     );
   });
 
-  test(
-    'production provider carries cold-start history and removes paid flexible dates',
-    () async {
-      final today = DateTime.now();
-      final firstDay = DateTime(today.year, today.month, today.day - 7);
-      final payment = schedule(nextDate: firstDay);
-      final container = ProviderContainer(
-        overrides: [
-          ledgerProvider.overrideWithValue(
-            InMemoryLedgerAdapter(
-              initial: [
-                entry(
-                  'receipt',
-                  firstDay,
-                  200,
-                  type: TransactionType.income,
-                  plannedPaymentId: 'allowance',
-                ),
-              ],
-            ),
+  test('production provider carries cold-start history and removes paid flexible dates', () async {
+    final today = DateTime(2026, 10, 31, 12);
+    final firstDay = DateTime(today.year, today.month, today.day - 7);
+    final payment = schedule(nextDate: firstDay);
+    final container = ProviderContainer(
+      overrides: [
+        calendarClockProvider.overrideWithValue(() => today),
+        ledgerProvider.overrideWithValue(
+          InMemoryLedgerAdapter(
+            initial: [
+              entry(
+                'receipt',
+                firstDay,
+                200,
+                type: TransactionType.income,
+                plannedPaymentId: 'allowance',
+              ),
+            ],
           ),
-          accountRepositoryProvider.overrideWithValue(
-            InMemoryAccountAdapter(
-              initial: [
-                Account(
-                  id: 'cash',
-                  name: 'Cash',
-                  iconCodePoint: 1,
-                  colorHex: '#000000',
-                  initialBalance: 1000,
-                ),
-              ],
-            ),
+        ),
+        accountRepositoryProvider.overrideWithValue(
+          InMemoryAccountAdapter(
+            initial: [
+              Account(
+                id: 'cash',
+                name: 'Cash',
+                iconCodePoint: 1,
+                colorHex: '#000000',
+                initialBalance: 1000,
+              ),
+            ],
           ),
-          debtRepositoryProvider.overrideWithValue(InMemoryDebtAdapter()),
-          savingsRepositoryProvider.overrideWithValue(InMemorySavingsAdapter()),
-          plannedPaymentRepositoryProvider.overrideWithValue(
-            InMemoryPlannedPaymentAdapter(initial: [payment]),
-          ),
-          forecastRepositoryProvider.overrideWithValue(SqliteForecastAdapter()),
-        ],
-      );
-      addTearDown(container.dispose);
-      final result = await container.read(forecastProvider(1).future);
-      expect(result.historyDays, 7);
-      final monthDays = DateTime(today.year, today.month + 1, 0).day;
-      expect(result.forecastedInflow, closeTo(200 * monthDays / 7, 0.001));
-      expect(result.currentBaseline, 1200);
-    },
-  );
+        ),
+        debtRepositoryProvider.overrideWithValue(InMemoryDebtAdapter()),
+        savingsRepositoryProvider.overrideWithValue(InMemorySavingsAdapter()),
+        plannedPaymentRepositoryProvider.overrideWithValue(
+          InMemoryPlannedPaymentAdapter(initial: [payment]),
+        ),
+        forecastRepositoryProvider.overrideWithValue(SqliteForecastAdapter()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final result = await container.read(forecastProvider(1).future);
+    expect(result.historyDays, 7);
+    // October 31 to the clamped November 30 is a 30-day horizon.
+    expect(result.forecastedInflow, closeTo(200 * 30 / 7, 0.001));
+    expect(result.currentBaseline, 1200);
+  });
 }

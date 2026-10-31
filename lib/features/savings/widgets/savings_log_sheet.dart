@@ -209,6 +209,7 @@ class _SavingsLogSheetState extends ConsumerState<SavingsLogSheet> {
         (parsedAmount * 100).round() > (editableBalance * 100).round();
 
     return KoinSheetSurface(
+      scrollable: true,
       color: AppTheme.surfaceColor(context),
       shadows: [
         AppTheme.boxShadow(

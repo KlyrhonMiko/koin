@@ -294,6 +294,7 @@ void main() {
     (tester) async {
       await open(tester, const AccountSetupScreen());
       await capture(tester, 'setup-light');
+      await tester.enterText(find.byKey(const ValueKey('setup-balance')), '');
       await tester.ensureVisible(find.text('Start tracking'));
       await tester.tap(find.text('Start tracking'));
       await tester.pumpAndSettle();
@@ -423,7 +424,7 @@ void main() {
       await capture(tester, 'backup-password-light');
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      expect(find.text('Use at least 8 characters'), findsOneWidget);
+      expect(find.text('Use at least 8 characters'), findsNWidgets(2));
       await tester.enterText(
         find.widgetWithText(TextField, 'Password'),
         'example password',

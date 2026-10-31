@@ -764,8 +764,8 @@ void main() {
       );
       addTearDown(container.dispose);
       await launch(tester, const SettingsScreen(), container, reduce: true);
-      await tester.ensureVisible(find.text('Delete All Records'));
-      await tester.tap(find.text('Delete All Records'));
+      await tester.ensureVisible(find.text('Delete transaction history'));
+      await tester.tap(find.text('Delete transaction history'));
       // The maintenance guard intentionally keeps progress active while the
       // confirmation and write are pending; settling would wait forever.
       await tester.pump();
@@ -776,7 +776,7 @@ void main() {
       expect(maintenance.writes, 1);
       final tile = tester.widget<KoinSettingTile>(
         find.ancestor(
-          of: find.text('Delete All Records'),
+          of: find.text('Delete transaction history'),
           matching: find.byType(KoinSettingTile),
         ),
       );
@@ -790,7 +790,7 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
       maintenance.completion = Completer<void>();
-      await tester.tap(find.text('Delete All Records'));
+      await tester.tap(find.text('Delete transaction history'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.tap(find.text('Delete'));

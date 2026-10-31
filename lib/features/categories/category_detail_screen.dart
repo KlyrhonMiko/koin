@@ -18,6 +18,8 @@ class CategoryDetailScreen extends StatefulWidget {
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final _nameController = TextEditingController();
   bool _saving = false;
+  bool _confirmingType = false;
+  final _nameFocus = FocusNode();
   late int _selectedIconCodePoint;
   late String _selectedColorHex;
   late TransactionType _selectedType;
@@ -91,12 +93,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
   Future<void> _save(WidgetRef ref) async {
-    if (_saving) return;
+    if (_saving || _confirmingType) return;
     if (_nameController.text.trim().isEmpty) {
+      _nameFocus.requestFocus();
       HapticService.error();
       KoinSnackBar.error(
         context,
@@ -126,6 +130,25 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
     if (_selectedType != TransactionType.expense) {
       category = category.withoutBudget();
+    }
+    final removesBudget =
+        widget.category?.type == TransactionType.expense &&
+        _selectedType != TransactionType.expense &&
+        ((widget.category?.budget ?? 0) > 0 ||
+            widget.category?.isPercentBudget == true);
+    if (removesBudget) {
+      _confirmingType = true;
+      final confirmed = await ConfirmationSheet.show(
+        context: context,
+        title: 'Remove this category budget?',
+        description: 'Changing this category to Income removes its recurring budget. Existing transaction amounts are kept.',
+        confirmLabel: 'Change type',
+        confirmColor: AppTheme.errorColor(context),
+        icon: KoinIcons.warning,
+        isDanger: true,
+      );
+      _confirmingType = false;
+      if (confirmed != true || !mounted) return;
     }
     setState(() => _saving = true);
     try {
@@ -176,148 +199,161 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       builder: (context, ref, _) {
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor(context),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KoinSpacing.screenInset,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      const KoinBackButton(),
-                      const Gap(16),
-                      Expanded(
-                        child: Text(
-                          widget.category != null
-                              ? 'Edit Category'
-                              : 'New Category',
-                          style: TextStyle(
-                            fontSize: KoinTypography.screenTitle,
-                            fontWeight: KoinTypography.headingWeight,
-                            letterSpacing: KoinTypography.headingTracking,
-                            color: AppTheme.textColor(context),
-                          ),
-                        ),
-                      ),
-                    ],
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Center(
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: KoinPrimaryButton(
+                    isLoading: _saving,
+                    label: widget.category == null
+                        ? 'Create category'
+                        : 'Save changes',
+                    onPressed: () => _save(ref),
                   ),
                 ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(
-                      KoinSpacing.screenInset,
-                      16,
-                      KoinSpacing.screenInset,
-                      40,
+              ),
+            ),
+          ),
+          body: KoinContentWidth(
+            maxWidth: 560,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: KoinSpacing.screenInset,
+                      vertical: 8,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        // Live preview card
-                        _buildPreviewCard(context, selectedColor, previewName)
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(duration: 250.ms)
-                            .slideY(begin: 0.05),
-
-                        const Gap(KoinSpacing.sectionGap),
-
-                        // Name field
-                        _buildSectionLabel(context, 'Category Name'),
-                        const Gap(10),
-                        TextField(
-                              controller: _nameController,
-                              autofocus: widget.category == null,
-                              decoration: const InputDecoration(
-                                hintText: 'e.g., Groceries',
-                                prefixIcon: Icon(KoinIcons.tag),
-                              ),
-                            )
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(delay: 100.ms),
-
-                        const Gap(KoinSpacing.sectionGap),
-
-                        // Type selector
-                        _buildSectionLabel(context, 'Category Type'),
-                        const Gap(10),
-                        _buildTypeSelector(context)
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(delay: 120.ms),
-
-                        const Gap(KoinSpacing.sectionGap),
-
-                        // Icon picker
-                        _buildSectionLabel(context, 'Icon'),
-                        const Gap(12),
-                        _buildIconGrid(context, selectedColor)
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(delay: 150.ms),
-
-                        const Gap(KoinSpacing.sectionGap),
-
-                        // Color picker
-                        _buildSectionLabel(context, 'Color'),
-                        const Gap(12),
-                        _buildColorGrid(context)
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(delay: 200.ms),
-
-                        const Gap(36),
-
-                        KoinPrimaryButton(
-                              isLoading: _saving,
-                              label: widget.category != null
-                                  ? 'Update Category'
-                                  : 'Create Category',
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              onPressed: () => _save(ref),
-                            )
-                            .koinAnimate(
-                              context,
-                              autoPlay: !MediaQuery.disableAnimationsOf(
-                                context,
-                              ),
-                              onInit: KoinMotion.onInit(context),
-                            )
-                            .fade(delay: 250.ms),
+                        const KoinBackButton(),
+                        const Gap(16),
+                        Expanded(
+                          child: Text(
+                            widget.category != null
+                                ? 'Edit Category'
+                                : 'New Category',
+                            style: TextStyle(
+                              fontSize: KoinTypography.screenTitle,
+                              fontWeight: KoinTypography.headingWeight,
+                              letterSpacing: KoinTypography.headingTracking,
+                              color: AppTheme.textColor(context),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        KoinSpacing.screenInset,
+                        16,
+                        KoinSpacing.screenInset,
+                        40,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Live preview card
+                          _buildPreviewCard(context, selectedColor, previewName)
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                              )
+                              .fade(duration: 250.ms)
+                              .slideY(begin: 0.05),
+
+                          const Gap(KoinSpacing.sectionGap),
+
+                          // Name field
+                          _buildSectionLabel(context, 'Category Name'),
+                          const Gap(10),
+                          TextField(
+                                controller: _nameController,
+                                focusNode: _nameFocus,
+                                autofocus: widget.category == null,
+                                decoration: const InputDecoration(
+                                  hintText: 'e.g., Groceries',
+                                  prefixIcon: Icon(KoinIcons.tag),
+                                ),
+                              )
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                              )
+                              .fade(delay: 100.ms),
+
+                          const Gap(KoinSpacing.sectionGap),
+
+                          // Type selector
+                          _buildSectionLabel(context, 'Category Type'),
+                          const Gap(10),
+                          _buildTypeSelector(context)
+                              .koinAnimate(
+                                context,
+                                autoPlay: !MediaQuery.disableAnimationsOf(
+                                  context,
+                                ),
+                                onInit: KoinMotion.onInit(context),
+                              )
+                              .fade(delay: 120.ms),
+
+                          const Gap(KoinSpacing.sectionGap),
+
+                          ExpansionTile(
+                            title: const Text('Appearance'),
+                            subtitle: const Text('Icon and color'),
+                            maintainState: true,
+                            tilePadding: EdgeInsets.zero,
+                            children: [
+                              // Icon picker
+                              _buildSectionLabel(context, 'Icon'),
+                              const Gap(12),
+                              _buildIconGrid(context, selectedColor)
+                                  .koinAnimate(
+                                    context,
+                                    autoPlay: !MediaQuery.disableAnimationsOf(
+                                      context,
+                                    ),
+                                    onInit: KoinMotion.onInit(context),
+                                  )
+                                  .fade(delay: 150.ms),
+
+                              const Gap(KoinSpacing.sectionGap),
+
+                              // Color picker
+                              _buildSectionLabel(context, 'Color'),
+                              const Gap(12),
+                              _buildColorGrid(context)
+                                  .koinAnimate(
+                                    context,
+                                    autoPlay: !MediaQuery.disableAnimationsOf(
+                                      context,
+                                    ),
+                                    onInit: KoinMotion.onInit(context),
+                                  )
+                                  .fade(delay: 200.ms),
+                            ],
+                          ),
+                          const Gap(36),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
+import 'package:koin/features/dashboard/upcoming_screen.dart';
 
 /// Open, compact estimate; spending remains the primary metric.
 /// The horizon stays explicit and supporting figures open on demand.
@@ -227,6 +228,16 @@ class ForecastSummary extends StatelessWidget {
                   const Gap(12),
                   Text(
                     'Your balance may run short on ${DateFormat.MMMd().format(forecast.firstShortfallDate!)}. Review upcoming payments.',
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final navigator = Navigator.of(context);
+                      navigator.pop();
+                      navigator.push(
+                        SlideUpRoute(page: const UpcomingScreen()),
+                      );
+                    },
+                    child: const Text('Review upcoming payments'),
                   ),
                 ],
                 const Gap(16),

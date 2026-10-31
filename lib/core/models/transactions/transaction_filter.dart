@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'transaction.dart';
 
@@ -78,26 +79,31 @@ class TransactionFilter {
   }
 
   /// Localized summary description of active filter criteria.
-  String get summaryText {
+  String get summaryText => describe();
+
+  String describe({
+    Map<String, String> categories = const {},
+    Map<String, String> accounts = const {},
+  }) {
     final parts = <String>[];
     if (type != null) {
       parts.add(type!.name[0].toUpperCase() + type!.name.substring(1));
     }
     if (dateRange != null) {
-      parts.add('Date range');
+      parts.add(
+        '${DateFormat.yMMMd().format(dateRange!.start)}–${DateFormat.yMMMd().format(dateRange!.end)}',
+      );
     }
     if (categoryIds.isNotEmpty) {
       parts.add(
-        '${categoryIds.length} categor${categoryIds.length == 1 ? 'y' : 'ies'}',
+        categoryIds.map((id) => categories[id] ?? 'Category').join(', '),
       );
     }
     if (accountIds.isNotEmpty) {
-      parts.add(
-        '${accountIds.length} account${accountIds.length == 1 ? '' : 's'}',
-      );
+      parts.add(accountIds.map((id) => accounts[id] ?? 'Account').join(', '));
     }
     if (minAmount != null || maxAmount != null) {
-      parts.add('Amount range');
+      parts.add('Amount ${minAmount ?? 0}–${maxAmount ?? 'any'}');
     }
     return parts.join(' • ');
   }

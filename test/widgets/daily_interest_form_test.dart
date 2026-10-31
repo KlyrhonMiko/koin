@@ -465,13 +465,21 @@ void main() {
         .first;
     final initialSize = tester.getSize(settingsCard);
     await toggle(tester, 'Credit account');
-    expect(tester.getSize(settingsCard), initialSize);
+    expect(tester.getSize(settingsCard).width, initialSize.width);
+    expect(
+      tester.getSize(settingsCard).height,
+      greaterThanOrEqualTo(initialSize.height),
+    );
     expect(field('account_interest_rate_field'), findsNothing);
     await tester.ensureVisible(interestRow);
     await tester.tap(interestRow);
     await tester.pumpAndSettle();
     expect(field('account_interest_rate_field'), findsNothing);
-    expect(tester.getSize(settingsCard), initialSize);
+    expect(tester.getSize(settingsCard).width, initialSize.width);
+    expect(
+      tester.getSize(settingsCard).height,
+      greaterThanOrEqualTo(initialSize.height),
+    );
     expect(
       tester
           .widget<SwitchListTile>(

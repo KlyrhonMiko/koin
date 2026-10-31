@@ -20,6 +20,10 @@ import 'category_picker_sheet.dart';
 import 'savings_spending_confirmation.dart';
 import '../inputs/selection_tile.dart';
 import '../inputs/numpad.dart';
+import '../inputs/unsaved_changes_guard.dart';
+import '../inputs/koin_calculator_amount.dart';
+
+import 'package:intl/intl.dart';
 
 import 'package:koin/core/theme.dart';
 import 'package:koin/core/utils/haptic_utils.dart';
@@ -42,19 +46,27 @@ class PaymentConfirmationResult {
 class PaymentConfirmationSheet extends ConsumerStatefulWidget {
   static final Set<String> _pendingPaymentIds = {};
   final PlannedPayment payment;
+  final Future<bool> Function(BuildContext, PaymentConfirmationResult)?
+  onConfirm;
 
-  const PaymentConfirmationSheet({super.key, required this.payment});
+  const PaymentConfirmationSheet({
+    super.key,
+    required this.payment,
+    this.onConfirm,
+  });
 
   static Future<PaymentConfirmationResult?> show({
     required BuildContext context,
     required PlannedPayment payment,
+    Future<bool> Function(BuildContext, PaymentConfirmationResult)? onConfirm,
   }) {
     HapticService.medium();
-    return showModalBottomSheet<PaymentConfirmationResult>(
+    return showEditorBottomSheet<PaymentConfirmationResult>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => PaymentConfirmationSheet(payment: payment),
+      builder: (context) =>
+          PaymentConfirmationSheet(payment: payment, onConfirm: onConfirm),
     );
   }
 
@@ -81,9 +93,25 @@ class PaymentConfirmationSheet extends ConsumerStatefulWidget {
     required WidgetRef ref,
     required PlannedPayment payment,
   }) async {
-    final result = await show(context: context, payment: payment);
-    if (result == null || !context.mounted) return false;
+    final result = await show(
+      context: context,
+      payment: payment,
+      onConfirm: (sheetContext, draft) => _process(
+        context: sheetContext,
+        ref: ref,
+        payment: payment,
+        result: draft,
+      ),
+    );
+    return result != null;
+  }
 
+  static Future<bool> _process({
+    required BuildContext context,
+    required WidgetRef ref,
+    required PlannedPayment payment,
+    required PaymentConfirmationResult result,
+  }) async {
     final isExpense = payment.type == TransactionType.expense;
     final transactionId = const Uuid().v4();
     final savings = ref.read(savingsGoalsProvider.notifier);
@@ -158,6 +186,8 @@ class _PaymentConfirmationSheetState
   late String _selectedCategoryId;
   late String _selectedAccountId;
   String _currentExpression = '';
+  bool _saving = false;
+  bool _saved = false;
 
   @override
   void initState() {
@@ -205,7 +235,15 @@ class _PaymentConfirmationSheetState
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => UnsavedChangesGuard(
+    title: 'Discard payment changes?',
+    draft: () => (_currentExpression, _selectedCategoryId, _selectedAccountId),
+    isSaving: () => _saving,
+    canLeave: () => _saved,
+    child: _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     final categories = ref.watch(categoriesProvider).value ?? [];
     final accounts = ref.watch(accountProvider).value ?? [];
     final settings = ref.watch(settingsProvider);
@@ -224,6 +262,7 @@ class _PaymentConfirmationSheetState
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: KoinSheetSurface(
+        scrollable: true,
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
         color: AppTheme.backgroundColor(context),
         shadows: [
@@ -259,6 +298,17 @@ class _PaymentConfirmationSheetState
                 letterSpacing: KoinTypography.headingTracking,
               ),
             ),
+            const Gap(8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Scheduled for ${DateFormat.yMMMd().format(widget.payment.nextDate)}. '
+                '${widget.payment.nextDate.isAfter(DateTime.now()) ? 'Recording now collects or pays this occurrence early. ' : ''}'
+                'The next occurrence advances after confirmation.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
             const Gap(24),
 
             // ── Hero Amount ──
@@ -278,44 +328,15 @@ class _PaymentConfirmationSheetState
                         ),
                       ),
                       const Gap(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${currency.symbol} ',
-                            style: TextStyle(
-                              fontSize: KoinTypography.screenTitle,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.contentColor(context, typeColor),
-                            ),
-                          ),
-                          Text(
-                            _currentExpression.isEmpty
-                                ? '0'
-                                : _currentExpression,
-                            style: KoinTypography.inputAmountStyle.copyWith(
-                              color: hasAmount
-                                  ? AppTheme.contentColor(context, typeColor)
-                                  : AppTheme.textLightColor(context),
-                            ),
-                          ),
-                        ],
+                      KoinCalculatorAmount(
+                        symbol: currency.symbol,
+                        expression: _currentExpression,
+                        result: _amountController.text,
+                        color: AppTheme.contentColor(context, typeColor),
+                        amountColor: hasAmount
+                            ? AppTheme.contentColor(context, typeColor)
+                            : AppTheme.textLightColor(context),
                       ),
-                      if (_currentExpression.contains(RegExp(r'[+\-*/]')))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '= ${currency.symbol}${_amountController.text}',
-                            style: TextStyle(
-                              fontSize: KoinTypography.compact,
-                              fontWeight: KoinTypography.labelWeight,
-                              color: AppTheme.textLightColor(context)
-                                  .withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
                       const Gap(12),
                       Container(
                         width: 48,
@@ -372,7 +393,9 @@ class _PaymentConfirmationSheetState
                           selectedIconCodePoint:
                               selectedCategory?.iconCodePoint,
                           placeholder: 'Select category',
-                          onTap: () => _openCategoryPicker(context),
+                          onTap: () {
+                            if (!_saving) _openCategoryPicker(context);
+                          },
                         ),
                         // Divider
                         Padding(
@@ -393,7 +416,9 @@ class _PaymentConfirmationSheetState
                           selectedIconCodePoint: selectedAccount?.iconCodePoint,
                           selectedLogoAsset: selectedAccount?.logoAsset,
                           placeholder: 'Select account',
-                          onTap: () => _openAccountPicker(context),
+                          onTap: () {
+                            if (!_saving) _openAccountPicker(context);
+                          },
                         ),
                       ],
                     ),
@@ -409,6 +434,12 @@ class _PaymentConfirmationSheetState
             const Gap(16),
 
             NumPad(
+                  enabled: !_saving,
+                  doneLabel: _saving
+                      ? 'Saving…'
+                      : widget.payment.type == TransactionType.expense
+                      ? 'Confirm payment'
+                      : 'Confirm income',
                   decimalDigits: currency.decimalDigits,
                   compact: true,
                   initialValue: _currentExpression,
@@ -432,7 +463,8 @@ class _PaymentConfirmationSheetState
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_saving) return;
     HapticService.medium();
     final amount =
         ref
@@ -461,14 +493,28 @@ class _PaymentConfirmationSheetState
       KoinSnackBar.error(context, error.message);
       return;
     }
-    Navigator.pop(
-      context,
-      PaymentConfirmationResult(
-        amount: amount,
-        categoryId: _selectedCategoryId,
-        accountId: _selectedAccountId,
-      ),
+    final result = PaymentConfirmationResult(
+      amount: amount,
+      categoryId: _selectedCategoryId,
+      accountId: _selectedAccountId,
     );
+    setState(() => _saving = true);
+    try {
+      final confirmed = await widget.onConfirm?.call(context, result) ?? true;
+      if (!mounted || !confirmed) return;
+      setState(() => _saved = true);
+      Navigator.pop(context, result);
+    } catch (_) {
+      if (mounted) {
+        KoinSnackBar.error(
+          context,
+          'Could not record payment',
+          subtitle: 'Your changes are kept. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   // ═══════════════════════════════════════════════════════

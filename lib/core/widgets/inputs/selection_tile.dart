@@ -15,12 +15,14 @@ class SelectionTile extends StatelessWidget {
   final int? selectedIconCodePoint;
   final String? selectedLogoAsset;
   final String placeholder;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget? trailing;
   final String? selectedNameDetail;
   final bool asCard;
   final double minHeight;
   final int? selectedNameMaxLines;
+  final FocusNode? focusNode;
+  final String? errorText;
 
   const SelectionTile({
     super.key,
@@ -37,6 +39,8 @@ class SelectionTile extends StatelessWidget {
     this.asCard = true,
     this.minHeight = 0,
     this.selectedNameMaxLines = 1,
+    this.focusNode,
+    this.errorText,
   });
 
   bool get hasSelection =>
@@ -51,15 +55,19 @@ class SelectionTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () async {
-            HapticService.light();
-            final keyboardVisible = View.of(context).viewInsets.bottom > 0;
-            FocusManager.instance.primaryFocus?.unfocus();
-            if (keyboardVisible) {
-              await Future.delayed(const Duration(milliseconds: 150));
-            }
-            if (context.mounted) onTap();
-          },
+          focusNode: focusNode,
+          onTap: onTap == null
+              ? null
+              : () async {
+                  HapticService.light();
+                  final keyboardVisible =
+                      View.of(context).viewInsets.bottom > 0;
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  if (keyboardVisible) {
+                    await Future.delayed(const Duration(milliseconds: 150));
+                  }
+                  if (context.mounted) onTap!();
+                },
           borderRadius: BorderRadius.circular(asCard ? 16 : 18),
           child: Padding(
             padding: EdgeInsets.symmetric(
@@ -144,6 +152,27 @@ class SelectionTile extends StatelessWidget {
       ),
     );
 
+    if (errorText != null) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          content,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                errorText!,
+                style: TextStyle(
+                  color: AppTheme.errorContentColor(context),
+                  fontSize: KoinTypography.small,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     if (asCard) {
       return Container(
         decoration: BoxDecoration(

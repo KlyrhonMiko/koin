@@ -227,18 +227,18 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   Future<void> _editCategory() async {
     _parseRevision++;
     if (!mounted) return;
-    final categories = ref.read(categoriesProvider).value ?? [];
-
     final id = await showCategoryPickerSheet(
       context: context,
       ref: ref,
       selectedCategoryId: _parsedData!.category?.id,
       type: _parsedData!.type,
-      categoriesOverride: categories,
       indicatorColor: _getTypeColor(context, _parsedData!.type),
     );
     if (id != null && mounted) {
-      final category = categories.firstWhere((c) => c.id == id);
+      final category = ref
+          .read(categoriesProvider)
+          .requireValue
+          .firstWhere((c) => c.id == id);
       setState(() {
         _categorySuggested = false;
         _parsedData = _parsedData!.copyWith(
@@ -252,18 +252,18 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   Future<void> _editAccount() async {
     _parseRevision++;
     if (!mounted) return;
-    final accounts = ref.read(accountProvider).value ?? [];
-
     final id = await showAccountPickerSheet(
       context: context,
       ref: ref,
       selectedAccountId: _parsedData!.account?.id,
       title: 'Account',
       subtitle: 'Choose an account for this transaction',
-      accountsOverride: accounts,
     );
     if (id != null && mounted) {
-      final account = accounts.firstWhere((a) => a.id == id);
+      final account = ref
+          .read(accountProvider)
+          .requireValue
+          .firstWhere((a) => a.id == id);
       setState(() {
         _parsedData = _parsedData!.copyWith(account: account);
       });
@@ -273,19 +273,19 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
   Future<void> _editToAccount() async {
     _parseRevision++;
     if (!mounted) return;
-    final accounts = ref.read(accountProvider).value ?? [];
-
     final id = await showAccountPickerSheet(
       context: context,
       ref: ref,
       selectedAccountId: _parsedData!.toAccount?.id,
       title: 'Destination Account',
       subtitle: 'Choose where the money arrives',
-      accountsOverride: accounts,
       excludeAccountId: _parsedData!.account?.id,
     );
     if (id != null && mounted) {
-      final account = accounts.firstWhere((a) => a.id == id);
+      final account = ref
+          .read(accountProvider)
+          .requireValue
+          .firstWhere((a) => a.id == id);
       setState(() {
         _parsedData = _parsedData!.copyWith(toAccount: account);
       });
@@ -368,6 +368,10 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
               builder: (context, child) {
                 final isListening = state.isListening;
                 return PressableScale(
+                  semanticLabel: isListening
+                      ? 'Stop listening'
+                      : 'Cancel voice input',
+                  enableHaptic: false,
                   onTap: isListening ? _onStopListening : _onCancel,
                   child: SizedBox(
                     width: 120,
@@ -565,6 +569,22 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet>
             ),
 
             const Gap(8),
+            if (state.error.isNotEmpty)
+              Wrap(
+                spacing: 12,
+                children: [
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.read(voiceInputProvider.notifier).startListening(),
+                    icon: const Icon(KoinIcons.arrowClockwise),
+                    label: const Text('Retry'),
+                  ),
+                  TextButton(
+                    onPressed: _onCancel,
+                    child: const Text('Enter manually'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

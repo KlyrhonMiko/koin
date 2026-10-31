@@ -142,6 +142,7 @@ class TransactionTile extends StatelessWidget {
         : '${isIncome ? '+' : '-'}$formattedAmount';
 
     return PressableScale(
+      enableHaptic: onTap != null,
       onTap:
           onTap ??
           () {

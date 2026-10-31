@@ -322,7 +322,7 @@ class _NumPadState extends State<NumPad> {
 
     return Expanded(
       child: _AnimatedKeyWrapper(
-        label: 'Equals',
+        label: 'Equals. Calculations run from left to right',
         onTap: () => _onPress('=', NumPadAction.equals),
         child: Padding(
           padding: EdgeInsets.all(keyPad),
@@ -352,6 +352,9 @@ class _NumPadState extends State<NumPad> {
     final keyPad = c ? 3.0 : 4.0;
     final keyRadius = c ? 14.0 : 16.0;
     final keyHeight = c ? 51.0 : 56.0;
+    final showIcon =
+        widget.doneLabel.length <= 8 &&
+        MediaQuery.textScalerOf(context).scale(16) <= 21;
 
     return Expanded(
       flex: flex,
@@ -363,7 +366,8 @@ class _NumPadState extends State<NumPad> {
         child: Padding(
           padding: EdgeInsets.all(keyPad),
           child: Container(
-            height: keyHeight,
+            constraints: BoxConstraints(minHeight: keyHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               gradient: AppTheme.primaryGradient(context),
@@ -380,25 +384,34 @@ class _NumPadState extends State<NumPad> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  KoinIcons.check,
-                  color: AppTheme.gradientForeground(
-                    context,
-                    AppTheme.primaryGradient(context),
-                  ),
-                  size: 20,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  widget.doneLabel,
-                  style: TextStyle(
-                    fontSize: c ? 15.5 : 16.0,
-                    fontWeight: FontWeight.w700,
+                if (showIcon)
+                  Icon(
+                    KoinIcons.check,
                     color: AppTheme.gradientForeground(
                       context,
                       AppTheme.primaryGradient(context),
                     ),
-                    letterSpacing: 0.3,
+                    size: 20,
+                  ),
+                if (showIcon) const SizedBox(width: 6),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      widget.doneLabel,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(
+                        fontSize: c ? 15.5 : 16.0,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.gradientForeground(
+                          context,
+                          AppTheme.primaryGradient(context),
+                        ),
+                        letterSpacing: 0,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -440,6 +453,14 @@ class _NumPadState extends State<NumPad> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_expression.contains(RegExp(r'[+*/-]')))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'Calculates from left to right',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             // Row 1: 7 8 9 ÷
             Row(
               children: [

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -172,7 +173,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Groceries');
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Update Category'));
+    await tester.ensureVisible(find.text('Save changes'));
     await tester.pumpAndSettle();
     return container;
   }
@@ -182,7 +183,7 @@ void main() {
   ) async {
     final repository = InMemoryCategoryAdapter(initial: [category]);
     await openEditor(tester, repository);
-    await tester.tap(find.text('Update Category'));
+    await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
     final saved = (await repository.getCategories()).single;
     expect(saved.name, 'Groceries');
@@ -197,7 +198,7 @@ void main() {
     (tester) async {
       final repository = _DelayedCategoryRepository(category);
       final container = await openEditor(tester, repository);
-      await tester.tap(find.text('Update Category'));
+      await tester.tap(find.text('Save changes'));
       await tester.pump();
       expect(
         tester
@@ -218,5 +219,4 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-
 }

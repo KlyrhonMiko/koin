@@ -202,8 +202,9 @@ void main() {
       'PhosphorRegular': 'Phosphor.ttf',
       'PhosphorFill': 'Phosphor-Fill.ttf',
     }.entries) {
-      await (FontLoader('packages/phosphor_icons/${entry.key}')
-            ..addFont(rootBundle.load('packages/phosphor_icons/lib/fonts/${entry.value}')))
+      await (FontLoader('packages/phosphor_icons/${entry.key}')..addFont(
+            rootBundle.load('packages/phosphor_icons/lib/fonts/${entry.value}'),
+          ))
           .load();
     }
     await (FontLoader(
@@ -567,6 +568,7 @@ void main() {
     expect(find.byTooltip(name), findsOneWidget);
     expect(tester.takeException(), isNull);
     await capture(tester, 'reports-large-dark');
+    await tester.pumpAndSettle();
   });
 
   test(

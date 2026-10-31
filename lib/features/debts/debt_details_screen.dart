@@ -19,6 +19,7 @@ class DebtDetailsScreen extends ConsumerStatefulWidget {
 
 class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
   bool _purchasesExpanded = true;
+  int _visiblePurchases = 20;
 
   Future<void> _deleteRepayment(DebtRepayment repayment) async {
     await ref.read(debtsProvider.notifier).deleteRepayment(repayment);
@@ -85,89 +86,96 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      body: debtsAsync.when(
-        data: (debts) {
-          final debt = debts.cast<Debt?>().firstWhere(
-            (d) => d?.id == widget.debtId,
-            orElse: () => null,
-          );
-          if (debt == null) {
-            return const Center(child: Text('Credit/IOU not found'));
-          }
+      body: KoinContentWidth(
+        maxWidth: 760,
+        child: debtsAsync.when(
+          data: (debts) {
+            final debt = debts.cast<Debt?>().firstWhere(
+              (d) => d?.id == widget.debtId,
+              orElse: () => null,
+            );
+            if (debt == null) {
+              return const Center(child: Text('Credit/IOU not found'));
+            }
 
-          final color = debt.type == DebtType.owedToMe
-              ? AppTheme.incomeColor(context)
-              : AppTheme.expenseColor(context);
+            final color = debt.type == DebtType.owedToMe
+                ? AppTheme.incomeColor(context)
+                : AppTheme.expenseColor(context);
 
-          return SafeArea(
-            child: Column(
-              children: [
-                // ── Top bar ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KoinSpacing.screenInset,
-                    vertical: 8,
+            return SafeArea(
+              child: Column(
+                children: [
+                  // ── Top bar ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: KoinSpacing.screenInset,
+                      vertical: 8,
+                    ),
+                    child: KoinPageHeader(
+                      title: debt.type == DebtType.owedToMe
+                          ? 'Money owed to you'
+                          : 'Credit & IOU details',
+                    ),
                   ),
-                  child: const KoinPageHeader(title: 'Credit Details'),
-                ),
-                // ── Body ──
-                Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(
-                          KoinSpacing.screenInset,
-                          8,
-                          KoinSpacing.screenInset,
-                          32,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildMainCard(
-                                context,
-                                debt: debt,
-                                color: color,
-                                currencyFormat: currencyFormat,
-                              ),
-                              const Gap(24),
-                              _buildQuickActions(context, debt, color),
-                              if (debt.isPurchaseAccount ||
-                                  debt.items.isNotEmpty) ...[
-                                const Gap(32),
-                                _buildItemsSection(
+                  // ── Body ──
+                  Expanded(
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            KoinSpacing.screenInset,
+                            8,
+                            KoinSpacing.screenInset,
+                            32,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildMainCard(
                                   context,
-                                  debt,
-                                  currencyFormat,
-                                  color,
+                                  debt: debt,
+                                  color: color,
+                                  currencyFormat: currencyFormat,
                                 ),
+                                const Gap(24),
+                                _buildQuickActions(context, debt, color),
+                                if (debt.isPurchaseAccount ||
+                                    debt.items.isNotEmpty) ...[
+                                  const Gap(32),
+                                  _buildItemsSection(
+                                    context,
+                                    debt,
+                                    currencyFormat,
+                                    color,
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: KoinSpacing.screenInset,
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: KoinSpacing.screenInset,
+                          ),
+                          sliver: _buildPaymentHistorySection(
+                            context,
+                            repaymentsAsync: repaymentsAsync,
+                            currencyFormat: currencyFormat,
+                            color: color,
+                          ),
                         ),
-                        sliver: _buildPaymentHistorySection(
-                          context,
-                          repaymentsAsync: repaymentsAsync,
-                          currencyFormat: currencyFormat,
-                          color: color,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) =>
-            KoinErrorState(onRetry: () => ref.invalidate(debtsProvider)),
+                ],
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) =>
+              KoinErrorState(onRetry: () => ref.invalidate(debtsProvider)),
+        ),
       ),
     );
   }
@@ -477,7 +485,9 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
         if (_purchasesExpanded) const Gap(16),
         // Item tiles
         if (_purchasesExpanded)
-          ...items.asMap().entries.map((entry) {
+          ...items.take(_visiblePurchases).toList().asMap().entries.map((
+            entry,
+          ) {
             final item = entry.value;
             return Padding(
               key: ValueKey('purchase_${item.id}'),
@@ -498,6 +508,7 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                       .removeDebtItem(debt, item);
                 },
                 child: PressableScale(
+                  enableHaptic: false,
                   onTap: () async {
                     HapticService.light();
                     final categories = ref.read(categoriesProvider).value ?? [];
@@ -514,14 +525,14 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                           ? debt.startDate.day
                           : null,
                       existingItem: item,
+                      onSave: (draft) => ref
+                          .read(debtsProvider.notifier)
+                          .saveDebtItem(debt, draft),
                       suggester: ref.read(categorySuggesterProvider),
                       onCategoryConfirmed: (_) => categoryConfirmed = true,
                     );
 
                     if (updatedItem != null) {
-                      await ref
-                          .read(debtsProvider.notifier)
-                          .saveDebtItem(debt, updatedItem);
                       if (categoryConfirmed) {
                         await _rememberPurchase(debt, updatedItem);
                       }
@@ -542,9 +553,17 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
               ),
             );
           }),
+        if (_purchasesExpanded && items.length > _visiblePurchases)
+          TextButton(
+            onPressed: () => setState(() => _visiblePurchases += 20),
+            child: Text(
+              'Show more purchases (${items.length - _visiblePurchases} remaining)',
+            ),
+          ),
         if (_purchasesExpanded && debt.isPurchaseAccount) ...[
           const Gap(6),
           PressableScale(
+            enableHaptic: false,
             onTap: () async {
               HapticService.light();
               final categories = ref.read(categoriesProvider).value ?? [];
@@ -561,14 +580,14 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                     ? debt.startDate.day
                     : null,
                 suggester: ref.read(categorySuggesterProvider),
+                onSave: (draft) => ref
+                    .read(debtsProvider.notifier)
+                    .saveDebtItem(debt, draft.copyWith(debtId: debt.id)),
                 onCategoryConfirmed: (_) => categoryConfirmed = true,
               );
 
               if (newItem != null) {
                 final newDebtItem = newItem.copyWith(debtId: debt.id);
-                await ref
-                    .read(debtsProvider.notifier)
-                    .saveDebtItem(debt, newDebtItem);
                 if (categoryConfirmed) {
                   await _rememberPurchase(debt, newDebtItem);
                 }
@@ -635,22 +654,17 @@ class _DebtDetailsScreenState extends ConsumerState<DebtDetailsScreen> {
                 ),
               );
             }
-            return SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Column(
-                  key: const ValueKey('repayments_column'),
-                  children: repayments.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final repayment = entry.value;
-                    return _buildRepaymentTile(
-                      context,
-                      repayment: repayment,
-                      currencyFormat: currencyFormat,
-                      color: color,
-                      isFirst: index == 0,
-                    );
-                  }).toList(),
+            return SliverPadding(
+              padding: const EdgeInsets.only(bottom: 24),
+              sliver: SliverList.builder(
+                key: const ValueKey('repayments_column'),
+                itemCount: repayments.length,
+                itemBuilder: (context, index) => _buildRepaymentTile(
+                  context,
+                  repayment: repayments[index],
+                  currencyFormat: currencyFormat,
+                  color: color,
+                  isFirst: index == 0,
                 ),
               ),
             );

@@ -19,10 +19,10 @@ Future<DebtItem?> showAddPurchaseSheet({
   DebtItem? existingItem,
   CategorySuggester? suggester,
   void Function(DebtItem item)? onCategoryConfirmed,
+  Future<void> Function(DebtItem item)? onSave,
 }) {
-  final currency = ProviderScope.containerOf(context)
-      .read(settingsProvider)
-      .currency;
+  final container = ProviderScope.containerOf(context, listen: false);
+  final currency = container.read(settingsProvider).currency;
   String name = existingItem?.name ?? '';
   String amountStr =
       existingItem?.amount.toString().replaceAll(RegExp(r'\.0$'), '') ?? '';
@@ -64,6 +64,7 @@ Future<DebtItem?> showAddPurchaseSheet({
   bool manualCategory = existingItem != null;
   bool categoryConfirmed = false;
   bool saved = false;
+  bool saving = false;
 
   void runAutoCategorize(void Function(void Function()) setSheetState) {
     coordinator.cancel();
@@ -144,6 +145,7 @@ Future<DebtItem?> showAddPurchaseSheet({
               selectedCategory?.id,
             ),
             canLeave: () => saved,
+            isSaving: () => saving,
             child: Padding(
               padding: EdgeInsets.only(bottom: inset),
               child: Container(
@@ -188,272 +190,292 @@ Future<DebtItem?> showAddPurchaseSheet({
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 560),
-                            child: Form(
-                              key: formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  TextFormField(
-                                    initialValue: name,
-                                    textAlign: TextAlign.center,
-                                    textCapitalization:
-                                        TextCapitalization.sentences,
-                                    textInputAction: TextInputAction.next,
-                                    style: nameStyle,
-                                    decoration: InputDecoration(
-                                      hintText: 'Name your purchase',
-                                      hintMaxLines: 2,
-                                      hintStyle: nameStyle.copyWith(
-                                        color: AppTheme.fieldHintColor(
-                                          ctx,
-                                          lightOpacity: 0.4,
-                                        ),
-                                      ),
-                                      filled: false,
-                                      border: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      errorBorder: InputBorder.none,
-                                      focusedErrorBorder: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    validator: (value) =>
-                                        value == null || value.trim().isEmpty
-                                        ? 'Enter a purchase name'
-                                        : null,
-                                    onChanged: (value) {
-                                      setSheetState(() => name = value);
-                                      runAutoCategorize(setSheetState);
-                                    },
-                                  ),
-                                  const Gap(16),
-                                  Text(
-                                    monthlyBillingDay != null &&
-                                            existingItem == null
-                                        ? 'Remaining balance (${currency.code})'
-                                        : 'Total amount (${currency.code})',
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(ctx).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: AppTheme.textLightColor(ctx),
-                                        ),
-                                  ),
-                                  const Gap(8),
-                                  TextFormField(
-                                    initialValue: amountStr,
-                                    textAlign: TextAlign.center,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                          decimal: true,
-                                        ),
-                                    style: amountStyle,
-                                    decoration: InputDecoration(
-                                      hintText: '0',
-                                      hintStyle: amountStyle.copyWith(
-                                        color: AppTheme.hasEditorAppearance(ctx)
-                                            ? AppTheme.textLightColor(ctx)
-                                            : primaryColor.withValues(
-                                                alpha: 0.35,
-                                              ),
-                                      ),
-                                      filled: false,
-                                      border: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      errorBorder: InputBorder.none,
-                                      focusedErrorBorder: InputBorder.none,
-                                      errorMaxLines: 3,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      final amount = currency.tryParseInput(
-                                        (value ?? ''),
-                                        originalValue: existingItem?.amount,
-                                      );
-                                      return amount == null ||
-                                              !amount.isFinite ||
-                                              amount <= 0
-                                          ? 'Enter an amount greater than zero'
-                                          : null;
-                                    },
-                                    onChanged: (value) {
-                                      setSheetState(() => amountStr = value);
-                                      if (selectedCategory == null) {
-                                        runAutoCategorize(setSheetState);
-                                      }
-                                    },
-                                  ),
-                                  const Gap(24),
-                                  Text(
-                                    monthlyBillingDay != null
-                                        ? 'Payment schedule'
-                                        : 'Installment plan',
-                                    style: Theme.of(ctx).textTheme.titleSmall,
-                                  ),
-                                  const Gap(8),
-                                  if (monthlyBillingDay == null)
+                            child: AbsorbPointer(
+                              absorbing: saving,
+                              child: Form(
+                                key: formKey,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
                                     TextFormField(
-                                      initialValue: installmentsStr,
-                                      keyboardType: TextInputType.number,
-                                      style: Theme.of(ctx).textTheme.bodyLarge,
+                                      initialValue: name,
+                                      textAlign: TextAlign.center,
+                                      textCapitalization:
+                                          TextCapitalization.sentences,
+                                      textInputAction: TextInputAction.next,
+                                      style: nameStyle,
                                       decoration: InputDecoration(
-                                        labelText: 'Installments',
-                                        hintText: '1',
-                                        hintStyle: Theme.of(ctx)
-                                            .textTheme
-                                            .bodyLarge
-                                            ?.copyWith(
-                                              color: AppTheme.fieldHintColor(
-                                                ctx,
-                                              ),
-                                            ),
+                                        hintText: 'Name your purchase',
+                                        hintMaxLines: 2,
+                                        hintStyle: nameStyle.copyWith(
+                                          color: AppTheme.fieldHintColor(
+                                            ctx,
+                                            lightOpacity: 0.4,
+                                          ),
+                                        ),
+                                        filled: false,
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        errorBorder: InputBorder.none,
+                                        focusedErrorBorder: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
                                       ),
                                       validator: (value) =>
                                           value == null || value.trim().isEmpty
-                                          ? null
-                                          : (int.tryParse(value) ?? 0) <= 0
-                                          ? 'Enter at least one installment'
+                                          ? 'Enter a purchase name'
                                           : null,
-                                      onChanged: (value) => setSheetState(
-                                        () => installmentsStr = value,
+                                      onChanged: (value) {
+                                        setSheetState(() => name = value);
+                                        runAutoCategorize(setSheetState);
+                                      },
+                                    ),
+                                    const Gap(16),
+                                    Text(
+                                      monthlyBillingDay != null &&
+                                              existingItem == null
+                                          ? 'Remaining balance (${currency.code})'
+                                          : 'Total amount (${currency.code})',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(ctx).textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.textLightColor(ctx),
+                                          ),
+                                    ),
+                                    const Gap(8),
+                                    TextFormField(
+                                      initialValue: amountStr,
+                                      textAlign: TextAlign.center,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      style: amountStyle,
+                                      decoration: InputDecoration(
+                                        hintText: '0',
+                                        hintStyle: amountStyle.copyWith(
+                                          color:
+                                              AppTheme.hasEditorAppearance(ctx)
+                                              ? AppTheme.textLightColor(ctx)
+                                              : primaryColor.withValues(
+                                                  alpha: 0.35,
+                                                ),
+                                        ),
+                                        filled: false,
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        errorBorder: InputBorder.none,
+                                        focusedErrorBorder: InputBorder.none,
+                                        errorMaxLines: 3,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
                                       ),
+                                      validator: (value) {
+                                        final amount = currency.tryParseInput(
+                                          (value ?? ''),
+                                          originalValue: existingItem?.amount,
+                                        );
+                                        return amount == null ||
+                                                !amount.isFinite ||
+                                                amount <= 0
+                                            ? 'Enter an amount greater than zero'
+                                            : null;
+                                      },
+                                      onChanged: (value) {
+                                        setSheetState(() => amountStr = value);
+                                        if (selectedCategory == null) {
+                                          runAutoCategorize(setSheetState);
+                                        }
+                                      },
                                     ),
-                                  const Gap(12),
-                                  if (monthlyBillingDay == null)
-                                    DateSelectorTile(
-                                      label: 'First payment',
-                                      date: firstDate,
-                                      primaryColor: primaryColor,
-                                      onDateSelected: (date) =>
-                                          setSheetState(() => firstDate = date),
-                                    ),
-                                  if (monthlyBillingDay != null) ...[
+                                    const Gap(24),
                                     Text(
-                                      'Monthly due day: $monthlyBillingDay',
-                                      style: Theme.of(ctx).textTheme.bodyMedium,
+                                      monthlyBillingDay != null
+                                          ? 'Payment schedule'
+                                          : 'Installment plan',
+                                      style: Theme.of(ctx).textTheme.titleSmall,
+                                    ),
+                                    const Gap(8),
+                                    if (monthlyBillingDay == null)
+                                      TextFormField(
+                                        initialValue: installmentsStr,
+                                        keyboardType: TextInputType.number,
+                                        style: Theme.of(ctx)
+                                            .textTheme
+                                            .bodyLarge,
+                                        decoration: InputDecoration(
+                                          labelText: 'Installments',
+                                          hintText: '1',
+                                          hintStyle: Theme.of(ctx)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                color: AppTheme.fieldHintColor(
+                                                  ctx,
+                                                ),
+                                              ),
+                                        ),
+                                        validator: (value) =>
+                                            value == null ||
+                                                value.trim().isEmpty
+                                            ? null
+                                            : (int.tryParse(value) ?? 0) <= 0
+                                            ? 'Enter at least one installment'
+                                            : null,
+                                        onChanged: (value) => setSheetState(
+                                          () => installmentsStr = value,
+                                        ),
+                                      ),
+                                    const Gap(12),
+                                    if (monthlyBillingDay == null)
+                                      DateSelectorTile(
+                                        label: 'First payment',
+                                        date: firstDate,
+                                        primaryColor: primaryColor,
+                                        onDateSelected: (date) => setSheetState(
+                                          () => firstDate = date,
+                                        ),
+                                      ),
+                                    if (monthlyBillingDay != null) ...[
+                                      Text(
+                                        'Monthly due day: $monthlyBillingDay',
+                                        style: Theme.of(ctx)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      const Gap(12),
+                                      BillMonthSelector(
+                                        label: 'First bill month',
+                                        date: firstDate,
+                                        primaryColor: primaryColor,
+                                        onMonthSelected: (date) =>
+                                            setSheetState(() {
+                                              firstDate = billDate(
+                                                date.year,
+                                                date.month,
+                                              );
+                                              if (lastDate.isBefore(
+                                                firstDate,
+                                              )) {
+                                                lastDate = firstDate;
+                                              }
+                                            }),
+                                      ),
+                                      const Gap(12),
+                                      BillMonthSelector(
+                                        label: 'Last bill month',
+                                        date: lastDate,
+                                        primaryColor: primaryColor,
+                                        onMonthSelected: (date) =>
+                                            setSheetState(() {
+                                              final selected = billDate(
+                                                date.year,
+                                                date.month,
+                                              );
+                                              lastDate =
+                                                  selected.isBefore(firstDate)
+                                                  ? firstDate
+                                                  : selected;
+                                            }),
+                                      ),
+                                      const Gap(12),
+                                      Text(
+                                        '${numberOfPayments()} monthly ${numberOfPayments() == 1 ? 'payment' : 'payments'}',
+                                        style: Theme.of(ctx)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                    ],
+                                    const Gap(28),
+                                    Divider(
+                                      height: 1,
+                                      color: AppTheme.dividerColor(ctx),
+                                    ),
+                                    const Gap(24),
+                                    Text(
+                                      'Optional details',
+                                      style: Theme.of(ctx).textTheme.titleSmall,
                                     ),
                                     const Gap(12),
-                                    BillMonthSelector(
-                                      label: 'First bill month',
-                                      date: firstDate,
-                                      primaryColor: primaryColor,
-                                      onMonthSelected: (date) =>
-                                          setSheetState(() {
-                                            firstDate = billDate(
-                                              date.year,
-                                              date.month,
-                                            );
-                                            if (lastDate.isBefore(firstDate)) {
-                                              lastDate = firstDate;
+                                    Builder(
+                                      builder: (ctx) {
+                                        Widget child = SelectionTile(
+                                          fallbackIcon: KoinIcons.squaresFour,
+                                          label: 'Linked category',
+                                          selectedName: selectedCategory?.name,
+                                          selectedColor:
+                                              selectedCategory?.color,
+                                          selectedIconCodePoint:
+                                              selectedCategory?.iconCodePoint,
+                                          placeholder: 'Choose a category',
+                                          onTap: () async {
+                                            final categoryType =
+                                                debtType == DebtType.owedToMe
+                                                ? TransactionType.income
+                                                : TransactionType.expense;
+                                            final id =
+                                                await showCategoryPickerSheet(
+                                                  context: ctx,
+                                                  type: categoryType,
+                                                  selectedCategoryId:
+                                                      selectedCategory?.id,
+                                                  subtitle:
+                                                      debtType ==
+                                                          DebtType.owedToMe
+                                                      ? 'Link an income category'
+                                                      : 'Link an expense category',
+                                                );
+                                            if (id != null && ctx.mounted) {
+                                              manualCategory = true;
+                                              categoryConfirmed = true;
+                                              coordinator.cancel();
+                                              setSheetState(
+                                                () =>
+                                                    selectedCategory = container
+                                                        .read(
+                                                          categoriesProvider,
+                                                        )
+                                                        .requireValue
+                                                        .firstWhere(
+                                                          (c) => c.id == id,
+                                                        ),
+                                              );
                                             }
-                                          }),
-                                    ),
-                                    const Gap(12),
-                                    BillMonthSelector(
-                                      label: 'Last bill month',
-                                      date: lastDate,
-                                      primaryColor: primaryColor,
-                                      onMonthSelected: (date) =>
-                                          setSheetState(() {
-                                            final selected = billDate(
-                                              date.year,
-                                              date.month,
-                                            );
-                                            lastDate =
-                                                selected.isBefore(firstDate)
-                                                ? firstDate
-                                                : selected;
-                                          }),
-                                    ),
-                                    const Gap(12),
-                                    Text(
-                                      '${numberOfPayments()} monthly ${numberOfPayments() == 1 ? 'payment' : 'payments'}',
-                                      style: Theme.of(ctx).textTheme.bodyMedium,
+                                          },
+                                        );
+                                        if (autoCatKey > 0 &&
+                                            !MediaQuery.disableAnimationsOf(
+                                              ctx,
+                                            )) {
+                                          child = child
+                                              .koinAnimate(
+                                                context,
+                                                autoPlay:
+                                                    !MediaQuery.disableAnimationsOf(
+                                                      context,
+                                                    ),
+                                                onInit: KoinMotion.onInit(
+                                                  context,
+                                                ),
+                                                key: ValueKey(autoCatKey),
+                                              )
+                                              .shimmer(
+                                                duration: 400.ms,
+                                                color: primaryColor.withValues(
+                                                  alpha: 0.2,
+                                                ),
+                                              );
+                                        }
+                                        return child;
+                                      },
                                     ),
                                   ],
-                                  const Gap(28),
-                                  Divider(
-                                    height: 1,
-                                    color: AppTheme.dividerColor(ctx),
-                                  ),
-                                  const Gap(24),
-                                  Text(
-                                    'Optional details',
-                                    style: Theme.of(ctx).textTheme.titleSmall,
-                                  ),
-                                  const Gap(12),
-                                  Builder(
-                                    builder: (ctx) {
-                                      Widget child = SelectionTile(
-                                        fallbackIcon: KoinIcons.squaresFour,
-                                        label: 'Linked category',
-                                        selectedName: selectedCategory?.name,
-                                        selectedColor: selectedCategory?.color,
-                                        selectedIconCodePoint:
-                                            selectedCategory?.iconCodePoint,
-                                        placeholder: 'Choose a category',
-                                        onTap: () async {
-                                          final categoryType =
-                                              debtType == DebtType.owedToMe
-                                              ? TransactionType.income
-                                              : TransactionType.expense;
-                                          final id =
-                                              await showCategoryPickerSheet(
-                                                context: ctx,
-                                                type: categoryType,
-                                                selectedCategoryId:
-                                                    selectedCategory?.id,
-                                                subtitle:
-                                                    debtType ==
-                                                        DebtType.owedToMe
-                                                    ? 'Link an income category'
-                                                    : 'Link an expense category',
-                                                categoriesOverride: categories,
-                                              );
-                                          if (id != null && ctx.mounted) {
-                                            manualCategory = true;
-                                            categoryConfirmed = true;
-                                            coordinator.cancel();
-                                            setSheetState(
-                                              () => selectedCategory =
-                                                  categories.firstWhere(
-                                                    (c) => c.id == id,
-                                                  ),
-                                            );
-                                          }
-                                        },
-                                      );
-                                      if (autoCatKey > 0 &&
-                                          !MediaQuery.disableAnimationsOf(
-                                            ctx,
-                                          )) {
-                                        child = child
-                                            .koinAnimate(
-                                              context,
-                                              autoPlay:
-                                                  !MediaQuery.disableAnimationsOf(
-                                                    context,
-                                                  ),
-                                              onInit: KoinMotion.onInit(
-                                                context,
-                                              ),
-                                              key: ValueKey(autoCatKey),
-                                            )
-                                            .shimmer(
-                                              duration: 400.ms,
-                                              color: primaryColor.withValues(
-                                                alpha: 0.2,
-                                              ),
-                                            );
-                                      }
-                                      return child;
-                                    },
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -473,7 +495,9 @@ Future<DebtItem?> showAddPurchaseSheet({
                               label: existingItem != null
                                   ? 'Update Plan'
                                   : 'Add to Plan',
-                              onPressed: () {
+                              isLoading: saving,
+                              onPressed: () async {
+                                if (saving) return;
                                 if (!formKey.currentState!.validate()) return;
                                 final amt =
                                     currency.tryParseInput(
@@ -497,11 +521,29 @@ Future<DebtItem?> showAddPurchaseSheet({
                                     firstPaymentDate: firstDate,
                                     categoryId: selectedCategory?.id,
                                   );
-                                  if (categoryConfirmed) {
-                                    onCategoryConfirmed?.call(newItem);
+                                  setSheetState(() => saving = true);
+                                  try {
+                                    await onSave?.call(newItem);
+                                    if (!ctx.mounted) return;
+                                    if (categoryConfirmed) {
+                                      onCategoryConfirmed?.call(newItem);
+                                    }
+                                    setSheetState(() {
+                                      saved = true;
+                                      saving = false;
+                                    });
+                                    Navigator.pop(ctx, newItem);
+                                  } catch (_) {
+                                    if (ctx.mounted) {
+                                      setSheetState(() => saving = false);
+                                      KoinSnackBar.error(
+                                        ctx,
+                                        'Could not save purchase',
+                                        subtitle:
+                                            'Your changes are kept. Try again.',
+                                      );
+                                    }
                                   }
-                                  saved = true;
-                                  Navigator.pop(ctx, newItem);
                                 }
                               },
                             ),

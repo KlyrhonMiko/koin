@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:koin/core/theme.dart';
+import 'package:koin/core/icons.dart';
 
 /// Borderless search input for a header or a search/filter capsule.
 class KoinSearchField extends StatefulWidget {
@@ -49,7 +50,10 @@ class _KoinSearchFieldState extends State<KoinSearchField> {
     return TextField(
       controller: _controller,
       autofocus: widget.autofocus,
-      onChanged: widget.onChanged,
+      onChanged: (value) {
+        setState(() {});
+        widget.onChanged(value);
+      },
       style: TextStyle(
         color: AppTheme.textColor(context),
         fontSize: size,
@@ -58,6 +62,17 @@ class _KoinSearchFieldState extends State<KoinSearchField> {
             : KoinTypography.labelWeight,
       ),
       decoration: InputDecoration(
+        suffixIcon: _controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Clear search',
+                onPressed: () {
+                  _controller.clear();
+                  setState(() {});
+                  widget.onChanged('');
+                },
+                icon: const Icon(KoinIcons.x, size: 18),
+              ),
         hintText: widget.hintText,
         hintStyle: TextStyle(
           color: AppTheme.textLightColor(context)

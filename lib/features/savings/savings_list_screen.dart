@@ -203,6 +203,7 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
     final iconColor = isCompleted ? successGreen : accentColor;
 
     Widget card = PressableScale(
+      enableHaptic: false,
       onTap: () {
         HapticService.light();
         Navigator.push(
@@ -250,8 +251,10 @@ class _SavingsTabState extends ConsumerState<SavingsTab> {
                           fontSize: KoinTypography.body,
                           fontWeight: KoinTypography.titleWeight,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: stacked ? null : 1,
+                        overflow: stacked
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                       ),
                       if (stacked) ...[
                         const Gap(4),

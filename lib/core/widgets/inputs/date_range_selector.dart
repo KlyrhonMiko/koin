@@ -49,6 +49,15 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
     _updateSelectedPreset();
   }
 
+  @override
+  void didUpdateWidget(covariant DateRangeSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDateRange != widget.initialDateRange) {
+      _dateRange = widget.initialDateRange;
+      _updateSelectedPreset();
+    }
+  }
+
   void _updateSelectedPreset() {
     if (_dateRange == null) {
       _selectedPreset = null;

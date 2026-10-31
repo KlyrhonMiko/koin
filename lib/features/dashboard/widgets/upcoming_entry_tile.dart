@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 import 'package:koin/features/debts/widgets/add_repayment_sheet.dart';
@@ -32,32 +31,18 @@ class UpcomingEntryTile extends StatelessWidget {
         : AppTheme.incomeContentColor(context);
 
     Color iconBgColor;
-    Widget iconWidget;
 
     if (entry.isPayment) {
       final catColor = category != null
           ? Color(int.parse(category!.colorHex.replaceFirst('#', '0xFF')))
           : AppTheme.primaryColor(context);
       iconBgColor = catColor;
-      iconWidget = Icon(
-        category != null
-            ? IconUtils.getIcon(category!.iconCodePoint)
-            : KoinIcons.squaresFour,
-        color: catColor,
-        size: 20,
-      );
     } else {
       iconBgColor = amountColor;
-      iconWidget = Icon(
-        entry.isExpense ? KoinIcons.arrowUp : KoinIcons.arrowDown,
-        color: amountColor,
-        size: 20,
-      );
     }
 
     return PressableScale(
       onTap: () {
-        HapticService.light();
         if (entry.isPayment && entry.plannedPayment != null) {
           onPayPayment?.call(entry.plannedPayment!);
         } else if (entry.isDebt && entry.debt != null) {
@@ -83,85 +68,96 @@ class UpcomingEntryTile extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: iconBgColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final amountLabel =
+                '${isExpense ? '-' : '+'}${currency.formatter.format(entry.amount)}';
+            final amountStyle = TextStyle(
+              color: amountColor,
+              fontWeight: KoinTypography.headingWeight,
+              fontSize: KoinTypography.body,
+            );
+            final amountMeasure = TextPainter(
+              text: TextSpan(
+                text: amountLabel,
+                style: DefaultTextStyle.of(context).style.merge(amountStyle),
               ),
-              child: iconWidget,
-            ),
-            const Gap(14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          entry.title,
-                          style: const TextStyle(
-                            fontWeight: KoinTypography.titleWeight,
-                            fontSize: KoinTypography.body,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (entry.isAutoProcess) ...[
-                        const Gap(6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor(context)
-                                .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'AUTO',
-                            style: TextStyle(
-                              color: AppTheme.primaryColor(context),
-                              fontSize: KoinTypography.badgeLabel,
-                              fontWeight: KoinTypography.titleWeight,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const Gap(4),
-                  Text(
-                    entry.isFlexible
-                        ? 'Flexible • Available anytime'
-                        : '${DateFormat.MMMMd().format(entry.dueDate)} • ${entry.formattedDueStatus()}',
-                    style: TextStyle(
-                      color: entry.isOverdue()
-                          ? AppTheme.expenseContentColor(context)
-                          : AppTheme.textLightColor(context),
-                      fontSize: KoinTypography.small,
-                      fontWeight: KoinTypography.supportingWeight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Gap(8),
-            Text(
-              "${isExpense ? '-' : '+'}${currency.formatter.format(entry.amount)}",
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout();
+            final detailsWidth = constraints.maxWidth - 44 - 14;
+            final stacked =
+                detailsWidth < 220 ||
+                MediaQuery.textScalerOf(context).scale(15) > 20 ||
+                amountMeasure.width + 8 + 100 > detailsWidth;
+            amountMeasure.dispose();
+            final amount = Text(
+              amountLabel,
+              style: amountStyle,
+              maxLines: 1,
+              softWrap: false,
+            );
+            final title = Text(
+              entry.title,
+              maxLines: stacked ? null : 1,
+              overflow: stacked ? TextOverflow.visible : TextOverflow.ellipsis,
               style: TextStyle(
-                color: amountColor,
-                fontWeight: KoinTypography.headingWeight,
+                color: AppTheme.textColor(context),
+                fontWeight: KoinTypography.titleWeight,
                 fontSize: KoinTypography.body,
               ),
-            ),
-          ],
+            );
+            final subtitle = Text(
+              '${entry.isAutoProcess ? 'Automatic · ' : ''}${entry.isFlexible ? 'Available anytime' : '${DateFormat.MMMMd().format(entry.dueDate)} · ${entry.formattedDueStatus()}'}',
+              style: TextStyle(
+                color: entry.isOverdue()
+                    ? AppTheme.expenseContentColor(context)
+                    : AppTheme.textLightColor(context),
+                fontSize: KoinTypography.small,
+                fontWeight: KoinTypography.supportingWeight,
+              ),
+            );
+            return Row(
+              crossAxisAlignment: stacked
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              children: [
+                KoinIconBadge(
+                  icon: entry.isPayment
+                      ? category == null
+                            ? KoinIcons.squaresFour
+                            : IconUtils.getIcon(category!.iconCodePoint)
+                      : entry.isExpense
+                      ? KoinIcons.arrowUp
+                      : KoinIcons.arrowDown,
+                  color: iconBgColor,
+                  size: 44,
+                  iconSize: 20,
+                  radius: 12,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      if (stacked) ...[
+                        const SizedBox(height: 4),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: amount,
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      subtitle,
+                    ],
+                  ),
+                ),
+                if (!stacked) ...[const SizedBox(width: 8), amount],
+              ],
+            );
+          },
         ),
       ),
     );

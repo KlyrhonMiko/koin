@@ -21,6 +21,7 @@ class VoiceLanguageSheet extends ConsumerStatefulWidget {
 class _VoiceLanguageSheetState extends ConsumerState<VoiceLanguageSheet> {
   late Future<List<LocaleName>> _locales;
   bool _saving = false;
+  String _query = '';
   @override
   void initState() {
     super.initState();
@@ -62,25 +63,37 @@ class _VoiceLanguageSheetState extends ConsumerState<VoiceLanguageSheet> {
     );
     return PopScope(
       canPop: !_saving,
-      child: KoinSheetSurface(
-        height: MediaQuery.sizeOf(context).height * .7,
-        child: Material(
-          color: Colors.transparent,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                const KoinBottomSheetHandle(),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    'Speech language',
-                    style: Theme.of(context).textTheme.titleLarge,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: KoinSheetSurface(
+          scrollable: true,
+          child: Material(
+            color: Colors.transparent,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  const KoinBottomSheetHandle(),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'Speech language',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
-                ),
-                option('Follow system language', null),
-                Expanded(
-                  child: FutureBuilder<List<LocaleName>>(
+                  option('Follow system language', null),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Search languages',
+                      ),
+                      onChanged: (value) => setState(() => _query = value),
+                    ),
+                  ),
+                  FutureBuilder<List<LocaleName>>(
                     future: _locales,
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
@@ -96,16 +109,24 @@ class _VoiceLanguageSheetState extends ConsumerState<VoiceLanguageSheet> {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      final locales = snapshot.data!;
+                      final locales = snapshot.data!
+                          .where(
+                            (locale) => locale.name.toLowerCase().contains(
+                              _query.toLowerCase(),
+                            ),
+                          )
+                          .toList();
                       return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: locales.length,
                         itemBuilder: (_, i) =>
                             option(locales[i].name, locales[i].localeId),
                       );
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

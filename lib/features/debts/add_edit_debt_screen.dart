@@ -448,7 +448,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                     selectedIconCodePoint: account?.iconCodePoint,
                     selectedLogoAsset: account?.logoAsset,
                     placeholder: 'Choose an account',
-                    onTap: () => _openAccountPicker(context, accounts),
+                    onTap: () => _openAccountPicker(context),
                   ),
                   const Gap(8),
                 ],
@@ -513,7 +513,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                       selectedIconCodePoint: account?.iconCodePoint,
                       selectedLogoAsset: account?.logoAsset,
                       placeholder: 'Choose an account',
-                      onTap: () => _openAccountPicker(context, accounts),
+                      onTap: () => _openAccountPicker(context),
                     ),
                   SelectionTile(
                     asCard: false,
@@ -523,7 +523,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                     selectedColor: category?.color,
                     selectedIconCodePoint: category?.iconCodePoint,
                     placeholder: 'Choose a category',
-                    onTap: () => _openCategoryPicker(context, categories),
+                    onTap: () => _openCategoryPicker(context),
                   ),
                 ],
               ),
@@ -766,10 +766,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     onChanged: (_) => _onNotesChanged(),
   );
 
-  Future<void> _openCategoryPicker(
-    BuildContext context,
-    List<TransactionCategory> categories,
-  ) async {
+  Future<void> _openCategoryPicker(BuildContext context) async {
     // Filter by the relevant type: income for "owed to me", expense for "I owe"
     final categoryType = _selectedType == DebtType.owedToMe
         ? TransactionType.income
@@ -783,7 +780,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       subtitle: _selectedType == DebtType.owedToMe
           ? 'Link an income category'
           : 'Link an expense category',
-      categoriesOverride: categories,
     );
     if (id != null && mounted) {
       setState(() {
@@ -794,10 +790,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
     }
   }
 
-  Future<void> _openAccountPicker(
-    BuildContext context,
-    List<Account> accounts,
-  ) async {
+  Future<void> _openAccountPicker(BuildContext context) async {
     final id = await showAccountPickerSheet(
       context: context,
       ref: ref,
@@ -805,7 +798,6 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
       subtitle: _deductFromAccount
           ? 'Which account are you lending from?'
           : 'Where is this money from/going?',
-      accountsOverride: accounts,
     );
     if (id != null && mounted) {
       setState(() => _selectedAccountId = id);
@@ -874,6 +866,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
                 _updateAmountFromItems();
               }),
               child: PressableScale(
+                enableHaptic: false,
                 onTap: () async {
                   HapticService.light();
                   final updatedItem = await showAddPurchaseSheet(
@@ -916,6 +909,7 @@ class _AddEditDebtScreenState extends ConsumerState<AddEditDebtScreen> {
         if (_bnpl) ...[
           const Gap(6),
           PressableScale(
+            enableHaptic: false,
             onTap: () async {
               HapticService.light();
               final newItem = await showAddPurchaseSheet(

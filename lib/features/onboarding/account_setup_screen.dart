@@ -15,7 +15,7 @@ class AccountSetupScreen extends ConsumerStatefulWidget {
 class _AccountSetupScreenState extends ConsumerState<AccountSetupScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController(text: 'Cash');
-  final _balance = TextEditingController();
+  final _balance = TextEditingController(text: '0');
   final _balanceFocus = FocusNode();
   late Currency _currency;
   String? _accountId;

@@ -73,6 +73,20 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                 children:
                     [
                           _buildHeader(context),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => setState(() {
+                                _dateRange = DateRangeSelector.lastDaysRange(
+                                  30,
+                                );
+                                _selectedType = null;
+                                _selectedCategoryIds.clear();
+                                _selectedAccountIds.clear();
+                              }),
+                              child: const Text('Reset filters'),
+                            ),
+                          ),
                           const Gap(KoinSpacing.sectionGap),
                           if (!_reportReady) ...[
                             _buildSummaryCard(context, ref, currencySymbol),
@@ -87,8 +101,15 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                             },
                           ),
                           const Gap(24),
-                          if (_reportReady)
+                          if (_reportReady) ...[
                             _buildSummaryCard(context, ref, currencySymbol),
+                            const Gap(8),
+                            Text(
+                              'Total volume adds the amounts of matching records, including transfers and loan activity. It is not a net balance.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            _buildPreview(context, categories, accounts),
+                          ],
                           const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Transaction Type',
@@ -102,13 +123,50 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
                             subtitle: 'Narrow down by spending categories',
                           ),
                           const Gap(12),
-                          _buildCategorySelector(context, categories),
+                          Text(
+                            _selectedCategoryIds.isEmpty
+                                ? 'All categories included'
+                                : '${_selectedCategoryIds.length} categories selected',
+                          ),
+                          if (_selectedCategoryIds.isNotEmpty)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () =>
+                                    setState(_selectedCategoryIds.clear),
+                                child: const Text('Include all categories'),
+                              ),
+                            ),
+                          _buildCategorySelector(
+                            context,
+                            categories
+                                .where(
+                                  (c) =>
+                                      _selectedType == null ||
+                                      c.type == _selectedType,
+                                )
+                                .toList(),
+                          ),
                           const Gap(KoinSpacing.sectionGap),
                           const KoinSectionHeader(
                             title: 'Accounts',
                             subtitle: 'Select specific accounts to include',
                           ),
                           const Gap(12),
+                          Text(
+                            _selectedAccountIds.isEmpty
+                                ? 'All accounts included'
+                                : '${_selectedAccountIds.length} accounts selected',
+                          ),
+                          if (_selectedAccountIds.isNotEmpty)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () =>
+                                    setState(_selectedAccountIds.clear),
+                                child: const Text('Include all accounts'),
+                              ),
+                            ),
                           _buildAccountSelector(context, accounts),
                         ]
                         .koinAnimate(
@@ -145,6 +203,47 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPreview(
+    BuildContext context,
+    List<TransactionCategory> categories,
+    List<Account> accounts,
+  ) {
+    final transactions = _currentReportFilter.apply(
+      ref.watch(transactionProvider).value ?? [],
+    );
+    final currency = ref.watch(settingsProvider).currency;
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      title: Text('Preview ${transactions.length} matching transactions'),
+      children: [
+        if (transactions.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No records match these filters.'),
+          ),
+        for (final tx in transactions.take(3))
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              tx.note.isEmpty
+                  ? categories
+                            .where((c) => c.id == tx.categoryId)
+                            .firstOrNull
+                            ?.name ??
+                        'Transaction'
+                  : tx.note,
+            ),
+            subtitle: Text(
+              '${tx.type.name} · ${accounts.where((a) => a.id == tx.accountId).firstOrNull?.name ?? 'Account'}',
+            ),
+            trailing: Text(currency.formatter.format(tx.amount)),
+          ),
+        if (transactions.length > 3)
+          Text('${transactions.length - 3} more records will be included.'),
+      ],
     );
   }
 
@@ -242,24 +341,10 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return KoinPageHeader(
-      title: 'Custom Reports',
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Text(
-          'REPORT BUILDER',
-          style: TextStyle(
-            color: AppTheme.textLightColor(context).withValues(alpha: 0.7),
-            fontSize: KoinTypography.overline,
-            fontWeight: KoinTypography.titleWeight,
-            letterSpacing: KoinTypography.overlineTracking,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildHeader(BuildContext context) => const KoinPageHeader(
+    title: 'Custom reports',
+    padding: EdgeInsets.symmetric(vertical: 8),
+  );
 
   Widget _buildSummaryItem(
     BuildContext context,
@@ -324,7 +409,15 @@ class _CustomReportsScreenState extends ConsumerState<CustomReportsScreen> {
         KoinSegmentItem(label: 'Income'),
       ],
       selectedIndex: types.indexOf(_selectedType),
-      onChanged: (index) => setState(() => _selectedType = types[index]),
+      onChanged: (index) => setState(() {
+        _selectedType = types[index];
+        final compatible =
+            (ref.read(categoriesProvider).value ?? <TransactionCategory>[])
+                .where((c) => _selectedType == null || c.type == _selectedType)
+                .map((c) => c.id)
+                .toSet();
+        _selectedCategoryIds.removeWhere((id) => !compatible.contains(id));
+      }),
     );
   }
 

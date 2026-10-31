@@ -34,6 +34,8 @@ class _BackupPasswordSheetState extends State<BackupPasswordSheet> {
   final _confirmation = TextEditingController();
   bool _protect = true;
   bool _busy = false;
+  bool _showPassword = false;
+  final _confirmationFocus = FocusNode();
   String? _error;
   bool get _unlock => widget.encrypted != null;
 
@@ -41,6 +43,7 @@ class _BackupPasswordSheetState extends State<BackupPasswordSheet> {
   void dispose() {
     _password.dispose();
     _confirmation.dispose();
+    _confirmationFocus.dispose();
     super.dispose();
   }
 
@@ -139,17 +142,47 @@ class _BackupPasswordSheetState extends State<BackupPasswordSheet> {
                     TextField(
                       controller: _password,
                       enabled: !_busy,
-                      obscureText: true,
+                      obscureText: !_showPassword,
                       autocorrect: false,
                       enableSuggestions: false,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      onSubmitted: _unlock ? (_) => _submit() : null,
+                      autofillHints: [
+                        _unlock
+                            ? AutofillHints.password
+                            : AutofillHints.newPassword,
+                      ],
+                      textInputAction: _unlock
+                          ? TextInputAction.done
+                          : TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        helperMaxLines: 3,
+                        helperText: _unlock
+                            ? null
+                            : 'Use at least 8 characters',
+                        suffixIcon: IconButton(
+                          tooltip: _showPassword
+                              ? 'Hide password'
+                              : 'Show password',
+                          onPressed: () =>
+                              setState(() => _showPassword = !_showPassword),
+                          icon: Icon(
+                            _showPassword ? KoinIcons.eyeSlash : KoinIcons.eye,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: _unlock
+                          ? (_) => _submit()
+                          : (_) => _confirmationFocus.requestFocus(),
                     ),
                     if (!_unlock) ...[
                       const SizedBox(height: 12),
                       TextField(
                         controller: _confirmation,
-                        obscureText: true,
+                        focusNode: _confirmationFocus,
+                        enabled: !_busy,
+                        autofillHints: const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.done,
+                        obscureText: !_showPassword,
                         autocorrect: false,
                         enableSuggestions: false,
                         decoration: const InputDecoration(

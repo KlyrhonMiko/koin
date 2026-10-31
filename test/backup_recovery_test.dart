@@ -1,12 +1,15 @@
 import 'package:koin/core/database_version.dart';
+
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koin/core/database_helper.dart';
 import 'package:koin/core/models/savings/savings_goal.dart';
 import 'package:koin/core/maintenance/database_snapshot.dart';
+import 'package:koin/core/maintenance/backup_preview.dart';
 import 'package:koin/core/maintenance/external_backup.dart';
 import 'package:koin/core/maintenance/maintenance_manager.dart';
 import 'package:koin/core/maintenance/recovery_service.dart';
@@ -154,38 +157,35 @@ void main() {
     expect(service.status.value.localError, isFalse);
   });
 
-  test(
-    'folder cancellation preserves setup; external failure does not lose local copy',
-    () async {
-      final prefs = await SharedPreferences.getInstance();
-      final external = RecordingExternal();
-      final service = RecoveryService(
-        maintenance: RecordingMaintenance(),
-        preferences: prefs,
-        changeToken: () async => 'one',
-        external: external,
-        store: () async => RecoveryStore(Directory('${root.path}/recovery')),
-      );
-      addTearDown(service.dispose);
-      expect(await service.setupExternal(), isFalse);
-      external.destination = const BackupDestination('usb', 'USB drive');
-      external.fail = true;
-      expect(await service.setupExternal(), isTrue);
-      expect(service.status.value.externalError, isTrue);
-      expect(service.status.value.localError, isFalse);
-      expect(service.status.value.copies.length, 1);
-      external.fail = false;
-      await service.check(force: true);
-      expect(service.status.value.externalAt, isNotNull);
-      expect(service.status.value.externalError, isFalse);
-      external.destination = null;
-      expect(await service.setupExternal(), isFalse);
-      expect(prefs.getString('backup_destination'), 'usb');
-      await service.disconnectExternal();
-      expect(prefs.getString('backup_destination'), isNull);
-      expect(service.status.value.copies.length, 1);
-    },
-  );
+  test('folder cancellation preserves setup; external failure does not lose local copy', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final external = RecordingExternal();
+    final service = RecoveryService(
+      maintenance: RecordingMaintenance(),
+      preferences: prefs,
+      changeToken: () async => 'one',
+      external: external,
+      store: () async => RecoveryStore(Directory('${root.path}/recovery')),
+    );
+    addTearDown(service.dispose);
+    expect(await service.setupExternal(), isFalse);
+    external.destination = const BackupDestination('usb', 'USB drive');
+    external.fail = true;
+    expect(await service.setupExternal(), isTrue);
+    expect(service.status.value.externalError, isTrue);
+    expect(service.status.value.localError, isFalse);
+    expect(service.status.value.copies.length, 1);
+    external.fail = false;
+    await service.check(force: true);
+    expect(service.status.value.externalAt, isNotNull);
+    expect(service.status.value.externalError, isFalse);
+    external.destination = null;
+    expect(await service.setupExternal(), isFalse);
+    expect(prefs.getString('backup_destination'), 'usb');
+    await service.disconnectExternal();
+    expect(prefs.getString('backup_destination'), isNull);
+    expect(service.status.value.copies.length, 1);
+  });
 
   test(
     'oldest recovery copy can be restored even when pre-restore save prunes it',
@@ -259,54 +259,50 @@ void main() {
           singleInstance: false,
         );
         expect(
-          (await copy.query(
-            'savings_goals',
-          )).single['includeInDashboardBalance'],
+          (await copy.query('savings_goals'))
+              .single['includeInDashboardBalance'],
           0,
         );
         await copy.close();
       },
     );
 
-    test(
-      'snapshot includes WAL data and legacy fallback preserves history triggers',
-      () async {
-        final db = await helper.database;
-        await db.rawQuery('PRAGMA journal_mode=WAL');
-        await db.update(
+    test('snapshot includes WAL data and legacy fallback preserves history triggers', () async {
+      final db = await helper.database;
+      await db.rawQuery('PRAGMA journal_mode=WAL');
+      await db.update(
+        'accounts',
+        {'name': 'Changed cash'},
+        where: 'id = ?',
+        whereArgs: ['default_account'],
+      );
+      final snapshot = '${root.path}/snapshot.db';
+      await DatabaseSnapshot.create(db, snapshot);
+      final restored = await openDatabase(
+        snapshot,
+        readOnly: true,
+        singleInstance: false,
+      );
+      expect(
+        (await restored.query(
           'accounts',
-          {'name': 'Changed cash'},
           where: 'id = ?',
           whereArgs: ['default_account'],
-        );
-        final snapshot = '${root.path}/snapshot.db';
-        await DatabaseSnapshot.create(db, snapshot);
-        final restored = await openDatabase(
-          snapshot,
-          readOnly: true,
-          singleInstance: false,
-        );
-        expect(
-          (await restored.query(
-            'accounts',
-            where: 'id = ?',
-            whereArgs: ['default_account'],
-          )).first['name'],
-          'Changed cash',
-        );
-        await restored.close();
-        final legacy = '${root.path}/legacy.db';
-        await DatabaseSnapshot.copyLegacy(db, legacy);
-        await DatabaseSnapshot.validate(legacy);
-        final rebuilt = await openDatabase(legacy, singleInstance: false);
-        expect(await rebuilt.getVersion(), await db.getVersion());
-        final triggers = await rebuilt.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type = 'trigger'",
-        );
-        expect(triggers, isNotEmpty);
-        await rebuilt.close();
-      },
-    );
+        )).first['name'],
+        'Changed cash',
+      );
+      await restored.close();
+      final legacy = '${root.path}/legacy.db';
+      await DatabaseSnapshot.copyLegacy(db, legacy);
+      await DatabaseSnapshot.validate(legacy);
+      final rebuilt = await openDatabase(legacy, singleInstance: false);
+      expect(await rebuilt.getVersion(), await db.getVersion());
+      final triggers = await rebuilt.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'trigger'",
+      );
+      expect(triggers, isNotEmpty);
+      await rebuilt.close();
+    });
 
     test(
       'rejects invalid imports before replacing the current database',
@@ -320,6 +316,12 @@ void main() {
         );
         final bad = File('${root.path}/bad.db');
         await bad.writeAsString('not a SQLite database');
+        await expectLater(BackupPreview.read(bad.path), throwsA(anything));
+        expect(await bad.readAsString(), 'not a SQLite database');
+        expect(
+          root.listSync().where((f) => f.path.contains('koin_preview_')),
+          isEmpty,
+        );
         expect(await helper.restoreDatabase(bad.path), isFalse);
         expect(
           (await (await helper.database).query(
@@ -356,18 +358,31 @@ void main() {
         final bundle = (await maintenance.createBackup())!;
         final compressed = File('${root.path}/backup.koin');
         await compressed.writeAsBytes(compressBackup(bundle.bytes));
+        final sourceBytes = await compressed.readAsBytes();
+        final preview = await BackupPreview.read(compressed.path);
+        expect(preview.accounts, (await db.query('accounts')).length);
+        expect(preview.transactions, 1);
+        expect(preview.currency, 'PHP');
+        expect(preview.latestTransaction, DateTime(2026, 10, 8, 12));
+        expect(await compressed.readAsBytes(), sourceBytes);
+        expect((await db.query('transactions')).single['amount'], 125.5);
+        expect(
+          root.listSync().where((f) => f.path.contains('koin_preview_')),
+          isEmpty,
+        );
+
         await prefs.setString('currency_code', 'USD');
         await db.update('transactions', {'amount': 999.0});
         expect(await maintenance.restoreBackup(compressed.path), isTrue);
         expect(prefs.getString('currency_code'), 'PHP');
         expect(
-          (await (await helper.database).query(
-            'transactions',
-          )).single['amount'],
+          (await (await helper.database).query('transactions'))
+              .single['amount'],
           125.5,
         );
         final raw = File('${root.path}/old.db');
         await raw.writeAsBytes(bundle.bytes);
+        expect((await BackupPreview.read(raw.path)).transactions, 1);
         expect(await maintenance.restoreBackup(raw.path), isTrue);
         expect(
           (await (await helper.database).query('transactions')).single['title'],

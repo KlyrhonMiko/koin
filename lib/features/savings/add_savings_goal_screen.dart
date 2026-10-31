@@ -194,7 +194,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
     final primaryColor = AppTheme.primaryColor(context);
     final currency = ref.watch(settingsProvider).currency;
     final accounts = ref.watch(accountProvider).asData?.value ?? [];
-    final availableAccounts = accounts;
     final linkedAccount = _accountById(accounts, _selectedAccountId);
     final amount = ref
         .read(settingsProvider)
@@ -444,7 +443,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
                     placeholder: 'Choose an account',
                     onTap: () => _openAccountPicker(
                       context,
-                      availableAccounts,
                       title: 'Linked Account',
                       subtitle: 'Link an account to fund this goal',
                       selectedId: _selectedAccountId,
@@ -580,8 +578,7 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
   }
 
   Future<void> _openAccountPicker(
-    BuildContext context,
-    List<Account> accounts, {
+    BuildContext context, {
     required String title,
     required String subtitle,
     required String? selectedId,
@@ -595,7 +592,6 @@ class _AddSavingsGoalScreenState extends ConsumerState<AddSavingsGoalScreen> {
       subtitle: subtitle,
       allowNone: true,
       noneLabel: 'No Linked Account',
-      accountsOverride: accounts,
     );
     if (id != null && mounted) {
       onSelected(id.isEmpty ? null : id);

@@ -144,6 +144,7 @@ class AccountItem extends StatelessWidget {
       );
       return PressableScale(
         onTap: onTap,
+        selected: isSelected,
         pressedScale: 0.98,
         child: AccountCardLayout(
           account: account,
@@ -191,9 +192,7 @@ class AccountItem extends StatelessWidget {
                           : 'Hide balance and exclude from totals',
                       onPressed: onPrivateToggle,
                       icon: Icon(
-                        isPrivate
-                            ? KoinIcons.eyeSlash
-                            : KoinIcons.eye,
+                        isPrivate ? KoinIcons.eyeSlash : KoinIcons.eye,
                         size: 18,
                         color: textColor.withValues(alpha: 0.8),
                       ),
@@ -204,6 +203,7 @@ class AccountItem extends StatelessWidget {
 
     return PressableScale(
       onTap: onTap,
+      selected: isSelected,
       pressedScale: 0.98,
       child: Container(
         decoration: _cardDecoration(context),
@@ -344,14 +344,13 @@ class AccountItem extends StatelessWidget {
                           semanticLabel: isPrivate
                               ? 'Show balance and include in totals'
                               : 'Hide balance and exclude from totals',
+                          enableHaptic: false,
                           onTap: onPrivateToggle!,
                           child: SizedBox(
                             width: 48,
                             height: 48,
                             child: Icon(
-                              isPrivate
-                                  ? KoinIcons.eyeSlash
-                                  : KoinIcons.eye,
+                              isPrivate ? KoinIcons.eyeSlash : KoinIcons.eye,
                               size: 20,
                               color: colored
                                   ? (foreground ?? Colors.white).withValues(

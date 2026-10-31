@@ -138,49 +138,51 @@ void main() {
       expect(activeFilter.activeFilterCount, 5);
       expect(
         activeFilter.summaryText,
-        'Expense • 2 categories • Amount range',
+        'Expense • Category, Category • Amount 10.0–100.0',
       );
     });
   });
 
   group('CategoryBudgetMetrics Domain Tests', () {
-    test('computes percentage, overBudgetAmount, and isNearLimit accurately', () {
-      final category = TransactionCategory(
-        id: 'cat_dining',
-        name: 'Dining',
-        iconCodePoint: 1234,
-        colorHex: '#FF5722',
-        type: TransactionType.expense,
-      );
+    test(
+      'computes percentage, overBudgetAmount, and isNearLimit accurately',
+      () {
+        final category = TransactionCategory(
+          id: 'cat_dining',
+          name: 'Dining',
+          iconCodePoint: 1234,
+          colorHex: '#FF5722',
+          type: TransactionType.expense,
+        );
 
-      final normalMetrics = CategoryBudgetMetrics(
-        category: category,
-        budget: 100.0,
-        spent: 85.0,
-        progress: 0.85,
-        remaining: 15.0,
-        isOverBudget: false,
-      );
+        final normalMetrics = CategoryBudgetMetrics(
+          category: category,
+          budget: 100.0,
+          spent: 85.0,
+          progress: 0.85,
+          remaining: 15.0,
+          isOverBudget: false,
+        );
 
-      expect(normalMetrics.percent, 85.0);
-      expect(normalMetrics.formattedPercent, '85%');
-      expect(normalMetrics.overBudgetAmount, 0.0);
-      expect(normalMetrics.isNearLimit, isTrue);
+        expect(normalMetrics.percent, 85.0);
+        expect(normalMetrics.formattedPercent, '85%');
+        expect(normalMetrics.overBudgetAmount, 0.0);
+        expect(normalMetrics.isNearLimit, isTrue);
 
-      final overMetrics = CategoryBudgetMetrics(
-        category: category,
-        budget: 100.0,
-        spent: 125.0,
-        progress: 1.0,
-        remaining: 0.0,
-        isOverBudget: true,
-      );
+        final overMetrics = CategoryBudgetMetrics(
+          category: category,
+          budget: 100.0,
+          spent: 125.0,
+          progress: 1.0,
+          remaining: 0.0,
+          isOverBudget: true,
+        );
 
-      expect(overMetrics.percent, 125.0);
-      expect(overMetrics.formattedPercent, '125%');
-      expect(overMetrics.overBudgetAmount, 25.0);
-      expect(overMetrics.isNearLimit, isFalse);
-    });
+        expect(overMetrics.percent, 125.0);
+        expect(overMetrics.formattedPercent, '125%');
+        expect(overMetrics.overBudgetAmount, 25.0);
+        expect(overMetrics.isNearLimit, isFalse);
+      },
+    );
   });
 }
-

@@ -832,6 +832,15 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
           ],
         ],
       ),
+      subtitle: hint == null
+          ? null
+          : Text(
+              hint,
+              style: TextStyle(
+                color: AppTheme.textLightColor(context),
+                fontSize: KoinTypography.small,
+              ),
+            ),
       value: value,
       onChanged: onChanged,
       activeTrackColor: AppTheme.primaryColor(context),
@@ -844,7 +853,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
-    return hint == null ? tile : Tooltip(message: hint, child: tile);
+    return tile;
   }
 
   @override
@@ -1402,6 +1411,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                             _settingRow(
                               context,
                               title: 'Credit account',
+                              hint: 'Tracks borrowed money and permits a negative balance. Repayments reduce what you owe.',
                               value: isCredit,
                               onChanged: _setCredit,
                             ),
@@ -1888,6 +1898,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                                             .toARGB32() ==
                                                         c.toARGB32();
                                                 return PressableScale(
+                                                  enableHaptic: false,
                                                   semanticLabel:
                                                       'Card background ${c.toARGB32().toRadixString(16).substring(2)}',
                                                   selected: isSelected,
