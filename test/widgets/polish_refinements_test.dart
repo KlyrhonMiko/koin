@@ -230,6 +230,53 @@ void main() {
     },
   );
 
+  for (final type in [TransactionType.income, TransactionType.expense]) {
+    for (final frequency in [
+      PaymentFrequency.flexible,
+      PaymentFrequency.monthly,
+    ]) {
+      testWidgets('payment schedule explanation matches $type $frequency', (
+        tester,
+      ) async {
+        final entry = payment.copyWith(
+          title: type == TransactionType.income ? 'School allowance' : 'Rent',
+          type: type,
+          frequency: frequency,
+          nextDate: DateTime(2099, 1, 1),
+        );
+        await mount(
+          tester,
+          Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: PaymentConfirmationSheet(payment: entry),
+            ),
+          ),
+        );
+        final scheduleText = frequency == PaymentFrequency.flexible
+            ? findsNothing
+            : findsOneWidget;
+        expect(find.textContaining('Scheduled for'), scheduleText);
+        expect(find.textContaining('occurrence early'), scheduleText);
+        expect(
+          find.textContaining('advances after confirmation'),
+          scheduleText,
+        );
+        expect(find.text(entry.title), findsOneWidget);
+        expect(find.text('Category'), findsOneWidget);
+        expect(find.text('Account'), findsOneWidget);
+        await tester.ensureVisible(
+          find.text(
+            type == TransactionType.income
+                ? 'Confirm income'
+                : 'Confirm payment',
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   testWidgets('repayment Back confirms discard and Cancel keeps the note', (
     tester,
   ) async {

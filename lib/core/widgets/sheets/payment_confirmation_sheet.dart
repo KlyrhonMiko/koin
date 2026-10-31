@@ -298,17 +298,19 @@ class _PaymentConfirmationSheetState
                 letterSpacing: KoinTypography.headingTracking,
               ),
             ),
-            const Gap(8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Scheduled for ${DateFormat.yMMMd().format(widget.payment.nextDate)}. '
-                '${widget.payment.nextDate.isAfter(DateTime.now()) ? 'Recording now collects or pays this occurrence early. ' : ''}'
-                'The next occurrence advances after confirmation.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+            if (widget.payment.frequency != PaymentFrequency.flexible) ...[
+              const Gap(8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Scheduled for ${DateFormat.yMMMd().format(widget.payment.nextDate)}. '
+                  '${widget.payment.nextDate.isAfter(DateTime.now()) ? 'Recording now collects or pays this occurrence early. ' : ''}'
+                  'The next occurrence advances after confirmation.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
-            ),
+            ],
             const Gap(24),
 
             // ── Hero Amount ──
