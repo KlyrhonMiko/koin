@@ -40,6 +40,31 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 51) {
+      final columns = await db.rawQuery('PRAGMA table_info(accounts)');
+      if (columns.isNotEmpty &&
+          !columns.any((column) => column['name'] == 'defaultCashbackRule')) {
+        await db.execute(
+          "ALTER TABLE accounts ADD COLUMN defaultCashbackRule TEXT NOT NULL DEFAULT 'none'",
+        );
+      }
+    }
+    if (oldVersion < 50) {
+      // Add before older upgrades serialize account and transaction models.
+      // Defaulting to received preserves every existing linked credit.
+      for (final entry in {
+        'accounts': 'cashbackDelayed',
+        'transactions': 'cashbackPending',
+      }.entries) {
+        final columns = await db.rawQuery('PRAGMA table_info(${entry.key})');
+        if (columns.isNotEmpty &&
+            !columns.any((column) => column['name'] == entry.value)) {
+          await db.execute(
+            'ALTER TABLE ${entry.key} ADD COLUMN ${entry.value} INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+      }
+    }
     if (oldVersion < 49) {
       final columns = await db.rawQuery('PRAGMA table_info(transactions)');
       for (final entry in {
@@ -893,6 +918,8 @@ CREATE TABLE accounts (
   cardColorHex TEXT,
   cardShapeType INTEGER,
   isCredit INTEGER DEFAULT 0,
+  cashbackDelayed INTEGER NOT NULL DEFAULT 0,
+  defaultCashbackRule TEXT NOT NULL DEFAULT 'none',
   annualInterestRate REAL NOT NULL DEFAULT 0,
   interestTaxRate REAL NOT NULL DEFAULT 0,
   interestStartDate TEXT,
@@ -948,6 +975,7 @@ CREATE TABLE transactions (
   transferId TEXT,
   cashbackRule TEXT NOT NULL DEFAULT 'none',
   cashbackReceivedAt TEXT,
+  cashbackPending INTEGER NOT NULL DEFAULT 0,
   cashbackSourceId TEXT,
   isDebtTransfer INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE SET NULL,
@@ -1192,9 +1220,11 @@ CREATE TABLE transactions (
 
   Future<int> updateAccount(Account account) async {
     final db = await instance.database;
+    // Remembered choices are written separately, including from Quick Entry.
+    final fields = account.toMap()..remove('defaultCashbackRule');
     return await db.update(
       'accounts',
-      account.toMap(),
+      fields,
       where: 'id = ?',
       whereArgs: [account.id],
     );
@@ -1309,6 +1339,13 @@ CREATE TABLE transactions (
     final clauses = <String>[];
     final args = <Object?>[];
     String slots(int count) => List.filled(count, '?').join(',');
+    if (filter.pendingCashbackOnly) {
+      clauses.add('''cashbackPending = 1
+        AND type IN ('expense', 'transfer') AND isDebtTransfer = 0
+        AND transferId IS NULL AND cashbackSourceId IS NULL AND amount > 0
+        AND (cashbackRule = 'fixedFive'
+          OR (cashbackRule = 'onePercent' AND round(amount * 100) >= 50))''');
+    }
     if (filter.type != null) {
       clauses.add('type = ? AND isDebtTransfer = 0');
       args.add(filter.type!.name);

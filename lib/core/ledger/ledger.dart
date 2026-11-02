@@ -371,6 +371,7 @@ class SqliteLedgerAdapter extends Ledger {
             'transactions',
             {
               'cashbackRule': CashbackRule.none.name,
+              'cashbackPending': 0,
               'cashbackReceivedAt': null,
             },
             where: 'id = ?',
@@ -788,6 +789,7 @@ class InMemoryLedgerAdapter extends Ledger {
     if (source != null) {
       _store[source.id] = source.copyWith(
         cashbackRule: CashbackRule.none,
+        cashbackPending: false,
         cashbackReceivedAt: () => null,
       );
     }

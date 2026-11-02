@@ -990,6 +990,41 @@ void main() {
       20,
     );
   });
+  testWidgets(
+    'Quick Entry restores account cashback and remembers new choices',
+    (tester) async {
+      final repository = providers.read(accountRepositoryProvider);
+      await repository.setDefaultCashbackRule('cash', CashbackRule.onePercent);
+      await launch(tester);
+      await tap(tester, 'Add transaction');
+      await tap(tester, 'Expense');
+      await pickAccount(tester, 'Select account', 'Cash');
+      final shortcut = find.byKey(const ValueKey('cashback_button'));
+      expect(
+        find.descendant(of: shortcut, matching: find.text('1%')),
+        findsOneWidget,
+      );
+      await amount(tester, '1200');
+      await tap(tester, 'Select category');
+      await tap(tester, 'Food');
+      await tap(tester, 'Cashback');
+      await tap(tester, '₱5 fixed');
+      await tap(tester, 'Done');
+      expect(
+        (await repository.getAccounts())
+            .singleWhere((a) => a.id == 'cash')
+            .defaultCashbackRule,
+        CashbackRule.fixedFive,
+      );
+      await tap(tester, 'Save transaction');
+      final entries = await providers.read(transactionProvider.future);
+      expect(
+        entries.singleWhere((tx) => tx.cashbackSourceId != null).amount,
+        5,
+      );
+    },
+  );
+
   testWidgets('expense cashback records automatically in Quick Entry', (
     tester,
   ) async {
@@ -1044,6 +1079,47 @@ void main() {
       4485,
     );
   });
+
+  for (final transfer in [false, true]) {
+    testWidgets(
+      'delayed ${transfer ? 'transfer' : 'expense'} cashback stays pending in Quick Entry',
+      (tester) async {
+        final repository = providers.read(accountRepositoryProvider);
+        final cash = (await repository.getAccounts()).singleWhere(
+          (a) => a.id == 'cash',
+        );
+        await repository.updateAccount(cash.copyWith(cashbackDelayed: true));
+        await launch(tester);
+        await tap(tester, 'Add transaction');
+        await tap(tester, transfer ? 'Transfer' : 'Expense');
+        await pickAccount(tester, 'Select account', 'Cash');
+        if (transfer) {
+          await pickAccount(tester, 'Select receiving account', 'Bank');
+        }
+        await amount(tester, '1200');
+        if (!transfer) {
+          await tap(tester, 'Select category');
+          await tap(tester, 'Food');
+        }
+        await tap(tester, 'Cashback');
+        await tap(tester, '1%');
+        expect(
+          find.text('Pending · Excluded from your balance and income.'),
+          findsOneWidget,
+        );
+        await tap(tester, 'Done');
+        await tap(tester, transfer ? 'Save transfer' : 'Save transaction');
+        final entries = await providers.read(transactionProvider.future);
+        expect(entries.single.cashbackPending, isTrue);
+        expect(entries.single.expectedCashback, 12);
+        expect(
+          providers.read(dashboardStatsProvider).accountBalances['cash'],
+          3800,
+        );
+        expect(providers.read(dashboardStatsProvider).allTimeIncome, 0);
+      },
+    );
+  }
 
   testWidgets('transfer warning includes fixed and percentage fees', (
     tester,
@@ -1272,13 +1348,14 @@ void main() {
   });
 
   testWidgets(
-    'note suggests a category without changing the selected account',
+    'weaker suggestion fills category directly without changing the selected account',
     (tester) async {
       suggester.stubbedSuggestion = const CategorySuggestion(
         categoryId: 'food',
         originAccountId: 'bank',
         type: TransactionType.expense,
-        confidence: 0.95,
+        confidence: 0.33,
+        canAutoApply: false,
       );
       await launch(tester);
       await tap(tester, 'Add transaction');

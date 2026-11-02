@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'bank_templates.dart';
 import 'daily_interest.dart';
+import '../transactions/transaction.dart';
 
 class Account {
   final String id;
@@ -19,6 +20,8 @@ class Account {
   final double transferFeeAmount;
   final bool isTransferFeePercentage;
   final bool isCredit;
+  final bool cashbackDelayed;
+  final CashbackRule defaultCashbackRule;
   final double annualInterestRate;
   final double interestTaxRate;
   final DateTime? interestStartDate;
@@ -47,6 +50,8 @@ class Account {
     this.cardColorHex,
     this.cardShapeType,
     this.isCredit = false,
+    this.cashbackDelayed = false,
+    this.defaultCashbackRule = CashbackRule.none,
     this.annualInterestRate = 0,
     this.interestTaxRate = 0,
     this.interestStartDate,
@@ -68,6 +73,8 @@ class Account {
     String? Function()? cardColorHex,
     int? Function()? cardShapeType,
     bool? isCredit,
+    bool? cashbackDelayed,
+    CashbackRule? defaultCashbackRule,
     double? annualInterestRate,
     double? interestTaxRate,
     DateTime? Function()? interestStartDate,
@@ -91,6 +98,8 @@ class Account {
           ? cardShapeType()
           : this.cardShapeType,
       isCredit: isCredit ?? this.isCredit,
+      cashbackDelayed: cashbackDelayed ?? this.cashbackDelayed,
+      defaultCashbackRule: defaultCashbackRule ?? this.defaultCashbackRule,
       annualInterestRate: annualInterestRate ?? this.annualInterestRate,
       interestTaxRate: interestTaxRate ?? this.interestTaxRate,
       interestStartDate: interestStartDate != null
@@ -116,6 +125,8 @@ class Account {
       'cardColorHex': cardColorHex,
       'cardShapeType': cardShapeType,
       'isCredit': isCredit ? 1 : 0,
+      'cashbackDelayed': cashbackDelayed ? 1 : 0,
+      'defaultCashbackRule': defaultCashbackRule.name,
       'annualInterestRate': annualInterestRate,
       'interestTaxRate': interestTaxRate,
       'interestStartDate': interestStartDate?.toIso8601String(),
@@ -139,6 +150,12 @@ class Account {
       cardColorHex: map['cardColorHex'],
       cardShapeType: map['cardShapeType'],
       isCredit: map['isCredit'] == 1,
+      cashbackDelayed: map['cashbackDelayed'] == 1,
+      defaultCashbackRule:
+          CashbackRule.values
+              .where((rule) => rule.name == map['defaultCashbackRule'])
+              .firstOrNull ??
+          CashbackRule.none,
       annualInterestRate: (map['annualInterestRate'] as num?)?.toDouble() ?? 0,
       interestTaxRate: (map['interestTaxRate'] as num?)?.toDouble() ?? 0,
       interestStartDate: DateTime.tryParse(map['interestStartDate'] ?? ''),

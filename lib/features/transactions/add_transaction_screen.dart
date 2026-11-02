@@ -80,13 +80,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   String? _selectedToAccountId;
   bool _isTransferFeePercentage = false;
   CashbackRule _cashbackRule = CashbackRule.none;
+  bool? _cashbackPending;
+  DateTime? _cashbackReceivedAt;
   String _currentExpression = '';
   String _feeExpression = '';
   bool _editingFee = false;
   int _autoCatKey = 0;
   bool _manualCategory = false;
   bool _categorySuggested = false;
-  CategorySuggestion? _pendingCategorySuggestion;
 
   late AnimationController _colorAnimController;
   late AnimationController _pulseController;
@@ -110,6 +111,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _selectedDate,
     _isTransferFeePercentage,
     _cashbackRule,
+    _cashbackPending,
+    _cashbackReceivedAt,
   );
 
   @override
@@ -154,6 +157,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _selectedAccountId = tx.accountId;
       _selectedToAccountId = tx.toAccountId;
       _cashbackRule = tx.cashbackRule;
+      if (tx.cashbackRule != CashbackRule.none) {
+        _cashbackPending = tx.cashbackPending;
+        _cashbackReceivedAt = tx.cashbackReceivedAt;
+      }
       _existingFee = ref
           .read(transactionProvider)
           .value
@@ -240,11 +247,25 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     _feeExpression = _feeController.text;
   }
 
+  void _setSourceAccount(String? id) {
+    if (_selectedAccountId == id) return;
+    _selectedAccountId = id;
+    _cashbackRule = _selectedType == TransactionType.income
+        ? CashbackRule.none
+        : _accountById(
+                ref.read(accountProvider).value ?? [],
+                id,
+              )?.defaultCashbackRule ??
+              CashbackRule.none;
+    _cashbackPending = null;
+    _cashbackReceivedAt = null;
+  }
+
   void _swapTransferAccounts() {
     HapticService.light();
     setState(() {
       final previousSourceId = _selectedAccountId;
-      _selectedAccountId = _selectedToAccountId;
+      _setSourceAccount(_selectedToAccountId);
       _selectedToAccountId = previousSourceId;
       _updateTransferFee(
         _accountById(ref.read(accountProvider).value ?? [], _selectedAccountId),
@@ -266,9 +287,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   void _runAutoCategorization() {
     _suggesterCoordinator.cancel();
     if (!mounted) return;
-    if (_pendingCategorySuggestion != null) {
-      setState(() => _pendingCategorySuggestion = null);
-    }
     if (_categorySuggested && !_manualCategory) {
       setState(() {
         _selectedCategoryId = null;
@@ -320,10 +338,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         if (category == null ||
             category.isArchived ||
             category.type != _selectedType) {
-          return;
-        }
-        if (!suggestion.canAutoApply) {
-          setState(() => _pendingCategorySuggestion = suggestion);
           return;
         }
         if (_selectedCategoryId == category.id) return;
@@ -587,11 +601,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         widget.editingTransaction?.transferId == null) {
       newTransaction = newTransaction.copyWith(
         cashbackRule: _cashbackRule,
+        cashbackPending:
+            _cashbackRule != CashbackRule.none && _isCashbackPending,
         cashbackReceivedAt: () =>
-            _cashbackRule == CashbackRule.none ||
-                widget.editingTransaction?.date != _selectedDate
+            _cashbackRule == CashbackRule.none || _isCashbackPending
             ? null
-            : widget.editingTransaction?.cashbackReceivedAt,
+            : _cashbackReceivedAt,
       );
     }
 
@@ -669,14 +684,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           }
           _currentExpression = _amountController.text;
         }
-        _selectedType = result.type;
+        _setTransactionType(result.type);
         if (result.category != null) {
           _selectedCategoryId = result.category!.id;
           _manualCategory = result.isCategoryExplicit;
           _categorySuggested = !result.isCategoryExplicit;
         }
         if (result.account != null) {
-          _selectedAccountId = result.account!.id;
+          _setSourceAccount(result.account!.id);
         }
         if (result.toAccount != null) {
           _selectedToAccountId = result.toAccount!.id;
@@ -769,12 +784,28 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
   }
 
+  void _setTransactionType(TransactionType type) {
+    final previousType = _selectedType;
+    _selectedType = type;
+    if (type == TransactionType.income) {
+      _cashbackRule = CashbackRule.none;
+      _cashbackPending = null;
+      _cashbackReceivedAt = null;
+    } else if (previousType == TransactionType.income) {
+      _cashbackRule =
+          _accountById(
+            ref.read(accountProvider).value ?? [],
+            _selectedAccountId,
+          )?.defaultCashbackRule ??
+          CashbackRule.none;
+    }
+  }
+
   void _onTypeChanged(
     TransactionType newType,
     List<TransactionCategory> categories,
   ) {
     _suggesterCoordinator.cancel();
-    _pendingCategorySuggestion = null;
     final oldColor = Color.lerp(
       _prevColor,
       _currentColor,
@@ -782,10 +813,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     )!;
     HapticService.selection();
     setState(() {
-      _selectedType = newType;
-      if (newType == TransactionType.income) {
-        _cashbackRule = CashbackRule.none;
-      }
+      _setTransactionType(newType);
       if (newType != TransactionType.transfer) {
         _editingFee = false;
         _feeFocusNode.unfocus();
@@ -1942,36 +1970,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                         end: const Offset(1, 1),
                                       );
                                 }
-                                final suggestedCategory = _categoryById(
-                                  categories,
-                                  _pendingCategorySuggestion?.categoryId,
-                                );
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    child,
-                                    if (suggestedCategory != null)
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          _suggesterCoordinator.cancel();
-                                          setState(() {
-                                            _selectedCategoryId =
-                                                suggestedCategory.id;
-                                            _manualCategory = true;
-                                            _pendingCategorySuggestion = null;
-                                          });
-                                        },
-                                        icon: const Icon(
-                                          KoinIcons.sparkle,
-                                          size: 18,
-                                        ),
-                                        label: Text(
-                                          'Use suggested category: ${suggestedCategory.name}',
-                                        ),
-                                      ),
-                                  ],
-                                );
+                                return child;
                               },
                             ),
                     ),
@@ -2009,6 +2008,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       widget.editingTransaction?.transferId == null &&
       widget.editingTransaction?.cashbackSourceId == null;
 
+  bool get _defaultCashbackPending =>
+      _accountById(
+        ref.read(accountProvider).value ?? [],
+        _selectedAccountId,
+      )?.cashbackDelayed ??
+      false;
+
+  bool get _isCashbackPending => _cashbackPending ?? _defaultCashbackPending;
+
   Widget _buildCashbackControl(BuildContext context) => CashbackControl(
     amount:
         ref
@@ -2021,9 +2029,43 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         0,
     currency: ref.watch(settingsProvider).currency,
     rule: _cashbackRule,
-    onRuleChanged: (rule) => setState(() {
-      _cashbackRule = rule;
+    pending: _isCashbackPending,
+    defaultPending: _defaultCashbackPending,
+    receivedAt: _cashbackReceivedAt,
+    transactionDate: _selectedDate,
+    onReceived: (date) => setState(() {
+      _cashbackPending = false;
+      _cashbackReceivedAt = date;
     }),
+    onPending: () => setState(() {
+      _cashbackPending = true;
+      _cashbackReceivedAt = null;
+    }),
+    onRuleChanged: (rule) async {
+      final accountId = _selectedAccountId;
+      setState(() {
+        _cashbackRule = rule;
+        if (rule == CashbackRule.none) {
+          _cashbackPending = null;
+          _cashbackReceivedAt = null;
+        }
+      });
+      if (accountId == null) return;
+      try {
+        await ref
+            .read(accountProvider.notifier)
+            .rememberCashbackRule(accountId, rule);
+      } catch (_) {
+        if (context.mounted) {
+          KoinSnackBar.error(
+            context,
+            'Could not remember cashback choice',
+            subtitle:
+                'This transaction keeps your choice. Select it again to retry.',
+          );
+        }
+      }
+    },
   );
 
   Widget _buildFeeUnitOption(
@@ -2209,7 +2251,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               subtitle: 'Choose the account for this transaction',
               selectedId: _selectedAccountId,
               onSelected: (id) => setState(() {
-                _selectedAccountId = id;
+                _setSourceAccount(id);
                 if (_selectedToAccountId == id) _selectedToAccountId = null;
                 if (_selectedType == TransactionType.transfer) {
                   _updateTransferFee(_accountById(all, id));
@@ -2245,7 +2287,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedCategoryId = id;
         _manualCategory = true;
         _categorySuggested = false;
-        _pendingCategorySuggestion = null;
       });
     }
   }

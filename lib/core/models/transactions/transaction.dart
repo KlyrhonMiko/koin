@@ -30,6 +30,7 @@ class AppTransaction {
   final String? transferId;
   final CashbackRule cashbackRule;
   final DateTime? cashbackReceivedAt;
+  final bool cashbackPending;
   final String? cashbackSourceId;
 
   bool get canEarnCashback =>
@@ -41,8 +42,8 @@ class AppTransaction {
   double get expectedCashback =>
       canEarnCashback ? cashbackRule.calculate(amount) : 0;
 
-  /// Selecting cashback records a linked income entry with the transaction.
-  AppTransaction? get cashbackCredit => expectedCashback > 0
+  /// Pending cashback never creates income or changes the recorded balance.
+  AppTransaction? get cashbackCredit => expectedCashback > 0 && !cashbackPending
       ? AppTransaction(
           id: 'cashback:$id',
           note: note.isEmpty ? 'Cashback' : 'Cashback: $note',
@@ -77,6 +78,7 @@ class AppTransaction {
     this.transferId,
     this.cashbackRule = CashbackRule.none,
     this.cashbackReceivedAt,
+    this.cashbackPending = false,
     this.cashbackSourceId,
     this.isDebtTransfer = false,
   });
@@ -95,6 +97,7 @@ class AppTransaction {
     String? transferId,
     CashbackRule? cashbackRule,
     DateTime? Function()? cashbackReceivedAt,
+    bool? cashbackPending,
     String? cashbackSourceId,
     bool? isDebtTransfer,
   }) {
@@ -114,6 +117,7 @@ class AppTransaction {
       cashbackReceivedAt: cashbackReceivedAt != null
           ? cashbackReceivedAt()
           : this.cashbackReceivedAt,
+      cashbackPending: cashbackPending ?? this.cashbackPending,
       cashbackSourceId: cashbackSourceId ?? this.cashbackSourceId,
       isDebtTransfer: isDebtTransfer ?? this.isDebtTransfer,
     );
@@ -134,6 +138,7 @@ class AppTransaction {
       'transferId': transferId,
       'cashbackRule': cashbackRule.name,
       'cashbackReceivedAt': cashbackReceivedAt?.toIso8601String(),
+      'cashbackPending': cashbackPending ? 1 : 0,
       'cashbackSourceId': cashbackSourceId,
       'isDebtTransfer': isDebtTransfer ? 1 : 0,
     };
@@ -156,6 +161,7 @@ class AppTransaction {
       cashbackReceivedAt: map['cashbackReceivedAt'] == null
           ? null
           : DateTime.parse(map['cashbackReceivedAt']),
+      cashbackPending: map['cashbackPending'] == 1,
       cashbackSourceId: map['cashbackSourceId'],
       isDebtTransfer: map['isDebtTransfer'] == 1,
     );

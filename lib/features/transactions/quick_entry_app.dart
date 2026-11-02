@@ -145,6 +145,8 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   String _expression = '';
   double _amount = 0;
   CashbackRule _cashbackRule = CashbackRule.none;
+  bool? _cashbackPending;
+  DateTime? _cashbackReceivedAt;
   String? _categoryId;
   String? _accountId;
   String? _destinationId;
@@ -351,6 +353,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
   }
 
   void _selectType(TransactionType type) {
+    final previousType = _type;
     if (_income != null || _type != type) {
       _categoryId = null;
       _manualCategory = false;
@@ -361,6 +364,17 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     _type = type;
     if (type == TransactionType.income) {
       _cashbackRule = CashbackRule.none;
+      _cashbackPending = null;
+      _cashbackReceivedAt = null;
+    } else if (previousType == TransactionType.income) {
+      _cashbackRule =
+          ref
+              .read(accountProvider)
+              .value
+              ?.where((a) => a.id == _accountId)
+              .firstOrNull
+              ?.defaultCashbackRule ??
+          CashbackRule.none;
     }
     _pickerReturnStep = _Step.amount;
     _go(_Step.amount);
@@ -395,8 +409,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             _saving ||
             _saved ||
             _closing ||
-            suggestion.type != _type ||
-            !suggestion.canAutoApply) {
+            suggestion.type != _type) {
           return;
         }
         final category = (ref.read(categoriesProvider).value ?? [])
@@ -634,6 +647,12 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
             .addTransfer(
               transferTransaction: built.transferTransaction.copyWith(
                 cashbackRule: _cashbackRule,
+                cashbackPending:
+                    _cashbackRule != CashbackRule.none &&
+                    (_cashbackPending ?? account.cashbackDelayed),
+                cashbackReceivedAt: () => _cashbackRule == CashbackRule.none
+                    ? null
+                    : _cashbackReceivedAt,
               ),
               feeTransaction: built.feeTransaction,
             );
@@ -652,6 +671,15 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                 cashbackRule: _type == TransactionType.income
                     ? CashbackRule.none
                     : _cashbackRule,
+                cashbackPending:
+                    _type != TransactionType.income &&
+                    _cashbackRule != CashbackRule.none &&
+                    (_cashbackPending ?? account.cashbackDelayed),
+                cashbackReceivedAt:
+                    _type == TransactionType.income ||
+                        _cashbackRule == CashbackRule.none
+                    ? null
+                    : _cashbackReceivedAt,
               ),
             );
       }
@@ -1465,7 +1493,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                     if (destination) {
                       _destinationId = account.id;
                     } else {
-                      _accountId = account.id;
+                      _setSourceAccount(account.id);
                       if (_transfer) {
                         _fee.text = account.transferFeeAmount == 0
                             ? ''
@@ -1627,13 +1655,72 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
     );
   }
 
+  void _setSourceAccount(String? id) {
+    if (_accountId == id) return;
+    _accountId = id;
+    _cashbackRule = _type == TransactionType.income
+        ? CashbackRule.none
+        : ref
+                  .read(accountProvider)
+                  .value
+                  ?.where((a) => a.id == id)
+                  .firstOrNull
+                  ?.defaultCashbackRule ??
+              CashbackRule.none;
+    _cashbackPending = null;
+    _cashbackReceivedAt = null;
+  }
+
+  bool get _defaultCashbackPending =>
+      ref
+          .read(accountProvider)
+          .value
+          ?.where((a) => a.id == _accountId)
+          .firstOrNull
+          ?.cashbackDelayed ??
+      false;
+
   Widget _cashbackControl() => CashbackControl(
     amount: _amount,
     currency: ref.watch(settingsProvider).currency,
     rule: _cashbackRule,
-    onRuleChanged: (rule) => setState(() {
-      _cashbackRule = rule;
+    pending: _cashbackPending ?? _defaultCashbackPending,
+    defaultPending: _defaultCashbackPending,
+    receivedAt: _cashbackReceivedAt,
+    transactionDate: _date,
+    onReceived: (date) => setState(() {
+      _cashbackPending = false;
+      _cashbackReceivedAt = date;
     }),
+    onPending: () => setState(() {
+      _cashbackPending = true;
+      _cashbackReceivedAt = null;
+    }),
+    onRuleChanged: (rule) async {
+      final accountId = _accountId;
+      setState(() {
+        _cashbackRule = rule;
+        if (rule == CashbackRule.none) {
+          _cashbackPending = null;
+          _cashbackReceivedAt = null;
+        }
+      });
+      if (accountId == null) return;
+      try {
+        await ref
+            .read(accountProvider.notifier)
+            .rememberCashbackRule(accountId, rule);
+      } catch (_) {
+        if (mounted) {
+          KoinSnackBar.error(
+            context,
+            'Could not remember cashback choice',
+            subtitle:
+                'This transaction keeps your choice. Select it again to retry.',
+          );
+        }
+      }
+    },
   );
 
   Widget _transferAccounts(
@@ -1708,7 +1795,7 @@ class _QuickEntryFlowState extends ConsumerState<QuickEntryFlow>
                           HapticService.light();
                           setState(() {
                             final previousSourceId = _accountId;
-                            _accountId = _destinationId;
+                            _setSourceAccount(_destinationId);
                             _destinationId = previousSourceId;
                             _fee.text = destination.transferFeeAmount == 0
                                 ? ''

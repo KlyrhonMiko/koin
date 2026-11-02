@@ -122,6 +122,17 @@ void main() {
   });
 
   group('TransactionFilter Deepening Tests', () {
+    test('pending cashback participates in summaries, copying and criteria changes', () {
+      const filter = TransactionFilter(pendingCashbackOnly: true);
+      expect(filter.isEmpty, isFalse);
+      expect(filter.activeFilterCount, 1);
+      expect(filter.summaryText, 'Pending cashback');
+      expect(filter.copyWith(query: 'food').pendingCashbackOnly, isTrue);
+      expect(filter.hasSameCriteria(filter.copyWith(query: 'food')), isTrue);
+      expect(filter.hasSameCriteria(const TransactionFilter()), isFalse);
+      expect(filter.copyWith(pendingCashbackOnly: false).isEmpty, isTrue);
+    });
+
     test('activeFilterCount correctly tallies active non-query criteria', () {
       const emptyFilter = TransactionFilter();
       expect(emptyFilter.activeFilterCount, 0);

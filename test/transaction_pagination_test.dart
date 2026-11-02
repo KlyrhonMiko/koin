@@ -39,6 +39,10 @@ void main() {
           ? (i.isEven ? 'bank_account' : 'default_account')
           : null,
       categoryId: i % 3 == 0 ? 'salary' : 'food',
+      cashbackRule: i % 3 != 0 && i % 5 == 0
+          ? CashbackRule.onePercent
+          : CashbackRule.none,
+      cashbackPending: i % 3 != 0 && i % 5 == 0,
     ),
   );
   const names = {'salary': 'Salary', 'food': 'Food'};
@@ -77,6 +81,33 @@ void main() {
     categoryNamesById: names,
     after: after,
     limit: limit,
+  );
+
+  test(
+    'pending cashback combines filters and paginates in every sort order',
+    () async {
+      for (final order in TransactionSortOrder.values) {
+        final filter = TransactionFilter(
+          pendingCashbackOnly: true,
+          query: 'coffee',
+          accountIds: {'default_account'},
+          minAmount: 10,
+          sortOrder: order,
+        );
+        final expected = filter.apply(source, categoryNamesById: names)
+          ..sort(order.compare);
+        expect(expected.length, greaterThan(100));
+        final found = <AppTransaction>[];
+        TransactionCursor? cursor;
+        do {
+          final result = await page(filter, after: cursor, limit: 73);
+          found.addAll(result.items);
+          cursor = result.next;
+        } while (cursor != null);
+        expect(found.map((tx) => tx.id), expected.map((tx) => tx.id));
+        expect(found.map((tx) => tx.id).toSet(), hasLength(found.length));
+      }
+    },
   );
 
   test('large history is bounded and daily totals include unloaded rows', () async {

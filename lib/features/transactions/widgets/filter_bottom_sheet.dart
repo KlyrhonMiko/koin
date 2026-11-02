@@ -299,6 +299,32 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                         const Gap(KoinSpacing.sectionGap),
 
+                        const FormSectionTitle.subhead(
+                          title: 'Cashback',
+                          icon: KoinIcons.money,
+                        ),
+                        const Gap(12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: KoinSelectableOption(
+                            key: const ValueKey('pending-cashback-filter'),
+                            label: 'Pending cashback',
+                            selected: _filter.pendingCashbackOnly,
+                            compact: true,
+                            accentColor: primary,
+                            onTap: () {
+                              HapticService.selection();
+                              setState(() {
+                                _filter = _filter.copyWith(
+                                  pendingCashbackOnly:
+                                      !_filter.pendingCashbackOnly,
+                                );
+                              });
+                            },
+                          ),
+                        ),
+                        const Gap(KoinSpacing.sectionGap),
+
                         // Transaction Type
                         const FormSectionTitle.subhead(
                           title: 'Transaction Type',

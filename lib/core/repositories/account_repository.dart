@@ -6,7 +6,10 @@ import 'package:koin/core/models/models.dart';
 abstract class AccountRepository {
   Future<List<Account>> getAccounts();
   Future<Account> insertAccount(Account account);
+
+  /// Updates account settings without replacing its separately remembered rule.
   Future<void> updateAccount(Account account);
+  Future<void> setDefaultCashbackRule(String id, CashbackRule rule);
   Future<void> deleteAccount(String id);
   Future<void> updateAccountPositions(List<Account> accounts);
 }
@@ -33,6 +36,18 @@ class SqliteAccountAdapter implements AccountRepository {
   @override
   Future<void> deleteAccount(String id) async {
     await _dbHelper.deleteAccount(id);
+  }
+
+  @override
+  Future<void> setDefaultCashbackRule(String id, CashbackRule rule) async {
+    final db = await _dbHelper.database;
+    final changed = await db.update(
+      'accounts',
+      {'defaultCashbackRule': rule.name},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (changed == 0) throw StateError('Account no longer exists');
   }
 
   @override
@@ -71,7 +86,9 @@ class InMemoryAccountAdapter implements AccountRepository {
   Future<void> updateAccount(Account account) async {
     final idx = _accounts.indexWhere((a) => a.id == account.id);
     if (idx != -1) {
-      _accounts[idx] = account;
+      _accounts[idx] = account.copyWith(
+        defaultCashbackRule: _accounts[idx].defaultCashbackRule,
+      );
       _sort();
     }
   }
@@ -79,6 +96,13 @@ class InMemoryAccountAdapter implements AccountRepository {
   @override
   Future<void> deleteAccount(String id) async {
     _accounts.removeWhere((a) => a.id == id);
+  }
+
+  @override
+  Future<void> setDefaultCashbackRule(String id, CashbackRule rule) async {
+    final index = _accounts.indexWhere((account) => account.id == id);
+    if (index == -1) throw StateError('Account no longer exists');
+    _accounts[index] = _accounts[index].copyWith(defaultCashbackRule: rule);
   }
 
   @override

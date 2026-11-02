@@ -113,6 +113,7 @@ class DatabaseSnapshot {
           'categoryId',
           if (version >= 40) 'transferId',
           if (version >= 48) 'isDebtTransfer',
+          if (version >= 50) 'cashbackPending',
           if (version >= 49) ...[
             'cashbackRule',
             'cashbackReceivedAt',
@@ -142,6 +143,8 @@ class DatabaseSnapshot {
             ],
             if (version >= 43) ...['interestFrequency', 'interestAccrued'],
             if (version >= 44) 'isArchived',
+            if (version >= 50) 'cashbackDelayed',
+            if (version >= 51) 'defaultCashbackRule',
           ],
       };
       for (final entry in requiredColumns.entries) {

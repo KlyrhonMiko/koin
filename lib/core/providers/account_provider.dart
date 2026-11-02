@@ -54,7 +54,13 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
 
     // Optimistic update
     state = AsyncValue.data(
-      currentAccounts.map((a) => a.id == account.id ? account : a).toList(),
+      currentAccounts
+          .map(
+            (a) => a.id == account.id
+                ? account.copyWith(defaultCashbackRule: a.defaultCashbackRule)
+                : a,
+          )
+          .toList(),
     );
 
     try {
@@ -74,6 +80,20 @@ class AccountNotifier extends AsyncNotifier<List<Account>> {
     ref.invalidate(debtsProvider);
     ref.invalidate(debtRepaymentsProvider);
     await loadAccounts();
+  }
+
+  Future<void> rememberCashbackRule(String id, CashbackRule rule) async {
+    await _repository.setDefaultCashbackRule(id, rule);
+    if (!ref.mounted) return;
+    final accounts = state.value;
+    if (accounts != null) {
+      state = AsyncData([
+        for (final account in accounts)
+          account.id == id
+              ? account.copyWith(defaultCashbackRule: rule)
+              : account,
+      ]);
+    }
   }
 
   Future<void> setArchived(String id, bool archived) async {

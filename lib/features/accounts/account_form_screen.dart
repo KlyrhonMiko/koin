@@ -36,6 +36,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late bool excludeFromTotal;
   late bool isTransferFeePercentage;
   late bool isCredit;
+  late bool _cashbackDelayed;
   String? selectedLogoAsset;
   String? selectedTemplateId;
   String? _suggestedName;
@@ -125,6 +126,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     excludeFromTotal = widget.account?.excludeFromTotal ?? false;
     isTransferFeePercentage = widget.account?.isTransferFeePercentage ?? false;
     isCredit = widget.account?.isCredit ?? false;
+    _cashbackDelayed = widget.account?.cashbackDelayed ?? false;
     selectedLogoAsset = widget.account?.logoAsset;
     selectedCardColor = widget.account?.cardColor;
     selectedCardShape = widget.account?.cardShapeType;
@@ -472,6 +474,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
         excludeFromTotal: excludeFromTotal,
         isCredit: isCredit,
+        cashbackDelayed: _cashbackDelayed,
         annualInterestRate: _dailyInterestEnabled && !isCredit
             ? _interestRate!
             : 0,
@@ -867,6 +870,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       interestTaxController.text,
       _dailyInterestEnabled,
       _interestFrequency,
+      _cashbackDelayed,
       selectedIcon,
       selectedColor,
       excludeFromTotal,
@@ -1257,68 +1261,115 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     );
   }
 
-  Widget _buildCashbackSummary(BuildContext context, Currency currency) {
+  Widget _buildCashbackSection(BuildContext context, Currency currency) {
+    final summary = widget.account == null
+        ? null
+        : _buildCashbackSummary(context, currency);
+    return Column(
+      key: const ValueKey('account_cashback_section'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionLabel(context, 'Cashback'),
+        const Gap(12),
+        Material(
+          color: AppTheme.surfaceColor(context),
+          borderRadius: BorderRadius.circular(KoinShape.field),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (summary != null) ...[
+                  summary,
+                  const Gap(16),
+                  Divider(height: 1, color: AppTheme.fieldBorderColor(context)),
+                  const Gap(16),
+                ],
+                _buildCashbackTiming(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCashbackTiming(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        'Cashback timing',
+        style: TextStyle(
+          fontSize: KoinTypography.caption,
+          fontWeight: KoinTypography.labelWeight,
+          color: AppTheme.textLightColor(context),
+        ),
+      ),
+      const Gap(12),
+      LayoutBuilder(
+        builder: (context, constraints) => KoinChoiceControl(
+          compact: true,
+          vertical:
+              constraints.maxWidth < 260 ||
+              MediaQuery.textScalerOf(context).scale(14) > 21,
+          segments: const [
+            KoinSegmentItem(label: 'Instant'),
+            KoinSegmentItem(label: 'Delayed'),
+          ],
+          selectedIndex: _cashbackDelayed ? 1 : 0,
+          onChanged: (index) => setState(() => _cashbackDelayed = index == 1),
+        ),
+      ),
+      const Gap(12),
+      Text(
+        _cashbackDelayed
+            ? 'New cashback stays pending until you mark it received.'
+            : 'New cashback is recorded as income when you save.',
+        style: TextStyle(
+          color: AppTheme.textLightColor(context),
+          fontSize: KoinTypography.small,
+          height: 1.4,
+        ),
+      ),
+    ],
+  );
+
+  Widget? _buildCashbackSummary(BuildContext context, Currency currency) {
     final transactions = ref.watch(transactionProvider).value;
-    if (transactions == null) return const SizedBox.shrink();
+    if (transactions == null) return null;
     final now = ref.watch(effectiveTransactionClockProvider);
     final entries = transactions.where(
       (tx) => tx.accountId == widget.account!.id && !tx.date.isAfter(now),
     );
     final credits = entries.where((tx) => tx.cashbackSourceId != null);
-    final received = entries.where(
-      (tx) =>
-          tx.cashbackSourceId != null &&
-          tx.date.year == now.year &&
-          tx.date.month == now.month,
+    final pending = entries.where(
+      (tx) => tx.cashbackPending && tx.expectedCashback > 0,
     );
     if (!entries.any(
       (tx) =>
           tx.cashbackRule != CashbackRule.none || tx.cashbackSourceId != null,
     )) {
-      return const SizedBox.shrink();
+      return null;
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _sectionLabel(context, 'Cashback'),
-          const Gap(12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final metrics = [
-                KoinMetric(
-                  label: 'Total cashback',
-                  value: currency.formatter.format(
-                    credits.fold<double>(0, (sum, tx) => sum + tx.amount),
-                  ),
-                ),
-                KoinMetric(
-                  label: 'This month',
-                  value: currency.formatter.format(
-                    received.fold<double>(0, (sum, tx) => sum + tx.amount),
-                  ),
-                ),
-              ];
-              return constraints.maxWidth < 320 ||
-                      MediaQuery.textScalerOf(context).scale(14) > 21
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [metrics[0], const Gap(16), metrics[1]],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: metrics[0]),
-                        const Gap(16),
-                        Expanded(child: metrics[1]),
-                      ],
-                    );
-            },
+    return OverflowBar(
+      alignment: MainAxisAlignment.spaceBetween,
+      spacing: 24,
+      overflowSpacing: 16,
+      children: [
+        KoinMetric(
+          label: 'Received',
+          value: currency.formatter.format(
+            credits.fold<double>(0, (sum, tx) => sum + tx.amount),
           ),
-          const Gap(12),
-        ],
-      ),
+        ),
+        KoinMetric(
+          label: 'Pending',
+          value: currency.formatter.format(
+            pending.fold<double>(0, (sum, tx) => sum + tx.expectedCashback),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1378,7 +1429,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       ),
                       const Gap(24),
                       _buildAccountFields(context, currency),
-                      if (isEditing) _buildCashbackSummary(context, currency),
+                      const Gap(32),
+                      _buildCashbackSection(context, currency),
                       const Gap(32),
 
                       _sectionLabel(context, 'Account settings'),

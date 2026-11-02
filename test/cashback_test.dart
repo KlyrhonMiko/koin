@@ -47,6 +47,39 @@ void main() {
     }
   });
 
+  test('account timing and pending status round-trip with legacy defaults', () {
+    expect(
+      Account.fromMap(
+        bank.copyWith(defaultCashbackRule: CashbackRule.onePercent).toMap(),
+      ).defaultCashbackRule,
+      CashbackRule.onePercent,
+    );
+    expect(
+      Account.fromMap(bank.toMap()..remove('defaultCashbackRule'))
+          .defaultCashbackRule,
+      CashbackRule.none,
+    );
+    expect(
+      Account.fromMap(bank.copyWith(cashbackDelayed: true).toMap())
+          .cashbackDelayed,
+      isTrue,
+    );
+    expect(
+      Account.fromMap(bank.toMap()..remove('cashbackDelayed')).cashbackDelayed,
+      isFalse,
+    );
+    final pending = purchase().copyWith(cashbackPending: true);
+    final restored = AppTransaction.fromMap(pending.toMap());
+    expect(restored.cashbackPending, isTrue);
+    expect(restored.expectedCashback, 12);
+    expect(restored.cashbackCredit, isNull);
+    final legacy = AppTransaction.fromMap(
+      purchase().toMap()..remove('cashbackPending'),
+    );
+    expect(legacy.cashbackPending, isFalse);
+    expect(legacy.cashbackCredit!.amount, 12);
+  });
+
   test(
     'cashback round-trips, clears receipt, and defaults off for old data',
     () {
@@ -99,6 +132,98 @@ void main() {
         }
       });
 
+      test('pending filter includes eligible cashback and excludes received and zero amounts', () async {
+        final pending = purchase().copyWith(cashbackPending: true);
+        final transfer = pending.copyWith(
+          id: 'transfer',
+          amount: 500,
+          type: TransactionType.transfer,
+          toAccountId: 'other',
+        );
+        final zero = pending.copyWith(id: 'zero', amount: 0.49);
+        final rounded = pending.copyWith(id: 'rounded', amount: 0.495);
+        final receivedSource = purchase().copyWith(id: 'received');
+        for (final source in [
+          pending,
+          transfer,
+          zero,
+          rounded,
+          receivedSource,
+        ]) {
+          if (source.type == TransactionType.transfer) {
+            await ledger.recordTransfer(transferTransaction: source);
+          } else {
+            await ledger.recordTransaction(source);
+          }
+        }
+        const filter = TransactionFilter(pendingCashbackOnly: true);
+        var page = await ledger.getTransactionPage(
+          filter: filter,
+          categoryNamesById: const {},
+        );
+        expect(page.items.map((tx) => tx.id).toSet(), {
+          'purchase',
+          'transfer',
+          'rounded',
+        });
+        await ledger.updateTransaction(
+          pending.copyWith(
+            cashbackPending: false,
+            cashbackReceivedAt: () => received,
+          ),
+        );
+        page = await ledger.getTransactionPage(
+          filter: filter,
+          categoryNamesById: const {},
+        );
+        expect(page.items.map((tx) => tx.id).toSet(), {'transfer', 'rounded'});
+        final combined = await ledger.getTransactionPage(
+          filter: filter.copyWith(
+            type: TransactionType.transfer,
+            accountIds: {'other'},
+          ),
+          categoryNamesById: const {},
+        );
+        expect(combined.items.single.id, transfer.id);
+      });
+
+      test('stale account edits retain a newer remembered cashback choice', () async {
+        final AccountRepository repository = sqlite
+            ? SqliteAccountAdapter()
+            : InMemoryAccountAdapter(initial: [bank]);
+        final providers = ProviderContainer(
+          overrides: [accountRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(providers.dispose);
+        await providers.read(accountProvider.future);
+        final notifier = providers.read(accountProvider.notifier);
+        await notifier.rememberCashbackRule(bank.id, CashbackRule.onePercent);
+        await notifier.updateAccount(bank.copyWith(name: 'Updated name'));
+        var restored = (await repository.getAccounts()).singleWhere(
+          (a) => a.id == bank.id,
+        );
+        expect(restored.defaultCashbackRule, CashbackRule.onePercent);
+        expect(restored.name, 'Updated name');
+        expect(
+          providers
+              .read(accountProvider)
+              .value!
+              .singleWhere((a) => a.id == bank.id)
+              .defaultCashbackRule,
+          CashbackRule.onePercent,
+        );
+        // Another engine can remember a choice without updating this container.
+        await repository.setDefaultCashbackRule(
+          bank.id,
+          CashbackRule.fixedFive,
+        );
+        await notifier.updateAccount(bank.copyWith(name: 'Edited again'));
+        restored = (await repository.getAccounts()).singleWhere(
+          (a) => a.id == bank.id,
+        );
+        expect(restored.defaultCashbackRule, CashbackRule.fixedFive);
+      });
+
       test('selecting cashback credits automatically exactly once', () async {
         final source = purchase();
         await ledger.recordTransaction(source);
@@ -126,6 +251,139 @@ void main() {
         expect(stats.allTimeExpense, 1200);
         expect(stats.allTimeIncome, 12);
       });
+
+      test(
+        'pending cashback affects neither balance nor income until received',
+        () async {
+          final source = purchase().copyWith(cashbackPending: true);
+          await ledger.recordTransaction(source);
+          await ledger.recordTransaction(source);
+          var entries = await ledger.getTransactionFamily(source.id);
+          expect(entries, hasLength(1));
+          var stats = DashboardStats.calculate(
+            accounts: [bank],
+            transactions: entries,
+          );
+          expect(stats.accountBalances[bank.id], 8800);
+          expect(stats.allTimeIncome, 0);
+          expect(stats.allTimeExpense, 1200);
+          final confirmed = source.copyWith(
+            cashbackPending: false,
+            cashbackReceivedAt: () => received,
+          );
+          await ledger.updateTransaction(confirmed);
+          await ledger.updateTransaction(confirmed);
+          entries = await ledger.getTransactionFamily(source.id);
+          expect(entries, hasLength(2));
+          final credit = entries.singleWhere(
+            (tx) => tx.cashbackSourceId != null,
+          );
+          expect(credit.date, received);
+          expect(credit.amount, 12);
+          stats = DashboardStats.calculate(
+            accounts: [bank],
+            transactions: entries,
+          );
+          expect(stats.accountBalances[bank.id], 8812);
+          expect(stats.allTimeIncome, 12);
+          await ledger.updateTransaction(source);
+          entries = await ledger.getTransactionFamily(source.id);
+          expect(entries.single.cashbackPending, isTrue);
+          expect(entries.single.cashbackReceivedAt, isNull);
+          stats = DashboardStats.calculate(
+            accounts: [bank],
+            transactions: entries,
+          );
+          expect(stats.accountBalances[bank.id], 8800);
+          expect(stats.allTimeIncome, 0);
+          await ledger.updateTransaction(confirmed);
+          entries = await ledger.getTransactionFamily(source.id);
+          expect(entries, hasLength(2));
+          expect(
+            entries.singleWhere((tx) => tx.cashbackSourceId != null).amount,
+            12,
+          );
+        },
+      );
+
+      test(
+        'pending edits recalculate without creating income and can be removed',
+        () async {
+          final source = purchase().copyWith(cashbackPending: true);
+          await ledger.recordTransaction(source);
+          final updated = source.copyWith(amount: 2000, accountId: 'other');
+          await ledger.updateTransaction(updated);
+          var family = await ledger.getTransactionFamily(source.id);
+          expect(family.single.expectedCashback, 20);
+          expect(family.single.accountId, 'other');
+          await ledger.updateTransaction(
+            updated.copyWith(
+              cashbackRule: CashbackRule.none,
+              cashbackPending: false,
+            ),
+          );
+          family = await ledger.getTransactionFamily(source.id);
+          expect(family.single.expectedCashback, 0);
+          await ledger.voidTransaction(source.id);
+          expect(await ledger.getTransactionFamily(source.id), isEmpty);
+        },
+      );
+
+      test(
+        'pending transfer cashback leaves fees and receiving balance intact',
+        () async {
+          final source = purchase(rule: CashbackRule.fixedFive).copyWith(
+            type: TransactionType.transfer,
+            toAccountId: 'other',
+            cashbackPending: true,
+          );
+          final fee = purchase(rule: CashbackRule.none)
+              .copyWith(id: 'fee', amount: 10);
+          await ledger.recordTransfer(
+            transferTransaction: source,
+            feeTransaction: fee,
+          );
+          var family = await ledger.getTransactionFamily(source.id);
+          expect(family, hasLength(2));
+          final stats = DashboardStats.calculate(
+            accounts: [
+              bank,
+              bank.copyWith(id: 'other', initialBalance: 0),
+            ],
+            transactions: family,
+          );
+          expect(stats.accountBalances[bank.id], 8790);
+          expect(stats.accountBalances['other'], 1200);
+          expect(stats.allTimeIncome, 0);
+          await ledger.updateTransfer(
+            source.copyWith(
+              cashbackPending: false,
+              cashbackReceivedAt: () => received,
+            ),
+            fee,
+          );
+          family = await ledger.getTransactionFamily(source.id);
+          expect(family, hasLength(3));
+          expect(
+            family.singleWhere((tx) => tx.cashbackSourceId != null).amount,
+            5,
+          );
+          expect(family.singleWhere((tx) => tx.id == 'fee').amount, 10);
+        },
+      );
+
+      test(
+        'pending cashback with a receipt date is rejected atomically',
+        () async {
+          await expectLater(
+            ledger.recordTransaction(
+              purchase(receivedAt: received).copyWith(cashbackPending: true),
+            ),
+            throwsA(isA<FinancialValidationException>()),
+          );
+          expect(await ledger.getTransactions(), isEmpty);
+        },
+      );
 
       test(
         'editing recalculates credit, moves accounts, and can remove cashback',
@@ -285,6 +543,155 @@ void main() {
       );
 
       if (sqlite) {
+        test('remembered cashback changes only that account and survives reopening', () async {
+          final repository = SqliteAccountAdapter();
+          await repository.setDefaultCashbackRule(
+            bank.id,
+            CashbackRule.onePercent,
+          );
+          await helper.close();
+          var accounts = await repository.getAccounts();
+          final restored = accounts.singleWhere((a) => a.id == bank.id);
+          expect(restored.defaultCashbackRule, CashbackRule.onePercent);
+          expect(restored.initialBalance, bank.initialBalance);
+          expect(restored.name, bank.name);
+          expect(
+            accounts.singleWhere((a) => a.id == 'other').defaultCashbackRule,
+            CashbackRule.none,
+          );
+          await repository.setDefaultCashbackRule(bank.id, CashbackRule.none);
+          accounts = await repository.getAccounts();
+          expect(
+            accounts.singleWhere((a) => a.id == bank.id).defaultCashbackRule,
+            CashbackRule.none,
+          );
+        });
+
+        test(
+          'version 50 upgrades default cashback without touching credits',
+          () async {
+            final source = purchase();
+            await ledger.recordTransaction(source);
+            final db = await helper.database;
+            await db.execute(
+              'ALTER TABLE accounts DROP COLUMN defaultCashbackRule',
+            );
+            await db.setVersion(50);
+            await helper.close();
+            expect(
+              (await helper.getAccounts()).every(
+                (a) => a.defaultCashbackRule == CashbackRule.none,
+              ),
+              isTrue,
+            );
+            final family = await ledger.getTransactionFamily(source.id);
+            expect(family, hasLength(2));
+            expect(
+              family.singleWhere((tx) => tx.cashbackSourceId != null).amount,
+              12,
+            );
+          },
+        );
+
+        test('version 49 preserves existing credits and defaults account to instant', () async {
+          final source = purchase();
+          await ledger.recordTransaction(source);
+          final db = await helper.database;
+          await db.execute('ALTER TABLE accounts DROP COLUMN cashbackDelayed');
+          await db.execute(
+            'ALTER TABLE transactions DROP COLUMN cashbackPending',
+          );
+          await db.setVersion(49);
+          await helper.close();
+          var family = await ledger.getTransactionFamily(source.id);
+          expect(family, hasLength(2));
+          final restored = family.singleWhere((tx) => tx.id == source.id);
+          expect(restored.cashbackPending, isFalse);
+          expect(restored.cashbackReceivedAt, isNull);
+          expect(
+            (await helper.getAccounts())
+                .singleWhere((a) => a.id == bank.id)
+                .cashbackDelayed,
+            isFalse,
+          );
+          await ledger.updateTransaction(restored);
+          family = await ledger.getTransactionFamily(source.id);
+          expect(
+            family.singleWhere((tx) => tx.cashbackSourceId != null).date,
+            date,
+          );
+          expect(
+            DashboardStats.calculate(
+              accounts: [bank],
+              transactions: family,
+            ).accountBalances[bank.id],
+            8812,
+          );
+        });
+
+        test(
+          'pending cashback and account timing survive backup and reopening',
+          () async {
+            await helper.updateAccount(bank.copyWith(cashbackDelayed: true));
+            await SqliteAccountAdapter().setDefaultCashbackRule(
+              bank.id,
+              CashbackRule.onePercent,
+            );
+            final source = purchase().copyWith(cashbackPending: true);
+            await ledger.recordTransaction(source);
+            final backupPath = '${directory!.path}/pending-backup.db';
+            await DatabaseSnapshot.create(await helper.database, backupPath);
+            final backup = await openDatabase(
+              backupPath,
+              singleInstance: false,
+            );
+            try {
+              final rows = (await backup.query('transactions'))
+                  .map(AppTransaction.fromMap);
+              expect(rows.single.cashbackPending, isTrue);
+              expect(rows.single.cashbackCredit, isNull);
+              final accounts = (await backup.query('accounts'))
+                  .map(Account.fromMap);
+              expect(
+                accounts.singleWhere((a) => a.id == bank.id).cashbackDelayed,
+                isTrue,
+              );
+              expect(
+                accounts
+                    .singleWhere((a) => a.id == bank.id)
+                    .defaultCashbackRule,
+                CashbackRule.onePercent,
+              );
+            } finally {
+              await backup.close();
+            }
+            await helper.close();
+            expect(
+              (await ledger.getTransactionFamily(source.id))
+                  .single
+                  .cashbackPending,
+              isTrue,
+            );
+          },
+        );
+
+        test('pending cashback cannot fund another expense', () async {
+          final source = purchase(
+            amount: 10000,
+            rule: CashbackRule.fixedFive,
+          ).copyWith(cashbackPending: true);
+          await ledger.recordTransaction(source);
+          await expectLater(
+            ledger.recordTransaction(
+              purchase(
+                amount: 5,
+                rule: CashbackRule.none,
+              ).copyWith(id: 'extra'),
+            ),
+            throwsA(isA<FinancialValidationException>()),
+          );
+        });
+
         test('cashback survives backup and reopening the database', () async {
           final source = purchase(receivedAt: received);
           await ledger.recordTransaction(source);

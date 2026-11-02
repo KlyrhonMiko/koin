@@ -395,7 +395,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-  testWidgets('weak evidence requires accepting the suggested category', (
+  testWidgets('suggested category fills directly without an accept action', (
     tester,
   ) async {
     suggester.stubbedSuggestion = const CategorySuggestion(
@@ -409,22 +409,18 @@ void main() {
     await tester.enterText(noteField(), 'burger');
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pumpAndSettle();
-    expect(categoryTile(tester).selectedName, isNull);
-    final useSuggestion = find.text('Use suggested category: Food');
-    expect(useSuggestion, findsOneWidget);
-    await capture(tester, 'category-suggestion');
-    await tester.ensureVisible(useSuggestion);
-    await tester.tap(useSuggestion);
-    await tester.pumpAndSettle();
     expect(categoryTile(tester).selectedName, 'Food');
+    expect(find.textContaining('Use suggested category'), findsNothing);
+    await capture(tester, 'category-suggestion');
     suggester.stubbedSuggestion = const CategorySuggestion(
       categoryId: 'transport',
       type: TransactionType.expense,
       confidence: 0.95,
     );
     await tester.enterText(noteField(), 'bus ticket');
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.pumpAndSettle();
-    expect(categoryTile(tester).selectedName, 'Food');
+    expect(categoryTile(tester).selectedName, 'Transport');
     expect(tester.takeException(), isNull);
   });
 

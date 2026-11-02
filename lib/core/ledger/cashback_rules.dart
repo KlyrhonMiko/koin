@@ -10,6 +10,14 @@ abstract final class CashbackRules {
       );
     }
     final received = transaction.cashbackReceivedAt;
+    if (transaction.cashbackPending &&
+        (!transaction.canEarnCashback ||
+            transaction.cashbackRule == CashbackRule.none ||
+            received != null)) {
+      throw const FinancialValidationException(
+        'Pending cashback needs a cashback rule and cannot have a receipt date',
+      );
+    }
     if (received == null) return;
     final now = DateTime.now();
     final purchaseDay = DateTime(

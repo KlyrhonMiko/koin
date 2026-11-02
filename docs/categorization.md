@@ -37,10 +37,12 @@ The returned confidence is an evidence score, not a calibrated probability:
   application also needs at least three supporting examples, a ranking score of
   at least 0.90, and word coverage of at least 75%.
 
-The transaction editor displays weaker category suggestions as an explicit
-“Use suggested category” action. Quick Entry, debt, purchase, scheduled-payment,
-and voice forms only auto-fill suggestions with sufficient evidence. User-picked
-categories take precedence. Debt, purchase, and scheduled-payment forms clear
+The transaction editor and Quick Entry fill the Category field directly from
+valid category suggestions, including weaker matches, without a separate accept
+action. The category stays editable and automatic choices are replaced when the
+note changes. Debt, purchase, scheduled-payment, and voice forms only auto-fill
+suggestions with sufficient evidence. User-picked categories take precedence.
+Debt, purchase, and scheduled-payment forms clear
 automatic categories when their descriptions change. Saving an automatic category
 does not record explicit feedback. Manual corrections in the transaction editor
 and Quick Entry are remembered after their transactions are saved. Purchase sheets

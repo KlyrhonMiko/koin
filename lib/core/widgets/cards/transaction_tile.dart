@@ -136,7 +136,7 @@ class TransactionTile extends StatelessWidget {
               : '$categoryName • $accountName');
 
     final cashbackSubtitle = transaction.expectedCashback > 0
-        ? 'Cashback ${currency.formatter.format(transaction.expectedCashback)}'
+        ? '${currency.formatter.format(transaction.expectedCashback)} cashback ${transaction.cashbackPending ? 'pending' : 'received'}'
         : null;
 
     final formattedAmount = currency.formatter.format(transaction.amount);

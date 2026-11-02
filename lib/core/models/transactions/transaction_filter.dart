@@ -27,6 +27,7 @@ class TransactionFilter {
   final double? maxAmount;
   final TransactionType? type;
   final TransactionSortOrder sortOrder;
+  final bool pendingCashbackOnly;
 
   const TransactionFilter({
     this.query = '',
@@ -37,6 +38,7 @@ class TransactionFilter {
     this.maxAmount,
     this.type,
     this.sortOrder = TransactionSortOrder.newestFirst,
+    this.pendingCashbackOnly = false,
   });
 
   TransactionFilter copyWith({
@@ -48,6 +50,7 @@ class TransactionFilter {
     double? maxAmount,
     TransactionType? type,
     TransactionSortOrder? sortOrder,
+    bool? pendingCashbackOnly,
     bool clearDateRange = false,
     bool clearMinAmount = false,
     bool clearMaxAmount = false,
@@ -62,6 +65,7 @@ class TransactionFilter {
       maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
       type: clearType ? null : (type ?? this.type),
       sortOrder: sortOrder ?? this.sortOrder,
+      pendingCashbackOnly: pendingCashbackOnly ?? this.pendingCashbackOnly,
     );
   }
 
@@ -75,11 +79,13 @@ class TransactionFilter {
       minAmount == null &&
       maxAmount == null &&
       type == null &&
+      !pendingCashbackOnly &&
       !isAmountSort;
 
   /// Whether only the search query differs (used to debounce search alone).
   bool hasSameCriteria(TransactionFilter other) =>
       sortOrder == other.sortOrder &&
+      pendingCashbackOnly == other.pendingCashbackOnly &&
       dateRange == other.dateRange &&
       type == other.type &&
       minAmount == other.minAmount &&
@@ -92,6 +98,7 @@ class TransactionFilter {
   /// The count of non-query filters actively applied.
   int get activeFilterCount {
     int count = isAmountSort ? 1 : 0;
+    if (pendingCashbackOnly) count++;
     if (type != null) count++;
     if (dateRange != null) count++;
     count += categoryIds.length;
@@ -109,6 +116,7 @@ class TransactionFilter {
     Map<String, String> accounts = const {},
   }) {
     final parts = <String>[];
+    if (pendingCashbackOnly) parts.add('Pending cashback');
     if (type != null) {
       parts.add(type!.name[0].toUpperCase() + type!.name.substring(1));
     }
@@ -141,6 +149,11 @@ class TransactionFilter {
   /// Pure domain predicate: returns whether [tx] satisfies this filter's criteria.
   bool matches(AppTransaction tx, {Map<String, String>? categoryNamesById}) {
     if (isEmpty) return true;
+
+    if (pendingCashbackOnly &&
+        (!tx.cashbackPending || tx.expectedCashback <= 0)) {
+      return false;
+    }
 
     // Type filter
     if (type != null && (tx.type != type || tx.isDebtTransfer)) {
