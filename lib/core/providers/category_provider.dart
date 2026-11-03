@@ -27,6 +27,7 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
   Future<void> addCategory(TransactionCategory category) async {
     final currentCategories = state.value ?? [];
+    _validateBudgetSharing(category, currentCategories);
     final categoryWithPosition = category.copyWith(
       position: currentCategories.length,
     );
@@ -48,9 +49,24 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
 
     final previousState = state;
     final currentCategories = state.value!;
+    final detached = category.type == TransactionType.expense
+        ? <String, TransactionCategory>{}
+        : {
+            for (final c in TransactionCategory.detachFromBudgets(
+              currentCategories,
+              category.id,
+            ))
+              c.id: c,
+          };
+    if (category.type != TransactionType.expense) {
+      category = category.withoutBudget();
+    }
+    _validateBudgetSharing(category, currentCategories);
 
     state = AsyncValue.data(
-      currentCategories.map((c) => c.id == category.id ? category : c).toList(),
+      currentCategories
+          .map((c) => c.id == category.id ? category : detached[c.id] ?? c)
+          .toList(),
     );
 
     try {
@@ -68,6 +84,126 @@ class CategoryNotifier extends AsyncNotifier<List<TransactionCategory>> {
     ref.invalidate(plannedPaymentProvider);
     ref.invalidate(debtsProvider);
     await _loadCategories();
+  }
+
+  /// Saves a budget's coverage and limit together, including category moves.
+  Future<void> saveBudget({
+    required Set<String> categoryIds,
+    required double amount,
+    required bool isPercent,
+    String? originalBudgetId,
+  }) async {
+    final categories = state.value;
+    if (categories == null) throw StateError('Categories are not available.');
+    final expenses = {
+      for (final c in categories)
+        if (c.type == TransactionType.expense) c.id: c,
+    };
+    if (categoryIds.isEmpty ||
+        categoryIds.any((id) => !expenses.containsKey(id))) {
+      throw StateError('Choose at least one available expense category.');
+    }
+    if (!amount.isFinite || amount <= 0 || (isPercent && amount > 100)) {
+      throw StateError('Enter a valid budget limit.');
+    }
+    if (originalBudgetId != null && !expenses.containsKey(originalBudgetId)) {
+      throw StateError('This budget is no longer available.');
+    }
+    final updates = <String, TransactionCategory>{};
+    for (final budget in expenses.values.where((c) => c.hasBudget)) {
+      final members = {
+        budget.id,
+        ...budget.sharedBudgetCategoryIds,
+      }.where(expenses.containsKey).toSet();
+      if (budget.id == originalBudgetId) {
+        updates[budget.id] = budget.withoutBudget();
+      } else if (members.intersection(categoryIds).isNotEmpty) {
+        final remaining = members.difference(categoryIds);
+        updates[budget.id] = budget.withoutBudget();
+        if (remaining.isNotEmpty) {
+          final ownerId = remaining.contains(budget.id)
+              ? budget.id
+              : remaining.first;
+          final owner = expenses[ownerId]!;
+          updates[ownerId] = owner
+              .withBudgetFrom(budget)
+              .copyWith(
+                sharedBudgetCategoryIds: remaining
+                    .where((id) => id != ownerId)
+                    .toList(),
+              );
+        }
+      }
+    }
+    final ownerId = categoryIds.contains(originalBudgetId)
+        ? originalBudgetId!
+        : categoryIds.first;
+    final owner = expenses[ownerId]!;
+    updates[ownerId] =
+        (isPercent
+                ? owner.withPercentBudget(amount)
+                : owner.withFixedBudget(amount))
+            .copyWith(
+              sharedBudgetCategoryIds: categoryIds
+                  .where((id) => id != ownerId)
+                  .toList(),
+            );
+    final updatedCategories = categories
+        .map((c) => updates[c.id] ?? c)
+        .toList();
+    final totalPercent = updatedCategories
+        .where((c) => c.type == TransactionType.expense && c.isPercentBudget)
+        .fold(0.0, (sum, c) => sum + (c.budgetPercent ?? 0));
+    if (totalPercent > 100.000001) {
+      throw StateError(
+        'Percentage budgets exceed 100%. Reduce the limit to continue.',
+      );
+    }
+    await _repository.updateBudgets(updates.values.toList());
+    state = AsyncValue.data([
+      for (final category in state.value ?? categories)
+        if (updates[category.id] case final updated?)
+          category.withBudgetFrom(updated)
+        else
+          category,
+    ]);
+  }
+
+  void _validateBudgetSharing(
+    TransactionCategory category,
+    List<TransactionCategory> categories,
+  ) {
+    if (!category.hasBudget) return;
+    final selectedIds = {category.id, ...category.sharedBudgetCategoryIds};
+    final previousIds = categories
+        .where((c) => c.id == category.id)
+        .expand((c) => c.sharedBudgetCategoryIds)
+        .toSet();
+    if (category.type != TransactionType.expense ||
+        category.sharedBudgetCategoryIds.any(
+          (id) =>
+              id == category.id ||
+              (!previousIds.contains(id) &&
+                  !categories.any(
+                    (c) =>
+                        c.id == id &&
+                        c.type == TransactionType.expense &&
+                        !c.hasBudget,
+                  )),
+        )) {
+      throw StateError(
+        'Shared budgets require expense categories without another budget.',
+      );
+    }
+    for (final other in categories) {
+      if (other.id == category.id || !other.hasBudget) continue;
+      if ({
+        other.id,
+        ...other.sharedBudgetCategoryIds,
+      }.intersection(selectedIds).isNotEmpty) {
+        throw StateError('A category can only belong to one budget.');
+      }
+    }
   }
 
   Future<void> setArchived(String id, bool archived) async {

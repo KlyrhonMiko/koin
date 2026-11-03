@@ -40,6 +40,18 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 52) {
+      // Older upgrades can serialize categories before reaching table creation.
+      final columns = await db.rawQuery('PRAGMA table_info(categories)');
+      if (columns.isNotEmpty &&
+          !columns.any(
+            (column) => column['name'] == 'sharedBudgetCategoryIds',
+          )) {
+        await db.execute(
+          "ALTER TABLE categories ADD COLUMN sharedBudgetCategoryIds TEXT NOT NULL DEFAULT '[]'",
+        );
+      }
+    }
     if (oldVersion < 51) {
       final columns = await db.rawQuery('PRAGMA table_info(accounts)');
       if (columns.isNotEmpty &&
@@ -947,6 +959,7 @@ CREATE TABLE categories (
   budget REAL,
   budgetPercent REAL,
   isPercentBudget INTEGER DEFAULT 0,
+  sharedBudgetCategoryIds TEXT NOT NULL DEFAULT '[]',
   position INTEGER DEFAULT 0
 )
 ''');
@@ -1156,6 +1169,17 @@ CREATE TABLE transactions (
 
   Future<int> updateCategory(TransactionCategory category) async {
     final db = await instance.database;
+    if (category.type != TransactionType.expense) {
+      return db.transaction((txn) async {
+        await _detachCategoryBudgets(txn, category.id);
+        return txn.update(
+          'categories',
+          category.withoutBudget().toMap(),
+          where: 'id = ?',
+          whereArgs: [category.id],
+        );
+      });
+    }
     return await db.update(
       'categories',
       category.toMap(),
@@ -1167,6 +1191,7 @@ CREATE TABLE transactions (
   Future<int> deleteCategory(String id) async {
     final db = await instance.database;
     return db.transaction((txn) async {
+      await _detachCategoryBudgets(txn, id);
       for (final table in ['transactions', 'planned_payments']) {
         await txn.update(
           table,
@@ -1185,6 +1210,50 @@ CREATE TABLE transactions (
       }
       return txn.delete('categories', where: 'id = ?', whereArgs: [id]);
     });
+  }
+
+  Future<void> updateCategoryBudgets(
+    List<TransactionCategory> categories,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) => _writeCategoryBudgets(txn, categories));
+  }
+
+  Future<void> _detachCategoryBudgets(DatabaseExecutor db, String id) async {
+    final categories = (await db.query(
+      'categories',
+      orderBy: 'position ASC',
+    )).map(TransactionCategory.fromMap).toList();
+    await _writeCategoryBudgets(
+      db,
+      TransactionCategory.detachFromBudgets(categories, id),
+    );
+  }
+
+  Future<void> _writeCategoryBudgets(
+    DatabaseExecutor db,
+    List<TransactionCategory> categories,
+  ) async {
+    for (final category in categories) {
+      final changed = await db.update(
+        'categories',
+        {
+          for (final entry in category.toMap().entries)
+            if ([
+              'budget',
+              'budgetPercent',
+              'isPercentBudget',
+              'sharedBudgetCategoryIds',
+            ].contains(entry.key))
+              entry.key: entry.value,
+        },
+        where: 'id = ?',
+        whereArgs: [category.id],
+      );
+      if (changed != 1) {
+        throw StateError('A selected category is no longer available.');
+      }
+    }
   }
 
   Future<void> updateCategoryPositions(

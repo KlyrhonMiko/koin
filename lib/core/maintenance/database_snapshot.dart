@@ -127,6 +127,7 @@ class DatabaseSnapshot {
           'colorHex',
           'type',
           if (version >= 44) 'isArchived',
+          if (version >= 52) 'sharedBudgetCategoryIds',
         ],
         if (version >= 2)
           'accounts': [

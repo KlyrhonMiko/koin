@@ -4,14 +4,18 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:koin/core/core.dart';
 
+import 'budget_category_picker_sheet.dart';
+
 class BudgetEditorSheet extends ConsumerStatefulWidget {
-  final TransactionCategory category;
+  final TransactionCategory? category;
+  final List<String> initialCategoryIds;
   final Currency currency;
   final double totalIncome;
 
   const BudgetEditorSheet({
     super.key,
-    required this.category,
+    this.category,
+    this.initialCategoryIds = const [],
     required this.currency,
     required this.totalIncome,
   });
@@ -19,17 +23,28 @@ class BudgetEditorSheet extends ConsumerStatefulWidget {
   /// Presents [BudgetEditorSheet] in a standardized modal bottom sheet.
   static Future<void> show(
     BuildContext context, {
-    required TransactionCategory category,
+    TransactionCategory? category,
+    Set<String> initialCategoryIds = const {},
     required Currency currency,
     required double totalIncome,
-  }) {
+  }) async {
     HapticService.light();
+    Set<String>? selected;
+    if (category == null) {
+      selected = await BudgetCategoryPickerSheet.show(
+        context,
+        selectedIds: initialCategoryIds,
+        continueToLimit: true,
+      );
+      if (selected == null || selected.isEmpty || !context.mounted) return;
+    }
     return showEditorBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => BudgetEditorSheet(
         category: category,
+        initialCategoryIds: selected?.toList() ?? const [],
         currency: currency,
         totalIncome: totalIncome,
       ),
@@ -47,45 +62,51 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   String? _validationError;
   bool _saving = false;
   bool _saved = false;
+  late final Set<String> _selectedCategoryIds;
+  bool _confirming = false;
 
   @override
   void initState() {
     super.initState();
-    _isPercentMode = widget.category.isPercentBudget;
+    final category = widget.category;
+    _selectedCategoryIds = {
+      if (category != null) ...[
+        category.id,
+        ...category.sharedBudgetCategoryIds,
+      ],
+      ...widget.initialCategoryIds,
+    };
+    _isPercentMode = category?.isPercentBudget ?? false;
     if (_isPercentMode &&
-        widget.category.budgetPercent != null &&
-        widget.category.budgetPercent! > 0) {
-      _currentExpression = NumberFormat('0.##')
-          .format(widget.category.budgetPercent!);
+        category?.budgetPercent != null &&
+        category!.budgetPercent! > 0) {
+      _currentExpression = NumberFormat('0.##').format(category.budgetPercent!);
     } else if (!_isPercentMode &&
-        widget.category.budget != null &&
-        widget.category.budget! > 0) {
-      _currentExpression = NumberFormat('0.##').format(widget.category.budget!);
+        category?.budget != null &&
+        category!.budget! > 0) {
+      _currentExpression = NumberFormat('0.##').format(category.budget!);
     } else {
       _currentExpression = '';
     }
     _currentResult = _currentExpression;
   }
 
-  bool get _hasBudget =>
-      (widget.category.budget != null && widget.category.budget! > 0) ||
-      (widget.category.isPercentBudget &&
-          widget.category.budgetPercent != null &&
-          widget.category.budgetPercent! > 0);
+  bool get _hasBudget => widget.category?.hasBudget ?? false;
 
-  Future<bool> _saveUpdatedCategory(TransactionCategory updated) async {
+  Future<bool> _persist(Future<void> Function() save) async {
     if (_saving) return false;
     setState(() => _saving = true);
     try {
-      await ref.read(categoriesProvider.notifier).editCategory(updated);
+      await save();
       _saved = true;
       HapticService.success();
       return true;
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(
-          () => _validationError =
-              'Could not save budget. Your changes are kept. Try again.',
+          () => _validationError = error is StateError
+              ? error.message.toString()
+              : 'Could not save budget. Your changes are kept. Try again.',
         );
       }
       return false;
@@ -97,8 +118,12 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
   @override
   Widget build(BuildContext context) => UnsavedChangesGuard(
     title: 'Discard budget changes?',
-    draft: () => (_isPercentMode, _currentExpression),
-    isSaving: () => _saving,
+    draft: () => (
+      _isPercentMode,
+      _currentExpression,
+      (_selectedCategoryIds.toList()..sort()).join(','),
+    ),
+    isSaving: () => _saving || _confirming,
     canLeave: () => _saved,
     child: _buildContent(context),
   );
@@ -108,8 +133,31 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
     final currency = widget.currency;
     final totalIncome = widget.totalIncome;
     final fmt = currency.formatter;
-    final otherCategories = (ref.watch(categoriesProvider).value ?? []).where(
-      (c) => c.id != category.id && c.type == TransactionType.expense,
+    final categories = ref.watch(categoriesProvider).value ?? [];
+    final selectedCategories = categories
+        .where(
+          (c) =>
+              c.type == TransactionType.expense &&
+              _selectedCategoryIds.contains(c.id),
+        )
+        .toList();
+    final budgetName = selectedCategories.map((c) => c.name).join(' + ');
+    final accent =
+        selectedCategories.firstOrNull?.color ?? AppTheme.primaryColor(context);
+    final originalBudgetId = _hasBudget ? category!.id : null;
+    final otherCategories = categories.where(
+      (c) =>
+          c.id != originalBudgetId &&
+          c.type == TransactionType.expense &&
+          c.hasBudget &&
+          {c.id, ...c.sharedBudgetCategoryIds}.any(
+            (id) =>
+                !_selectedCategoryIds.contains(id) &&
+                categories.any(
+                  (member) =>
+                      member.id == id && member.type == TransactionType.expense,
+                ),
+          ),
     );
     final otherPercent = otherCategories
         .where((c) => c.isPercentBudget)
@@ -152,46 +200,23 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
           children: [
             // Drag handle
             const KoinBottomSheetHandle(padding: EdgeInsets.only(bottom: 20)),
-            // Category header
+            // Budget header
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: KoinSpacing.screenInset,
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      IconUtils.getIcon(category.iconCodePoint),
-                      color: category.color,
-                      size: 24,
-                    ),
-                  ),
-                  const Gap(16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          category.name,
+                          _hasBudget ? 'Edit budget' : 'New budget',
                           style: const TextStyle(
                             fontWeight: KoinTypography.headingWeight,
                             fontSize: KoinTypography.sectionTitle,
                             letterSpacing: KoinTypography.headingTracking,
-                          ),
-                        ),
-                        const Gap(2),
-                        Text(
-                          _hasBudget
-                              ? 'Edit monthly budget'
-                              : 'Set monthly budget',
-                          style: TextStyle(
-                            color: AppTheme.textLightColor(context),
-                            fontSize: KoinTypography.caption,
                           ),
                         ),
                         const Gap(6),
@@ -207,29 +232,34 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                   ),
                   if (_hasBudget)
                     IconButton(
-                      onPressed: () async {
-                        HapticService.selection();
-                        final confirmed = await ConfirmationSheet.show(
-                          context: context,
-                          title: 'Remove Budget?',
-                          description:
-                              'Are you sure you want to remove the monthly budget for ${category.name}?',
-                          confirmLabel: 'Remove',
-                          confirmColor: AppTheme.expenseColor(context),
-                          icon: KoinIcons.broom,
-                          isDanger: true,
-                        );
+                      onPressed: _saving || _confirming
+                          ? null
+                          : () async {
+                              HapticService.selection();
+                              final confirmed = await ConfirmationSheet.show(
+                                context: context,
+                                title: 'Remove Budget?',
+                                description: 'Remove this monthly budget? Categories and transactions will be kept.',
+                                confirmLabel: 'Remove',
+                                confirmColor: AppTheme.expenseColor(context),
+                                icon: KoinIcons.broom,
+                                isDanger: true,
+                              );
 
-                        if (confirmed == true && context.mounted) {
-                          HapticService.heavy();
-                          if (await _saveUpdatedCategory(
-                                category.withoutBudget(),
-                              ) &&
-                              context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
+                              if (confirmed == true && context.mounted) {
+                                HapticService.heavy();
+                                if (await _persist(
+                                      () => ref
+                                          .read(categoriesProvider.notifier)
+                                          .editCategory(
+                                            category!.withoutBudget(),
+                                          ),
+                                    ) &&
+                                    context.mounted) {
+                                  Navigator.pop(context);
+                                }
+                              }
+                            },
                       icon: Icon(
                         KoinIcons.trash,
                         color: AppTheme.expenseContentColor(context),
@@ -237,6 +267,40 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                       tooltip: 'Remove Budget',
                     ),
                 ],
+              ),
+            ),
+            const Gap(20),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: KoinSpacing.screenInset,
+              ),
+              child: SelectionTile(
+                key: const ValueKey('budget_category_selector'),
+                fallbackIcon: KoinIcons.squaresFour,
+                label: 'Categories',
+                selectedName: selectedCategories.isEmpty ? null : budgetName,
+                selectedColor: accent,
+                selectedIconCodePoint: KoinIcons.squaresFour.codePoint,
+                selectedNameMaxLines: null,
+                selectedNameDetail: selectedCategories.length > 1
+                    ? 'One shared limit · no fixed split'
+                    : null,
+                placeholder: 'Choose categories',
+                onTap: _saving || _confirming
+                    ? null
+                    : () async {
+                        final selected = await BudgetCategoryPickerSheet.show(
+                          context,
+                          selectedIds: _selectedCategoryIds,
+                        );
+                        if (selected == null || !mounted) return;
+                        setState(() {
+                          _selectedCategoryIds
+                            ..clear()
+                            ..addAll(selected);
+                          _validationError = null;
+                        });
+                      },
               ),
             ),
             const Gap(20),
@@ -311,49 +375,53 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
             ),
             // Resolved amount preview (percentage mode)
             if (_isPercentMode) ...[
-              AnimatedSize(
-                duration: KoinMotion.duration(
-                  context,
-                  const Duration(milliseconds: 200),
-                ),
-                child: resolvedAmount != null
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          KoinSpacing.screenInset,
-                          0,
-                          KoinSpacing.screenInset,
-                          12,
-                        ),
-                        child: Text(
-                          totalIncome <= 0
-                              ? 'No income recorded yet — budget will update when income is tracked'
-                              : '$_currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: KoinTypography.compact,
-                            fontWeight: KoinTypography.supportingWeight,
-                            color: AppTheme.textLightColor(context),
+              Builder(
+                builder: (context) {
+                  final preview = resolvedAmount != null
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            KoinSpacing.screenInset,
+                            0,
+                            KoinSpacing.screenInset,
+                            12,
                           ),
-                        ),
-                      )
-                    : totalIncome <= 0
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          KoinSpacing.screenInset,
-                          0,
-                          KoinSpacing.screenInset,
-                          12,
-                        ),
-                        child: Text(
-                          'No income recorded yet — budget will update when income is tracked',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: KoinTypography.small,
-                            color: AppTheme.textLightColor(context),
+                          child: Text(
+                            totalIncome <= 0
+                                ? 'No income recorded yet — budget will update when income is tracked'
+                                : '$_currentResult% of ${fmt.format(totalIncome)} = ${fmt.format(resolvedAmount)}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: KoinTypography.compact,
+                              fontWeight: KoinTypography.supportingWeight,
+                              color: AppTheme.textLightColor(context),
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : totalIncome <= 0
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            KoinSpacing.screenInset,
+                            0,
+                            KoinSpacing.screenInset,
+                            12,
+                          ),
+                          child: Text(
+                            'No income recorded yet — budget will update when income is tracked',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: KoinTypography.small,
+                              color: AppTheme.textLightColor(context),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink();
+                  return MediaQuery.disableAnimationsOf(context)
+                      ? preview
+                      : AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          child: preview,
+                        );
+                },
               ),
             ],
             if (_validationError != null || totalIncome > 0)
@@ -387,7 +455,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
               ),
               child: Row(
                 children: _isPercentMode
-                    ? [5, 10, 20, 30, 50, 75, 100].map((pct) {
+                    ? [5, 10, 20, 25, 30, 50, 75, 100].map((pct) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: GestureDetector(
@@ -406,12 +474,12 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                               ),
                               decoration: BoxDecoration(
                                 color: _currentExpression == pct.toString()
-                                    ? category.color.withValues(alpha: 0.15)
+                                    ? accent.withValues(alpha: 0.15)
                                     : AppTheme.surfaceLightColor(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _currentExpression == pct.toString()
-                                      ? category.color.withValues(alpha: 0.4)
+                                      ? accent.withValues(alpha: 0.4)
                                       : AppTheme.dividerColor(context),
                                 ),
                               ),
@@ -421,7 +489,7 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                                   fontWeight: KoinTypography.labelWeight,
                                   fontSize: KoinTypography.caption,
                                   color: _currentExpression == pct.toString()
-                                      ? category.color
+                                      ? accent
                                       : AppTheme.textColor(context),
                                 ),
                               ),
@@ -482,6 +550,13 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                 });
               },
               onDone: () async {
+                if (_saving || _confirming) return;
+                if (selectedCategories.isEmpty) {
+                  setState(
+                    () => _validationError = 'Choose at least one category.',
+                  );
+                  return;
+                }
                 final value = widget.currency.tryParseInput(
                   _currentResult,
                   precision: _isPercentMode ? 2 : null,
@@ -504,10 +579,62 @@ class _BudgetEditorSheetState extends ConsumerState<BudgetEditorSheet> {
                   );
                   return;
                 }
-                final saved = await _saveUpdatedCategory(
-                  _isPercentMode
-                      ? category.withPercentBudget(value)
-                      : category.withFixedBudget(value),
+                final moves = <String>[];
+                for (final budget in categories.where(
+                  (c) =>
+                      c.type == TransactionType.expense &&
+                      c.hasBudget &&
+                      c.id != originalBudgetId,
+                )) {
+                  final members = categories
+                      .where(
+                        (c) =>
+                            c.type == TransactionType.expense &&
+                            (c.id == budget.id ||
+                                budget.sharedBudgetCategoryIds.contains(c.id)),
+                      )
+                      .toList();
+                  final moved = members
+                      .where((c) => _selectedCategoryIds.contains(c.id))
+                      .toList();
+                  if (moved.isEmpty) continue;
+                  final remaining = members
+                      .where((c) => !_selectedCategoryIds.contains(c.id))
+                      .toList();
+                  final limit = budget.isPercentBudget
+                      ? '${NumberFormat('0.##').format(budget.budgetPercent)}% of income'
+                      : fmt.format(budget.budget);
+                  moves.add(
+                    remaining.isEmpty
+                        ? 'Replace the ${members.map((c) => c.name).join(' + ')} budget ($limit).'
+                        : '${moved.map((c) => c.name).join(' + ')} will move here. '
+                              '${remaining.map((c) => c.name).join(' + ')} will keep the previous $limit limit.',
+                  );
+                }
+                if (moves.isNotEmpty) {
+                  _confirming = true;
+                  final confirmed = await ConfirmationSheet.show(
+                    context: context,
+                    title: 'Update existing budgets?',
+                    description: moves.join('\n\n'),
+                    confirmLabel: 'Move & save',
+                    confirmColor: AppTheme.primaryColor(context),
+                    icon: KoinIcons.squaresFour,
+                  );
+                  _confirming = false;
+                  if (confirmed != true || !context.mounted) return;
+                }
+                final saved = await _persist(
+                  () => ref
+                      .read(categoriesProvider.notifier)
+                      .saveBudget(
+                        categoryIds: selectedCategories
+                            .map((c) => c.id)
+                            .toSet(),
+                        originalBudgetId: originalBudgetId,
+                        amount: value,
+                        isPercent: _isPercentMode,
+                      ),
                 );
                 if (saved && context.mounted) Navigator.pop(context);
               },

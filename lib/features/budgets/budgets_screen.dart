@@ -75,7 +75,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
     final overview = ref.watch(monthlyBudgetOverviewProvider(_selectedMonth));
     final budgeted = overview.budgetedCategories;
-    final unbudgeted = overview.unbudgetedCategories;
+    final unbudgeted = overview.unbudgetedCategories
+        .where((category) => !category.isArchived)
+        .toList();
     final totalBudget = overview.totalBudget;
     final totalSpent = overview.totalSpent;
     final overallPercent = overview.overallPercent;
@@ -158,156 +160,110 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                                           totalIncome: totalIncome,
                                         );
                                       }),
-                                      if (unbudgeted.isNotEmpty) const Gap(24),
+                                      const Gap(20),
                                     ],
 
-                                    // Unbudgeted categories section
-                                    if (unbudgeted.isNotEmpty) ...[
+                                    if (budgeted.isEmpty) ...[
                                       Text(
-                                        budgeted.isEmpty
-                                            ? 'Set Monthly Budgets'
-                                            : 'Add More Budgets',
+                                        'Set a monthly spending limit',
                                         style: TextStyle(
                                           fontSize: KoinTypography.sectionTitle,
                                           fontWeight:
                                               KoinTypography.headingWeight,
                                           color: AppTheme.textColor(context),
-                                          letterSpacing:
-                                              KoinTypography.headingTracking,
                                         ),
                                       ),
-                                      if (budgeted.isEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 6,
-                                          ),
-                                          child: Text(
-                                            'Tap a category to set a spending limit',
-                                            style: TextStyle(
-                                              color: AppTheme.textLightColor(
-                                                context,
-                                              ),
-                                              fontSize: KoinTypography.caption,
-                                            ),
+                                      const Gap(8),
+                                      Text(
+                                        'Choose one category or group several under one budget.',
+                                        style: TextStyle(
+                                          fontSize: KoinTypography.caption,
+                                          color: AppTheme.textLightColor(
+                                            context,
                                           ),
                                         ),
+                                      ),
+                                      const Gap(20),
+                                    ],
+                                    KoinAddButton(
+                                      label: 'Add budget',
+                                      onPressed: () => BudgetEditorSheet.show(
+                                        context,
+                                        currency: currency,
+                                        totalIncome: totalIncome,
+                                      ),
+                                    ),
+                                    if (unbudgeted.isNotEmpty) ...[
+                                      const Gap(20),
+                                      Text(
+                                        'Not budgeted yet',
+                                        style: TextStyle(
+                                          fontSize: KoinTypography.sectionTitle,
+                                          fontWeight:
+                                              KoinTypography.headingWeight,
+                                          color: AppTheme.textColor(context),
+                                        ),
+                                      ),
                                       const Gap(12),
-                                      Builder(
-                                        builder: (context) {
-                                          final screenWidth = MediaQuery.of(
-                                            context,
-                                          ).size.width;
-                                          final maxRowWidth =
-                                              screenWidth -
-                                              40; // 20 padding each side
-                                          const spacing = 10.0;
-
-                                          final optimallyOrderedItems =
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final items =
                                               UnbudgetedChipItem.optimizeRowPacking(
                                                 unbudgeted: unbudgeted,
-                                                maxRowWidth: maxRowWidth,
-                                                spacing: spacing,
+                                                maxRowWidth:
+                                                    constraints.maxWidth,
+                                                spacing: 10,
                                               );
-
                                           return Wrap(
-                                            spacing: spacing,
+                                            spacing: 10,
                                             runSpacing: 10,
-                                            children: optimallyOrderedItems
-                                                .map((item) {
-                                                  if (item.isManage) {
-                                                    return _buildManageChip(
+                                            children:
+                                                [
+                                                      for (final item in items)
+                                                        if (item.isManage)
+                                                          _buildManageChip(
+                                                            context,
+                                                          )
+                                                        else
+                                                          _buildUnbudgetedChip(
+                                                            context,
+                                                            ref,
+                                                            item.category!,
+                                                            currency,
+                                                            totalIncome,
+                                                          ),
+                                                    ]
+                                                    .koinAnimate(
                                                       context,
-                                                    );
-                                                  } else {
-                                                    return _buildUnbudgetedChip(
-                                                      context,
-                                                      ref,
-                                                      item.category!,
-                                                      currency,
-                                                      totalIncome,
-                                                    );
-                                                  }
-                                                })
-                                                .toList()
-                                                .koinAnimate(
-                                                  context,
-                                                  autoPlay:
-                                                      !MediaQuery.disableAnimationsOf(
+                                                      autoPlay:
+                                                          !MediaQuery.disableAnimationsOf(
+                                                            context,
+                                                          ),
+                                                      onInit: KoinMotion.onInit(
                                                         context,
                                                       ),
-                                                  onInit: KoinMotion.onInit(
-                                                    context,
-                                                  ),
-                                                  interval: KoinMotion.duration(
-                                                    context,
-                                                    40.ms,
-                                                  ),
-                                                )
-                                                .fade(
-                                                  duration: 250.ms,
-                                                  curve: Curves.easeOutCubic,
-                                                )
-                                                .scale(
-                                                  begin: const Offset(
-                                                    0.95,
-                                                    0.95,
-                                                  ),
-                                                  duration: 250.ms,
-                                                  curve: Curves.easeOutCubic,
-                                                ),
+                                                      interval:
+                                                          KoinMotion.duration(
+                                                            context,
+                                                            40.ms,
+                                                          ),
+                                                    )
+                                                    .fade(
+                                                      duration: 250.ms,
+                                                      curve:
+                                                          Curves.easeOutCubic,
+                                                    )
+                                                    .scale(
+                                                      begin: const Offset(
+                                                        0.95,
+                                                        0.95,
+                                                      ),
+                                                      duration: 250.ms,
+                                                    ),
                                           );
                                         },
                                       ),
                                     ],
-
-                                    // If unbudgeted is empty but we have expense categories, show the Manage button
-                                    if (unbudgeted.isEmpty &&
-                                        categories
-                                            .where(
-                                              (c) =>
-                                                  c.type ==
-                                                  TransactionType.expense,
-                                            )
-                                            .isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Center(
-                                          child: TextButton.icon(
-                                            onPressed: () {
-                                              HapticService.light();
-                                              Navigator.push(
-                                                context,
-                                                SlideUpRoute(
-                                                  page:
-                                                      const CategoryManagerScreen(),
-                                                ),
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              KoinIcons.gearSix,
-                                              size: 16,
-                                            ),
-                                            label: const Text(
-                                              'Manage Categories',
-                                            ),
-                                            style: TextButton.styleFrom(
-                                              overlayColor:
-                                                  AppTheme.primaryColor(
-                                                    context,
-                                                  ),
-                                              foregroundColor:
-                                                  AppTheme.textLightColor(
-                                                    context,
-                                                  ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 12,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     const Gap(32),
                                     Center(
                                       child: Container(
@@ -554,12 +510,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              category.name,
+                              metrics.name,
                               style: const TextStyle(
                                 fontWeight: KoinTypography.titleWeight,
                                 fontSize: KoinTypography.body,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -678,7 +633,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       onTap: () {
         BudgetEditorSheet.show(
           context,
-          category: category,
+          initialCategoryIds: {category.id},
           currency: currency,
           totalIncome: totalIncome,
         );

@@ -137,11 +137,19 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         ((widget.category?.budget ?? 0) > 0 ||
             widget.category?.isPercentBudget == true);
     if (removesBudget) {
+      final keepsSharedBudget = TransactionCategory.detachFromBudgets(
+        ref.read(categoriesProvider).value ?? [],
+        category.id,
+      ).isNotEmpty;
       _confirmingType = true;
       final confirmed = await ConfirmationSheet.show(
         context: context,
-        title: 'Remove this category budget?',
-        description: 'Changing this category to Income removes its recurring budget. Existing transaction amounts are kept.',
+        title: keepsSharedBudget
+            ? 'Leave shared budget?'
+            : 'Remove this category budget?',
+        description: keepsSharedBudget
+            ? 'The other categories keep the current limit. Existing transaction amounts are kept.'
+            : 'Changing this category to Income removes its recurring budget. Existing transaction amounts are kept.',
         confirmLabel: 'Change type',
         confirmColor: AppTheme.errorColor(context),
         icon: KoinIcons.warning,

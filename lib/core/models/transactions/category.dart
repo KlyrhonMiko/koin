@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import 'transaction.dart';
@@ -12,6 +14,9 @@ class TransactionCategory {
   final double? budgetPercent;
   final bool isPercentBudget;
 
+  /// Additional categories spending from this category's single budget.
+  final List<String> sharedBudgetCategoryIds;
+
   final TransactionType type;
   final int position;
 
@@ -24,6 +29,7 @@ class TransactionCategory {
     this.budget,
     this.budgetPercent,
     this.isPercentBudget = false,
+    this.sharedBudgetCategoryIds = const [],
     this.position = 0,
     this.isArchived = false,
   });
@@ -37,6 +43,7 @@ class TransactionCategory {
     double? budget,
     double? budgetPercent,
     bool? isPercentBudget,
+    List<String>? sharedBudgetCategoryIds,
     TransactionType? type,
     int? position,
   }) {
@@ -49,6 +56,8 @@ class TransactionCategory {
       budget: budget ?? this.budget,
       budgetPercent: budgetPercent ?? this.budgetPercent,
       isPercentBudget: isPercentBudget ?? this.isPercentBudget,
+      sharedBudgetCategoryIds:
+          sharedBudgetCategoryIds ?? this.sharedBudgetCategoryIds,
       type: type ?? this.type,
       position: position ?? this.position,
     );
@@ -64,6 +73,7 @@ class TransactionCategory {
     budget: (amount == null || amount <= 0) ? null : amount,
     budgetPercent: null,
     isPercentBudget: false,
+    sharedBudgetCategoryIds: sharedBudgetCategoryIds,
     position: position,
     isArchived: isArchived,
   );
@@ -78,6 +88,7 @@ class TransactionCategory {
     budget: null,
     budgetPercent: (percent == null || percent <= 0) ? null : percent,
     isPercentBudget: percent != null && percent > 0,
+    sharedBudgetCategoryIds: sharedBudgetCategoryIds,
     position: position,
     isArchived: isArchived,
   );
@@ -96,6 +107,56 @@ class TransactionCategory {
     isArchived: isArchived,
   );
 
+  TransactionCategory withBudgetFrom(TransactionCategory source) =>
+      (source.isPercentBudget
+              ? withPercentBudget(source.budgetPercent)
+              : withFixedBudget(source.budget))
+          .copyWith(sharedBudgetCategoryIds: source.sharedBudgetCategoryIds);
+
+  /// Keeps a shared limit with its remaining expense categories on removal.
+  static List<TransactionCategory> detachFromBudgets(
+    List<TransactionCategory> categories,
+    String categoryId,
+  ) {
+    final updates = <TransactionCategory>[];
+    for (final budget in categories.where(
+      (c) => c.type == TransactionType.expense && c.hasBudget,
+    )) {
+      if (budget.id == categoryId) {
+        final remaining = categories
+            .where(
+              (c) =>
+                  c.id != categoryId &&
+                  c.type == TransactionType.expense &&
+                  !c.hasBudget &&
+                  budget.sharedBudgetCategoryIds.contains(c.id),
+            )
+            .toList();
+        if (remaining.isNotEmpty) {
+          updates.add(
+            remaining.first
+                .withBudgetFrom(budget)
+                .copyWith(
+                  sharedBudgetCategoryIds: remaining
+                      .skip(1)
+                      .map((c) => c.id)
+                      .toList(),
+                ),
+          );
+        }
+      } else if (budget.sharedBudgetCategoryIds.contains(categoryId)) {
+        updates.add(
+          budget.copyWith(
+            sharedBudgetCategoryIds: budget.sharedBudgetCategoryIds
+                .where((id) => id != categoryId)
+                .toList(),
+          ),
+        );
+      }
+    }
+    return updates;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -107,6 +168,7 @@ class TransactionCategory {
       'budget': budget,
       'budgetPercent': budgetPercent,
       'isPercentBudget': isPercentBudget ? 1 : 0,
+      'sharedBudgetCategoryIds': jsonEncode(sharedBudgetCategoryIds),
       'position': position,
     };
   }
@@ -124,6 +186,9 @@ class TransactionCategory {
       budget: map['budget']?.toDouble(),
       budgetPercent: map['budgetPercent']?.toDouble(),
       isPercentBudget: map['isPercentBudget'] == 1,
+      sharedBudgetCategoryIds: List<String>.from(
+        jsonDecode(map['sharedBudgetCategoryIds'] as String? ?? '[]'),
+      ),
       position: map['position'] ?? 0,
     );
   }

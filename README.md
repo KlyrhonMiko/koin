@@ -63,6 +63,10 @@ On Android, **Settings → App protection** can require your existing device PIN
 
 Category budgets use one recurring limit across months. Changing that limit also changes the allocation shown when viewing earlier months.
 
+Tap **Add budget**, choose one or more categories, then set one monthly amount or percentage of income. The staggered category chips also open this picker with a category preselected. For example, select Food and Drinks and give them one 25% limit with no fixed split. Edit a budget’s **Categories** field to change its coverage; either category can be removed. Categories already in another budget can be moved after reviewing the changes on Save. Transactions and spending reports keep the categories separate.
+
+Deleting a category or changing it to Income keeps any shared budget with the remaining expense categories at the same limit.
+
 ## Development
 
 Install Flutter 3.47 or later with Dart compatible with `^3.13.0` and the platform tooling for your target device. Dependencies are defined in [pubspec.yaml](pubspec.yaml).

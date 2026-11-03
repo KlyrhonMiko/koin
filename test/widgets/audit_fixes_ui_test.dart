@@ -52,6 +52,12 @@ class _ControlledCategories extends InMemoryCategoryAdapter {
     await pending?.future;
     await super.updateCategory(category);
   }
+
+  @override
+  Future<void> updateBudgets(List<TransactionCategory> categories) async {
+    await pending?.future;
+    await super.updateBudgets(categories);
+  }
 }
 
 void main() {

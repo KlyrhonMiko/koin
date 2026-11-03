@@ -112,14 +112,12 @@ class BudgetProgressCard extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final name = Text(
-                        category.name,
+                        metrics.name,
                         style: TextStyle(
                           color: AppTheme.textColor(context),
                           fontSize: KoinTypography.body,
                           fontWeight: KoinTypography.titleWeight,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       );
                       final amount = Text(status, style: amountStyle);
                       if (constraints.maxWidth < 220 ||
@@ -143,7 +141,7 @@ class BudgetProgressCard extends StatelessWidget {
                   KoinProgressBar(
                     value: metrics.progress,
                     color: color,
-                    semanticsLabel: '${category.name}, $status',
+                    semanticsLabel: '${metrics.name}, $status',
                     semanticsValue:
                         '${(metrics.progress.clamp(0.0, 1.0) * 100).round()}%',
                   ),

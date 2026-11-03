@@ -10,6 +10,7 @@ class CategoryBudgetMetrics {
   final double progress;
   final double remaining;
   final bool isOverBudget;
+  final List<TransactionCategory> sharedCategories;
 
   const CategoryBudgetMetrics({
     required this.category,
@@ -18,7 +19,11 @@ class CategoryBudgetMetrics {
     required this.progress,
     required this.remaining,
     required this.isOverBudget,
+    this.sharedCategories = const [],
   });
+
+  String get name =>
+      [category, ...sharedCategories].map((c) => c.name).join(' + ');
 
   /// Spending percentage relative to budget.
   double get percent => budget > 0 ? (spent / budget * 100) : 0.0;
@@ -64,15 +69,29 @@ class BudgetOverview {
         .toList();
 
     final budgeted = expenseCategories.where((c) => c.hasBudget).toList();
-    final unbudgeted = expenseCategories.where((c) => !c.hasBudget).toList();
+    final sharedIds = budgeted.expand((c) => c.sharedBudgetCategoryIds).toSet();
+    final unbudgeted = expenseCategories
+        .where((c) => !c.hasBudget && !sharedIds.contains(c.id))
+        .toList();
 
     double sumBudget = 0.0;
     double sumSpent = 0.0;
     final Map<String, CategoryBudgetMetrics> metrics = {};
 
     for (final cat in budgeted) {
+      final shared = expenseCategories
+          .where(
+            (c) =>
+                c.id != cat.id &&
+                !c.hasBudget &&
+                cat.sharedBudgetCategoryIds.contains(c.id),
+          )
+          .toList();
       final resBudget = cat.resolvedBudget(totalIncome);
-      final spent = categorySpending[cat.id] ?? 0.0;
+      final spent = [
+        cat,
+        ...shared,
+      ].fold(0.0, (sum, c) => sum + (categorySpending[c.id] ?? 0.0));
       final progress = resBudget > 0
           ? (spent / resBudget).clamp(0.0, 1.0)
           : (spent > 0 ? 1.0 : 0.0);
@@ -89,6 +108,7 @@ class BudgetOverview {
         progress: progress,
         remaining: remaining,
         isOverBudget: isOver,
+        sharedCategories: shared,
       );
     }
 

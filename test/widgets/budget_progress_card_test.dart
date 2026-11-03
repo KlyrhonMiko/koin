@@ -139,4 +139,25 @@ void main() {
     expect(find.text('Awaiting income'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Shared budget appears once with the combined remaining amount', (
+    tester,
+  ) async {
+    final overview = BudgetOverview.calculate(
+      categories: [
+        category(
+          'Food',
+          percent: 25,
+        ).copyWith(sharedBudgetCategoryIds: ['Drinks']),
+        category('Drinks').withoutBudget(),
+      ],
+      categorySpending: {'Food': 3500, 'Drinks': 1000},
+      totalIncome: 20000,
+    );
+    await pumpCard(tester, overview, width: 320, scale: 1.6);
+    expect(find.text('Food + Drinks'), findsOneWidget);
+    expect(find.text('₱500 left'), findsOneWidget);
+    expect(find.byType(KoinProgressBar), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
